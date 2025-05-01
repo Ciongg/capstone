@@ -32,4 +32,10 @@ class SurveyQuestion extends Model
     {
         return $this->hasMany(SurveyChoice::class);
     }
+
+    // Add this:
+    public function answers()
+    {
+        return $this->hasMany(Answer::class, 'survey_question_id');
+    }
 }

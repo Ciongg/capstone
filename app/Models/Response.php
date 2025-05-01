@@ -3,17 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class SurveyChoice extends Model
+class Response extends Model
 {
-    use HasFactory;
-
-    protected $fillable = [
-        'survey_question_id',
-        'choice_text',
-        'order',
-    ];
+    protected $fillable = ['survey_id', 'user_id'];
 
     public function answers()
     {

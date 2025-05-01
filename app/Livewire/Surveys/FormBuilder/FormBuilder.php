@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Surveys;
+namespace App\Livewire\Surveys\FormBuilder;
 
 use Livewire\Component;
 use App\Models\Survey;
@@ -18,11 +18,12 @@ class FormBuilder extends Component
     public $activePageId = null; // Track the active page
     public $selectedQuestionId = null;
     public $surveyTitle;
-
+    public $isLocked = false;
 
     public function mount(Survey $survey)
     {
         $this->survey = $survey;
+        $this->isLocked = $survey->responses()->exists();
         $this->loadPages();
         $this->surveyTitle = $survey->title;
         $this->activePageId = null;
@@ -134,9 +135,15 @@ class FormBuilder extends Component
 
     public function addChoice($questionId)
     {
+        // Count existing choices for this question
+        $existingChoicesCount = SurveyChoice::where('survey_question_id', $questionId)->count();
+        $order = $existingChoicesCount + 1;
+        $choiceText = 'Option ' . $order;
+
         $choice = SurveyChoice::create([
             'survey_question_id' => $questionId,
-            'choice_text' => '',
+            'choice_text' => $choiceText,
+            'order' => $order,
         ]);
 
         $this->choices[$choice->id] = $choice->toArray();
@@ -211,9 +218,33 @@ class FormBuilder extends Component
 
     public function removeChoice($choiceId)
     {
-        SurveyChoice::findOrFail($choiceId)->delete();
+        $choice = SurveyChoice::findOrFail($choiceId);
+        $questionId = $choice->survey_question_id;
+        $deletedOrder = $choice->order;
 
+        // Delete the choice
+        $choice->delete();
+
+        // Remove from local state
         unset($this->choices[$choiceId]);
+
+        // Get all subsequent choices for this question, ordered by 'order'
+        $subsequentChoices = SurveyChoice::where('survey_question_id', $questionId)
+            ->where('order', '>', $deletedOrder)
+            ->orderBy('order')
+            ->get();
+
+        foreach ($subsequentChoices as $subChoice) {
+            // Decrement the order
+            $subChoice->order = $subChoice->order - 1;
+
+            // If the choice_text matches "Option X", update it to the new order
+            if (preg_match('/^Option \d+$/', $subChoice->choice_text)) {
+                $subChoice->choice_text = 'Option ' . $subChoice->order;
+            }
+
+            $subChoice->save();
+        }
 
         $this->loadPages();
     }
@@ -273,7 +304,7 @@ class FormBuilder extends Component
 
     public function unpublishSurvey()
     {
-        $this->survey->status = 'wip';
+        $this->survey->status = 'pending';
         $this->survey->save();
     }
 
@@ -285,6 +316,11 @@ class FormBuilder extends Component
 
     public function render()
     {
-        return view('livewire.surveys.form-builder');
+        if ($this->survey->status === 'pending' && $this->isLocked) {
+            $this->survey->status = 'ongoing';
+            $this->survey->save();
+        }
+
+        return view('livewire.surveys.form-builder.form-builder');
     }
 }

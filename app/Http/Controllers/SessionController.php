@@ -22,7 +22,7 @@ class SessionController extends Controller
         request()->session()->regenerate();
         
        
-        return redirect()->route('dashboard')->with('success', 'Login successful');
+        return redirect()->route('feed.index')->with('success', 'Login successful');
 
     }
 
@@ -36,7 +36,5 @@ class SessionController extends Controller
         return view('login');
     }
 
-    public function showDashboard(){
-        return view('dashboard');
-    }
+
 }

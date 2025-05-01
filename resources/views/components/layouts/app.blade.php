@@ -21,9 +21,9 @@
                 <a href="/" class="font-bold text-xl">Formigo</a>
 
                 @auth
-                    <a href="/dashboard" class="hover:underline">Home</a>
                     <a href="/feed" class="hover:underline">Feed</a>
                     <a href="/surveys/create" class="hover:underline">Create Survey</a>
+                    <a href="/my-surveys" class="hover:underline">My Surveys</a>
                     <a href="/rewards" class="hover:underline">Rewards</a>
                 @endauth
             </div>

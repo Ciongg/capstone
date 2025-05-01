@@ -12,7 +12,7 @@ class Survey extends Model
         'user_id',
         'title',
         'description',
-        'status',   // 'wip', 'published', 'finished'
+        'status',   // 'pending', 'published', 'ongoing', 'finished'
         'type',     // 'basic', 'advanced'
     ];
 
@@ -29,5 +29,10 @@ class Survey extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function responses()
+    {
+        return $this->hasMany(\App\Models\Response::class);
     }
 }
