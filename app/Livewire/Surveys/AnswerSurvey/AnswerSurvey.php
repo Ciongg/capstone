@@ -29,10 +29,11 @@ class AnswerSurvey extends Component
             'user_id' => Auth::id(),
         ]);
 
+        
+
         foreach ($this->answers as $questionId => $answer) {
             $question = $this->survey->pages->flatMap->questions->firstWhere('id', $questionId);
-
-            // For multiple choice, $answer is an array of [choiceId => bool]
+            
             if ($question->question_type === 'multiple_choice' && is_array($answer)) {
                 foreach ($answer as $choiceId => $checked) {
                     if ($checked) {
@@ -44,7 +45,25 @@ class AnswerSurvey extends Component
                         ]);
                     }
                 }
-            } else {
+            } else if ($question && $question->question_type === 'likert' && is_array($answer)) {
+                $answer = json_encode($answer);
+
+                Answer::create([
+                    'response_id' => $response->id,
+                    'survey_question_id' => $questionId,
+                    'answer' => $answer,
+                ]);
+            } 
+            // Handle rating questions
+            else if ($question && $question->question_type === 'rating') {
+                $ratingValue = is_numeric($answer) ? intval($answer) : null;
+                Answer::create([
+                    'response_id' => $response->id,
+                    'survey_question_id' => $questionId,
+                    'answer' => $ratingValue,
+                ]);
+            } 
+            else {
                 // For radio and others
                 if (in_array($question->question_type, ['radio'])) {
                     $choice = $question->choices->firstWhere('id', $answer);

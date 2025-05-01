@@ -20,8 +20,11 @@ return new class extends Migration
                 'essay', 'multiple_choice', 'page', 'date', 
                 'likert', 'radio', 'rating', 'short_text'
             ]);
+            $table->integer('stars')->nullable();
             $table->integer('order')->default(0);
             $table->boolean('required')->default(false);
+            $table->json('likert_columns')->nullable();
+            $table->json('likert_rows')->nullable();
             $table->timestamps();
         });
     }

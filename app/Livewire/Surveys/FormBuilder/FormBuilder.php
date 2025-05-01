@@ -12,13 +12,16 @@ class FormBuilder extends Component
 {
     public $survey;
     public $pages = [];
-    public $questionTypes = ['page', 'multiple_choice', 'essay', 'radio'];
+    public $questionTypes = ['page', 'multiple_choice', 'essay', 'radio', 'date', 'rating', 'short_text', 'likert'];
     public $questions = [];
     public $choices = [];
     public $activePageId = null; // Track the active page
     public $selectedQuestionId = null;
     public $surveyTitle;
     public $isLocked = false;
+    public $ratingStars = [];
+    public $likertColumns = [];
+    public $likertRows = [];
 
     public function mount(Survey $survey)
     {
@@ -45,6 +48,18 @@ class FormBuilder extends Component
         foreach ($this->pages as $page) {
             foreach ($page->questions as $question) {
                 $this->questions[$question->id] = $question->toArray();
+                if ($question->question_type === 'rating') {
+                    $this->ratingStars[$question->id] = $question->stars ?? 5;
+                }
+                if ($question->question_type === 'likert') {
+                    // Always decode to array
+                    $this->likertColumns[$question->id] = is_array($question->likert_columns)
+                        ? $question->likert_columns
+                        : (json_decode($question->likert_columns, true) ?: []);
+                    $this->likertRows[$question->id] = is_array($question->likert_rows)
+                        ? $question->likert_rows
+                        : (json_decode($question->likert_rows, true) ?: []);
+                }
                 foreach ($question->choices as $choice) {
                     $this->choices[$choice->id] = $choice->toArray();
                 }
@@ -67,7 +82,13 @@ class FormBuilder extends Component
         $this->activePageId = $question->survey_page_id;
     }
     
-
+    public function updateRatingStars($questionId)
+    {
+        $question = SurveyQuestion::findOrFail($questionId);
+        $question->stars = $this->ratingStars[$questionId] ?? 5;
+        $question->save();
+        $this->loadPages();
+    }
 
     public function addPage()
     {
@@ -90,9 +111,6 @@ class FormBuilder extends Component
 
     public function addQuestion($type)
     {
-
-    
-
         if ($type === 'page') {
             $this->addPage();
             return;
@@ -125,6 +143,23 @@ class FormBuilder extends Component
             'order' => $insertAfterOrder + 1,
             'required' => false,
         ]);
+
+        if ($type === 'rating') {
+            $this->ratingStars[$question->id] = 5;
+        }
+
+        if ($type === 'likert') {
+            // Give 3 default columns and 3 default rows
+            $defaultColumns = ['Agree', 'Neutral', 'Disagree'];
+            $defaultRows = ['Statement 1', 'Statement 2', 'Statement 3'];
+            $this->likertColumns[$question->id] = $defaultColumns;
+            $this->likertRows[$question->id] = $defaultRows;
+
+            // Save to DB immediately
+            $question->likert_columns = $defaultColumns;
+            $question->likert_rows = $defaultRows;
+            $question->save();
+        }
 
         // Set the newly added question as the selected question
         $this->selectedQuestionId = $question->id;
@@ -263,14 +298,13 @@ class FormBuilder extends Component
             $remainingPage->update(['page_number' => $index + 1]);
         }
 
-
         $this->loadPages();
 
         if ($this->activePageId === $pageId) {
             $this->activePageId = $remainingPages->first()->id ?? null;
         }
-        
     }
+
     public function deleteAll()
     {
         // Delete all questions and their choices
@@ -312,6 +346,62 @@ class FormBuilder extends Component
     {
         // You can emit an event or set a property to show a modal/settings panel
         // $this->dispatch('openSurveySettingsModal');
+    }
+
+    public function addLikertColumn($questionId)
+    {
+        // Ensure it's always an array
+        $current = $this->likertColumns[$questionId] ?? [];
+        if (is_string($current)) {
+            $current = json_decode($current, true) ?: [];
+        }
+        $current[] = '';
+        $this->likertColumns[$questionId] = $current;
+        $this->saveLikert($questionId);
+    }
+
+    public function removeLikertColumn($questionId, $colIndex)
+    {
+        unset($this->likertColumns[$questionId][$colIndex]);
+        $this->likertColumns[$questionId] = array_values($this->likertColumns[$questionId]);
+        $this->saveLikert($questionId);
+    }
+
+    public function updateLikertColumn($questionId, $colIndex)
+    {
+        $this->saveLikert($questionId);
+    }
+
+    public function addLikertRow($questionId)
+    {
+        $current = $this->likertRows[$questionId] ?? [];
+        if (is_string($current)) {
+            $current = json_decode($current, true) ?: [];
+        }
+        $current[] = '';
+        $this->likertRows[$questionId] = $current;
+        $this->saveLikert($questionId);
+    }
+
+    public function removeLikertRow($questionId, $rowIndex)
+    {
+        unset($this->likertRows[$questionId][$rowIndex]);
+        $this->likertRows[$questionId] = array_values($this->likertRows[$questionId]);
+        $this->saveLikert($questionId);
+    }
+
+    public function updateLikertRow($questionId, $rowIndex)
+    {
+        $this->saveLikert($questionId);
+    }
+
+    protected function saveLikert($questionId)
+    {
+        $question = SurveyQuestion::find($questionId);
+        $question->likert_columns = $this->likertColumns[$questionId] ?? [];
+        $question->likert_rows = $this->likertRows[$questionId] ?? [];
+        $question->save();
+        $this->loadPages();
     }
 
     public function render()

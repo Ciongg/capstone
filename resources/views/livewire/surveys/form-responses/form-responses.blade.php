@@ -3,8 +3,8 @@
     <div class="max-w-7xl mx-auto space-y-10 px-4">
 
         <div class="flex flex-col md:flex-row md:justify-end md:items-center gap-4 mb-6">
-            <a href="{{ route('surveys.responses.individual', $survey->id) }}"
-                wire:navigate
+             <a href="{{ route('surveys.responses.individual', $survey->id) }}"
+                
                 class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                 View Individual Responses
             </a>
@@ -119,17 +119,130 @@
                             });
                         </script>
                         @endpush
+                    @elseif($question->question_type === 'likert')
+                    @php
+                        $likertColumns = array_values(is_array($question->likert_columns) ? $question->likert_columns : (json_decode($question->likert_columns, true) ?: []));
+                        $likertRows = array_values(is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []));
+                        // [row][col] = count
+                        $likertCounts = [];
+                        foreach ($likertRows as $rowIdx => $row) {
+                            $likertCounts[$rowIdx] = array_fill(0, count($likertColumns), 0);
+                        }
+                        foreach ($question->answers as $answer) {
+                            $decoded = json_decode($answer->answer, true);
+                            if (is_array($decoded)) {
+                                foreach ($decoded as $rowIdx => $colIdx) {
+                                    $colIdx = intval($colIdx);
+                                    if (isset($likertCounts[$rowIdx][$colIdx])) {
+                                        $likertCounts[$rowIdx][$colIdx]++;
+                                    }
+                                }
+                            }
+                        }
+                    @endphp
+
+                        <div class="bg-white shadow rounded-lg p-6 mb-6">
+                            <div class="font-semibold mb-2">{{ $question->question_text }}</div>
+                            <div class="overflow-x-auto">
+                                <table class="table-auto w-full border-collapse border border-gray-300 mb-4">
+                                    <thead>
+                                        <tr>
+                                            <th class="border border-gray-300 px-4 py-2"></th>
+                                            @foreach($likertColumns as $column)
+                                                <th class="border border-gray-300 px-4 py-2 text-gray-600">{{ $column }}</th>
+                                            @endforeach
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($likertRows as $rowIdx => $row)
+                                            <tr>
+                                                <td class="border border-gray-300 px-4 py-2 font-semibold">{{ $row }}</td>
+                                                @foreach($likertColumns as $colIdx => $column)
+                                                    <td class="border border-gray-300 px-4 py-2 text-center">{{ $likertCounts[$rowIdx][$colIdx] ?? 0 }}</td>
+                                                @endforeach
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="flex justify-center mt-6">
+                                <canvas id="likert-chart-{{ $question->id }}" height="{{ 150 * count($likertRows) }}"></canvas>
+                            </div>
+                        </div>
+                        @push('scripts')
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function () {
+                                const ctx = document.getElementById('likert-chart-{{ $question->id }}').getContext('2d');
+                                const rows = @json($likertRows);
+                                const columns = @json($likertColumns);
+                                const counts = @json($likertCounts);
+                                const colors = [
+                                    @foreach($likertColumns as $i => $column)
+                                        "{{ $colors[$i % count($colors)] }}",
+                                    @endforeach
+                                ];
+
+                                // Each dataset is a Likert option (column)
+                                const datasets = columns.map((col, colIdx) => ({
+                                    label: col,
+                                    data: rows.map((row, rowIdx) => counts[rowIdx][colIdx] ?? 0),
+                                    backgroundColor: colors[colIdx],
+                                    borderWidth: 1
+                                }));
+
+                                new Chart(ctx, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: rows,
+                                        datasets: datasets
+                                    },
+                                    options: {
+                                        indexAxis: 'y', // horizontal bars
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        plugins: {
+                                            legend: { display: true, position: 'top' }
+                                        },
+                                        scales: {
+                                            x: {
+                                                beginAtZero: true,
+                                                precision: 0
+                                            },
+                                            y: {
+                                                stacked: false
+                                            }
+                                        }
+                                    }
+                                });
+                            });
+                        </script>
+                        @endpush
                     @else
                         <div class="bg-white shadow rounded-lg p-6 mb-6">
                             <div class="font-semibold mb-2">{{ $question->question_text }}</div>
                             <div class="space-y-2">
                                 @forelse($question->answers as $answer)
-                                    <div class="p-3 bg-gray-50 rounded border border-gray-200">
-                                        {{ $answer->answer }}
-                                    </div>
-                                @empty
-                                    <div class="text-gray-400 italic">No responses yet.</div>
-                                @endforelse
+                                @if($question->question_type === 'rating')
+                                @php
+                                    $starCount = $question->stars ?? 5;
+                                    $rating = intval($answer->answer);
+                                @endphp
+                                <div class="flex items-center space-x-1">
+                                    @for($i = 1; $i <= $starCount; $i++)
+                                        <svg class="w-6 h-6 {{ $i <= $rating ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
+                                            <polygon points="10,1 12.59,7.36 19.51,7.64 14,12.26 15.82,19.02 10,15.27 4.18,19.02 6,12.26 0.49,7.64 7.41,7.36" />
+                                        </svg>
+                                    @endfor
+                                    <span class="ml-2 text-gray-500">({{ $rating }})</span>
+                                </div>
+                            @else
+                                <div class="p-3 bg-gray-50 rounded border border-gray-200">
+                                    {{ $answer->answer }}
+                                </div>
+                            @endif
+                        @empty
+                            <div class="text-gray-400 italic">No responses yet.</div>
+                        @endforelse
                             </div>
                         </div>
                     @endif

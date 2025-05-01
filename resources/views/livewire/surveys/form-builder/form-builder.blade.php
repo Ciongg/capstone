@@ -24,7 +24,7 @@
         @if($isLocked)
             <a href="{{ route('surveys.responses', $survey->id) }}"
                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-               wire:navigate
+               
                >
                 View Responses
             </a>
@@ -174,6 +174,37 @@
                                     <span class="ml-4 whitespace-nowrap text-lg text-gray-500">{{ ucwords(str_replace('_', ' ', $question->question_type)) }}</span>
                                 </div>
 
+                                {{-- Rating: Star count selector --}}
+                                @if($question->question_type === 'rating')
+                                    <div class="mt-2 flex items-center space-x-2">
+                                        <label class="text-gray-600">Stars:</label>
+                                        <select
+                                            wire:model="ratingStars.{{ $question->id }}"
+                                            wire:change="updateRatingStars({{ $question->id }})"
+                                            class="border rounded px-2 py-1"
+                                            style="width: auto;"
+                                        >
+                                            @for($i = 2; $i <= 10; $i++)
+                                                <option value="{{ $i }}">{{ $i }}</option>
+                                            @endfor
+                                        </select>
+                                        <span class="ml-2 text-yellow-400">
+                                            @for($i = 0; $i < ($ratingStars[$question->id] ?? 5); $i++)
+                                                ★
+                                            @endfor
+                                        </span>
+                                    </div>
+                                @endif
+
+                                {{-- For essay and short_text, show preview of input --}}
+                                @if($question->question_type === 'essay')
+                                    <textarea class="w-full border rounded px-3 py-2 mt-2 resize-none" rows="4" disabled placeholder="Essay response (multi-line, wraps)"></textarea>
+                                @elseif($question->question_type === 'short_text')
+                                    <input type="text" class="w-full border rounded px-3 py-2 mt-2" disabled placeholder="Short text response (single line, no wrap)">
+                                @elseif($question->question_type === 'date')
+                                    <input type="date" class="w-full border rounded px-3 py-2 mt-2" disabled>
+                                @endif
+
                                 {{-- Choices for Multiple Choice or Radio --}}
                                 @if(in_array($question->question_type, ['multiple_choice', 'radio']) && isset($question->choices))
                                     <div class="mt-4 space-y-2">
@@ -199,6 +230,61 @@
                                                 >&#10005;</button>
                                             </div>
                                         @endforeach
+                                    </div>
+                                @endif
+
+                                {{-- Likert Scale --}}
+                                @if($question->question_type === 'likert')
+                                    @php
+                                        $likertColumns = is_array($question->likert_columns) ? $question->likert_columns : (json_decode($question->likert_columns, true) ?: []);
+                                        $likertRows = is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []);
+                                    @endphp
+                                    <div class="mb-4">
+                                        <div class="flex items-center mb-2">
+                                            <span class="font-semibold mr-2">Likert Scale</span>
+                                            <button wire:click="addLikertColumn({{ $question->id }})" type="button" class="ml-2 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs">+ Option (Column)</button>
+                                            <button wire:click="addLikertRow({{ $question->id }})" type="button" class="ml-2 px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs">+ Statement (Row)</button>
+                                        </div>
+                                        <div class="overflow-x-auto">
+                                            <table class="min-w-full border text-center">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="border px-2 py-1 bg-gray-100"></th>
+                                                        @foreach($likertColumns as $colIndex => $column)
+                                                            <th class="border px-2 py-1 bg-gray-100">
+                                                                <input type="text"
+                                                                    wire:model.defer="likertColumns.{{ $question->id }}.{{ $colIndex }}"
+                                                                    wire:blur="updateLikertColumn({{ $question->id }}, {{ $colIndex }})"
+                                                                    class="w-24 border rounded px-1 py-0.5 text-center"
+                                                                    placeholder="Option"
+                                                                />
+                                                                <button wire:click="removeLikertColumn({{ $question->id }}, {{ $colIndex }})" type="button" class="text-red-500 ml-1">&#10005;</button>
+                                                            </th>
+                                                        @endforeach
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($likertRows as $rowIndex => $row)
+                                                        <tr>
+                                                            <td class="border px-2 py-1 bg-gray-50 text-left">
+                                                                <input type="text"
+                                                                    wire:model.defer="likertRows.{{ $question->id }}.{{ $rowIndex }}"
+                                                                    wire:blur="updateLikertRow({{ $question->id }}, {{ $rowIndex }})"
+                                                                    class="w-48 border rounded px-1 py-0.5"
+                                                                    placeholder="Statement"
+                                                                />
+                                                                <button wire:click="removeLikertRow({{ $question->id }}, {{ $rowIndex }})" type="button" class="text-red-500 ml-1">&#10005;</button>
+                                                            </td>
+                                                            @foreach($likertColumns as $colIndex => $column)
+                                                                <td class="border px-2 py-1">
+                                                                    <input type="radio" disabled>
+                                                                </td>
+                                                            @endforeach
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 @endif
 
