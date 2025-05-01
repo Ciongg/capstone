@@ -88,4 +88,11 @@ class SurveyController extends Controller
         return view('researcher.show-form-responses', compact('survey'));
     }
 
+
+    public function showIndividualResponses(Survey $survey)
+    {
+        
+        return view('researcher.show-individual-responses', ['surveyId' => $survey->id]);
+    }
+
 }

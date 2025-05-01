@@ -60,6 +60,12 @@ class AnswerSurvey extends Component
             }
         }
 
+        // Set survey status to 'ongoing' if it's still 'published'
+        if ($this->survey->status === 'published') {
+            $this->survey->status = 'ongoing';
+            $this->survey->save();
+        }
+
         session()->flash('success', 'Survey submitted!');
         return redirect()->route('feed.index');
     }

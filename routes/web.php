@@ -5,6 +5,7 @@ use App\Http\Controllers\SessionController;
 use App\Http\Controllers\FeedController;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Surveys\FormBuilder;
+use App\Livewire\Surveys\FormResponses\IndividualResponses;
 use App\Models\Survey;
 use Illuminate\Support\Facades\Auth;
 
@@ -24,6 +25,7 @@ Route::get('/surveys/answer/{survey}', [SurveyController::class, 'answer'])->nam
 Route::post('/surveys/answer/{survey}', [SurveyController::class, 'submit'])->name('surveys.submit');
 
 Route::get('/surveys/{survey}/responses', [SurveyController::class, 'showResponses'])->name('surveys.responses');
+Route::get('/surveys/{survey}/responses/individual', [SurveyController::class, 'showIndividualResponses'])->name('surveys.responses.individual');
 
 Route::get('/login', [SessionController::class, 'showLogin'])->name('show.login');
 Route::post('/login', [SessionController::class, 'store'])->name('login');

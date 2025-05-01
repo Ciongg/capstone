@@ -1,21 +1,23 @@
 <div class="bg-gray-100 min-h-screen py-8">
-    <div class="max-w-2xl mx-auto">
+    <div class="max-w-7xl mx-auto">
         <div class="bg-white shadow-md rounded-lg p-8">
-            <h1 class="text-2xl font-bold mb-6">{{ $survey->title }}</h1>
+            <h1 class="text-3xl font-bold mb-8">{{ $survey->title }}</h1>
             <form wire:submit.prevent="submit">
                 <div x-data="{ currentPage: 0 }">
+                    @php $questionNumber = 1; @endphp
                     @foreach($survey->pages as $pageIndex => $page)
                         <div x-show="currentPage === {{ $pageIndex }}" x-cloak>
                             @if($page->title)
-                                <h2 class="text-xl font-semibold mb-2">{{ $page->title }}</h2>
+                                <h2 class="text-2xl font-semibold mb-2">{{ $page->title }}</h2>
                             @endif
                             @if($page->subtitle)
                                 <div class="text-gray-500 mb-4">{{ $page->subtitle }}</div>
                             @endif
+                            <hr class="mb-6 border-gray-300">
                             @foreach($page->questions->sortBy('order') as $question)
-                                <div class="mb-6">
-                                    <label class="block font-medium mb-2">
-                                        {{ $question->question_text }}
+                                <div class="mb-8">
+                                    <label class="block font-medium mb-2 text-lg">
+                                        {{ $questionNumber++ }}. {{ $question->question_text }}
                                         @if($question->required)
                                             <span class="text-red-500">*</span>
                                         @endif
@@ -87,7 +89,7 @@
                                     <button
                                         type="button"
                                         class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                                        @click="currentPage--"
+                                        @click="currentPage--; window.scrollTo({top: 0, behavior: 'smooth'});"
                                     >Previous</button>
                                 </template>
 
@@ -98,8 +100,10 @@
                                         type="button"
                                         class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition ml-auto"
                                         x-show="currentPage < {{ count($survey->pages) - 1 }}"
-                                        @click="currentPage++"
-                                    >Next</button>
+                                        @click="currentPage++; window.scrollTo({top: 0, behavior: 'smooth'});"
+                                    >
+                                        Next
+                                    </button>
                                 @endif
                             </div>
                         </div>
