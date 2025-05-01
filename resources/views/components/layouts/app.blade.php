@@ -10,7 +10,6 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles <!-- Required Livewire styles -->
     <link href="{{ mix('css/app.css') }}" rel="stylesheet">
-
 </head>
 <body class="bg-gray-100">
 

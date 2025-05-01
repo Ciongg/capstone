@@ -17,24 +17,30 @@ class FormBuilder extends Component
     public $choices = [];
     public $activePageId = null; // Track the active page
     public $selectedQuestionId = null;
+    public $surveyTitle;
+
 
     public function mount(Survey $survey)
     {
         $this->survey = $survey;
         $this->loadPages();
-
-        $this->activePageId = collect($this->pages)->first()->id ?? null;
+        $this->surveyTitle = $survey->title;
+        $this->activePageId = null;
+        $this->selectedQuestionId = null;
     }
 
     public function loadPages()
     {
-        $this->pages = $this->survey->pages()->with('questions.choices')->orderBy('page_number')->get();
+        $this->pages = $this->survey->pages()
+            ->with(['questions' => function ($query) {
+                $query->with('choices')->orderBy('order');
+            }])
+            ->orderBy('page_number')
+            ->get();
 
-        // Clear the questions and choices arrays to avoid conflicts
         $this->questions = [];
         $this->choices = [];
 
-        // Load questions and choices into arrays for editing
         foreach ($this->pages as $page) {
             foreach ($page->questions as $question) {
                 $this->questions[$question->id] = $question->toArray();
@@ -44,7 +50,6 @@ class FormBuilder extends Component
             }
         }
     }
-
 
     public function setActivePage($pageId)
     {
@@ -84,13 +89,16 @@ class FormBuilder extends Component
 
     public function addQuestion($type)
     {
+
+    
+
         if ($type === 'page') {
-            $this->addPage(); // Call the addPage method for the page type
+            $this->addPage();
             return;
         }
 
         if (!$this->activePageId) {
-            return; // Ensure an active page is selected
+            return;
         }
 
         $page = SurveyPage::findOrFail($this->activePageId);
@@ -102,26 +110,26 @@ class FormBuilder extends Component
             $insertAfterOrder = $selectedQuestion->order;
         }
 
-        // Increment the order of subsequent questions
+        // Increment the order of subsequent questions BEFORE creating the new question
         $page->questions()
             ->where('order', '>', $insertAfterOrder)
             ->increment('order');
 
-        // Create the new question
+        // Now create the new question with an empty title and correct order
         $question = $page->questions()->create([
             'survey_id' => $this->survey->id,
             'survey_page_id' => $page->id,
-            'question_text' => '',
+            'question_text' => '', // Always empty
             'question_type' => $type,
             'order' => $insertAfterOrder + 1,
             'required' => false,
         ]);
 
-        // Reload the pages to ensure proper indexing
-        $this->loadPages();
-
         // Set the newly added question as the selected question
         $this->selectedQuestionId = $question->id;
+
+        // Reload all pages and questions to ensure state is correct
+        $this->loadPages();
     }
 
     public function addChoice($questionId)
@@ -136,15 +144,12 @@ class FormBuilder extends Component
         $this->loadPages();
     }
 
-    public function updateQuestion($questionId, $newText = null)
+    public function updateQuestion($questionId)
     {
         $question = SurveyQuestion::findOrFail($questionId);
-        
-        // Preferably get fresh value from front-end input, not stale array
         $question->update([
-            'question_text' => $newText ?? $this->questions[$questionId]['question_text'],
+            'question_text' => $this->questions[$questionId]['question_text'],
         ]);
-    
         $this->loadPages();
     }
     
@@ -170,12 +175,38 @@ class FormBuilder extends Component
     public function removeQuestion($questionId)
     {
         $question = SurveyQuestion::findOrFail($questionId);
-        $question->choices()->delete(); // Remove associated choices
+        $pageId = $question->survey_page_id; // Get the page ID for the question
+
+        // Delete associated choices
+        $question->choices()->delete();
+
+        // Delete the question
         $question->delete();
 
+        // Remove the question from the local state
         unset($this->questions[$questionId]);
 
-        $this->loadPages();
+        // Update the order of subsequent questions on the same page
+        SurveyQuestion::where('survey_page_id', $pageId)
+            ->where('order', '>', $question->order)
+            ->orderBy('order')
+            ->get()
+            ->each(function ($subsequentQuestion) {
+                $subsequentQuestion->decrement('order');
+            });
+
+        // Reload only the affected page's questions
+        $this->pages = $this->survey->pages()
+            ->with(['questions' => function ($query) use ($pageId) {
+                $query->where('survey_page_id', $pageId)->orderBy('order');
+            }])
+            ->orderBy('page_number')
+            ->get();
+
+        // Reset the selected question if it was the one being deleted
+        if ($this->selectedQuestionId === $questionId) {
+            $this->selectedQuestionId = null;
+        }
     }
 
     public function removeChoice($choiceId)
@@ -226,6 +257,30 @@ class FormBuilder extends Component
         // Reset active page and selected question
         $this->activePageId = null;
         $this->selectedQuestionId = null;
+    }
+
+    public function updateSurveyTitle()
+    {
+        $this->survey->title = $this->surveyTitle;
+        $this->survey->save();
+    }
+
+    public function publishSurvey()
+    {
+        $this->survey->status = 'published';
+        $this->survey->save();
+    }
+
+    public function unpublishSurvey()
+    {
+        $this->survey->status = 'wip';
+        $this->survey->save();
+    }
+
+    public function openSurveySettings()
+    {
+        // You can emit an event or set a property to show a modal/settings panel
+        // $this->dispatch('openSurveySettingsModal');
     }
 
     public function render()
