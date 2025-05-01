@@ -21,10 +21,10 @@
                 <a href="/" class="font-bold text-xl">Formigo</a>
 
                 @auth
-                    <a href="/feed" class="hover:underline">Feed</a>
-                    <a href="/surveys/create" class="hover:underline">Create Survey</a>
-                    <a href="/my-surveys" class="hover:underline">My Surveys</a>
-                    <a href="/rewards" class="hover:underline">Rewards</a>
+                    <a href="/feed" wire:navigate class="hover:underline">Feed</a>
+                    <a href="/surveys/create" wire:navigate class="hover:underline">Create Survey</a>
+                    <a href="/my-surveys" wire:navigate class="hover:underline">My Surveys</a>
+                    <a href="/rewards" wire:navigate class="hover:underline">Rewards</a>
                 @endauth
             </div>
 
@@ -39,7 +39,7 @@
                         </button>
                     </form>
                 @else
-                    <a href="{{ route('login') }}" class="hover:underline">Login</a>
+                    <a href="{{ route('login') }}" wire:navigate class="hover:underline">Login</a>
                     <a href="/" class="hover:underline">Register</a>
                 @endauth
             </div>

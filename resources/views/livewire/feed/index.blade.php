@@ -8,6 +8,7 @@
                 <div class="text-gray-600">{{ $survey->description }}</div>
             </div>
             <a href="{{ route('surveys.answer', $survey->id) }}"
+                wire:navigate
                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                 Answer
             </a>

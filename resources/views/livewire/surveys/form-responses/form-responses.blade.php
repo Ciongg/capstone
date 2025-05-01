@@ -4,6 +4,7 @@
 
         <div class="flex flex-col md:flex-row md:justify-end md:items-center gap-4 mb-6">
             <a href="{{ route('surveys.responses.individual', $survey->id) }}"
+                wire:navigate
                 class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                 View Individual Responses
             </a>
