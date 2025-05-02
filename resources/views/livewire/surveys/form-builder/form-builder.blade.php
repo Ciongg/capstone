@@ -121,36 +121,56 @@
                             placeholder="Enter page subtitle" 
                             class="w-full text-lg text-gray-600 p-2 border border-gray-300 rounded"
                             @if($isLocked) disabled @endif
-                        />
-
-                        {{-- Delete Page Button (only when this page is selected and no question is selected) --}}
-                        <template x-if="activePageId === {{ $page->id }} && selectedQuestionId === null">
-                            <button 
-                                wire:click.stop="removePage({{ $page->id }})"
-                                class="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                                @if($isLocked) disabled @endif
+                            />
+                            
+                            {{-- Delete Page Button (only when this page is selected and no question is selected) --}}
+                            <template x-if="activePageId === {{ $page->id }} && selectedQuestionId === null">
+                                <button 
+                                    wire:click.stop="removePage({{ $page->id }})"
+                                    class="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                    @if($isLocked) disabled @endif
+                                >
+                                    Delete Page
+                                </button>
+                            </template>
+                            {{-- Question Type Picker --}}
+                            @php
+                                $showTypePickerVar = 'showTypePicker_' . $page->id;
+                            @endphp
+                            <div 
+                                x-data="{ {{ $showTypePickerVar }}: false }"
+                                x-show="activePageId === {{ $page->id }} && selectedQuestionId === null"
+                                x-cloak
+                                class="mt-4"
+                                :key="'type-picker-page-' + activePageId + '-' + selectedQuestionId"
+                                @click.away="{{ $showTypePickerVar }} = false"
                             >
-                                Delete Page
-                            </button>
-                        </template>
+                                <button 
+                                    x-show="!{{ $showTypePickerVar }}"
+                                    @click="{{ $showTypePickerVar }} = true"
+                                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                    type="button"
+                                >
+                                    + Add Question
+                                </button>
+                                <div 
+                                    x-show="{{ $showTypePickerVar }}"
+                                    class="grid grid-cols-4 gap-2 mt-2 sm:grid-cols-4 xs:grid-cols-2"
+                                >
+                                    @foreach ($questionTypes as $type)
+                                        <button 
+                                            @click="selectedQuestionId = null; {{ $showTypePickerVar }} = false"
+                                            wire:click="addQuestion('{{ $type }}')" 
+                                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 whitespace-nowrap"
+                                            type="button"
+                                        >
+                                            {{ ucwords(str_replace('_', ' ', $type)) }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
                     </div>
 
-                    {{-- Question Type Buttons (Only for Selected Page) --}}
-                    <div 
-                        x-show="activePageId === {{ $page->id }} && selectedQuestionId === null"
-                        x-cloak
-                        class="flex space-x-4 mt-4"
-                    >
-                        @foreach ($questionTypes as $type)
-                            <button 
-                                @click="selectedQuestionId = null"
-                                wire:click="addQuestion('{{ $type }}')" 
-                                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                            >
-                                Add {{ ucwords(str_replace('_', ' ', $type)) }}
-                            </button>
-                        @endforeach
-                    </div>
 
                     <div @if($isLocked) class="pointer-events-none opacity-60" @endif>
                         @foreach ($page->questions->sortBy('order') as $question)
@@ -196,20 +216,40 @@
                                     </div>
                                 @endif
 
-                                {{-- For essay and short_text, show preview of input --}}
+                                {{-- For essay --}}
                                 @if($question->question_type === 'essay')
-                                    <textarea class="w-full border rounded px-3 py-2 mt-2 resize-none" rows="4" disabled placeholder="Essay response (multi-line, wraps)"></textarea>
+                                    <textarea
+                                        class="w-full border rounded px-3 py-2 mt-2 resize-none cursor-pointer"
+                                        rows="4"
+                                        readonly
+                                        tabindex="-1"
+                                        placeholder="Essay response (multi-line, wraps)"
+                                        @click="selectedQuestionId = {{ $question->id }}; activePageId = {{ $page->id }}; $wire.selectQuestion({{ $question->id }})"
+                                    ></textarea>
                                 @elseif($question->question_type === 'short_text')
-                                    <input type="text" class="w-full border rounded px-3 py-2 mt-2" disabled placeholder="Short text response (single line, no wrap)">
+                                    <input
+                                        type="text"
+                                        class="w-full border rounded px-3 py-2 mt-2 cursor-pointer"
+                                        readonly
+                                        tabindex="-1"
+                                        placeholder="Short text response (single line, no wrap)"
+                                        @click="selectedQuestionId = {{ $question->id }}; activePageId = {{ $page->id }}; $wire.selectQuestion({{ $question->id }})"
+                                    >
                                 @elseif($question->question_type === 'date')
-                                    <input type="date" class="w-full border rounded px-3 py-2 mt-2" disabled>
+                                    <input
+                                        type="date"
+                                        class="w-full border rounded px-3 py-2 mt-2 cursor-pointer"
+                                        readonly
+                                        tabindex="-1"
+                                        @click="selectedQuestionId = {{ $question->id }}; activePageId = {{ $page->id }}; $wire.selectQuestion({{ $question->id }})"
+                                    >
                                 @endif
 
                                 {{-- Choices for Multiple Choice or Radio --}}
                                 @if(in_array($question->question_type, ['multiple_choice', 'radio']) && isset($question->choices))
                                     <div class="mt-4 space-y-2">
                                         @foreach($question->choices->sortBy('order') as $choice)
-                                            <div class="flex items-center space-x-2">
+                                            <div class="flex items-center space-x-2" wire:key="choice-{{ $choice->id }}">
                                                 @if($question->question_type === 'radio')
                                                     <span class="inline-block w-4 h-4 rounded-full border-2 border-gray-400 mr-2"></span>
                                                 @else
@@ -222,12 +262,14 @@
                                                     placeholder="Choice text"
                                                     class="flex-1 p-2 border border-gray-300 rounded"
                                                 />
-                                                <button
-                                                    wire:click="removeChoice({{ $choice->id }})"
-                                                    class="text-red-500 hover:text-red-700 ml-2"
-                                                    title="Remove Choice"
-                                                    type="button"
-                                                >&#10005;</button>
+                                                <span x-show="selectedQuestionId === {{ $question->id }}">
+                                                    <button
+                                                        wire:click="removeChoice({{ $choice->id }})"
+                                                        class="text-red-500 hover:text-red-700 ml-2"
+                                                        title="Remove Choice"
+                                                        type="button"
+                                                    >&#10005;</button>
+                                                </span>
                                             </div>
                                         @endforeach
                                     </div>
@@ -235,57 +277,97 @@
 
                                 {{-- Likert Scale --}}
                                 @if($question->question_type === 'likert')
-                                    @php
-                                        $likertColumns = is_array($question->likert_columns) ? $question->likert_columns : (json_decode($question->likert_columns, true) ?: []);
-                                        $likertRows = is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []);
-                                    @endphp
-                                    <div class="mb-4">
-                                        <div class="flex items-center mb-2">
-                                            <span class="font-semibold mr-2">Likert Scale</span>
-                                            <button wire:click="addLikertColumn({{ $question->id }})" type="button" class="ml-2 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs">+ Option (Column)</button>
-                                            <button wire:click="addLikertRow({{ $question->id }})" type="button" class="ml-2 px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs">+ Statement (Row)</button>
-                                        </div>
-                                        <div class="overflow-x-auto">
-                                            <table class="min-w-full border text-center">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="border px-2 py-1 bg-gray-100"></th>
-                                                        @foreach($likertColumns as $colIndex => $column)
-                                                            <th class="border px-2 py-1 bg-gray-100">
-                                                                <input type="text"
-                                                                    wire:model.defer="likertColumns.{{ $question->id }}.{{ $colIndex }}"
-                                                                    wire:blur="updateLikertColumn({{ $question->id }}, {{ $colIndex }})"
-                                                                    class="w-24 border rounded px-1 py-0.5 text-center"
-                                                                    placeholder="Option"
-                                                                />
-                                                                <button wire:click="removeLikertColumn({{ $question->id }}, {{ $colIndex }})" type="button" class="text-red-500 ml-1">&#10005;</button>
-                                                            </th>
-                                                        @endforeach
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach($likertRows as $rowIndex => $row)
-                                                        <tr>
-                                                            <td class="border px-2 py-1 bg-gray-50 text-left">
-                                                                <input type="text"
-                                                                    wire:model.defer="likertRows.{{ $question->id }}.{{ $rowIndex }}"
-                                                                    wire:blur="updateLikertRow({{ $question->id }}, {{ $rowIndex }})"
-                                                                    class="w-48 border rounded px-1 py-0.5"
-                                                                    placeholder="Statement"
-                                                                />
-                                                                <button wire:click="removeLikertRow({{ $question->id }}, {{ $rowIndex }})" type="button" class="text-red-500 ml-1">&#10005;</button>
-                                                            </td>
-                                                            @foreach($likertColumns as $colIndex => $column)
-                                                                <td class="border px-2 py-1">
-                                                                    <input type="radio" disabled>
-                                                                </td>
-                                                            @endforeach
-                                                        </tr>
+                                @php
+                                $likertColumns = is_array($question->likert_columns) ? $question->likert_columns : (json_decode($question->likert_columns, true) ?: []);
+                                $likertRows = is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []);
+                            @endphp
+                            
+                            <div class="mb-4">
+                                <div class="overflow-x-auto">
+                                    <table class="mt-2 min-w-full text-center border border-gray-200">
+                                        <thead>
+                                            <tr>
+                                                <th class="bg-white w-52"></th>
+                            
+                                                @foreach($likertColumns as $colIndex => $column)
+                                                    <th class="bg-white px-4 py-2 relative">
+                                                        <div x-data="{ focused: false }" @click.away="focused = false" class="flex justify-center items-center gap-1">
+                                                            <input type="text"
+                                                                wire:model.defer="likertColumns.{{ $question->id }}.{{ $colIndex }}"
+                                                                wire:blur="updateLikertColumn({{ $question->id }}, {{ $colIndex }})"
+                                                                @focus="focused = true"
+                                                                class="text-center px-2 py-1 w-24 rounded border border-transparent focus:border-blue-400 focus:ring-0 focus:outline-none transition"
+                                                                placeholder="Option"
+                                                            />
+                                                            <button
+                                                                x-show="focused"
+                                                                wire:click="removeLikertColumn({{ $question->id }}, {{ $colIndex }})"
+                                                                type="button"
+                                                                class="text-red-500 text-base"
+                                                            >&#10005;</button>
+                                                        </div>
+                                                    </th>
+                                                @endforeach
+                            
+                                                {{-- Extra th for + Option --}}
+                                                <th class="bg-white px-4 py-2">
+                                                    <button wire:click="addLikertColumn({{ $question->id }})"
+                                                        type="button"
+                                                        class="text-blue-600 text-2xl font-bold hover:text-blue-800"
+                                                        title="Add Option"
+                                                    >+</button>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                            
+                                        <tbody>
+                                            @foreach($likertRows as $rowIndex => $row)
+                                                @php $rowBg = $loop->even ? 'bg-gray-50' : 'bg-white'; @endphp
+                                                <tr class="{{ $rowBg }}">
+                                                    <td class="px-4 py-2 text-left relative">
+                                                        <div x-data="{ focused: false }" @click.away="focused = false" class="flex items-center gap-1">
+                                                            <input type="text"
+                                                                wire:model.defer="likertRows.{{ $question->id }}.{{ $rowIndex }}"
+                                                                wire:blur="updateLikertRow({{ $question->id }}, {{ $rowIndex }})"
+                                                                @focus="focused = true"
+                                                                class="w-full px-2 py-1 rounded border border-transparent focus:border-blue-400 focus:ring-0 focus:outline-none transition"
+                                                                placeholder="Statement"
+                                                            />
+                                                            <button
+                                                                x-show="focused"
+                                                                wire:click="removeLikertRow({{ $question->id }}, {{ $rowIndex }})"
+                                                                type="button"
+                                                                class="text-red-500 text-base"
+                                                            >&#10005;</button>
+                                                        </div>
+                                                    </td>
+                            
+                                                    @foreach($likertColumns as $colIndex => $column)
+                                                        <td class="px-4 py-2">
+                                                            <input type="radio" disabled class="accent-blue-500 w-5 h-5" />
+                                                        </td>
                                                     @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
+                            
+                                                    {{-- Empty td to align with + column --}}
+                                                    <td></td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                            
+                                    {{-- Add new row (statement) button --}}
+                                    <div class="flex justify-start mt-3">
+                                        <button class="text-green-600 hover:text-green-800 font-bold" wire:click="addLikertRow({{ $question->id }})"
+                                            type="button"
+                                            class=" text-sm align-center "
+                                            title="Add Statement"
+                                        ><span class="text-2xl ">+</span> statement</button>
                                     </div>
+                                </div>
+                            </div>
+                            
+                            
+                            
                                 @endif
 
                                 {{-- Remove Question Button --}}
@@ -293,7 +375,7 @@
                                     <div class="flex items-center space-x-4 mt-2">
                                         <button 
                                             wire:click.stop="removeQuestion({{ $question->id }})" 
-                                            class="text-red-500 hover:underline"
+                                            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
                                         >
                                             Remove Question
                                         </button>
@@ -309,7 +391,7 @@
                                     </div>
                                 </template>
 
-                                {{-- Question Type Buttons (Only for Selected Question) --}}
+                                {{-- Question Type Buttons (Only for Selected Question)
                                 <template x-if="selectedQuestionId === {{ $question->id }}">
                                     <div class="flex space-x-4 mt-4">
                                         @foreach ($questionTypes as $type)
@@ -321,6 +403,41 @@
                                                 Add {{ ucwords(str_replace('_', ' ', $type)) }}
                                             </button>
                                         @endforeach
+                                    </div>
+                                </template> --}}
+
+                                {{-- Question Type Picker for Selected Question --}}
+                                <template x-if="selectedQuestionId === {{ $question->id }}">
+                                    @php $showTypePickerVar = 'showTypePicker_question_' . $question->id; @endphp
+                                    <div 
+                                        x-data="{ {{ $showTypePickerVar }}: false }"
+                                        class="mt-4"
+                                        :key="'type-picker-question-' + selectedQuestionId"
+                                        @click.away="{{ $showTypePickerVar }} = false"
+                                    >
+                                        <button 
+                                            x-show="!{{ $showTypePickerVar }}"
+                                            @click="{{ $showTypePickerVar }} = true"
+                                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                            type="button"
+                                        >
+                                            + Add Question
+                                        </button>
+                                        <div 
+                                            x-show="{{ $showTypePickerVar }}"
+                                            class="grid grid-cols-4 gap-2 mt-2 sm:grid-cols-4 xs:grid-cols-2"
+                                        >
+                                            @foreach ($questionTypes as $type)
+                                                <button 
+                                                    @click="selectedQuestionId = null; {{ $showTypePickerVar }} = false"
+                                                    wire:click="addQuestion('{{ $type }}')" 
+                                                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 whitespace-nowrap"
+                                                    type="button"
+                                                >
+                                                    {{ ucwords(str_replace('_', ' ', $type)) }}
+                                                </button>
+                                            @endforeach
+                                        </div>
                                     </div>
                                 </template>
                             </div>

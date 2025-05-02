@@ -350,21 +350,39 @@ class FormBuilder extends Component
 
     public function addLikertColumn($questionId)
     {
-        // Ensure it's always an array
-        $current = $this->likertColumns[$questionId] ?? [];
-        if (is_string($current)) {
-            $current = json_decode($current, true) ?: [];
-        }
-        $current[] = '';
-        $this->likertColumns[$questionId] = $current;
-        $this->saveLikert($questionId);
+        $question = SurveyQuestion::find($questionId);
+        $columns = is_array($question->likert_columns) ? $question->likert_columns : (json_decode($question->likert_columns, true) ?: []);
+        $nextNumber = count($columns) + 1;
+        $columns[] = 'Option ' . $nextNumber;
+        $question->likert_columns = json_encode($columns);
+        $question->save();
+        $this->loadPages();
     }
 
     public function removeLikertColumn($questionId, $colIndex)
     {
-        unset($this->likertColumns[$questionId][$colIndex]);
-        $this->likertColumns[$questionId] = array_values($this->likertColumns[$questionId]);
-        $this->saveLikert($questionId);
+        // Remove the column
+        $columns = $this->likertColumns[$questionId] ?? [];
+        unset($columns[$colIndex]);
+        $columns = array_values($columns);
+
+        // Renumber only columns with default name
+        $optionNumber = 1;
+        foreach ($columns as $i => &$col) {
+            if (preg_match('/^Option \d+$/', $col)) {
+                $col = 'Option ' . $optionNumber;
+            }
+            $optionNumber++;
+        }
+
+        $this->likertColumns[$questionId] = $columns;
+
+        // Save to DB
+        $question = SurveyQuestion::find($questionId);
+        $question->likert_columns = json_encode($columns);
+        $question->save();
+
+        $this->loadPages();
     }
 
     public function updateLikertColumn($questionId, $colIndex)
@@ -374,20 +392,39 @@ class FormBuilder extends Component
 
     public function addLikertRow($questionId)
     {
-        $current = $this->likertRows[$questionId] ?? [];
-        if (is_string($current)) {
-            $current = json_decode($current, true) ?: [];
-        }
-        $current[] = '';
-        $this->likertRows[$questionId] = $current;
-        $this->saveLikert($questionId);
+        $question = SurveyQuestion::find($questionId);
+        $rows = is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []);
+        $nextNumber = count($rows) + 1;
+        $rows[] = 'Statement ' . $nextNumber;
+        $question->likert_rows = json_encode($rows);
+        $question->save();
+        $this->loadPages();
     }
 
     public function removeLikertRow($questionId, $rowIndex)
     {
-        unset($this->likertRows[$questionId][$rowIndex]);
-        $this->likertRows[$questionId] = array_values($this->likertRows[$questionId]);
-        $this->saveLikert($questionId);
+        // Remove the row
+        $rows = $this->likertRows[$questionId] ?? [];
+        unset($rows[$rowIndex]);
+        $rows = array_values($rows);
+
+        // Renumber only rows with default name
+        $statementNumber = 1;
+        foreach ($rows as $i => &$row) {
+            if (preg_match('/^Statement \d+$/', $row)) {
+                $row = 'Statement ' . $statementNumber;
+            }
+            $statementNumber++;
+        }
+
+        $this->likertRows[$questionId] = $rows;
+
+        // Save to DB
+        $question = SurveyQuestion::find($questionId);
+        $question->likert_rows = json_encode($rows);
+        $question->save();
+
+        $this->loadPages();
     }
 
     public function updateLikertRow($questionId, $rowIndex)

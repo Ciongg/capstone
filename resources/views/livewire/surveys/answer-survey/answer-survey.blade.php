@@ -112,27 +112,29 @@
                                             $likertRows = is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []);
                                         @endphp
                                         <div class="overflow-x-auto mt-2">
-                                            <table class="min-w-full border text-center">
+                                            <table class="min-w-full text-center">
                                                 <thead>
                                                     <tr>
-                                                        <th class="border px-2 py-1 bg-gray-100"></th>
+                                                        <th class="bg-white w-52"></th>
                                                         @foreach($likertColumns as $colIndex => $column)
-                                                            <th class="border px-2 py-1 bg-gray-100">{{ $column }}</th>
+                                                            <th class="bg-white px-4 py-2 text-base font-medium">{{ $column }}</th>
                                                         @endforeach
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     @foreach($likertRows as $rowIndex => $row)
-                                                        <tr>
-                                                            <td class="border px-2 py-1 bg-gray-50 text-left">{{ $row }}</td>
+                                                        @php $rowBg = $loop->even ? 'bg-gray-50' : 'bg-white'; @endphp
+                                                        <tr class="{{ $rowBg }}">
+                                                            <td class="px-4 py-2 text-left text-base">{{ $row }}</td>
                                                             @foreach($likertColumns as $colIndex => $column)
-                                                                <td class="border px-2 py-1">
+                                                                <td class="px-4 py-2">
                                                                     <input
                                                                         type="radio"
                                                                         name="answers[{{ $question->id }}][{{ $rowIndex }}]"
                                                                         wire:model="answers.{{ $question->id }}.{{ $rowIndex }}"
                                                                         value="{{ $colIndex }}"
                                                                         class="accent-blue-500"
+                                                                        style="width: 1.5em; height: 1.5em;"
                                                                     >
                                                                 </td>
                                                             @endforeach
