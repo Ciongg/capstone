@@ -15,10 +15,14 @@ class SurveyQuestion extends Model
         'question_text',
         'question_type',   // 'essay', 'multiple_choice', 'page', 'date', 'likert', 'radio', 'rating', 'short_text'
         'order',
-        'required',
         'stars',
         'likert_columns',
         'likert_rows',
+        'required',
+    ];
+
+    protected $casts = [
+        'required' => 'boolean',
     ];
 
     public function survey()

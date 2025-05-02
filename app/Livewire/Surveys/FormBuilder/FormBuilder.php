@@ -47,12 +47,11 @@ class FormBuilder extends Component
 
         foreach ($this->pages as $page) {
             foreach ($page->questions as $question) {
-                $this->questions[$question->id] = $question->toArray();
+                $this->questions[$question->id] = $question->toArray(); // Includes 'required'
                 if ($question->question_type === 'rating') {
                     $this->ratingStars[$question->id] = $question->stars ?? 5;
                 }
                 if ($question->question_type === 'likert') {
-                    // Always decode to array
                     $this->likertColumns[$question->id] = is_array($question->likert_columns)
                         ? $question->likert_columns
                         : (json_decode($question->likert_columns, true) ?: []);
@@ -189,9 +188,14 @@ class FormBuilder extends Component
     public function updateQuestion($questionId)
     {
         $question = SurveyQuestion::findOrFail($questionId);
+
+        // Update the question fields, including 'required'
         $question->update([
-            'question_text' => $this->questions[$questionId]['question_text'],
+            'question_text' => $this->questions[$questionId]['question_text'] ?? '',
+            'required' => $this->questions[$questionId]['required'] ?? false, // Ensure 'required' is updated
         ]);
+
+        // Reload the pages to reflect the changes
         $this->loadPages();
     }
     

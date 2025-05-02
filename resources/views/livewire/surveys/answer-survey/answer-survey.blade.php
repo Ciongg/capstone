@@ -2,12 +2,18 @@
     <div class="max-w-7xl mx-auto">
         
         <div class="bg-white shadow-md rounded-lg p-8">
+            @if (session()->has('error'))
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <strong class="font-bold">Error:</strong>
+                    <span class="block sm:inline">{{ session('error') }}</span>
+                </div>
+            @endif
             <h1 class="text-3xl font-bold mb-8">{{ $survey->title }}</h1>
             <form wire:submit.prevent="submit">
-                <div x-data="{ currentPage: 0 }">
+                <div x-data="{ navAction: 'submit' }">
                     @php $questionNumber = 1; @endphp
                     @foreach($survey->pages as $pageIndex => $page)
-                        <div x-show="currentPage === {{ $pageIndex }}" x-cloak>
+                        <div @if($pageIndex !== $currentPage) style="display:none" @endif>
                             @if($page->title)
                                 <h2 class="text-2xl font-semibold mb-2">{{ $page->title }}</h2>
                             @endif
@@ -157,25 +163,28 @@
                             @endforeach
 
                             <div class="flex justify-between mt-8">
-                                <template x-if="currentPage > 0">
-                                    <button
-                                        type="button"
-                                        class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                                        @click="currentPage--; window.scrollTo({top: 0, behavior: 'smooth'});"
-                                    >Previous</button>
-                                </template>
-
-                                @if ($loop->last)
-                                    <button type="submit" class=" cursor-pointer px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition ml-auto">Submit</button>
+                                @if ($loop->first)
+                                    <span></span>
                                 @else
                                     <button
                                         type="button"
+                                        class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                                        wire:click="$set('currentPage', {{ $pageIndex - 1 }})"
+                                    >Previous</button>
+                                @endif
+
+                                @if ($loop->last)
+                                    <button
+                                        type="submit"
+                                        class="cursor-pointer px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition ml-auto"
+                                        wire:click="$set('navAction', 'submit')"
+                                    >Submit</button>
+                                @else
+                                    <button
+                                        type="submit"
                                         class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition ml-auto"
-                                        x-show="currentPage < {{ count($survey->pages) - 1 }}"
-                                        @click="currentPage++; window.scrollTo({top: 0, behavior: 'smooth'});"
-                                    >
-                                        Next
-                                    </button>
+                                        wire:click="$set('navAction', 'next')"
+                                    >Next</button>
                                 @endif
                             </div>
                         </div>
