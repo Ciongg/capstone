@@ -19,6 +19,13 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password123'),
+            'type' => 'researcher',
         ]);
+
+        $this->call([
+            TagCategorySeeder::class,
+            TagSeeder::class,
+        ]);
+        
     }
 }

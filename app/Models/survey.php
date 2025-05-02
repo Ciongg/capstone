@@ -14,6 +14,10 @@ class Survey extends Model
         'description',
         'status',   // 'pending', 'published', 'ongoing', 'finished'
         'type',     // 'basic', 'advanced'
+        'target_respondents',
+        'start_date',
+        'end_date',
+        'points_allocated',
     ];
 
     public function pages()
@@ -35,4 +39,12 @@ class Survey extends Model
     {
         return $this->hasMany(\App\Models\Response::class);
     }
+
+    public function tags()
+{
+    return $this->belongsToMany(Tag::class);
+}
+
+
+
 }

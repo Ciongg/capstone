@@ -19,6 +19,13 @@ return new class extends Migration
             $table->enum('status', ['pending', 'published', 'ongoing', 'finished'])->default('pending');
             $table->enum('type', ['basic', 'advanced'])->default('basic');
             $table->timestamps();
+            
+            //Survey Settings
+            $table->decimal('points')->nullable()->default(0);
+            $table->unsignedInteger('target_respondents')->nullable();
+            $table->dateTime('start_date')->nullable();
+            $table->dateTime('end_date')->nullable();
+            $table->unsignedInteger('points_allocated')->nullable();
         });
     }
 

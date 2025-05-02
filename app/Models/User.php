@@ -21,6 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'points',
+        'type',
     ];
 
     /**
@@ -45,4 +47,20 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function responses()
+    {
+        return $this->hasMany(Response::class);
+    }
+
+    public function surveys()
+    {
+        return $this->hasMany(Survey::class);
+    }
+
+    public function tags()
+    {
+    return $this->belongsToMany(Tag::class);
+    }
+
 }

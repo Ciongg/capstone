@@ -15,7 +15,8 @@
     </div>
     <div class="flex items-center space-x-4">
         <button
-            wire:click="openSurveySettings"
+            x-data
+            x-on:click="$dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'})"
             class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
             @if($isLocked) disabled @endif
         >
@@ -60,8 +61,9 @@
     </div>
 </div>
 
-
-
+<x-modal name="survey-settings-modal-{{ $survey->id }}" title="Survey Settings">
+    <livewire:surveys.form-builder.modal.survey-settings-modal :survey="$survey" />
+</x-modal>
 
     <div class="space-y-6">
 

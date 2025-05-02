@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\Survey;
 use App\Models\Response;
 use App\Models\Answer;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 class AnswerSurvey extends Component
@@ -125,6 +126,16 @@ class AnswerSurvey extends Component
         if ($this->survey->status === 'published') {
             $this->survey->status = 'ongoing';
             $this->survey->save();
+        }
+
+        // Award points to the user
+        $user = Auth::user();
+        if ($user && $this->survey->points_allocated) {
+            $userModel = User::find($user->id);
+            if ($userModel) {
+                $userModel->points = ($userModel->points ?? 0) + $this->survey->points_allocated;
+                $userModel->save();
+            }
         }
 
         session()->flash('success', 'Survey submitted!');
