@@ -29,7 +29,11 @@
         <!-- User Name -->
         <div class="text-2xl font-bold mb-1">{{ $user?->name ?? 'Unknown User' }}</div>
         <!-- User Type -->
-        <div class="text-blue-500 font-semibold mb-2 capitalize">{{ $user?->type ?? 'User' }}</div>
+        <div class="text-blue-500 font-semibold mb-1 capitalize">{{ $user?->type ?? 'User' }}</div>
+        <!-- Trust Score -->
+        <div class="text-sm text-gray-600 font-bold mb-2 ">
+            Trust Score: {{ $user?->trust_score ?? 0 }}/100
+        </div>
     </div>
 
     <!-- Profile Navigation Tabs -->

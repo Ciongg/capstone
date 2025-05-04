@@ -22,7 +22,7 @@ return new class extends Migration
             
             //Survey Settings
             $table->decimal('points')->nullable()->default(0);
-            $table->unsignedInteger('target_respondents')->nullable();
+            $table->unsignedInteger('target_respondents')->nullable()->default(30);
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date')->nullable();
             $table->unsignedInteger('points_allocated')->nullable();

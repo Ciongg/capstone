@@ -18,7 +18,7 @@ class FormBuilder extends Component
     public $activePageId = null; // Track the active page
     public $selectedQuestionId = null;
     public $surveyTitle;
-    public $isLocked = false;
+    public $hasResponses = false; 
     public $ratingStars = [];
     public $likertColumns = [];
     public $likertRows = [];
@@ -29,7 +29,7 @@ class FormBuilder extends Component
     public function mount(Survey $survey)
     {
         $this->survey = $survey;
-        $this->isLocked = $survey->responses()->exists();
+        $this->hasResponses = $survey->responses()->exists(); // Set hasResponses
         $this->loadPages();
         $this->surveyTitle = $survey->title; // Make sure it's initialized
         $this->activePageId = null;
@@ -333,7 +333,8 @@ class FormBuilder extends Component
 
     public function updateSurveyTitle()
     {
-        if ($this->survey && !$this->isLocked) {
+        // Removed the lock check
+        if ($this->survey) { 
             $this->survey->title = $this->surveyTitle;
             $this->survey->save();
             // Dispatch the event here too!
@@ -349,14 +350,26 @@ class FormBuilder extends Component
 
     public function publishSurvey()
     {
-        $this->survey->status = 'published';
+        // Check if the survey already has responses
+        if ($this->hasResponses) {
+            // If it has responses, set status to ongoing
+            $this->survey->status = 'ongoing';
+        } else {
+            // If it has no responses, set status to published
+            $this->survey->status = 'published';
+        }
         $this->survey->save();
+        // Reload pages to potentially update UI elements dependent on status
+        $this->loadPages(); 
     }
 
     public function unpublishSurvey()
     {
+        // Unpublishing always sets it back to pending
         $this->survey->status = 'pending';
         $this->survey->save();
+        // Reload pages to potentially update UI elements dependent on status
+        $this->loadPages(); 
     }
 
     public function openSurveySettings()
@@ -460,11 +473,6 @@ class FormBuilder extends Component
 
     public function render()
     {
-        if ($this->survey->status === 'pending' && $this->isLocked) {
-            $this->survey->status = 'ongoing';
-            $this->survey->save();
-        }
-
         return view('livewire.surveys.form-builder.form-builder');
     }
 }

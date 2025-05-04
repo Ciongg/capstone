@@ -7,7 +7,8 @@
             <div><span class="font-semibold">Email:</span> {{ $user->email }}</div>
             <div><span class="font-semibold">Type:</span> {{ ucfirst($user->type ?? 'User') }}</div>
             <div><span class="font-semibold">Points:</span> {{ $user->points ?? 0 }}</div>
-        </div>
+            <div><span class="font-semibold">Trust Score:</span> {{ $user->trust_score ?? 0 }}/100</div>
+        </div>   
     </div>
 
     <!-- Demographic Tags -->

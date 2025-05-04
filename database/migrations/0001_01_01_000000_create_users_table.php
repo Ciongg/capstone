@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->decimal('points')->default(0);
+            $table->decimal('trust_score')->default(100);
             $table->timestamp('email_verified_at')->nullable();
             $table->enum('type', ['researcher', 'respondent'])->default('respondent');
             $table->string('password');

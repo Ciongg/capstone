@@ -5,48 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'Survey Builder' }}</title>
 
-
-
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles <!-- Required Livewire styles -->
-    <link href="{{ mix('css/app.css') }}" rel="stylesheet">
 </head>
 <body class="bg-gray-100">
 
     <!-- Navigation Bar -->
-    <nav class="p-4 text-white" style="background-color: #00BBFF;">
+    <nav class="bg-white p-4 "> 
         <div class="container mx-auto flex justify-between items-center">
             <!-- Left side -->
-            <div class="flex items-center space-x-6">
-                <a href="/" class="font-bold text-xl">Formigo</a>
+            <div class="flex items-center space-x-4">
+                <a href="/" class="font-bold text-xl" style="color: #00BBFF;">Formigo</a>
+                <div class="border-l border-gray-300 h-6"></div> 
 
-                @auth
-                    <a href="/feed" wire:navigate class="hover:underline">Feed</a>
-                    <a href="/surveys/create" wire:navigate class="hover:underline">Create Survey</a>
-                    <a href="/my-surveys" wire:navigate class="hover:underline">My Surveys</a>
-                    <a href="/rewards" wire:navigate class="hover:underline">Rewards</a>
-                @endauth
+                <div class="flex items-center space-x-4 text-gray-700">
+                    @auth
+                        <a href="/feed" wire:navigate class="hover:text-[#00BBFF] hover:underline">Feed</a>
+                        <a href="/surveys/create" wire:navigate class="hover:text-[#00BBFF] hover:underline">Create Survey</a>
+                        <a href="/my-surveys" wire:navigate class="hover:text-[#00BBFF] hover:underline">My Surveys</a>
+                        <a href="/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Rewards</a>
+                    @else
+                        <a href="/" wire:navigate class="hover:text-[#00BBFF] hover:underline">Home</a>
+                        <a href="/" wire:navigate class="hover:text-[#00BBFF] hover:underline">About</a>
+                        <a href="/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Rewards</a>
+                    @endguest
+                </div>
             </div>
 
             <!-- Right side -->
             <div class="flex items-center space-x-4">
                 @auth
-                    <!-- Profile Link -->
-                    <a href="/profile" wire:navigate class="flex items-center space-x-2 hover:underline">
-                        {{-- Use the profile photo URL --}}
-                        <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" class="w-8 h-8 rounded-full object-cover">
-                        <span class="font-semibold text-white">{{ Auth::user()->name }}</span>
+                    <a href="/profile" wire:navigate class="flex items-center space-x-2 hover:underline text-gray-700">
+                        <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" class="w-8 h-8 rounded-full object-cover border border-gray-200">
+                        <span class="font-semibold">{{ Auth::user()->name }}</span>
                     </a>
-                    <!-- Logout Form -->
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+                        <button type="submit" class="text-red-600 hover:text-red-800 underline font-semibold text-sm">
                             Logout
                         </button>
                     </form>
                 @else
-                    <a href="{{ route('login') }}" wire:navigate class="hover:underline">Login</a>
-                    <a href="/" class="hover:underline">Register</a>
+                    <a href="{{ route('login') }}" wire:navigate class="text-gray-700 hover:text-[#00BBFF] hover:underline">Login</a>
+                    <a href="/" wire:navigate class="text-gray-700 hover:text-[#00BBFF] hover:underline">Register</a>
                 @endauth
             </div>
         </div>
@@ -57,8 +58,9 @@
         @yield('content')
     </main>
 
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-@stack('scripts')
+    @stack('scripts')
     @livewireScripts <!-- Required Livewire scripts -->
 </body>
 </html>

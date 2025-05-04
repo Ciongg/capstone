@@ -25,11 +25,22 @@
 
     <!-- Right Column -->
     <div class="flex flex-col space-y-4 w-1/2 h-full">
-        <!-- Top: Type & Points -->
+        <!-- Top: Type, Participants & Points -->
         <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg shadow-sm">
+            {{-- Survey Type --}}
             <span class="px-3 py-1 text-sm font-semibold rounded-full {{ $survey->type === 'advanced' ? 'bg-purple-200 text-purple-800' : 'bg-blue-200 text-blue-800' }}">
                 {{ ucfirst($survey->type ?? 'Basic') }}
             </span>
+
+            {{-- Participant Count --}}
+            <div class="flex items-center px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm font-semibold">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span>{{ $survey->responses()->count() }}/{{ $survey->target_respondents ?? '∞' }}</span>
+            </div>
+
+            {{-- Points Allocated --}}
             <div class="flex items-center bg-gradient-to-r from-red-600 via-orange-400 to-yellow-300 px-3 py-1 rounded-full text-white">
                 <svg class="w-5 h-5 text-white mr-1" fill="white" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <polygon points="12 2 22 9 16 22 8 22 2 9 12 2" />
