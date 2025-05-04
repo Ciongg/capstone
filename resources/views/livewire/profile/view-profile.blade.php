@@ -1,22 +1,31 @@
 <div class="max-w-3xl mx-auto py-10" x-data="{ tab: 'about' }">
     <!-- Profile Header -->
     <div class="flex flex-col items-center bg-white rounded-xl shadow p-8 mb-8">
-        <!-- Profile Image (soon editable) -->
+        <!-- Profile Image -->
         <div class="relative mb-4">
-            <span class="w-28 h-28 rounded-full bg-gray-300 flex items-center justify-center text-gray-500 text-5xl font-bold overflow-hidden">
-                <!-- Placeholder profile image -->
-                <svg class="w-20 h-20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <circle cx="12" cy="8" r="8" />
-                    <path d="M16 22c0-2.21-3.58-6-8-6s-8 3.79-8 6" />
-                </svg>
-            </span>
-            <!-- Edit icon (future) -->
-            <span class="absolute bottom-2 right-2 bg-blue-500 text-white rounded-full p-1 cursor-pointer" title="Edit Photo">
+            {{-- Display current profile photo --}}
+            <img src="{{ $user->profile_photo_url }}" alt="{{ $user->name }}" class="w-28 h-28 rounded-full object-cover border-2 border-gray-200">
+
+            {{-- Hidden file input triggered by the label --}}
+            <input type="file" id="photo" class="hidden" wire:model="photo">
+
+            {{-- Label acting as the edit button --}}
+            <label for="photo" class="absolute bottom-2 right-2 bg-blue-500 text-white rounded-full p-1 cursor-pointer hover:bg-blue-600" title="Change Photo">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M15.232 5.232l3.536 3.536M9 13l6-6m2 2l-6 6m-2 2h6v2H7v-2z"/>
                 </svg>
-            </span>
+            </label>
+
+            {{-- Loading indicator --}}
+            <div wire:loading wire:target="photo" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
+                <svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
         </div>
+        @error('photo') <span class="text-red-500 text-sm mb-2">{{ $message }}</span> @enderror
+
         <!-- User Name -->
         <div class="text-2xl font-bold mb-1">{{ $user?->name ?? 'Unknown User' }}</div>
         <!-- User Type -->

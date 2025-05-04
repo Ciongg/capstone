@@ -11,21 +11,16 @@
     class="fixed z-50 inset-0">
     <div x-on:click="show = false" class="fixed inset-0 bg-gray-900 opacity-20"></div>
 
-    <div class="bg-white rounded-lg m-auto fixed inset-0 max-w-2xl max-h-[500px] p-2">
+    <div class="bg-white rounded-lg m-auto fixed inset-0 max-w-3xl max-h-[600px] p-2 flex flex-col">
+        
+        @if(isset($title))
+            <div>
+                <h1 class="text-2xl font-bold mb-6">{{$title}}</h1>
+            </div>
+        @endif
 
-        <button x-on:click="$dispatch('close-modal')" class="text-red-800 font-bold">X</button>
-      
-            
-            @if(isset($title))
-                <div>
-                    <h1 class="text-2xl font-bold mb-6">{{$title}}</h1>
-                </div>
-            @endif
-
+        <div class="flex-1 overflow-y-auto">
             {{ $slot }}
-    
-      
+        </div>
     </div>
-
-    
 </div>

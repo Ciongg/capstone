@@ -36,8 +36,17 @@ class ViewAbout extends Component
     public function saveTags()
     {
         $tagIds = array_filter($this->selectedTags);
+
         if ($this->user) {
-            $this->user->tags()->sync($tagIds);
+            // Build sync array with tag_name
+            $syncData = [];
+            foreach ($tagIds as $categoryId => $tagId) {
+                $tag = \App\Models\Tag::find($tagId);
+                if ($tag) {
+                    $syncData[$tagId] = ['tag_name' => $tag->name];
+                }
+            }
+            $this->user->tags()->sync($syncData);
             session()->flash('tags_saved', 'Demographic tags updated!');
         }
     }

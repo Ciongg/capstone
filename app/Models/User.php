@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage; // Add this
 
 class User extends Authenticatable
 {
@@ -36,6 +37,15 @@ class User extends Authenticatable
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'profile_photo_url', // Add this
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -60,7 +70,23 @@ class User extends Authenticatable
 
     public function tags()
     {
-    return $this->belongsToMany(Tag::class);
+        return $this->belongsToMany(\App\Models\Tag::class);
     }
 
+    /**
+     * Get the URL to the user's profile photo.
+     *
+     * @return string
+     */
+    public function getProfilePhotoUrlAttribute()
+    {
+        if ($this->profile_photo_path) {
+            // Use the asset() helper, assuming storage is linked
+            // The path stored (e.g., 'profile-photos/image.jpg') needs '/storage/' prepended
+            return asset('storage/' . $this->profile_photo_path); 
+        }
+
+        // Fallback to default image
+        return 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&color=7F9CF5&background=EBF4FF'; 
+    }
 }

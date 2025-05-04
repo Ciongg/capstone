@@ -1,5 +1,5 @@
 {{-- filepath: resources\views\livewire\feed\index.blade.php --}}
-<div class="max-w-6xl mx-auto py-8">
+<div class="max-w-6xl mx-auto py-8" x-data="{ fullscreenImageSrc: null }">
     {{-- Top Bar --}}
     <div class="flex justify-between items-center mb-8">
         {{-- Search Bar --}}
@@ -13,8 +13,11 @@
         </div>
         {{-- User Points --}}
         <div class="flex items-center ml-6">
-            <svg class="w-8 h-8 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2l2.39 7.19H22l-6.19 4.5L17.61 22 12 17.77 6.39 22l1.8-8.31L2 9.19h7.61z"/>
+            <svg class="w-8 h-8 text-blue-400 mr-2" fill="white" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <polygon points="12 2 22 9 16 22 8 22 2 9 12 2" />
+                <line x1="12" y1="2" x2="12" y2="22" />
+                <line x1="2" y1="9" x2="22" y2="9" />
+                <line x1="8" y1="22" x2="16" y2="22" />
             </svg>
             <span class="text-2xl font-bold text-gray-800">{{ $userPoints }}</span>
         </div>
@@ -23,48 +26,52 @@
     {{-- Surveys Grid --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
         @forelse($surveys as $survey)
-            <div class="relative bg-white shadow rounded-xl p-4 flex flex-col items-center h-[500px]">
-                {{-- Top bar inside card: profile + name --}}
-                <div class="flex items-center w-full mb-2">
-                    <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-500 text-xl font-bold mr-3">
-                        {{-- Placeholder profile image --}}
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <circle cx="12" cy="8" r="4" />
-                            <path d="M16 20c0-2.21-3.58-4-8-4s-8 1.79-8 4" />
-                        </svg>
+            <div class="relative bg-white shadow-lg rounded-xl p-0 flex flex-col items-center h-[500px]">
+                {{-- Header: Profile + Name + Points (row), then Title (below, still gray) --}}
+                <div class="w-full px-4 py-3 rounded-t-xl bg-gray-100 border-b border-gray-100">
+                    <div class="flex items-center mb-2">
+                        {{-- Use the profile photo URL --}}
+                        <img src="{{ $survey->user->profile_photo_url }}" alt="{{ $survey->user->name ?? 'User' }}" class="w-10 h-10 rounded-full object-cover mr-3">
+                        <span class="text-base font-semibold text-gray-800 truncate mr-4">{{ $survey->user->name ?? 'User' }}</span>
+                        <div class="flex-1"></div>
+                        <div class="flex items-center bg-gradient-to-r from-red-600 via-orange-400 to-yellow-300 px-3 py-1 rounded-full">
+                            {{-- Diamond (gem) icon (white) --}}
+                            <svg class="w-5 h-5 text-white mr-1" fill="white" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <polygon points="12 2 22 9 16 22 8 22 2 9 12 2" />
+                                <line x1="12" y1="2" x2="12" y2="22" />
+                                <line x1="2" y1="9" x2="22" y2="9" />
+                                <line x1="8" y1="22" x2="16" y2="22" />
+                            </svg>
+                            <span class="font-extrabold text-white drop-shadow">{{ $survey->points_allocated ?? 0 }}</span>
+                        </div>
                     </div>
-                    <span class="text-base font-semibold text-gray-800 truncate">{{ $survey->user->name ?? 'User' }}</span>
-                </div>
-                {{-- Survey Points (top right) --}}
-                <div class="absolute top-4 right-4 flex items-center bg-blue-100 px-3 py-1 rounded-full z-10">
-                    <svg class="w-5 h-5 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l2.39 7.19H22l-6.19 4.5L17.61 22 12 17.77 6.39 22l1.8-8.31L2 9.19h7.61z"/>
-                    </svg>
-                    <span class="font-semibold text-blue-700">{{ $survey->points_allocated ?? 0 }}</span>
-                </div>
-                {{-- Survey Title overlayed above image --}}
-                <div class="w-full relative mb-2">
-                    <div class="absolute top-2 left-1/2 transform -translate-x-1/2 z-10 bg-white/80 px-3 py-1 rounded text-center text-lg font-semibold">
-                        {{ $survey->title }}
+                    <div class="w-full">
+                        <span class="text-sm font-semibold text-left truncate block">{{ $survey->title }}</span>
                     </div>
                 </div>
-                {{-- Placeholder Image (taller) --}}
-                <div class="w-full flex-1 flex items-center justify-center mb-4 relative">
-                    <img src="https://placehold.co/300x260?text=Survey+Image" alt="Survey Image" class="rounded-lg object-cover w-full h-64" />
-                    {{-- Read More Button (bottom left of image) --}}
+                {{-- Survey Image --}}
+                <div class="w-full flex-1 flex items-center justify-center mb-2 relative px-4">
+                    @php
+                        $imageUrl = $survey->image_path ? asset('storage/' . $survey->image_path) : 'https://placehold.co/300x340?text=No+Image';
+                    @endphp
+                    <button @click="fullscreenImageSrc = '{{ $imageUrl }}'" class="cursor-pointer">
+                        <img src="{{ $imageUrl }}"
+                             alt="Survey Image"
+                             class="rounded-lg object-contain w-full h-80" />
+                    </button>
+                </div>
+                {{-- Read More Button --}}
+                <div class="w-full flex justify-start mb-4 px-4">
                     <button
                         x-data
                         x-on:click="$dispatch('open-modal', {name : 'view-survey-{{ $survey->id }}'})"
-                        class="absolute left-4 bottom-4 px-4 py-1 rounded-full font-bold text-white"
+                        class="px-4 py-1 rounded-full font-bold text-white"
                         style="background-color: #00BBFF;"
                     >
                         Read More
                     </button>
                 </div>
-                {{-- Description --}}
-                <div class="w-full">
-                    <div class="text-gray-600 text-sm line-clamp-2">{{ $survey->description }}</div>
-                </div>
+             
             </div>
 
             <x-modal name="view-survey-{{ $survey->id }}" title="Survey Details">
@@ -73,5 +80,31 @@
         @empty
             <div class="col-span-3 text-gray-500 text-center">No published surveys available.</div>
         @endforelse
+    </div>
+
+    <!-- Fullscreen Image Overlay -->
+    <div x-show="fullscreenImageSrc"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="fullscreenImageSrc = null" {{-- Click background to close --}}
+         @keydown.escape.window="fullscreenImageSrc = null" {{-- Press Escape to close --}}
+         class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 cursor-pointer"
+         style="display: none;"> {{-- Add display:none to prevent flash on load --}}
+        
+        <img :src="fullscreenImageSrc" 
+             alt="Fullscreen Survey Image" 
+             class="max-w-full max-h-full object-contain"
+             @click.stop {{-- Prevent closing when clicking the image itself --}}
+             />
+        
+        {{-- Larger, easier-to-tap close button for mobile --}}
+        <button @click="fullscreenImageSrc = null" 
+                class="cursor-pointer absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-white text-4xl sm:text-3xl font-bold leading-none rounded-full hover:bg-black hover:bg-opacity-25 focus:outline-none">
+            &times;
+        </button>
     </div>
 </div>

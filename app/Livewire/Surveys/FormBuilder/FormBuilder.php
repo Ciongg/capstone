@@ -23,12 +23,15 @@ class FormBuilder extends Component
     public $likertColumns = [];
     public $likertRows = [];
 
+    // Add the listener property
+    protected $listeners = ['surveyTitleUpdated' => 'updateTitleFromEvent'];
+
     public function mount(Survey $survey)
     {
         $this->survey = $survey;
         $this->isLocked = $survey->responses()->exists();
         $this->loadPages();
-        $this->surveyTitle = $survey->title;
+        $this->surveyTitle = $survey->title; // Make sure it's initialized
         $this->activePageId = null;
         $this->selectedQuestionId = null;
     }
@@ -330,8 +333,18 @@ class FormBuilder extends Component
 
     public function updateSurveyTitle()
     {
-        $this->survey->title = $this->surveyTitle;
-        $this->survey->save();
+        if ($this->survey && !$this->isLocked) {
+            $this->survey->title = $this->surveyTitle;
+            $this->survey->save();
+            // Dispatch the event here too!
+            $this->dispatch('surveyTitleUpdated', title: $this->surveyTitle); 
+        }
+    }
+
+    // Method to handle the event
+    public function updateTitleFromEvent($title)
+    {
+        $this->surveyTitle = $title;
     }
 
     public function publishSurvey()

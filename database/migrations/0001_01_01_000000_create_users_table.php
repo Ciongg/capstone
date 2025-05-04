@@ -19,6 +19,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->enum('type', ['researcher', 'respondent'])->default('respondent');
             $table->string('password');
+            $table->string('profile_photo_path', 2048)->nullable()->after('email'); 
             $table->rememberToken();
             $table->timestamps();
         });

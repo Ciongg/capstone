@@ -18,6 +18,7 @@ class Survey extends Model
         'start_date',
         'end_date',
         'points_allocated',
+        'image_path',
     ];
 
     public function pages()
@@ -41,10 +42,7 @@ class Survey extends Model
     }
 
     public function tags()
-{
-    return $this->belongsToMany(Tag::class);
-}
-
-
-
+    {
+        return $this->belongsToMany(\App\Models\Tag::class);
+    }
 }

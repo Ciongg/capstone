@@ -26,6 +26,7 @@ return new class extends Migration
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date')->nullable();
             $table->unsignedInteger('points_allocated')->nullable();
+            $table->string('image_path')->nullable();
         });
     }
 

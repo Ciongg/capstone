@@ -32,14 +32,9 @@
             <div class="flex items-center space-x-4">
                 @auth
                     <!-- Profile Link -->
-                    <a href="/profile" class="flex items-center space-x-2 hover:underline">
-                        <span class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-500 text-lg font-bold">
-                            <!-- Placeholder profile image -->
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <circle cx="12" cy="8" r="4" />
-                                <path d="M16 20c0-2.21-3.58-4-8-4s-8 1.79-8 4" />
-                            </svg>
-                        </span>
+                    <a href="/profile" wire:navigate class="flex items-center space-x-2 hover:underline">
+                        {{-- Use the profile photo URL --}}
+                        <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" class="w-8 h-8 rounded-full object-cover">
                         <span class="font-semibold text-white">{{ Auth::user()->name }}</span>
                     </a>
                     <!-- Logout Form -->
