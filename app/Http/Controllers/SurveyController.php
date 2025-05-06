@@ -8,51 +8,43 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\SurveyPage;
 use App\Models\SurveyQuestion;
 use App\Models\SurveyChoice;
-use App\Models\Answer;
-use App\Models\Response;
-use Illuminate\Contracts\View\View; // Import View
+use Illuminate\Contracts\View\View;
 
 class SurveyController extends Controller
 {
-
-    public function create($survey = null): View
+    public function create(Request $request, $surveyId = null): View
     {
-        if ($survey) {
-            // Open an existing survey by ID
-            $surveyModel = Survey::findOrFail($survey);
-
-            // Optional: Check if the logged-in user owns this survey
+        // If a specific survey ID is provided, show that survey
+        if ($surveyId) {
+            $surveyModel = Survey::findOrFail($surveyId);
+            
+            // Check if the logged-in user owns this survey
             if ($surveyModel->user_id !== Auth::id()) {
                 abort(403, 'Unauthorized');
             }
-
+            
             return view('researcher.show-form-builder', ['survey' => $surveyModel]);
         }
-
-        // Check if the user already has an existing survey in progress
-        $existingSurvey = Survey::where('user_id', Auth::id())
-            ->where('status', 'pending')
-            ->first();
-
-        if ($existingSurvey) {
-            return view('researcher.show-form-builder', ['survey' => $existingSurvey]);
-        }
-
-        // Create a new survey if no existing survey is found
+        
+        // Fallback: If /surveys/create is hit directly without an ID (e.g. user types URL)
+        // This path will NOT use type/method from URL parameters anymore.
+        // It creates a very default 'basic' survey.
+        // The primary creation path is now through the modal and its Livewire component.
         $surveyModel = Survey::create([
             'user_id' => Auth::id(),
-            'title' => 'Untitled Survey',
+            'title' => 'Untitled Survey (Default)',
             'description' => null,
             'status' => 'pending',
-            'type' => 'basic',
+            'type' => 'basic', 
+            'points_allocated' => 10, // Default points for a basic survey
         ]);
-
+        
         // Add a default page to the survey
         $page = SurveyPage::create([
             'survey_id' => $surveyModel->id,
             'page_number' => 1,
         ]);
-
+        
         // Add a default question to the page
         $question = SurveyQuestion::create([
             'survey_id' => $surveyModel->id,
@@ -62,20 +54,20 @@ class SurveyController extends Controller
             'order' => 1,
             'required' => false,
         ]);
-
-        // Add a default choice to the question
+        
+        // Add default choices to the question
         SurveyChoice::create([
             'survey_question_id' => $question->id,
             'choice_text' => 'Option 1',
             'order' => 1,
         ]);
-
+        
         SurveyChoice::create([
             'survey_question_id' => $question->id,
             'choice_text' => 'Option 2',
             'order' => 2,
         ]);
-
+        
         return view('researcher.show-form-builder', ['survey' => $surveyModel]);
     }
 

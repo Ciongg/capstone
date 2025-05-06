@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Surveys\FormBuilder\Modal;
 
+use App\Livewire\Surveys\FormBuilder\FormBuilder; // Import the FormBuilder class
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\TagCategory;
@@ -22,6 +23,7 @@ class SurveySettingsModal extends Component
     public $selectedSurveyTags = []; // Make sure this is set
     public $title;
     public $description;
+    public $type; // Add property for survey type
 
     // Add the listener property
     protected $listeners = ['surveyTitleUpdated' => 'updateTitleFromEvent'];
@@ -29,12 +31,15 @@ class SurveySettingsModal extends Component
     public function mount($survey)
     {
         $this->survey = $survey;
-        $this->title = $survey->title; // Add this
-        $this->description = $survey->description; // Add this
+        $this->title = $survey->title;
+        $this->description = $survey->description;
+        $this->type = $survey->type;
         $this->target_respondents = $survey->target_respondents;
         $this->start_date = $survey->start_date;
         $this->end_date = $survey->end_date;
-        $this->points_allocated = $survey->points_allocated;
+        
+        // Set points based on survey type
+        $this->points_allocated = $this->getPointsForType($this->type);
 
         $this->tagCategories = TagCategory::with('tags')->get();
 
@@ -55,30 +60,29 @@ class SurveySettingsModal extends Component
         $this->title = $title;
     }
 
-    public function updated($property)
+    // Get points based on survey type
+    public function getPointsForType($type)
     {
-        // Remove image saving logic from here
-        // Keep this method empty or remove it if nothing else uses it
+        return $type === 'advanced' ? 30 : 10;
+    }
+
+    // When type is updated, update points automatically
+    public function updatedType($value)
+    {
+        $this->points_allocated = $this->getPointsForType($value);
     }
 
     public function saveSurveyInformation()
     {
-        // You might want to add validation here, including for banner_image
-        // $this->validate([
-        //     'title' => 'required|string|max:255',
-        //     'description' => 'nullable|string',
-        //     'banner_image' => 'nullable|image|max:2048', // Example validation
-        //     // ... other rules
-        // ]);
+        // You might want to add validation here
+        // $this->validate([...]);
 
         if ($this->survey) {
             // Handle banner image saving here
             if ($this->banner_image) {
-                // Delete the old image if it exists
                 if ($this->survey->image_path) {
                     Storage::disk('public')->delete($this->survey->image_path);
                 }
-                // Store the new image
                 $path = $this->banner_image->store('surveys', 'public');
                 $this->survey->image_path = $path;
             }
@@ -86,24 +90,22 @@ class SurveySettingsModal extends Component
             // Save other fields
             $this->survey->title = $this->title;
             $this->survey->description = $this->description;
+            $this->survey->type = $this->type;
             $this->survey->target_respondents = $this->target_respondents;
             $this->survey->start_date = $this->start_date;
             $this->survey->end_date = $this->end_date;
-            // Correct assignment:
-            $this->survey->points_allocated = $this->points_allocated; 
-
+            $this->survey->points_allocated = $this->getPointsForType($this->type);
             $this->survey->save();
 
-            // Reset the temporary file upload property AFTER saving
+            $surveyId = $this->survey->id;
             $this->banner_image = null; 
-            // Manually trigger a refresh of the survey data if needed, 
-            // especially if the preview relies on the saved path
             $this->survey = $this->survey->fresh(); 
 
-            session()->flash('survey_info_saved', 'Survey information updated!');
-
-            // Dispatch event if needed
-            $this->dispatch('surveyTitleUpdated', title: $this->title);
+            // Dispatch events
+            $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Survey information updated!')->to(FormBuilder::class);
+            $this->dispatch('surveySettingsUpdated', surveyId: $surveyId)->to(FormBuilder::class);
+            $this->dispatch('surveyTitleUpdated', title: $this->title); // If still needed globally
+            $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
         }
     }
 
@@ -120,7 +122,11 @@ class SurveySettingsModal extends Component
                 }
             }
             $this->survey->tags()->sync($syncData);
-            session()->flash('survey_tags_saved', 'Survey demographic tags updated!');
+            
+            // Dispatch events
+            $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Survey demographic tags updated!')->to(FormBuilder::class);
+        
+            $this->dispatch('close-modal', name: 'survey-settings-modal-' . $this->survey->id);
         }
     }
 

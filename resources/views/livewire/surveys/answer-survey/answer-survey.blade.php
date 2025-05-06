@@ -234,7 +234,7 @@
                                                 </tbody>
                                             </table>
                                         </div>
-                                        {{-- Add the error display specifically for the Likert block --}}
+                                            {{-- Add the error display specifically for the Likert block --}}
                                         @error('answers.' . $question->id)
                                             <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
                                         @enderror

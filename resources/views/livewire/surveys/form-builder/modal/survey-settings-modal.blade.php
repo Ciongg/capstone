@@ -81,6 +81,16 @@
                 @error('description') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
+            <!-- Survey Type -->
+            <div>
+                <label for="survey-type-{{ $survey->id }}" class="block font-semibold mb-1">Survey Type</label>
+                <select id="survey-type-{{ $survey->id }}" wire:model.defer="type" class="w-full border rounded px-3 py-2">
+                    <option value="basic">Basic Survey</option>
+                    <option value="advanced">Advanced Survey</option>
+                </select>
+                @error('type') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+            </div>
+
             <div>
                 <label class="block font-semibold mb-1">Target Respondents</label>
                 <input type="number" wire:model.defer="target_respondents" class="w-full border rounded px-3 py-2" min="1" />
@@ -95,7 +105,18 @@
             </div>
             <div>
                 <label class="block font-semibold mb-1">Points Allocated</label>
-                <input type="number" wire:model.defer="points_allocated" class="w-full border rounded px-3 py-2" min="0" />
+                <div class="relative">
+                    <input 
+                        type="number" 
+                        wire:model.defer="points_allocated" 
+                        class="w-full border rounded px-3 py-2 bg-gray-100 cursor-not-allowed" 
+                        readonly 
+                        disabled
+                    />
+                    <div class="text-xs text-gray-500 mt-1">
+                        <span class="font-medium">Fixed rate:</span> Basic surveys earn 10 points, Advanced surveys earn 30 points.
+                    </div>
+                </div>
             </div>
             
             {{-- Save Button for Information --}}
@@ -103,32 +124,29 @@
                 <span wire:loading.remove wire:target="saveSurveyInformation">Save Information</span>
                 <span wire:loading wire:target="saveSurveyInformation">Saving...</span>
             </button>
-            
-            {{-- Success Message for Information --}}
-            @if (session()->has('survey_info_saved'))
-                <div class="text-green-600 mt-2">{{ session('survey_info_saved') }}</div>
-            @endif
         </form>
     </div>
 
     <!-- Survey Demographics Tab -->
-    <div x-show="tab === 'demographics'" x-cloak>
-        <form wire:submit.prevent="saveSurveyTags" class="space-y-4">
-            @foreach($tagCategories as $category)
-                <div wire:key="survey-tag-category-{{ $category->id }}">
-                    <label class="block font-semibold mb-1">{{ $category->name }}</label>
-                    <select wire:model.live="selectedSurveyTags.{{ $category->id }}" class="w-full border rounded px-3 py-2">
-                        <option value="">Select {{ $category->name }}</option>
-                        @foreach($category->tags as $tag)
-                            <option value="{{ $tag->id }}">{{ $tag->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            @endforeach
-            <button type="submit" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save Demographics</button>
-        </form>
-        @if (session()->has('survey_tags_saved'))
-            <div class="text-green-600 mt-2">{{ session('survey_tags_saved') }}</div>
-        @endif
-    </div>
+    <div<!-- Survey Demographics Tab -->
+<div x-show="tab === 'demographics'" x-cloak>
+    <form wire:submit.prevent="saveSurveyTags" class="space-y-4">
+        @foreach($tagCategories as $category)
+            <div wire:key="survey-tag-category-{{ $category->id }}">
+                <label class="block font-semibold mb-1">{{ $category->name }}</label>
+                <select wire:model.live="selectedSurveyTags.{{ $category->id }}" class="w-full border rounded px-3 py-2">
+                    <option value="">Select {{ $category->name }}</option>
+                    @foreach($category->tags as $tag)
+                        <option value="{{ $tag->id }}">{{ $tag->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        @endforeach
+        <button type="submit" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            <span wire:loading.remove wire:target="saveSurveyTags">Save Demographics</span>
+            <span wire:loading wire:target="saveSurveyTags">Saving...</span>
+        </button>
+    </form>
+</div>
+
 </div>

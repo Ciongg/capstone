@@ -107,7 +107,11 @@
 
     <!-- Modal -->
     <x-modal name="survey-settings-modal-{{ $survey->id }}" title="Survey Settings">
-        <livewire:surveys.form-builder.modal.survey-settings-modal :survey="$survey" />
+        {{-- Add a wire:key that changes when the survey is updated --}}
+        <livewire:surveys.form-builder.modal.survey-settings-modal 
+            :survey="$survey" 
+            :key="'settings-modal-' . $survey->id . '-' . $survey->updated_at->timestamp" 
+        />
     </x-modal>
 
     <div class="space-y-6">

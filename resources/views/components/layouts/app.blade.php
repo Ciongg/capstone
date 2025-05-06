@@ -21,7 +21,11 @@
                 <div class="flex items-center space-x-4 text-gray-700">
                     @auth
                         <a href="/feed" wire:navigate class="hover:text-[#00BBFF] hover:underline">Feed</a>
-                        <a href="/surveys/create" class="hover:text-[#00BBFF] hover:underline">Create Survey</a>
+                        <button 
+                            x-data
+                            x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
+                            class="hover:text-[#00BBFF] hover:underline"
+                        >Create Survey</button>
                         <a href="/my-surveys" wire:navigate class="hover:text-[#00BBFF] hover:underline">My Surveys</a>
                         <a href="/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Rewards</a>
                     @else
@@ -53,11 +57,22 @@
         </div>
     </nav>
 
+    <!-- Survey Creation Modal -->
+    <x-modal name="select-survey-type" title="Create Survey">
+        <livewire:surveys.form-builder.modal.survey-type-modal />
+    </x-modal>
+
+    <!-- Script to handle data passing between modals -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            // No longer need the store since everything is in one modal now
+        });
+    </script>
+
     <!-- Main Content -->
     <main class="container mx-auto p-6">
         @yield('content')
     </main>
-
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     @stack('scripts')

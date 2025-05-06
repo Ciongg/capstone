@@ -23,9 +23,14 @@ class FormBuilder extends Component
     public $ratingStars = [];
     public $likertColumns = [];
     public $likertRows = [];
+    public $flashMessageTrigger = 0; // Dummy property to trigger re-renders for flash messages
 
     // Add the listener property
-    protected $listeners = ['surveyTitleUpdated' => 'updateTitleFromEvent'];
+    protected $listeners = [
+        'surveyTitleUpdated' => 'updateTitleFromEvent',
+        'surveySettingsUpdated' => 'refreshSurveyData',
+        'settingsOperationCompleted' => 'handleSettingsOperationCompleted', // New listener
+    ];
 
     public function mount(Survey $survey)
     {
@@ -78,6 +83,8 @@ class FormBuilder extends Component
             }
         }
     }
+
+
 
     public function setActivePage($pageId)
     {
@@ -713,6 +720,12 @@ class FormBuilder extends Component
         });
 
         $this->loadPages(); // Reload data after reordering
+    }
+
+    public function handleSettingsOperationCompleted(string $status, string $message)
+    {
+        session()->flash($status, $message);
+        $this->flashMessageTrigger++; // Increment to ensure Livewire sees a change and re-renders
     }
 
     public function render()
