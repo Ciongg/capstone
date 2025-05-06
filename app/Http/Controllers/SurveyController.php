@@ -10,11 +10,12 @@ use App\Models\SurveyQuestion;
 use App\Models\SurveyChoice;
 use App\Models\Answer;
 use App\Models\Response;
+use Illuminate\Contracts\View\View; // Import View
 
 class SurveyController extends Controller
 {
 
-    public function create($survey = null)
+    public function create($survey = null): View
     {
         if ($survey) {
             // Open an existing survey by ID
@@ -56,7 +57,7 @@ class SurveyController extends Controller
         $question = SurveyQuestion::create([
             'survey_id' => $surveyModel->id,
             'survey_page_id' => $page->id,
-            'question_text' => '',
+            'question_text' => 'Enter Question Here',
             'question_type' => 'multiple_choice',
             'order' => 1,
             'required' => false,
@@ -65,8 +66,14 @@ class SurveyController extends Controller
         // Add a default choice to the question
         SurveyChoice::create([
             'survey_question_id' => $question->id,
-            'choice_text' => '',
+            'choice_text' => 'Option 1',
             'order' => 1,
+        ]);
+
+        SurveyChoice::create([
+            'survey_question_id' => $question->id,
+            'choice_text' => 'Option 2',
+            'order' => 2,
         ]);
 
         return view('researcher.show-form-builder', ['survey' => $surveyModel]);
@@ -78,20 +85,29 @@ class SurveyController extends Controller
         return view('respondent.show-answer-form', compact('survey'));
     }
 
-    public function showSurveys(){
+    public function showAnswerForm(Survey $survey, $isPreview = false): View
+    {
+        // Pass the survey model and the isPreview flag to the view.
+        // The view 'respondent.show-answer-form' will handle rendering the Livewire component.
+        return view('respondent.show-answer-form', [
+            'survey' => $survey,
+            'isPreview' => (bool) $isPreview // Ensure it's boolean
+        ]);
+    }
+
+    public function showSurveys(): View
+    {
         return view('researcher.show-form-index');
     }
 
-    public function showResponses($surveyId)
+    public function showResponses($surveyId): View
     {
         $survey = Survey::findOrFail($surveyId);
         return view('researcher.show-form-responses', compact('survey'));
     }
 
-
-    public function showIndividualResponses(Survey $survey)
+    public function showIndividualResponses(Survey $survey): View
     {
-        
         return view('researcher.show-individual-responses', ['surveyId' => $survey->id]);
     }
 

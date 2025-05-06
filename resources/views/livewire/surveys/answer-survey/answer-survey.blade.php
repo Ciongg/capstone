@@ -1,6 +1,20 @@
 <div class="bg-gray-100 min-h-screen py-8">
     <div class="max-w-7xl mx-auto">
-        
+
+        {{-- Back Button (Only in Preview Mode) --}}
+        @if($isPreview)
+            <div class="mb-4">
+                <a href="{{ route('surveys.create', $survey->id) }}" wire:navigate
+                   class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded hover:bg-gray-300 transition"
+                >
+                    <svg class="w-4 h-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                    </svg>
+                    Back
+                </a>
+            </div>
+        @endif
+
         <div class="bg-white shadow-md rounded-lg p-8">
             @if (session()->has('error'))
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -30,32 +44,93 @@
                                         @endif
                                     </label>
                                     @if($question->question_type === 'multiple_choice')
-                                        <div class="space-y-2">
+                                        <div
+                                            class="space-y-2"
+                                            x-data="{
+                                                count: 0,
+                                                limit: {{ $question->limit_answers ? ($question->max_answers ?? 0) : 0 }},
+                                                answersData: @entangle('answers.' . $question->id),
+                                                otherSelected: false,
+                                                otherChoiceId: {{ $question->choices->firstWhere('is_other', true)?->id ?? 'null' }}
+                                            }"
+                                            x-init="
+                                                count = Object.values(answersData).filter(Boolean).length;
+                                                otherSelected = otherChoiceId !== null && answersData[otherChoiceId] === true;
+                                                $watch('answersData', value => {
+                                                    count = Object.values(value).filter(Boolean).length;
+                                                    otherSelected = otherChoiceId !== null && value[otherChoiceId] === true;
+                                                });
+                                            "
+                                        >
+                                            @if($question->limit_answers && $question->max_answers)
+                                                <p class="text-sm text-gray-500 mb-2">Please select up to {{ $question->max_answers }} options. (<span x-text="count"></span>/{{ $question->max_answers }} selected)</p>
+                                            @endif
                                             @foreach($question->choices as $choice)
-                                                <label class="flex items-center space-x-2 shadow-lg p-4">
+                                                <div class="flex items-center space-x-2 shadow-lg p-4 hover:bg-gray-50"
+                                                     :class="{ 'opacity-50 cursor-not-allowed': limit > 0 && count >= limit && !document.getElementById('checkbox-{{ $question->id }}-{{ $choice->id }}').checked }">
                                                     <input
                                                         type="checkbox"
-                                                        wire:model="answers.{{ $question->id }}.{{ $choice->id }}"
-                                                        class="accent-blue-500"
+                                                        id="checkbox-{{ $question->id }}-{{ $choice->id }}"
+                                                        x-model="answersData[{{ $choice->id }}]"
+                                                        class="accent-blue-500 h-5 w-5"
                                                         wire:key="checkbox-{{ $question->id }}-{{ $choice->id }}"
+                                                        :disabled="limit > 0 && count >= limit && !$el.checked"
                                                     >
-                                                    <span>{{ $choice->choice_text }}</span>
-                                                </label>
+                                                    <label for="checkbox-{{ $question->id }}-{{ $choice->id }}" class="cursor-pointer flex-grow">{{ $choice->choice_text }}</label>
+
+                                                    @if($choice->is_other)
+                                                        <input
+                                                            type="text"
+                                                            wire:model.lazy="otherTexts.{{ $question->id }}"
+                                                            placeholder="Please specify"
+                                                            class="ml-2 border rounded px-2 py-1 flex-1 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                                            :disabled="!otherSelected"
+                                                        />
+                                                    @endif
+                                                </div>
                                             @endforeach
+                                            @error('answers.' . $question->id) <div class="text-red-500 text-sm mt-1">{{ $message }}</div> @enderror
+                                            @error('otherTexts.' . $question->id) <div class="text-red-500 text-sm mt-1">{{ $message }}</div> @enderror
                                         </div>
                                     @elseif($question->question_type === 'radio')
-                                        <div class="space-y-2">
+                                        <div
+                                            class="space-y-2"
+                                            x-data="{
+                                                selectedAnswer: @entangle('answers.' . $question->id),
+                                                otherSelected: false,
+                                                otherChoiceId: {{ $question->choices->firstWhere('is_other', true)?->id ?? 'null' }}
+                                            }"
+                                            x-init="
+                                                otherSelected = otherChoiceId !== null && selectedAnswer == otherChoiceId;
+                                                $watch('selectedAnswer', value => {
+                                                    otherSelected = otherChoiceId !== null && value == otherChoiceId;
+                                                });
+                                            "
+                                        >
                                             @foreach($question->choices as $choice)
-                                                <label class="flex items-center space-x-2">
-                                                    <input 
+                                                <div class="flex items-center space-x-2 shadow-lg p-4 hover:bg-gray-50">
+                                                    <input
                                                         type="radio"
+                                                        id="radio-{{ $question->id }}-{{ $choice->id }}"
                                                         wire:model="answers.{{ $question->id }}"
                                                         value="{{ $choice->id }}"
-                                                        class="accent-blue-500"
+                                                        class="accent-blue-500 h-5 w-5"
                                                     >
-                                                    <span>{{ $choice->choice_text }}</span>
-                                                </label>
+                                                    <label for="radio-{{ $question->id }}-{{ $choice->id }}" class="cursor-pointer flex-grow">{{ $choice->choice_text }}</label>
+
+                                                    @if($choice->is_other)
+                                                        <input
+                                                            type="text"
+                                                            wire:model.lazy="otherTexts.{{ $question->id }}"
+                                                            placeholder="Please specify"
+                                                            class="ml-2 border rounded px-2 py-1 flex-1 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                                            :disabled="!otherSelected"
+                                                        />
+                                                    @endif
+                                                </div>
                                             @endforeach
+                                            @error('answers.' . $question->id) <div class="text-red-500 text-sm mt-1">{{ $message }}</div> @enderror
+                                            @error('otherTexts.' . $question->id) <div class="text-red-500 text-sm mt-1">{{ $message }}</div> @enderror
                                         </div>
                                     @elseif($question->question_type === 'essay')
                                         <textarea 

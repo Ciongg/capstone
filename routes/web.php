@@ -5,10 +5,11 @@ use App\Http\Controllers\SessionController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Livewire\Surveys\FormBuilder;
+use App\Livewire\Surveys\FormBuilder\FormBuilder;
 use App\Livewire\Surveys\FormResponses\IndividualResponses;
 use App\Models\Survey;
 use Illuminate\Support\Facades\Auth;
+
 
 Route::get('/', function () {
     return view('welcome');
@@ -18,13 +19,14 @@ Route::get('/', function () {
 Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
 Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
 
+Route::middleware('auth')->group(function () {
+    Route::get('/surveys/create/{survey?}', [SurveyController::class, 'create'])->name('surveys.create');
+    Route::get('/my-surveys', [SurveyController::class, 'showSurveys'])->name('my-surveys.index');
 
+    Route::get('/surveys/{survey}/preview', [SurveyController::class, 'showAnswerForm'])->name('surveys.preview')->defaults('isPreview', true);
+});
 
-Route::get('/surveys/create/{survey?}', [SurveyController::class, 'create'])->name('surveys.create');
-Route::get('/my-surveys', [SurveyController::class, 'showSurveys'])->name('my-surveys.index');
-
-
-Route::get('/surveys/answer/{survey}', [SurveyController::class, 'answer'])->name('surveys.answer');
+Route::get('/surveys/answer/{survey}', [SurveyController::class, 'showAnswerForm'])->name('surveys.answer');
 Route::post('/surveys/answer/{survey}', [SurveyController::class, 'submit'])->name('surveys.submit');
 
 Route::get('/surveys/{survey}/responses', [SurveyController::class, 'showResponses'])->name('surveys.responses');

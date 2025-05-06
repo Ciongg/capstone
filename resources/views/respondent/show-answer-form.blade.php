@@ -1,5 +1,6 @@
 @extends('components.layouts.app')
 
 @section('content')
-    <livewire:surveys.answer-survey.answer-survey :survey="$survey" />
+    {{-- Pass the isPreview variable to the Livewire component --}}
+    <livewire:surveys.answer-survey.answer-survey :survey="$survey" :isPreview="$isPreview ?? false" />
 @endsection

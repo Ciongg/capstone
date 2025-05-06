@@ -35,7 +35,7 @@
             <!-- Right side -->
             <div class="flex items-center space-x-4">
                 @auth
-                    <a href="/profile" wire:navigate class="flex items-center space-x-2 hover:underline text-gray-700">
+                    <a href="/profile" wire:navigate class="flex items-center space-x-2 hover:underline text-gray-700 hover:text-[#00BBFF]">
                         <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" class="w-8 h-8 rounded-full object-cover border border-gray-200">
                         <span class="font-semibold">{{ Auth::user()->name }}</span>
                     </a>

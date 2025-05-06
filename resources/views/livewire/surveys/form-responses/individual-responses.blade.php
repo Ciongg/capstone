@@ -206,32 +206,22 @@
                                     </div>
                                 @else {{-- Handle other types like essay, short_text, date, rating --}}
                                     @php
-                                        // Get all answers for this respondent/question
-                                        $allAnswers = $questionAnswers->pluck('answer')->toArray();
-                                        $answerCount = count($allAnswers);
-                                        $displayLimit = 5;
+                                        // Get the first answer's text/value
+                                        $singleAnswer = $questionAnswers->first()->answer ?? 'No answer';
                                     @endphp
-                                    <div class="bg-gray-100 border rounded px-4 py-3 text-lg text-gray-800 ml-8 space-y-2">
+                                    <div class="bg-gray-100 border rounded px-4 py-3 text-lg text-gray-800 ml-8">
                                         {{-- Special display for rating --}}
                                         @if($question->question_type === 'rating')
                                             <div class="flex items-center">
                                                 @for ($i = 1; $i <= ($question->stars ?? 5); $i++)
-                                                    <svg class="w-6 h-6 {{ $i <= (int)($allAnswers[0] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
+                                                    <svg class="w-6 h-6 {{ $i <= (int)$singleAnswer ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
                                                         <polygon points="10,1 12.59,7.36 19.51,7.64 14,12.26 15.82,19.02 10,15.27 4.18,19.02 6,12.26 0.49,7.64 7.41,7.36" />
                                                     </svg>
                                                 @endfor
-                                                <span class="ml-2 text-gray-600">({{ $allAnswers[0] ?? 'No answer' }})</span>
+                                                <span class="ml-2 text-gray-600">({{ $singleAnswer }})</span>
                                             </div>
                                         @else
-                                            @foreach(array_slice($allAnswers, 0, $displayLimit) as $i => $ans)
-                                                <div>{{ $ans }}</div>
-                                                @if($i === $displayLimit - 1 && $answerCount > $displayLimit)
-                                                    <div class="text-center text-gray-400 text-xl font-bold">...</div>
-                                                @endif
-                                            @endforeach
-                                            @if($answerCount === 0)
-                                                <div>No answer</div>
-                                            @endif
+                                            {{ $singleAnswer }}
                                         @endif
                                     </div>
                                 @endif

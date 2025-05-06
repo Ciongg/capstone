@@ -18,6 +18,8 @@ class SurveyQuestion extends Model
         'stars',
         'likert_columns',
         'likert_rows',
+        'limit_answers',
+        'max_answers',
         'required',
     ];
 

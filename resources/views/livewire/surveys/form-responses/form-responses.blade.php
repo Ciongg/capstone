@@ -93,29 +93,49 @@
                                     chartInstance{{ $question->id }}.destroy();
                                 }
 
-                                let data = [
-                                    @foreach($question->choices->sortBy('order') as $choice) {{-- Ensure data matches sorted choices --}}
-                                        {{ $question->answers->where('answer', $choice->choice_text)->count() }},
-                                    @endforeach
-                                ];
-                                let labels = [
-                                    @foreach($question->choices->sortBy('order') as $choice) {{-- Ensure labels match sorted choices --}}
-                                        "{{ $choice->choice_text }}",
-                                    @endforeach
-                                ];
+                                // --- Corrected Data Calculation ---
+                                const allAnswers = @json($question->answers->pluck('answer'));
+                                const standardChoiceTexts = @json($question->choices->where('is_other', false)->pluck('choice_text'));
+                                const choices = @json($question->choices->sortBy('order')->values()); // Ensure sorted and 0-indexed
+
+                                let data = choices.map(choice => {
+                                    if (choice.is_other) {
+                                        // Count answers that DON'T match any standard choice text
+                                        return allAnswers.filter(answer => !standardChoiceTexts.includes(answer)).length;
+                                    } else {
+                                        // Count answers that exactly match this standard choice text
+                                        return allAnswers.filter(answer => answer === choice.choice_text).length;
+                                    }
+                                });
+                                // --- End Corrected Data Calculation ---
+
+                                let labels = choices.map(choice => choice.choice_text); // Use sorted choices for labels
                                 let backgroundColor = [
-                                    @foreach($question->choices->sortBy('order') as $i => $choice) {{-- Ensure colors match sorted choices --}}
+                                    @foreach($question->choices->sortBy('order') as $i => $choice) // Ensure colors match sorted choices
                                         "{{ $colors[$i % count($colors)] }}",
                                     @endforeach
                                 ];
 
                                 // If only one non-zero value, add a transparent dummy slice
                                 let nonZero = data.filter(v => v > 0).length;
-                                if (nonZero === 1) {
-                                    data.push(0.00001);
-                                    labels.push('dummy');
-                                    backgroundColor.push('rgba(0,0,0,0)');
+                                if (nonZero === 1 && data.length > 1) { // Avoid adding dummy if only 'Other' exists and has count
+                                    const zeroIndex = data.findIndex(v => v === 0);
+                                    if (zeroIndex !== -1) {
+                                        // Add dummy to an existing zero slice if possible
+                                        data[zeroIndex] = 0.00001;
+                                    } else {
+                                        // Otherwise, add a new dummy slice
+                                        data.push(0.00001);
+                                        labels.push('dummy');
+                                        backgroundColor.push('rgba(0,0,0,0)');
+                                    }
+                                } else if (data.length === 1 && data[0] > 0) {
+                                     // Handle case with only one choice (e.g., only 'Other')
+                                     data.push(0.00001);
+                                     labels.push('dummy');
+                                     backgroundColor.push('rgba(0,0,0,0)');
                                 }
+
 
                                 chartInstance{{ $question->id }} = new Chart(ctx, {
                                     type: 'pie',
@@ -364,7 +384,7 @@
                                         $answerCount = $answers->count();
                                     @endphp
                                     @forelse($answers->take($displayLimit) as $i => $answer)
-                                        <div class="p-3 bg-gray-50 rounded border border-gray-200">
+                                        <div class="p-3 bg-gray-50 rounded border border-gray-200 overflow-hidden text-ellipsis whitespace-nowrap">
                                             {{ $answer->answer }}
                                         </div>
                                         @if($i === $displayLimit - 1 && $answerCount > $displayLimit)

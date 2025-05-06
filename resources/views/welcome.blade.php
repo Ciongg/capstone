@@ -7,10 +7,7 @@
         Register
     </button>
 
-    <!-- Placeholder image -->
-    <div class="mt-10 flex justify-center">
-        <img src="https://via.placeholder.com/600x300" alt="Screenshot Placeholder">
-    </div>
+
 
     <section class="mt-16 bg-gray-100 py-12 px-4">
         <h2 class="text-2xl font-semibold mb-8">Getting Started is Easy</h2>

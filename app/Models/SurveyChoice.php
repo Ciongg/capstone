@@ -13,6 +13,11 @@ class SurveyChoice extends Model
         'survey_question_id',
         'choice_text',
         'order',
+        'is_other',
+    ];
+
+    protected $casts = [
+        'is_other' => 'boolean',
     ];
 
     public function answers()
