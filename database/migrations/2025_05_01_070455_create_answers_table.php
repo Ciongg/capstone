@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('response_id')->constrained()->onDelete('cascade');
             $table->foreignId('survey_question_id')->constrained('survey_questions')->onDelete('cascade');
             $table->text('answer');
+            $table->text('other_text')->nullable();
             $table->timestamps();
         });
     }
@@ -25,6 +26,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('answers', function (Blueprint $table) {
+            $table->dropColumn('other_text');
+        });
         Schema::dropIfExists('answers');
     }
 };

@@ -57,7 +57,7 @@ class SurveyController extends Controller
         $question = SurveyQuestion::create([
             'survey_id' => $surveyModel->id,
             'survey_page_id' => $page->id,
-            'question_text' => 'Enter Question Here',
+            'question_text' => 'Enter Question Title',
             'question_type' => 'multiple_choice',
             'order' => 1,
             'required' => false,

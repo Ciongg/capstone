@@ -8,8 +8,10 @@ use App\Models\Response;
 use App\Models\Answer;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log; // Optional: For debugging
-use Illuminate\Contracts\View\View; // Import View contract
+use Illuminate\Support\Facades\DB; // Added DB facade import
+use App\Models\SurveyQuestion; // Added SurveyQuestion import
+use Illuminate\Validation\Rule; // <-- Add this import
+use Illuminate\Support\Facades\Log; // Import Log facade
 
 class AnswerSurvey extends Component
 {
@@ -22,7 +24,6 @@ class AnswerSurvey extends Component
 
     public function mount(Survey $survey, $isPreview = false)
     {
-        // Load choices with is_other
         $this->survey = $survey->load([
             'pages' => function ($query) {
                 $query->orderBy('order') // Order pages
@@ -36,14 +37,17 @@ class AnswerSurvey extends Component
         ]);
         $this->isPreview = (bool) $isPreview;
 
-        // Check survey status only if not in preview mode
         if (!$this->isPreview && !in_array($this->survey->status, ['published', 'ongoing'])) {
             abort(404, 'Survey not available.');
         }
 
         $this->currentPage = 0;
 
-        // Initialize answers structure
+        $this->initializeAnswers();
+    }
+
+    protected function initializeAnswers()
+    {
         foreach ($this->survey->pages as $page) {
             foreach ($page->questions as $question) {
                 if ($question->question_type === 'multiple_choice') {
@@ -65,214 +69,271 @@ class AnswerSurvey extends Component
         }
     }
 
-    public function updatedAnswers($value, $key)
+    protected function getValidationRules()
     {
-        // $key will be like "12.5" for question_id 12, choice_id 5
-        [$questionId, $choiceId] = explode('.', $key) + [null, null];
+        $rules = [];
+        if (!$this->survey->pages->has($this->currentPage)) {
+            return $rules;
+        }
+        $currentPageQuestions = $this->survey->pages[$this->currentPage]->questions;
 
-        // Find the question
-        $question = $this->survey->pages
-            ->flatMap->questions
-            ->firstWhere('id', $questionId);
+        foreach ($currentPageQuestions as $question) {
+            $rules = array_merge($rules, $this->getRulesForQuestion($question));
+        }
+        return $rules;
+    }
 
-        if ($question && $question->question_type === 'multiple_choice' && $question->limit_answers && $question->max_answers) {
-            // Count checked choices
-            $checked = collect($this->answers[$questionId] ?? [])->filter()->count();
-            if ($checked > $question->max_answers) {
-                // Uncheck the last one (the one just checked)
-                $this->answers[$questionId][$choiceId] = false;
-                $this->addError('answers.' . $questionId, "You can only select up to {$question->max_answers} options.");
-            } else {
-                $this->resetErrorBag('answers.' . $questionId);
+    protected function getValidationMessages()
+    {
+        $messages = [];
+        if (!$this->survey->pages->has($this->currentPage)) {
+            return $messages;
+        }
+        $currentPageQuestions = $this->survey->pages[$this->currentPage]->questions;
+        $questionNumberOffset = 0;
+        for ($i = 0; $i < $this->currentPage; $i++) {
+            if ($this->survey->pages->has($i)) {
+                $questionNumberOffset += $this->survey->pages[$i]->questions->count();
             }
         }
+
+        foreach ($currentPageQuestions as $index => $question) {
+            $qNum = $questionNumberOffset + $index + 1;
+            $messages = array_merge($messages, $this->getMessagesForQuestion($question, $qNum));
+        }
+        return $messages;
+    }
+
+    protected function getAllValidationRules()
+    {
+        $rules = [];
+        foreach ($this->survey->pages as $page) {
+            foreach ($page->questions as $question) {
+                $rules = array_merge($rules, $this->getRulesForQuestion($question));
+            }
+        }
+        return $rules;
+    }
+
+    protected function getAllValidationMessages()
+    {
+        $messages = [];
+        $questionNumberOffset = 0;
+        foreach ($this->survey->pages as $pageIndex => $page) {
+            foreach ($page->questions as $index => $question) {
+                $qNum = $questionNumberOffset + $index + 1;
+                $messages = array_merge($messages, $this->getMessagesForQuestion($question, $qNum));
+            }
+            $questionNumberOffset += $page->questions->count();
+        }
+        return $messages;
+    }
+
+    protected function getRulesForQuestion(SurveyQuestion $question)
+    {
+        $rules = [];
+        $questionId = $question->id;
+        $isRequired = $question->required;
+
+        if ($question->question_type === 'multiple_choice') {
+            $rules['answers.' . $questionId] = [
+                'array', // Just ensure it's an array
+                function ($attribute, $value, $fail) use ($question, $isRequired) {
+                    $selectedCount = collect($value ?? [])->filter(fn($v) => $v === true)->count();
+
+                    // 1. Check minimum required ONLY if question is required
+                    if ($isRequired && $selectedCount < 1) {
+                        $fail("Please select at least one option.");
+                        return; // Stop further checks if minimum not met
+                    }
+
+                    // 2. Check limit condition if set
+                    $limitCondition = $question->limit_condition;
+                    $maxAnswers = $question->max_answers;
+
+                    if ($limitCondition && $maxAnswers > 0) {
+                        if ($limitCondition === 'equal_to') {
+                            if ($selectedCount != $maxAnswers) {
+                                if ($isRequired || $selectedCount > 0) {
+                                     $fail("Please select exactly {$maxAnswers} options.");
+                                }
+                            }
+                        } elseif ($limitCondition === 'at_most') {
+                            if ($selectedCount > $maxAnswers) {
+                                $fail("Please select no more than {$maxAnswers} options.");
+                            }
+                        }
+                    }
+                }
+            ];
+            $otherChoice = $question->choices->firstWhere('is_other', true);
+            if ($otherChoice) {
+                $rules['otherTexts.' . $questionId] = [
+                    Rule::requiredIf(function () use ($questionId, $otherChoice) {
+                        return isset($this->answers[$questionId][$otherChoice->id]) && $this->answers[$questionId][$otherChoice->id] === true;
+                    }),
+                    'nullable', 'string', 'max:255'
+                ];
+            }
+            $rules['answers.' . $questionId . '.*'] = ['boolean'];
+
+        } elseif ($isRequired) {
+            if ($question->question_type === 'radio') {
+                $rules['answers.' . $questionId] = ['required'];
+                $otherChoice = $question->choices->firstWhere('is_other', true);
+                if ($otherChoice) {
+                    $rules['otherTexts.' . $questionId] = [
+                        Rule::requiredIf(fn() => ($this->answers[$questionId] ?? null) == $otherChoice->id),
+                        'nullable', 'string', 'max:255'
+                    ];
+                }
+            } elseif ($question->question_type === 'likert') {
+                $rules['answers.' . $questionId] = ['required', 'array'];
+                $likertRows = is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []);
+                foreach (array_keys($likertRows) as $rowIndex) {
+                    $rules['answers.' . $questionId . '.' . $rowIndex] = ['required'];
+                }
+            } else {
+                $rules['answers.' . $questionId] = ['required'];
+            }
+        } else {
+            if ($question->question_type === 'radio') {
+                $rules['answers.' . $questionId] = ['nullable'];
+                $otherChoice = $question->choices->firstWhere('is_other', true);
+                if ($otherChoice) {
+                    $rules['otherTexts.' . $questionId] = [
+                        Rule::requiredIf(fn() => ($this->answers[$questionId] ?? null) == $otherChoice->id),
+                        'nullable', 'string', 'max:255'
+                    ];
+                }
+            } elseif ($question->question_type === 'likert') {
+                $rules['answers.' . $questionId] = ['nullable', 'array'];
+                $likertRows = is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []);
+                foreach (array_keys($likertRows) as $rowIndex) {
+                    $rules['answers.' . $questionId . '.' . $rowIndex] = ['nullable'];
+                }
+            } else {
+                $rules['answers.' . $questionId] = ['nullable'];
+            }
+        }
+        return $rules;
+    }
+
+    protected function getMessagesForQuestion(SurveyQuestion $question, int $qNum)
+    {
+        $messages = [];
+        $questionId = $question->id;
+
+        // Only add the general '.required' message if it's NOT a multiple choice or likert question
+        // The closure handles MC, and we add a specific Likert message below.
+        if (!in_array($question->question_type, ['multiple_choice', 'likert'])) {
+            $messages['answers.' . $questionId . '.required'] = "Question {$qNum} is required.";
+        }
+
+        // Keep Likert specific messages
+        if ($question->question_type === 'likert') {
+            // Add message for the entire Likert block being required
+            $messages['answers.' . $questionId . '.required'] = "Please answer all parts of question {$qNum}.";
+
+            // Keep messages for individual rows
+            $likertRows = is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []);
+            foreach (array_keys($likertRows) as $rowIndex) {
+                $rowText = $likertRows[$rowIndex] ?? 'Row ' . ($rowIndex + 1);
+                $messages['answers.' . $questionId . '.' . $rowIndex . '.required'] = "Please select an option for '{$rowText}' in question {$qNum}.";
+            }
+        }
+
+        // Keep 'Other' text required message
+        $messages['otherTexts.' . $questionId . '.required'] = "Please specify your 'Other' answer for question {$qNum}.";
+
+        return $messages;
     }
 
     public function submit()
     {
-        $rules = ['answers' => 'array', 'otherTexts' => 'array']; // Add otherTexts to rules
-        $messages = [];
-
-        // Only validate questions on the current page if Next, otherwise all
-        $pages = $this->survey->pages;
-        $questions = ($this->navAction === 'next')
-            ? $pages[$this->currentPage]->questions
-            : $pages->flatMap->questions;
-
-        foreach ($questions as $question) {
-            if ($question->required) {
-                if ($question->question_type === 'multiple_choice') {
-                    $rules["answers.{$question->id}"] = 'required|array|min:1';
-                    $messages["answers.{$question->id}.required"] = 'This question is required.';
-                } elseif ($question->question_type === 'likert') {
-                    // Custom validation for likert: all rows must have a value
-                    $rules["answers.{$question->id}"] = [
-                        'required', 'array',
-                        function ($attribute, $value, $fail) use ($question) {
-                            $likertRows = is_array($question->likert_rows)
-                                ? $question->likert_rows
-                                : (json_decode($question->likert_rows, true) ?: []);
-                            foreach ($likertRows as $rowIndex => $row) {
-                                if (!isset($value[$rowIndex]) || $value[$rowIndex] === null || $value[$rowIndex] === '') {
-                                    $fail('All rows in this question must be answered.');
-                                }
-                            }
-                        }
-                    ];
-                    $messages["answers.{$question->id}.required"] = 'This question is required.';
-                } else {
-                    $rules["answers.{$question->id}"] = 'required';
-                    $messages["answers.{$question->id}.required"] = 'This question is required.';
-                }
-            }
-
-            // Add validation for 'Other' text input
-            if (in_array($question->question_type, ['multiple_choice', 'radio'])) {
-                $otherChoice = $question->choices->firstWhere('is_other', true);
-                if ($otherChoice) {
-                    $otherChoiceId = $otherChoice->id;
-                    // Rule: If 'Other' is selected, the corresponding text input is required.
-                    $ruleKey = "otherTexts.{$question->id}";
-
-                    if ($question->question_type === 'multiple_choice') {
-                        // Check if the 'Other' checkbox is checked
-                        $rules[$ruleKey] = "required_if:answers.{$question->id}.{$otherChoiceId},true|nullable|string|max:255";
-                    } elseif ($question->question_type === 'radio') {
-                        // Check if the 'Other' radio button's value is selected
-                        $rules[$ruleKey] = "required_if:answers.{$question->id},{$otherChoiceId}|nullable|string|max:255";
-                    }
-                    $messages["{$ruleKey}.required_if"] = 'Please specify your answer for "Other".';
-                }
-            }
-        }
-
-        $this->validate($rules, $messages);
-
-        // Handle Preview Mode Submission
-        if ($this->isPreview && $this->navAction === 'submit') {
-            session()->flash('success', 'Survey preview completed successfully!');
-            return redirect()->route('surveys.create', $this->survey->id);
-        }
-
-        // If Next, just advance page
         if ($this->navAction === 'next') {
-            $this->currentPage++;
-            $this->navAction = 'submit';
-            return;
-        }
+            $this->validate($this->getValidationRules(), $this->getValidationMessages());
 
-        // Create a new response
-        $response = Response::create([
-            'survey_id' => $this->survey->id,
-            'user_id' => Auth::id(),
-        ]);
+            if ($this->currentPage < $this->survey->pages->count() - 1) {
+                $this->currentPage++;
+                $this->dispatch('pageChanged');
+            } else {
+                $this->navAction = 'submit';
+                $this->submit();
+            }
+        } elseif ($this->navAction === 'submit') {
+            $this->validate($this->getAllValidationRules(), $this->getAllValidationMessages());
 
-        // Save answers
-        foreach ($this->answers as $questionId => $answer) {
-            $question = $this->survey->pages->flatMap->questions->firstWhere('id', $questionId);
-            $otherChoice = $question->choices->firstWhere('is_other', true); // Find 'Other' choice if exists
-
-            // Skip saving if the answer is effectively empty (null or empty array/string)
-            if ($answer === null || $answer === '' || (is_array($answer) && empty(array_filter($answer, fn($v) => $v !== null && $v !== '')))) {
-                continue;
+            if ($this->isPreview) {
+                session()->flash('success', 'Preview submitted successfully! (No data saved)');
+                return redirect()->route('surveys.create', ['survey' => $this->survey->id]);
             }
 
-            if ($question->question_type === 'multiple_choice' && is_array($answer)) {
-                $hasAnswer = false;
-                foreach ($answer as $choiceId => $checked) {
-                    if ($checked) {
-                        $choice = $question->choices->firstWhere('id', $choiceId);
-                        if ($choice) {
-                            $answerText = $choice->choice_text;
-                            // If this is the 'Other' choice, use the text from otherTexts
-                            if ($choice->is_other) {
-                                $answerText = $this->otherTexts[$questionId] ?? 'Other'; // Use provided text or default
-                            }
-                            Answer::create([
-                                'response_id' => $response->id,
-                                'survey_question_id' => $questionId,
-                                'answer' => $answerText, // Save choice text or 'Other' text
-                            ]);
-                            $hasAnswer = true;
-                        }
-                    }
-                }
-                if (!$hasAnswer) continue;
+            DB::transaction(function () {
+                $user = Auth::user();
 
-            } elseif ($question && $question->question_type === 'radio') {
-                $choice = $question->choices->firstWhere('id', $answer);
-                if ($choice) { // Ensure a choice was actually selected
-                    $answerValue = $choice->choice_text;
-                    // If this is the 'Other' choice, use the text from otherTexts
-                    if ($choice->is_other) {
-                        $answerValue = $this->otherTexts[$questionId] ?? 'Other'; // Use provided text or default
-                    }
-                    Answer::create([
+                $response = Response::create([
+                    'survey_id' => $this->survey->id,
+                    'user_id' => $user?->id,
+                ]);
+
+                foreach ($this->answers as $questionId => $answerValue) {
+                    $question = SurveyQuestion::find($questionId);
+                    if (!$question) continue;
+
+                    $answerData = [
                         'response_id' => $response->id,
                         'survey_question_id' => $questionId,
-                        'answer' => $answerValue, // Save choice text or 'Other' text
-                    ]);
-                } else {
-                    continue; // Skip if no valid choice ID was found for radio
+                        'answer' => null,
+                        'other_text' => null, // Ensure this is initialized
+                    ];
+
+                    if ($question->question_type === 'multiple_choice') {
+                        $selectedChoiceIds = collect($answerValue)->filter(fn($v) => $v === true)->keys()->toArray();
+                        if (!empty($selectedChoiceIds) || !$question->required) {
+                            $answerData['answer'] = json_encode($selectedChoiceIds);
+                            $otherChoice = $question->choices->firstWhere('is_other', true);
+                            if ($otherChoice && in_array($otherChoice->id, $selectedChoiceIds)) {
+                                $answerData['other_text'] = $this->otherTexts[$questionId] ?? null; // This line is crucial
+                            }
+                            Answer::create($answerData);
+                        }
+                    } elseif ($question->question_type === 'radio') {
+                        if ($answerValue !== null || !$question->required) {
+                            $answerData['answer'] = $answerValue;
+                            $otherChoice = $question->choices->firstWhere('is_other', true);
+                            if ($otherChoice && $answerValue == $otherChoice->id) {
+                                $answerData['other_text'] = $this->otherTexts[$questionId] ?? null; // This line is crucial
+                            }
+                            Answer::create($answerData);
+                        }
+                    } elseif ($question->question_type === 'likert') {
+                        $filteredLikert = array_filter($answerValue ?? [], fn($v) => $v !== null);
+                        if (!empty($filteredLikert) || !$question->required) {
+                            $answerData['answer'] = json_encode($answerValue);
+                            Answer::create($answerData);
+                        }
+                    } else {
+                        if (($answerValue !== null && $answerValue !== '') || !$question->required) {
+                            $answerData['answer'] = $answerValue;
+                            Answer::create($answerData);
+                        }
+                    }
                 }
 
-            } elseif ($question && $question->question_type === 'likert' && is_array($answer)) {
-                if (empty(array_filter($answer, fn($v) => $v !== null && $v !== ''))) {
-                    continue;
+                if ($user && $this->survey->points_allocated > 0) {
+                    $user->points = ($user->points ?? 0) + $this->survey->points_allocated;
+                    if ($user instanceof User) {
+                        try {
+                            $user->save();
+                        } catch (\Exception $e) {
+                            Log::error("Error saving user points for user ID: {$user->id}. Error: " . $e->getMessage());
+                        }
+                    }
                 }
-                $encodedAnswer = json_encode($answer);
-                Answer::create([
-                    'response_id' => $response->id,
-                    'survey_question_id' => $questionId,
-                    'answer' => $encodedAnswer,
-                ]);
-            } elseif ($question && $question->question_type === 'rating') {
-                $ratingValue = is_numeric($answer) ? intval($answer) : null;
-                if ($ratingValue === null) {
-                    continue;
-                }
-                Answer::create([
-                    'response_id' => $response->id,
-                    'survey_question_id' => $questionId,
-                    'answer' => $ratingValue,
-                ]);
-            } else {
-                $answerValue = $answer;
+            });
 
-                if (in_array($question->question_type, ['radio'])) {
-                    $choice = $question->choices->firstWhere('id', $answer);
-                    $answerValue = $choice ? $choice->choice_text : $answer;
-                }
-
-                if ($answerValue === null || $answerValue === '') {
-                    continue;
-                }
-
-                Answer::create([
-                    'response_id' => $response->id,
-                    'survey_question_id' => $questionId,
-                    'answer' => $answerValue,
-                ]);
-            }
-        }
-
-        // Update survey status if needed
-        if (!$this->isPreview && $this->survey->status === 'published') {
-            $this->survey->status = 'ongoing';
-            $this->survey->save();
-        }
-
-        // Award points to the user
-        if (!$this->isPreview) {
-            $user = Auth::user();
-            if ($user && $this->survey->points_allocated) {
-                $userModel = User::find($user->id);
-                if ($userModel) {
-                    $userModel->points = ($userModel->points ?? 0) + $this->survey->points_allocated;
-                    $userModel->save();
-                }
-            }
-            session()->flash('success', 'Survey submitted!');
+            session()->flash('success', 'Survey submitted successfully!');
             return redirect()->route('feed.index');
         }
     }

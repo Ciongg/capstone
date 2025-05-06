@@ -94,48 +94,63 @@
                                 }
 
                                 // --- Corrected Data Calculation ---
-                                const allAnswers = @json($question->answers->pluck('answer'));
-                                const standardChoiceTexts = @json($question->choices->where('is_other', false)->pluck('choice_text'));
-                                const choices = @json($question->choices->sortBy('order')->values()); // Ensure sorted and 0-indexed
-
-                                let data = choices.map(choice => {
-                                    if (choice.is_other) {
-                                        // Count answers that DON'T match any standard choice text
-                                        return allAnswers.filter(answer => !standardChoiceTexts.includes(answer)).length;
-                                    } else {
-                                        // Count answers that exactly match this standard choice text
-                                        return allAnswers.filter(answer => answer === choice.choice_text).length;
+                                const choices = @json($question->choices->sortBy('order')->values());
+                                const answers = @json($question->answers);
+                                
+                                // Initialize counts for each choice
+                                let data = Array(choices.length).fill(0);
+                                
+                                // Process each answer
+                                answers.forEach(answer => {
+                                    try {
+                                        // Parse the JSON string to get choice IDs array
+                                        const choiceIds = JSON.parse(answer.answer);
+                                        
+                                        // For multiple choice, answer is an array of choice IDs
+                                        if (Array.isArray(choiceIds)) {
+                                            choiceIds.forEach(choiceId => {
+                                                // Find the index of this choice ID in our choices array
+                                                const choiceIndex = choices.findIndex(c => c.id === parseInt(choiceId));
+                                                if (choiceIndex !== -1) {
+                                                    data[choiceIndex]++;
+                                                }
+                                            });
+                                        } 
+                                        // For radio buttons, answer is a single choice ID
+                                        else if (!isNaN(parseInt(choiceIds))) {
+                                            const choiceIndex = choices.findIndex(c => c.id === parseInt(choiceIds));
+                                            if (choiceIndex !== -1) {
+                                                data[choiceIndex]++;
+                                            }
+                                        }
+                                    } catch (e) {
+                                        console.error('Error parsing answer:', answer.answer, e);
                                     }
                                 });
-                                // --- End Corrected Data Calculation ---
 
-                                let labels = choices.map(choice => choice.choice_text); // Use sorted choices for labels
+                                let labels = choices.map(choice => choice.choice_text);
                                 let backgroundColor = [
-                                    @foreach($question->choices->sortBy('order') as $i => $choice) // Ensure colors match sorted choices
+                                    @foreach($question->choices->sortBy('order') as $i => $choice)
                                         "{{ $colors[$i % count($colors)] }}",
                                     @endforeach
                                 ];
 
                                 // If only one non-zero value, add a transparent dummy slice
                                 let nonZero = data.filter(v => v > 0).length;
-                                if (nonZero === 1 && data.length > 1) { // Avoid adding dummy if only 'Other' exists and has count
+                                if (nonZero === 1 && data.length > 1) {
                                     const zeroIndex = data.findIndex(v => v === 0);
                                     if (zeroIndex !== -1) {
-                                        // Add dummy to an existing zero slice if possible
                                         data[zeroIndex] = 0.00001;
                                     } else {
-                                        // Otherwise, add a new dummy slice
                                         data.push(0.00001);
                                         labels.push('dummy');
                                         backgroundColor.push('rgba(0,0,0,0)');
                                     }
                                 } else if (data.length === 1 && data[0] > 0) {
-                                     // Handle case with only one choice (e.g., only 'Other')
-                                     data.push(0.00001);
-                                     labels.push('dummy');
-                                     backgroundColor.push('rgba(0,0,0,0)');
+                                    data.push(0.00001);
+                                    labels.push('dummy');
+                                    backgroundColor.push('rgba(0,0,0,0)');
                                 }
-
 
                                 chartInstance{{ $question->id }} = new Chart(ctx, {
                                     type: 'pie',
@@ -165,18 +180,25 @@
                     @php
                         $likertColumns = array_values(is_array($question->likert_columns) ? $question->likert_columns : (json_decode($question->likert_columns, true) ?: []));
                         $likertRows = array_values(is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []));
-                        // [row][col] = count
+                        
+                        // Initialize counts correctly
                         $likertCounts = [];
                         foreach ($likertRows as $rowIdx => $row) {
                             $likertCounts[$rowIdx] = array_fill(0, count($likertColumns), 0);
                         }
+
+                        // Process answers more carefully
                         foreach ($question->answers as $answer) {
                             $decoded = json_decode($answer->answer, true);
+                            // Ensure decoded data is an array before proceeding
                             if (is_array($decoded)) {
                                 foreach ($decoded as $rowIdx => $colIdx) {
-                                    $colIdx = intval($colIdx);
-                                    if (isset($likertCounts[$rowIdx][$colIdx])) {
-                                        $likertCounts[$rowIdx][$colIdx]++;
+                                    // Check if row index exists and column index is not null and exists
+                                    if (isset($likertCounts[$rowIdx]) && $colIdx !== null) {
+                                        $colIdx = intval($colIdx); // Ensure it's an integer
+                                        if (isset($likertCounts[$rowIdx][$colIdx])) {
+                                            $likertCounts[$rowIdx][$colIdx]++;
+                                        }
                                     }
                                 }
                             }
@@ -213,6 +235,7 @@
                                             <tr>
                                                 <td class="border border-gray-300 px-4 py-2 font-semibold">{{ $row }}</td>
                                                 @foreach($likertColumns as $colIdx => $column)
+                                                    {{-- Use the calculated counts --}}
                                                     <td class="border border-gray-300 px-4 py-2 text-center">{{ $likertCounts[$rowIdx][$colIdx] ?? 0 }}</td>
                                                 @endforeach
                                             </tr>
@@ -235,7 +258,7 @@
                                 const ctx = document.getElementById('likert-chart-{{ $question->id }}').getContext('2d');
                                 const rows = @json($likertRows);
                                 const columns = @json($likertColumns);
-                                const counts = @json($likertCounts);
+                                const counts = @json($likertCounts); // Pass the correctly calculated counts
                                 const colors = [
                                     @foreach($likertColumns as $i => $column)
                                         "{{ $colors[$i % count($colors)] }}",
@@ -245,7 +268,8 @@
                                 // Each dataset is a Likert option (column)
                                 const datasets = columns.map((col, colIdx) => ({
                                     label: col,
-                                    data: rows.map((row, rowIdx) => counts[rowIdx][colIdx] ?? 0),
+                                    // Ensure data mapping uses the correct counts array structure
+                                    data: rows.map((row, rowIdx) => counts[rowIdx]?.[colIdx] ?? 0),
                                     backgroundColor: colors[colIdx],
                                     borderWidth: 1
                                 }));
@@ -266,7 +290,10 @@
                                         scales: {
                                             x: {
                                                 beginAtZero: true,
-                                                precision: 0
+                                                precision: 0, // Ensure whole numbers on axis
+                                                ticks: {
+                                                    stepSize: 1 // Force step size of 1
+                                                }
                                             },
                                             y: {
                                                 stacked: false

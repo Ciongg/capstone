@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('survey_id')->constrained()->onDelete('cascade');
             $table->foreignId('survey_page_id')->constrained()->onDelete('cascade');
-            $table->boolean('limit_answers')->default(false);
-            $table->integer('max_answers')->nullable();
+            $table->string('limit_condition')->nullable()->after('survey_page_id'); // Add: 'at_most', 'equal_to', or null
+            $table->integer('max_answers')->nullable()->after('limit_condition');
             $table->text('question_text');
             $table->enum('question_type', [
                 'essay', 'multiple_choice', 'page', 'date', 
@@ -36,6 +36,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('survey_questions');
+        Schema::table('survey_questions', function (Blueprint $table) {
+            $table->dropColumn(['limit_condition', 'max_answers']);
+        });
     }
 };

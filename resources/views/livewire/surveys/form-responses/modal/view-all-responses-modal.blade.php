@@ -39,6 +39,7 @@
                     <tr class="bg-gray-100">
                         <th class="px-4 py-2 border-b text-left">Respondent ID</th>
                         <th class="px-4 py-2 border-b text-left">Response(s)</th>
+                        <th class="px-4 py-2 border-b text-left">"Other" Text</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -51,13 +52,60 @@
                                 {{ $answers->first()?->response?->user_id ?? '-' }}
                             </td>
                             <td class="px-4 py-2 border-b">
-                                {{-- Join all answers for this respondent for this question --}}
-                                {{ $answers->pluck('answer')->implode(', ') }}
+                                @php
+                                    // For multiple choice/radio answers: convert JSON array to readable text
+                                    $choiceTexts = [];
+                                    $hasOtherChoice = false;
+                                    $otherText = null;
+                                    
+                                    foreach ($answers as $answer) {
+                                        try {
+                                            // Decode the JSON answer to get choice IDs
+                                            $choiceIds = json_decode($answer->answer, true);
+                                            
+                                            // Handle multiple choice (array of IDs)
+                                            if (is_array($choiceIds)) {
+                                                foreach ($choiceIds as $choiceId) {
+                                                    // Find the choice by ID and get its text
+                                                    $choice = $question->choices->firstWhere('id', $choiceId);
+                                                    if ($choice) {
+                                                        $choiceTexts[] = $choice->choice_text;
+                                                        
+                                                        // Check if this is an "Other" choice
+                                                        if ($choice->is_other && !empty($answer->other_text)) {
+                                                            $hasOtherChoice = true;
+                                                            $otherText = $answer->other_text;
+                                                        }
+                                                    }
+                                                }
+                                            } 
+                                            // Handle radio (single ID)
+                                            else {
+                                                $choice = $question->choices->firstWhere('id', $choiceIds);
+                                                if ($choice) {
+                                                    $choiceTexts[] = $choice->choice_text;
+                                                    
+                                                    // Check if this is an "Other" choice
+                                                    if ($choice->is_other && !empty($answer->other_text)) {
+                                                        $hasOtherChoice = true;
+                                                        $otherText = $answer->other_text;
+                                                    }
+                                                }
+                                            }
+                                        } catch (\Exception $e) {
+                                            $choiceTexts[] = 'Error: ' . $e->getMessage();
+                                        }
+                                    }
+                                @endphp
+                                {{ implode(', ', $choiceTexts) }}
+                            </td>
+                            <td class="px-4 py-2 border-b">
+                                {{ $hasOtherChoice ? $otherText : '-' }}
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="2" class="px-4 py-2 text-center text-gray-400">No responses yet.</td>
+                            <td colspan="3" class="px-4 py-2 text-center text-gray-400">No responses yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

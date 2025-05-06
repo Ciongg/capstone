@@ -30,7 +30,7 @@
                 </button>
             </div>
 
-            {{-- Required Toggle (Moved Here) --}}
+            {{-- Required Toggle --}}
             <div class="flex items-center space-x-1">
                 <label class="text-sm text-gray-600">Required</label>
                 <input
@@ -42,27 +42,33 @@
                 />
             </div>
 
-            {{-- Multiple Choice: Limit Answers Option (Moved Here) --}}
+            {{-- Multiple Choice: Limit Condition Dropdown --}}
             @if($question->question_type === 'multiple_choice')
-                <div class="flex items-center space-x-1"> {{-- Removed ml-4 --}}
-                    <label class="text-sm text-gray-600 flex items-center space-x-1">
-                        <span>Limit</span>
-                        <input
-                            type="checkbox"
-                            wire:model.live="questions.{{ $question->id }}.limit_answers"
-                            wire:change="updateQuestion({{ $question->id }})"
-                            class="form-checkbox h-5 w-5 text-blue-600"
-                        />
-                    </label>
-                    @if(isset($questions[$question->id]['limit_answers']) && $questions[$question->id]['limit_answers'])
+                <div class="flex items-center space-x-1">
+                    <label for="limit-condition-{{ $question->id }}" class="text-sm text-gray-600">Limit:</label>
+                    <select
+                        id="limit-condition-{{ $question->id }}"
+                        wire:model.live="questions.{{ $question->id }}.limit_condition"
+                        wire:change="updateQuestion({{ $question->id }})"
+                        class="border rounded px-2 py-0.5 text-sm"
+                    >
+                        <option value="">No Limit</option>
+                        <option value="at_most">At Most</option>
+                        <option value="equal_to">Equal To</option>
+                    </select>
+
+                    {{-- Conditionally show Max Answers input --}}
+                    @if(isset($questions[$question->id]['limit_condition']) && in_array($questions[$question->id]['limit_condition'], ['at_most', 'equal_to']))
                         <input
                             type="number"
                             min="1"
                             wire:model.live="questions.{{ $question->id }}.max_answers"
                             wire:change="updateQuestion({{ $question->id }})"
-                            class="w-16 border rounded px-2 py-0.5 text-sm"
-                            placeholder="Max"
+                            class="w-16 border rounded px-2 py-0.5 text-sm ml-1"
+                            placeholder="Num"
+                            required {{-- Make required if condition is set --}}
                         />
+                        @error('questions.' . $question->id . '.max_answers') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     @endif
                 </div>
             @endif

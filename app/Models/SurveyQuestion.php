@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class SurveyQuestion extends Model
 {
@@ -13,18 +13,22 @@ class SurveyQuestion extends Model
         'survey_id',
         'survey_page_id',
         'question_text',
-        'question_type',   // 'essay', 'multiple_choice', 'page', 'date', 'likert', 'radio', 'rating', 'short_text'
+        'question_type',
         'order',
-        'stars',
-        'likert_columns',
-        'likert_rows',
-        'limit_answers',
-        'max_answers',
         'required',
+        'stars', // For rating
+        'likert_columns', // For likert
+        'likert_rows', // For likert
+        // 'limit_answers', // Removed
+        'limit_condition', // Added
+        'max_answers', // Keep
     ];
 
     protected $casts = [
         'required' => 'boolean',
+        // 'limit_answers' => 'boolean', // Removed
+        'likert_columns' => 'array',
+        'likert_rows' => 'array',
     ];
 
     public function survey()
@@ -42,7 +46,6 @@ class SurveyQuestion extends Model
         return $this->hasMany(SurveyChoice::class);
     }
 
-    // Add this:
     public function answers()
     {
         return $this->hasMany(Answer::class, 'survey_question_id');

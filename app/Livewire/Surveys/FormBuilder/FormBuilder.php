@@ -13,7 +13,7 @@ class FormBuilder extends Component
 {
     public $survey;
     public $pages = [];
-    public $questionTypes = ['page', 'multiple_choice', 'essay', 'radio', 'date', 'rating', 'short_text', 'likert'];
+    public $questionTypes = ['page', 'multiple_choice', 'radio', 'likert', 'essay', 'short_text', 'rating', 'date' ];
     public $questions = [];
     public $choices = [];
     public $activePageId = null; // Track the active page
@@ -68,6 +68,8 @@ class FormBuilder extends Component
                 }
                 if ($question->question_type === 'multiple_choice') {
                     $this->questions[$question->id]['limit_answers'] = (bool)($question->limit_answers ?? false);
+                    $this->questions[$question->id]['limit_condition'] = $question->limit_condition;
+                    $this->questions[$question->id]['max_answers'] = $question->max_answers;
                 }
                 foreach ($question->choices as $choice) {
                     // Include is_other in the choices array
@@ -170,14 +172,22 @@ class FormBuilder extends Component
         }
 
         // Create the new question with the calculated order and default text
-        $question = $page->questions()->create([
+        $questionData = [
             'survey_id' => $this->survey->id,
             'survey_page_id' => $page->id,
-            'question_text' => 'Enter Question Here', // Set default question text
+            'question_text' => 'Enter Question Title',
             'question_type' => $type,
             'order' => $newOrder,
             'required' => false,
-        ]);
+        ];
+
+        // Initialize limit condition for multiple choice
+        if ($type === 'multiple_choice') {
+            $questionData['limit_condition'] = null; // Default to no limit
+            $questionData['max_answers'] = null;
+        }
+
+        $question = $page->questions()->create($questionData);
 
         // Handle specific question type initializations (rating, likert)
         if ($type === 'rating') {
@@ -283,18 +293,48 @@ class FormBuilder extends Component
     public function updateQuestion($questionId)
     {
         $question = SurveyQuestion::findOrFail($questionId);
+        $questionData = $this->questions[$questionId] ?? [];
 
-        // Prepare data, ensuring max_answers is null if limit_answers is false
-        $limitAnswers = $this->questions[$questionId]['limit_answers'] ?? false;
-        $maxAnswers = $limitAnswers ? ($this->questions[$questionId]['max_answers'] ?? null) : null;
+        // Prepare data for update
+        $updateData = [
+            'question_text' => $questionData['question_text'] ?? '',
+            'required' => $questionData['required'] ?? false,
+        ];
+
+        // Handle multiple choice specific fields
+        if ($question->question_type === 'multiple_choice') {
+            $limitCondition = $questionData['limit_condition'] ?? null;
+            // Ensure condition is valid or null
+            if (!in_array($limitCondition, ['at_most', 'equal_to', null])) {
+                $limitCondition = null;
+            }
+
+            $maxAnswers = null;
+            if (in_array($limitCondition, ['at_most', 'equal_to'])) {
+                // Validate max_answers is a positive integer if condition is set
+                $maxInput = $questionData['max_answers'] ?? null;
+                if (is_numeric($maxInput) && $maxInput >= 1) {
+                    $maxAnswers = (int)$maxInput;
+                } else {
+                    // If condition is set but max_answers is invalid, potentially reset condition or throw validation error
+                    // For now, let's reset the condition to avoid saving invalid state
+                    // $limitCondition = null;
+                    // Or better: Add validation rule
+                    $this->addError('questions.' . $questionId . '.max_answers', 'Number is required when limit is set.');
+                    return; // Stop update if max_answers is invalid
+                }
+            }
+
+            $updateData['limit_condition'] = $limitCondition;
+            $updateData['max_answers'] = $maxAnswers;
+        }
 
         // Update the question fields
-        $question->update([
-            'question_text' => $this->questions[$questionId]['question_text'] ?? '',
-            'required' => $this->questions[$questionId]['required'] ?? false,
-            'limit_answers' => $limitAnswers, // Correctly included
-            'max_answers' => $maxAnswers,     // Correctly included
-        ]);
+        $question->update($updateData);
+
+        // No need to call loadPages() here if using wire:model.live,
+        // but call it if using defer or if other parts rely on the reloaded state immediately.
+        // $this->loadPages();
     }
 
     public function updateChoice($choiceId)
