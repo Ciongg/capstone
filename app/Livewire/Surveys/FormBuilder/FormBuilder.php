@@ -7,6 +7,7 @@ use App\Models\Survey;
 use App\Models\SurveyPage;
 use App\Models\SurveyQuestion;
 use App\Models\SurveyChoice;
+use Illuminate\Support\Facades\DB; // Import DB facade
 
 class FormBuilder extends Component
 {
@@ -43,9 +44,9 @@ class FormBuilder extends Component
                 // Eager load choices and order them
                 $query->with(['choices' => function ($choiceQuery) {
                     $choiceQuery->orderBy('order'); // Ensure choices are ordered
-                }])->orderBy('order');
+                }])->orderBy('order'); // Ensure questions are ordered
             }])
-            ->orderBy('page_number')
+            ->orderBy('order') // Ensure pages are ordered
             ->get();
 
         $this->questions = [];
@@ -105,12 +106,13 @@ class FormBuilder extends Component
 
     public function addPage()
     {
-        // Get the last page number and increment it for the new page
-        $lastPageNumber = $this->survey->pages()->max('page_number') ?? 0;
+        // Get the highest order and increment it for the new page
+        $lastOrder = $this->survey->pages()->max('order') ?? 0;
 
         // Create a new page
         $newPage = $this->survey->pages()->create([
-            'page_number' => $lastPageNumber + 1,
+            'page_number' => $lastOrder + 1, // Keep page_number for display if needed, but order by 'order'
+            'order' => $lastOrder + 1,       // Set the order
             'title' => 'Untitled Page',
             'subtitle' => '',
         ]);
@@ -135,10 +137,10 @@ class FormBuilder extends Component
 
         if (!$this->activePageId) {
             // Ensure an active page exists or create one
-            $firstPage = $this->survey->pages()->orderBy('page_number')->first();
+            $firstPage = $this->survey->pages()->orderBy('order')->first();
             if (!$firstPage) {
                 $this->addPage();
-                $firstPage = $this->survey->pages()->orderBy('page_number')->first();
+                $firstPage = $this->survey->pages()->orderBy('order')->first();
             }
             $this->activePageId = $firstPage->id;
         }
@@ -192,6 +194,19 @@ class FormBuilder extends Component
         }
         // Add default choices for multiple choice
         if ($type === 'multiple_choice') {
+            SurveyChoice::create([
+                'survey_question_id' => $question->id,
+                'choice_text' => 'Option 1',
+                'order' => 1,
+            ]);
+            SurveyChoice::create([
+                'survey_question_id' => $question->id,
+                'choice_text' => 'Option 2',
+                'order' => 2,
+            ]);
+        }
+
+        if ($type === 'radio') {
             SurveyChoice::create([
                 'survey_question_id' => $question->id,
                 'choice_text' => 'Option 1',
@@ -328,7 +343,7 @@ class FormBuilder extends Component
             ->with(['questions' => function ($query) use ($pageId) {
                 $query->where('survey_page_id', $pageId)->orderBy('order');
             }])
-            ->orderBy('page_number')
+            ->orderBy('order')
             ->get();
 
         // Reset the selected question if it was the one being deleted
@@ -374,23 +389,33 @@ class FormBuilder extends Component
 
     public function removePage($pageId)
     {
-        $page = SurveyPage::findOrFail($pageId);
-        $page->questions()->each(function ($question) {
-            $question->choices()->delete(); // Remove associated choices
-            $question->delete(); // Remove questions
-        });
-        $page->delete();
+        DB::transaction(function () use ($pageId) {
+            $page = SurveyPage::where('survey_id', $this->survey->id)->findOrFail($pageId);
+            $deletedOrder = $page->order;
 
-        $remainingPages = $this->survey->pages()->orderBy('page_number')->get();
-        foreach ($remainingPages as $index => $remainingPage) {
-            $remainingPage->update(['page_number' => $index + 1]);
-        }
+            $page->questions()->each(function ($question) {
+                $question->choices()->delete(); // Remove associated choices
+                $question->delete(); // Remove questions
+            });
+            $page->delete();
+
+            // Update the order of subsequent pages
+            SurveyPage::where('survey_id', $this->survey->id)
+                ->where('order', '>', $deletedOrder)
+                ->decrement('order');
+
+            // Optionally update page_number if it's used for display
+            $remainingPages = $this->survey->pages()->orderBy('order')->get();
+            foreach ($remainingPages as $index => $remainingPage) {
+                $remainingPage->update(['page_number' => $index + 1]);
+            }
+
+            if ($this->activePageId === $pageId) {
+                $this->activePageId = $remainingPages->first()->id ?? null;
+            }
+        });
 
         $this->loadPages();
-
-        if ($this->activePageId === $pageId) {
-            $this->activePageId = $remainingPages->first()->id ?? null;
-        }
     }
 
     public function deleteAll()
@@ -557,6 +582,97 @@ class FormBuilder extends Component
         }
         
         return null;
+    }
+
+    // --- Reordering Methods ---
+
+    public function movePageUp($pageId)
+    {
+        $this->moveItemOrder(SurveyPage::class, $pageId, 'up', ['survey_id' => $this->survey->id]);
+    }
+
+    public function movePageDown($pageId)
+    {
+        $this->moveItemOrder(SurveyPage::class, $pageId, 'down', ['survey_id' => $this->survey->id]);
+    }
+
+    public function moveQuestionUp($questionId)
+    {
+        $question = SurveyQuestion::find($questionId);
+        if ($question) {
+            $this->moveItemOrder(SurveyQuestion::class, $questionId, 'up', ['survey_page_id' => $question->survey_page_id]);
+        }
+    }
+
+    public function moveQuestionDown($questionId)
+    {
+        $question = SurveyQuestion::find($questionId);
+        if ($question) {
+            $this->moveItemOrder(SurveyQuestion::class, $questionId, 'down', ['survey_page_id' => $question->survey_page_id]);
+        }
+    }
+
+    public function moveChoiceUp($choiceId)
+    {
+        $choice = SurveyChoice::find($choiceId);
+        if ($choice) {
+            $this->moveItemOrder(SurveyChoice::class, $choiceId, 'up', ['survey_question_id' => $choice->survey_question_id]);
+        }
+    }
+
+    public function moveChoiceDown($choiceId)
+    {
+        $choice = SurveyChoice::find($choiceId);
+        if ($choice) {
+            $this->moveItemOrder(SurveyChoice::class, $choiceId, 'down', ['survey_question_id' => $choice->survey_question_id]);
+        }
+    }
+
+    /**
+     * Helper function to move an item up or down in order within a scope.
+     *
+     * @param string $modelClass The model class (e.g., SurveyPage::class)
+     * @param int $itemId The ID of the item to move
+     * @param string $direction 'up' or 'down'
+     * @param array $scope Conditions to define the scope (e.g., ['survey_id' => 1])
+     */
+    protected function moveItemOrder(string $modelClass, int $itemId, string $direction, array $scope)
+    {
+        DB::transaction(function () use ($modelClass, $itemId, $direction, $scope) {
+            $item = $modelClass::where($scope)->findOrFail($itemId);
+            $currentOrder = $item->order;
+
+            if ($direction === 'up') {
+                if ($currentOrder <= 1) return; // Already at the top
+                $swapItem = $modelClass::where($scope)->where('order', $currentOrder - 1)->first();
+                if ($swapItem) {
+                    $item->order--;
+                    $swapItem->order++;
+                    $item->save();
+                    $swapItem->save();
+                } else {
+                    // Fix potential gap if swap item doesn't exist (shouldn't normally happen)
+                    $item->order--;
+                    $item->save();
+                }
+            } elseif ($direction === 'down') {
+                $maxOrder = $modelClass::where($scope)->max('order');
+                if ($currentOrder >= $maxOrder) return; // Already at the bottom
+                $swapItem = $modelClass::where($scope)->where('order', $currentOrder + 1)->first();
+                if ($swapItem) {
+                    $item->order++;
+                    $swapItem->order--;
+                    $item->save();
+                    $swapItem->save();
+                } else {
+                     // Fix potential gap if swap item doesn't exist (shouldn't normally happen)
+                    $item->order++;
+                    $item->save();
+                }
+            }
+        });
+
+        $this->loadPages(); // Reload data after reordering
     }
 
     public function render()

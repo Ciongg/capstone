@@ -41,7 +41,7 @@
         class="w-full text-2xl font-bold p-2 border border-gray-300 rounded mb-2 resize-none overflow-hidden"
         rows="1"
         data-autoresize
-        :style="{ height: $store.textareaHeights.get('page-title-{{ $page->id }}') }"
+        :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('page-title-{{ $page->id }}') : 'auto' }"
     >{{ $page->title }}</textarea>
 
     {{-- Page Subtitle Textarea --}}
@@ -67,7 +67,7 @@
         class="w-full text-lg text-gray-600 p-2 border border-gray-300 rounded resize-none overflow-hidden"
         rows="1"
         data-autoresize
-        :style="{ height: $store.textareaHeights.get('page-subtitle-{{ $page->id }}') }"
+        :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('page-subtitle-{{ $page->id }}') : 'auto' }"
     >{{ $page->subtitle }}</textarea>
         
     {{-- Container for Page Actions (Delete Button & Add Question Picker) --}}

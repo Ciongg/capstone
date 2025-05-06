@@ -21,7 +21,7 @@
                 <div class="flex items-center space-x-4 text-gray-700">
                     @auth
                         <a href="/feed" wire:navigate class="hover:text-[#00BBFF] hover:underline">Feed</a>
-                        <a href="/surveys/create" wire:navigate class="hover:text-[#00BBFF] hover:underline">Create Survey</a>
+                        <a href="/surveys/create" class="hover:text-[#00BBFF] hover:underline">Create Survey</a>
                         <a href="/my-surveys" wire:navigate class="hover:text-[#00BBFF] hover:underline">My Surveys</a>
                         <a href="/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Rewards</a>
                     @else

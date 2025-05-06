@@ -1,76 +1,91 @@
 <div class="mt-4 space-y-2">
-    @php $hasOtherOption = $question->choices->contains('is_other', true); @endphp
+    @php
+        // Filter out the 'Other' option for reordering logic if it exists
+        $reorderableChoices = $question->choices->where('is_other', false)->sortBy('order');
+        $otherChoice = $question->choices->firstWhere('is_other', true);
+        $totalReorderable = $reorderableChoices->count();
+    @endphp
 
-    @foreach($question->choices->sortBy('order') as $choice)
-        <div class="flex items-center space-x-2" wire:key="choice-{{ $choice->id }}">
-            <span class="inline-block w-4 h-4 rounded-full border-2 border-gray-400 mr-2 self-start mt-2"></span> {{-- Align icon --}}
-            {{-- If it's the 'Other' option, display text, otherwise show textarea --}}
-            @if($choice->is_other)
-                <span class="flex-1 p-2 text-gray-500 italic">Other</span>
-            @else
-                <textarea
-                    id="choice-{{ $choice->id }}"
-                    x-data="{
-                        init() {
-                            // Set initial height on initialization
-                            $nextTick(() => this.adjustHeight());
-                        },
-                        adjustHeight() {
-                            const id = $el.id;
-                            $el.style.height = 'auto';
-                            const newHeight = `${$el.scrollHeight}px`;
-                            $el.style.height = newHeight;
-                            // Store height in Alpine store
-                            Alpine.store('textareaHeights').set(id, newHeight);
-                        }
-                    }"
-                    @input="adjustHeight()"
-                    wire:model.defer="choices.{{ $choice->id }}.choice_text"
-                    wire:blur="updateChoice({{ $choice->id }})"
-                    placeholder="Choice text"
-                    onfocus="this.select()"
-                    class="flex-1 p-2 border border-gray-300 rounded resize-none overflow-hidden"
-                    rows="1"
-                    data-autoresize
-                    :style="{ height: $store.textareaHeights.get('choice-{{ $choice->id }}') }"
-                ></textarea>
-            @endif
-            {{-- Show remove button only when question is selected --}}
-            <span x-show="selectedQuestionId === {{ $question->id }}" class="self-start mt-1"> {{-- Align button --}}
+    @foreach ($reorderableChoices as $choice)
+        <div wire:key="choice-{{ $choice->id }}" class="flex items-center space-x-2 group">
+            <input type="radio" disabled class="form-radio h-5 w-5 text-gray-400"> {{-- Visual cue --}}
+            <input
+                type="text"
+                wire:model.defer="choices.{{ $choice->id }}.choice_text"
+                wire:blur="updateChoice({{ $choice->id }})"
+                class="flex-grow p-1 border border-gray-300 rounded"
+                placeholder="Choice text"
+            />
+            {{-- Delete Button (Reverted to X) --}}
+            <button
+                x-show="selectedQuestionId === {{ $question->id }}" x-cloak
+                wire:click="removeChoice({{ $choice->id }})"
+                wire:confirm="Are you sure you want to remove this choice?"
+                type="button"
+                class="text-red-500 hover:text-red-700"
+                aria-label="Remove choice"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            {{-- Reorder Buttons --}}
+            <div x-show="selectedQuestionId === {{ $question->id }}" x-cloak class="flex flex-col">
                 <button
-                    wire:click.stop="removeChoice({{ $choice->id }})"
-                    class="text-red-500 hover:text-red-700 ml-2"
-                    title="Remove Choice"
+                    wire:click.stop="moveChoiceUp({{ $choice->id }})"
                     type="button"
-                >&#10005;</button>
-            </span>
+                    class="px-1 py-0 text-xs rounded-t {{ $loop->first ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800' }}"
+                    {{ $loop->first ? 'disabled' : '' }}
+                    aria-label="Move choice up"
+                >
+                    ▲
+                </button>
+                <button
+                    wire:click.stop="moveChoiceDown({{ $choice->id }})"
+                    type="button"
+                    class="px-1 py-0 text-xs rounded-b {{ $loop->iteration === $totalReorderable ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800' }}"
+                    {{ $loop->iteration === $totalReorderable ? 'disabled' : '' }}
+                    aria-label="Move choice down"
+                >
+                    ▼
+                </button>
+            </div>
         </div>
     @endforeach
 
-    {{-- Buttons container --}}
-    <template x-if="selectedQuestionId === {{ $question->id }}">
-        <div class="mt-4 flex space-x-4"> {{-- Increased spacing slightly --}}
-            {{-- Add Choice Button --}}
+    {{-- Display 'Other' option if it exists (non-reorderable) --}}
+    @if($otherChoice)
+        <div wire:key="choice-{{ $otherChoice->id }}" class="flex items-center space-x-2 group pl-7"> {{-- Indent slightly --}}
+             <input
+                type="text"
+                wire:model.defer="choices.{{ $otherChoice->id }}.choice_text"
+                wire:blur="updateChoice({{ $otherChoice->id }})"
+                class="flex-grow p-1 border border-gray-300 rounded bg-gray-100" {{-- Slightly different bg --}}
+                placeholder="Other option text"
+            />
+            {{-- Delete Button for 'Other' (Reverted to X) --}}
             <button
-                wire:click.stop="addChoice({{ $question->id }})"
-                {{-- Remove bg, change text color --}}
-                class="px-3 py-1 text-blue-500 hover:text-blue-700 rounded flex items-center"
+                x-show="selectedQuestionId === {{ $question->id }}" x-cloak
+                wire:click="removeChoice({{ $otherChoice->id }})"
+                wire:confirm="Are you sure you want to remove the &quot;Other&quot; option?"
                 type="button"
+                class="text-red-500 hover:text-red-700"
+                aria-label="Remove 'Other' option"
             >
-                <span class="mr-1 text-lg font-bold">+</span> Add Choice
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
             </button>
-
-            {{-- Add Other Option Button (conditional) --}}
-            @if(!$hasOtherOption)
-                <button
-                    wire:click.stop="addOtherOption({{ $question->id }})"
-                    {{-- Remove bg, change text color --}}
-                    class="px-3 py-1 text-blue-500 hover:text-blue-700 rounded flex items-center"
-                    type="button"
-                >
-                    <span class="mr-1 text-lg font-bold">+</span> Add Other
-                </button>
-            @endif
+             {{-- Placeholder for alignment --}}
+            <div x-show="selectedQuestionId === {{ $question->id }}" x-cloak class="flex flex-col w-[20px]"></div>
         </div>
-    </template>
+    @endif
+
+    {{-- Add Choice / Add Other Buttons (Only show when question is selected) --}}
+    <div x-show="selectedQuestionId === {{ $question->id }}" x-cloak class="pt-2 flex space-x-2">
+        <button wire:click="addChoice({{ $question->id }})" class="text-blue-500 hover:text-blue-700 text-sm">+ Add Choice</button>
+        @if(!$otherChoice)
+            <button wire:click="addOtherOption({{ $question->id }})" class="text-blue-500 hover:text-blue-700 text-sm">+ Add "Other"</button>
+        @endif
+    </div>
 </div>

@@ -23,11 +23,17 @@ class AnswerSurvey extends Component
     public function mount(Survey $survey, $isPreview = false)
     {
         // Load choices with is_other
-        $this->survey = $survey->load(['pages.questions' => function ($q) {
-            $q->with(['choices' => function ($c) {
-                $c->orderBy('order'); // Ensure choices are ordered
-            }])->orderBy('order');
-        }]);
+        $this->survey = $survey->load([
+            'pages' => function ($query) {
+                $query->orderBy('order') // Order pages
+                      ->with(['questions' => function ($qQuery) {
+                          $qQuery->orderBy('order') // Order questions within pages
+                                 ->with(['choices' => function ($cQuery) {
+                                     $cQuery->orderBy('order'); // Order choices within questions
+                                 }]);
+                      }]);
+            }
+        ]);
         $this->isPreview = (bool) $isPreview;
 
         // Check survey status only if not in preview mode

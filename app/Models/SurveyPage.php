@@ -13,6 +13,7 @@ class SurveyPage extends Model
         'page_number',
         'title',
         'subtitle',
+        'order',
         
     ];
 

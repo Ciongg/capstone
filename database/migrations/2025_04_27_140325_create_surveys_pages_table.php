@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('survey_id')->constrained()->onDelete('cascade');
             $table->integer('page_number')->default(1);
+            $table->integer('order')->default(1);
             $table->string('title')->nullable();
             $table->string('subtitle')->nullable();
             $table->timestamps();
