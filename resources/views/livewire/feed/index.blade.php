@@ -26,9 +26,9 @@
     {{-- Surveys Grid --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
         @forelse($surveys as $survey)
-            <div class="relative bg-white shadow-lg rounded-xl p-0 flex flex-col items-center h-[500px]">
+            <div class="relative bg-white shadow-lg rounded-xl p-0 flex flex-col min-h-[500px]">
                 {{-- Header: Profile + Name + Points (row), then Title (below, still gray) --}}
-                <div class="w-full px-4 py-3 rounded-t-xl bg-gray-100 border-b border-gray-100">
+                <div class="w-full px-4 py-3 rounded-t-xl bg-gray-100 border-b border-gray-100 flex-shrink-0">
                     <div class="flex items-center mb-2">
                         {{-- Use the profile photo URL --}}
                         <img src="{{ $survey->user->profile_photo_url }}" alt="{{ $survey->user->name ?? 'User' }}" class="w-10 h-10 rounded-full object-cover mr-3">
@@ -50,18 +50,56 @@
                     </div>
                 </div>
                 {{-- Survey Image --}}
-                <div class="w-full flex-1 flex items-center justify-center mb-2 relative px-4">
-                    @php
-                        $imageUrl = $survey->image_path ? asset('storage/' . $survey->image_path) : 'https://placehold.co/300x340?text=No+Image';
-                    @endphp
-                    <button @click="fullscreenImageSrc = '{{ $imageUrl }}'" class="cursor-pointer">
-                        <img src="{{ $imageUrl }}"
-                             alt="Survey Image"
-                             class="rounded-lg object-contain w-full h-80" />
-                    </button>
+                <div class="w-full flex-grow mt-4 flex items-center justify-center mb-2 relative px-4 min-h-0">
+                    @if($survey->image_path)
+                        @php
+                            $imageUrl = asset('storage/' . $survey->image_path);
+                        @endphp
+                        <button @click="fullscreenImageSrc = '{{ $imageUrl }}'" class="cursor-pointer w-full h-full flex items-center justify-center">
+                            <img src="{{ $imageUrl }}"
+                                 alt="Survey image for {{ $survey->title }}"
+                                 class="rounded-lg object-contain max-w-full max-h-[340px]" />
+                        </button>
+                    @else
+                        <div class="w-full h-full max-h-[340px] bg-gray-200 flex items-center justify-center rounded-lg">
+                            <span class="text-gray-500 text-sm">no image</span>
+                        </div>
+                    @endif
                 </div>
+
+                {{-- Tags Section --}}
+                <div class="w-full px-4 mb-3 flex-shrink-0">
+                    <div class="flex flex-wrap gap-2 justify-center min-h-[36px] items-center">
+                        @if($survey->tags->isEmpty())
+                            {{-- Display three empty styled tags if no tags are present --}}
+                            <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                            <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                            <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                        @else
+                            @php
+                                // Always show exactly 3 tags or placeholders
+                                $tagsToShow = $survey->tags->take(3);
+                                $remainingCount = $survey->tags->count() - 3;
+                            @endphp
+                            
+                            @foreach($tagsToShow as $tag)
+                                <span class="px-3 py-2 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis">
+                                    {{ $tag->name }}
+                                </span>
+                            @endforeach
+                            
+                            {{-- Fill empty slots with placeholders if fewer than 3 tags --}}
+                            @for($i = $tagsToShow->count(); $i < 3; $i++)
+                                <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                            @endfor
+                            
+                            
+                        @endif
+                    </div>
+                </div>
+
                 {{-- Read More Button --}}
-                <div class="w-full flex justify-start mb-4 px-4">
+                <div class="w-full flex justify-start mt-auto mb-4 px-4 flex-shrink-0">
                     <button
                         x-data
                         x-on:click="$dispatch('open-modal', {name : 'view-survey-{{ $survey->id }}'})"

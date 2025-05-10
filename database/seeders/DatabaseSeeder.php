@@ -16,8 +16,29 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         User::factory()->create([
-            'name' => 'Test User',
+            'name' => 'Miguel Inciong',
             'email' => 'test@example.com',
+            'password' => Hash::make('password123'),
+            'type' => 'researcher',
+        ]);
+
+        User::factory()->create([
+            'name' => 'Dion Marmon',
+            'email' => 'test1@example.com',
+            'password' => Hash::make('password123'),
+            'type' => 'researcher',
+        ]);
+
+        User::factory()->create([
+            'name' => 'Kurt Aquino',
+            'email' => 'test2@example.com',
+            'password' => Hash::make('password123'),
+            'type' => 'researcher',
+        ]);
+
+        User::factory()->create([
+            'name' => 'Rence Baldeo',
+            'email' => 'test3@example.com',
             'password' => Hash::make('password123'),
             'type' => 'researcher',
         ]);
@@ -25,6 +46,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             TagCategorySeeder::class,
             TagSeeder::class,
+            SurveySeeder::class,
         ]);
         
     }

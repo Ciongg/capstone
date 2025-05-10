@@ -1,9 +1,9 @@
-<div class="p-4">
+<div class="p-4 flex flex-col justify-center items-center h-full">
     @if ($step === 'type')
-        <div>
-            <p class="mb-6 text-gray-600">Choose the type of survey you want to create:</p>
+        <div class="w-full max-w-lg">
+            <p class="mb-6 text-gray-600 text-center">Choose the type of survey you want to create:</p>
             
-            <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 <button 
                     wire:click="selectSurveyType('basic')" 
                     class="flex flex-col items-center justify-center p-6 border-2 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all
@@ -13,7 +13,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                     </svg>
                     <h3 class="font-bold text-lg">Basic Survey</h3>
-                    <p class="text-sm text-gray-500 text-center mt-2">Simple forms with standard question types</p>
+                    <p class="text-sm text-gray-500 text-center mt-2">Alllow Anyone To Answer</p>
                 </button>
                 
                 <button 
@@ -25,12 +25,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                     </svg>
                     <h3 class="font-bold text-lg">Advanced Survey</h3>
-                    <p class="text-sm text-gray-500 text-center mt-2">Complex forms with logic jumps and advanced features</p>
+                    <p class="text-sm text-gray-500 text-center mt-2">With Targeted Survey Distribution</p>
                 </button>
             </div>
         </div>
     @elseif ($step === 'method')
-        <div>
+        <div class="w-full max-w-lg">
             <!-- Back button -->
             <button 
                 wire:click="goBack" 
@@ -42,12 +42,12 @@
                 Back
             </button>
             
-            <p class="mb-6 text-gray-600">
+            <p class="mb-6 text-gray-600 text-center">
                 Creating a {{ $surveyType }} survey.
                 How would you like to start?
             </p>
             
-            <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 <button 
                     wire:click="selectCreationMethod('scratch')" 
                     class="flex flex-col items-center justify-center p-6 border-2 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all

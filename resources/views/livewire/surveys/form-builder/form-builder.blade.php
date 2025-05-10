@@ -164,7 +164,7 @@
                                 x-transition:leave="transition ease-in duration-75"
                                 x-transition:leave-start="opacity-100 scale-100"
                                 x-transition:leave-end="opacity-0 scale-95"
-                                class="flex flex-col -ml-px ml-1 flex-shrink-0"
+                                class="flex flex-col  ml-1 flex-shrink-0"
                                 x-cloak
                             >
                                 <button
