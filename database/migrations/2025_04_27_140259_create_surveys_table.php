@@ -21,6 +21,7 @@ return new class extends Migration
             $table->timestamps();
             
             //Survey Settings
+            $table->boolean('is_institution_only')->default(false); // Added this line
             $table->decimal('points')->nullable()->default(0);
             $table->unsignedInteger('target_respondents')->nullable()->default(30);
             $table->dateTime('start_date')->nullable();

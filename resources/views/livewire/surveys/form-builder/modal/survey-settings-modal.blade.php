@@ -1,6 +1,5 @@
 <div x-data="{ tab: 'info' }" class="space-y-4 p-4">
 
-
     <!-- Tab Buttons -->
     <div class="flex space-x-2 mb-4">
         <button
@@ -13,17 +12,58 @@
         </button>
         <button
             type="button"
-            :class="tab === 'demographics' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+            :class="{
+                'bg-blue-500 text-white': tab === 'demographics',
+                'bg-gray-200 text-gray-700': tab !== 'demographics',
+                'opacity-50 cursor-not-allowed': isInstitutionOnly
+            }"
             class="px-4 py-2 rounded font-semibold focus:outline-none"
-            @click="tab = 'demographics'"
+            @click="!isInstitutionOnly && (tab = 'demographics')"
+            x-bind:disabled="isInstitutionOnly"
+            x-data="{ isInstitutionOnly: @js($isInstitutionOnly) }"
+            title="Standard demographics are only available for public surveys"
         >
             Survey Demographics
+        </button>
+        <button
+            type="button"
+            :class="{
+                'bg-blue-500 text-white': tab === 'institution_demographics',
+                'bg-gray-200 text-gray-700': tab !== 'institution_demographics',
+                'opacity-50 cursor-not-allowed': !isInstitutionOnly
+            }"
+            class="px-4 py-2 rounded font-semibold focus:outline-none"
+            @click="isInstitutionOnly && (tab = 'institution_demographics')"
+            x-bind:disabled="!isInstitutionOnly"
+            x-data="{ isInstitutionOnly: @js($isInstitutionOnly) }"
+            title="Institution demographics are only available for institution-only surveys"
+        >
+            Institution Demographics
         </button>
     </div>
 
     <!-- Survey Information Tab -->
     <div x-show="tab === 'info'" x-cloak>
         <form wire:submit.prevent="saveSurveyInformation" class="space-y-4" x-data="{ fileName: '' }">
+            
+            <!-- Institution-Only Checkbox -->
+            <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg w-full">
+                <div class="flex items-center">
+                    <input 
+                        type="checkbox" 
+                        id="institution-only-{{ $survey->id }}" 
+                        wire:model.defer="isInstitutionOnly"
+                        class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    >
+                    <label for="institution-only-{{ $survey->id }}" class="ml-2 text-sm font-medium text-gray-900">
+                        Make this survey institution-only
+                    </label>
+                </div>
+                <p class="mt-1 text-xs text-gray-600">
+                    Institution-only surveys are only visible to members of your institution.
+                </p>
+            </div>
+
             <!-- Banner Image Upload -->
             <div>
                 <label class="block font-semibold mb-2 text-center">Survey Banner Image</label>
@@ -128,25 +168,85 @@
     </div>
 
     <!-- Survey Demographics Tab -->
-    <div<!-- Survey Demographics Tab -->
-<div x-show="tab === 'demographics'" x-cloak>
-    <form wire:submit.prevent="saveSurveyTags" class="space-y-4">
-        @foreach($tagCategories as $category)
-            <div wire:key="survey-tag-category-{{ $category->id }}">
-                <label class="block font-semibold mb-1">{{ $category->name }}</label>
-                <select wire:model.live="selectedSurveyTags.{{ $category->id }}" class="w-full border rounded px-3 py-2">
-                    <option value="">Select {{ $category->name }}</option>
-                    @foreach($category->tags as $tag)
-                        <option value="{{ $tag->id }}">{{ $tag->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-        @endforeach
-        <button type="submit" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-            <span wire:loading.remove wire:target="saveSurveyTags">Save Demographics</span>
-            <span wire:loading wire:target="saveSurveyTags">Saving...</span>
-        </button>
-    </form>
-</div>
+    <div x-show="tab === 'demographics'" x-cloak>
+        <form wire:submit.prevent="saveSurveyTags" class="space-y-4">
+            @foreach($tagCategories as $category)
+                <div wire:key="survey-tag-category-{{ $category->id }}">
+                    <label class="block font-semibold mb-1">{{ $category->name }}</label>
+                    <select wire:model.live="selectedSurveyTags.{{ $category->id }}" class="w-full border rounded px-3 py-2">
+                        <option value="">Select {{ $category->name }}</option>
+                        @foreach($category->tags as $tag)
+                            <option value="{{ $tag->id }}">{{ $tag->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endforeach
+            <button type="submit" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                <span wire:loading.remove wire:target="saveSurveyTags">Save Demographics</span>
+                <span wire:loading wire:target="saveSurveyTags">Saving...</span>
+            </button>
+        </form>
+    </div>
 
+    <!-- Institution Demographics Tab -->
+    <div x-show="tab === 'institution_demographics'" x-cloak>
+        <div class="mb-4">
+            <h3 class="text-lg font-semibold">Institution Demographics</h3>
+            <p class="text-sm text-gray-500">Select the institutional demographic tags to target specific groups within your institution.</p>
+        </div>
+        
+        <form wire:submit.prevent="saveInstitutionTags" class="space-y-4">
+            @if(empty($institutionTagCategories) || count($institutionTagCategories) == 0)
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                    <div class="flex">
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                No institutional demographics have been set up yet. 
+                                <a href="{{ route('profile.index') }}" class="font-medium underline text-yellow-700 hover:text-yellow-600">
+                                    Set up institution demographics
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @else
+                @foreach($institutionTagCategories as $category)
+                    <div wire:key="institution-tag-category-{{ $category->id }}">
+                        <label class="block font-semibold mb-1">{{ $category->name }}</label>
+                        <select wire:model.live="selectedInstitutionTags.{{ $category->id }}" class="w-full border rounded px-3 py-2">
+                            <option value="">Select {{ $category->name }}</option>
+                            @foreach($category->tags as $tag)
+                                <option value="{{ $tag->id }}">{{ $tag->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endforeach
+                
+                <button type="submit" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                    <span wire:loading.remove wire:target="saveInstitutionTags">Save Institution Demographics</span>
+                    <span wire:loading wire:target="saveInstitutionTags">Saving...</span>
+                </button>
+            @endif
+        </form>
+    </div>
+
+    <!-- Institution-Only Checkbox handler - Add this script to update tab behavior -->
+    <script>
+        document.addEventListener('livewire:initialized', () => {
+            @this.on('updated', (event) => {
+                if (typeof event.isInstitutionOnly !== 'undefined') {
+                    // Update the isInstitutionOnly property in all Alpine.js components that use it
+                    Alpine.store('isInstitutionOnly', event.isInstitutionOnly);
+                    
+                    // If tabs are now disabled, switch back to info tab
+                    if (event.isInstitutionOnly && Alpine.$data(document.querySelector('[x-data*="tab"]')).tab === 'demographics') {
+                        Alpine.$data(document.querySelector('[x-data*="tab"]')).tab = 'info';
+                    } 
+                    else if (!event.isInstitutionOnly && Alpine.$data(document.querySelector('[x-data*="tab"]')).tab === 'institution_demographics') {
+                        Alpine.$data(document.querySelector('[x-data*="tab"]')).tab = 'info';
+                    }
+                }
+            });
+        });
+    </script>
 </div>

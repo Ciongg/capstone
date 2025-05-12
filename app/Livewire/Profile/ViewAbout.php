@@ -5,50 +5,91 @@ namespace App\Livewire\Profile;
 use Livewire\Component;
 use App\Models\User;
 use App\Models\TagCategory;
+use App\Models\Tag;
+use App\Models\InstitutionTagCategory;
+use App\Models\InstitutionTag;
+use Illuminate\Support\Facades\Auth;
 
 class ViewAbout extends Component
 {
-    public $user;
-    public $tagCategories;
+    public User $user;
     public $selectedTags = [];
+    public $selectedInstitutionTags = [];
+    public $tagCategories;
+    public $institutionTagCategories = [];
 
-    public function mount($user)
+    public function mount()
     {
-        // Ensure $user is a User model instance
-        if (is_numeric($user)) {
-            $this->user = User::find($user);
-        } elseif ($user instanceof User) {
-            $this->user = $user;
-        } else {
-            $this->user = null;
-        }
-
+        $this->user = Auth::user();
+        
+        // Load regular tag categories and tags
         $this->tagCategories = TagCategory::with('tags')->get();
-
-        if ($this->user) {
-            foreach ($this->tagCategories as $category) {
-                $tag = $this->user->tags()->where('tag_category_id', $category->id)->first();
-                $this->selectedTags[$category->id] = $tag ? $tag->id : '';
+        
+        // Load user's selected tags
+        $userTags = $this->user->tags()->pluck('tags.id')->toArray();
+        
+        // Organize selected tags by category
+        foreach ($this->tagCategories as $category) {
+            $categoryTags = $category->tags->pluck('id')->toArray();
+            $userTagsForCategory = array_intersect($userTags, $categoryTags);
+            
+            if (!empty($userTagsForCategory)) {
+                $this->selectedTags[$category->id] = reset($userTagsForCategory);
+            }
+        }
+        
+        // If user belongs to an institution, load institution-specific tag categories
+        if ($this->user->institution_id && !$this->user->isInstitutionAdmin()) {
+            $this->institutionTagCategories = InstitutionTagCategory::where('institution_id', $this->user->institution_id)
+                ->with('tags')
+                ->get();
+            
+            // Load user's selected institution tags
+            $userInstitutionTags = $this->user->institutionTags()->pluck('institution_tags.id')->toArray();
+            
+            // Organize selected institution tags by category
+            foreach ($this->institutionTagCategories as $category) {
+                $categoryTags = $category->tags->pluck('id')->toArray();
+                $userTagsForCategory = array_intersect($userInstitutionTags, $categoryTags);
+                
+                if (!empty($userTagsForCategory)) {
+                    $this->selectedInstitutionTags[$category->id] = reset($userTagsForCategory);
+                }
             }
         }
     }
 
     public function saveTags()
     {
-        $tagIds = array_filter($this->selectedTags);
-
-        if ($this->user) {
-            // Build sync array with tag_name
-            $syncData = [];
-            foreach ($tagIds as $categoryId => $tagId) {
-                $tag = \App\Models\Tag::find($tagId);
-                if ($tag) {
-                    $syncData[$tagId] = ['tag_name' => $tag->name];
+        // Process regular tags
+        $tagsToSync = [];
+        foreach ($this->selectedTags as $categoryId => $tagId) {
+            if (!empty($tagId)) {
+                $tagsToSync[] = $tagId;
+            }
+        }
+        
+        // Sync regular tags
+        $this->user->tags()->sync($tagsToSync);
+        
+        // Process institution tags if applicable
+        if ($this->user->institution_id && !empty($this->selectedInstitutionTags)) {
+            $institutionTagsToSync = [];
+            foreach ($this->selectedInstitutionTags as $categoryId => $tagId) {
+                if (!empty($tagId)) {
+                    // Get tag name for denormalization
+                    $tag = InstitutionTag::find($tagId);
+                    if ($tag) {
+                        $institutionTagsToSync[$tagId] = ['tag_name' => $tag->name];
+                    }
                 }
             }
-            $this->user->tags()->sync($syncData);
-            session()->flash('tags_saved', 'Demographic tags updated!');
+            
+            // Sync institution tags
+            $this->user->institutionTags()->sync($institutionTagsToSync);
         }
+        
+        session()->flash('tags_saved', 'Your demographic information has been updated successfully!');
     }
 
     public function render()

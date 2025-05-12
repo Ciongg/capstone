@@ -19,6 +19,7 @@ class Survey extends Model
         'end_date',
         'points_allocated',
         'image_path',
+        'is_institution_only',
     ];
 
     public function pages()
@@ -41,8 +42,23 @@ class Survey extends Model
         return $this->hasMany(\App\Models\Response::class);
     }
 
+    /**
+     * Get the tags associated with the survey.
+     */
     public function tags()
     {
-        return $this->belongsToMany(\App\Models\Tag::class);
+        return $this->belongsToMany(Tag::class, 'survey_tag')
+            ->withPivot('tag_name')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the institution tags associated with the survey.
+     */
+    public function institutionTags()
+    {
+        return $this->belongsToMany(InstitutionTag::class, 'institution_survey_tags')
+                    ->withPivot('tag_name')
+                    ->withTimestamps();
     }
 }

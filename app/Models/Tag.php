@@ -15,7 +15,9 @@ class Tag extends Model
 
     public function surveys()
     {
-        return $this->belongsToMany(Survey::class);
+        return $this->belongsToMany(Survey::class, 'survey_tags') // Fixed: Changed 'tags' to 'survey_tags'
+            ->withPivot('tag_name')
+            ->withTimestamps();
     }
 
     public function users()
