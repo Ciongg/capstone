@@ -1,4 +1,30 @@
 <div class="max-w-3xl mx-auto py-10" x-data="{ tab: 'about' }">
+    {{-- Institution Invalid Warning - ALWAYS DISPLAYED FOR INSTITUTION ADMINS WITH INVALID INSTITUTION --}}
+    @auth
+        @if(Auth::user()->hasInvalidInstitution())
+            <div class="bg-orange-100 border-b border-orange-400 text-orange-700 px-4 py-3 relative mb-6 rounded-xl shadow" role="alert">
+                <div class="flex items-center">
+                    <svg class="h-6 w-6 text-orange-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span class="font-medium">Your institution is no longer in our system. Some features will be limited.</span>
+                </div>
+            </div>
+        @endif
+
+        {{-- Downgraded Researcher Warning - ALWAYS DISPLAYED FOR RESPONDENTS WITH .EDU EMAILS --}}
+        @if(Auth::user()->isDowngradedResearcher())
+            <div class="bg-yellow-100 border-b border-yellow-400 text-yellow-700 px-4 py-3 relative mb-6 rounded-xl shadow" role="alert">
+                <div class="flex items-center">
+                    <svg class="h-6 w-6 text-yellow-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span class="font-medium">Your account has researcher potential! However, your institution is not yet registered in our system.</span>
+                </div>
+            </div>
+        @endif
+    @endauth
+
     <!-- Profile Header -->
     <div class="flex flex-col items-center bg-white rounded-xl shadow p-8 mb-8">
         <!-- Profile Image -->
@@ -28,6 +54,10 @@
 
         <!-- User Name -->
         <div class="text-2xl font-bold mb-1">{{ $user?->name ?? 'Unknown User' }}</div>
+        <!-- Institution Name -->
+        @if($user->institution)
+        <div class="text-sm text-gray-500 mb-1">{{ $user->institution?->name }}</div>
+        @endif
         <!-- User Type -->
         <div class="text-blue-500 font-semibold mb-1 capitalize">{{ $user?->type ?? 'User' }}</div>
         <!-- Trust Score -->

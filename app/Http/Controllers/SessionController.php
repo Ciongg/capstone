@@ -1,9 +1,10 @@
 <?php
 
 namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Http\Request;
 
 class SessionController extends Controller
 {
@@ -26,14 +27,16 @@ class SessionController extends Controller
 
     }
 
-    public function destroy(){
+    public function destroy(Request $request){
         Auth::logout();
-
-        return redirect('/');
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect('/')->with('success', 'You have been logged out.');
     }
 
-    public function showLogin(){
-        return view('login');
+    public function create()
+    {
+        return view('auth.login');
     }
 
 

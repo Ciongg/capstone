@@ -25,14 +25,19 @@ class SurveySeeder extends Seeder
     {
         $faker = Faker::create();
         
-        // Get all users or create a test user if none exists
-        $users = User::all();
-        if ($users->isEmpty()) {
-            $user = User::factory()->create([
-                'email' => 'test@example.com',
-                'password' => bcrypt('password')
+        // Get all users with the 'researcher' type
+        $researcherUsers = User::where('type', 'researcher')->get();
+
+        if ($researcherUsers->isEmpty()) {
+            $this->command->info('No researcher users found. Creating a default researcher to assign surveys.');
+            // Optionally, create a default researcher user if none exist
+            $defaultResearcher = User::factory()->create([
+                'name' => 'Default Researcher',
+                'email' => 'researcher@example.com',
+                'password' => bcrypt('password'),
+                'type' => 'researcher', // Ensure this user is a researcher
             ]);
-            $users = collect([$user]);
+            $researcherUsers = collect([$defaultResearcher]);
         }
         
         // Create or ensure tag categories and tags exist
@@ -57,8 +62,12 @@ class SurveySeeder extends Seeder
             // Set fixed points based on survey type
             $points = ($surveyType === 'basic') ? 10 : 30;
             
-            // Select a random user
-            $user = $users->random();
+            // Select a random researcher user
+            if ($researcherUsers->isEmpty()) {
+                $this->command->error('Cannot create surveys as no researcher users are available.');
+                return; // Stop if no researchers are available after the check
+            }
+            $user = $researcherUsers->random();
             
             // Create the survey
             $survey = Survey::create([
@@ -68,7 +77,7 @@ class SurveySeeder extends Seeder
                 'status' => $surveyStatus,
                 'type' => $surveyType,
                 'points' => $points,
-                'target_respondents' => $faker->numberBetween(10, 100),
+                'target_respondents' => $faker->numberBetween(30, 100),
                 'start_date' => $faker->dateTimeBetween('-1 month', '+1 week'),
                 'end_date' => $faker->dateTimeBetween('+1 week', '+3 months'),
                 'points_allocated' => $points, // Same as points, no random multiplier

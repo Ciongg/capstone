@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\Institution; // Import the Institution model
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -13,34 +14,75 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Call the InstitutionSeeder first
+        $this->call(InstitutionSeeder::class);
+
+        // Find the 'Adamson University' institution
+        $adamsonUniversity = Institution::where('name', 'Adamson University')->first();
+
         // User::factory(10)->create();
 
         User::factory()->create([
-            'name' => 'Miguel Inciong',
-            'email' => 'test@example.com',
+            'first_name' => 'Miguel',
+            'last_name' => 'Inciong',
+            'email' => 'miguel.inciong@adamson.edu.ph',
             'password' => Hash::make('password123'),
             'type' => 'researcher',
+            'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
         ]);
 
         User::factory()->create([
-            'name' => 'Dion Marmon',
-            'email' => 'test1@example.com',
+            'first_name' => 'Dion',
+            'last_name' => 'Marmon',
+            'email' => 'dion.marmon@adamson.edu.ph',
             'password' => Hash::make('password123'),
             'type' => 'researcher',
+            'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
         ]);
 
         User::factory()->create([
-            'name' => 'Kurt Aquino',
-            'email' => 'test2@example.com',
+            'first_name' => 'Kurt',
+            'last_name' => 'Aquino',
+            'email' => 'kurt.aquino@adamson.edu.ph',
             'password' => Hash::make('password123'),
             'type' => 'researcher',
+            'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
         ]);
 
         User::factory()->create([
-            'name' => 'Rence Baldeo',
-            'email' => 'test3@example.com',
+            'first_name' => 'Rence',
+            'last_name' => 'Baldeo',
+            'email' => 'rence.baldeo@adamson.edu.ph',
             'password' => Hash::make('password123'),
             'type' => 'researcher',
+            'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
+        ]);
+
+        User::factory()->create([
+            'first_name' => 'Institution',
+            'last_name' => 'Admin',
+            'email' => 'instadmin@adamson.edu.ph',
+            'password' => Hash::make('password123'),
+            'type' => 'institution_admin',
+            'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
+        ]);
+
+        User::factory()->create([
+            'first_name' => 'Super',
+            'last_name' => 'Admin',
+            'email' => 'superadmin@example.com',
+            'password' => Hash::make('password123'),
+            'type' => 'super_admin',
+            'institution_id' => null, 
+        ]);
+
+        User::factory()->create([
+            'first_name' => 'Respondent',
+            'last_name' => 'User',
+            'email' => 'respondent@example.com',
+            'password' => Hash::make('password123'),
+            'type' => 'respondent',
+            'institution_id' => null, 
         ]);
 
         $this->call([
@@ -48,6 +90,5 @@ class DatabaseSeeder extends Seeder
             TagSeeder::class,
             SurveySeeder::class,
         ]);
-        
     }
 }

@@ -19,20 +19,57 @@
                 <div class="border-l border-gray-300 h-6"></div> 
 
                 <div class="flex items-center space-x-4 text-gray-700">
-                    @auth
-                        <a href="/feed" wire:navigate class="hover:text-[#00BBFF] hover:underline">Feed</a>
-                        <button 
-                            x-data
-                            x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
-                            class="hover:text-[#00BBFF] hover:underline"
-                        >Create Survey</button>
-                        <a href="/my-surveys" wire:navigate class="hover:text-[#00BBFF] hover:underline">My Surveys</a>
-                        <a href="/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Rewards</a>
-                    @else
+                    @guest
                         <a href="/" wire:navigate class="hover:text-[#00BBFF] hover:underline">Home</a>
                         <a href="/" wire:navigate class="hover:text-[#00BBFF] hover:underline">About</a>
                         <a href="/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Rewards</a>
                     @endguest
+
+                    @auth
+                        <a href="/feed" wire:navigate class="hover:text-[#00BBFF] hover:underline">Feed</a>
+                        <a href="/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Rewards</a>
+
+                        {{-- Show only to Researchers --}}
+                        @if(Auth::user()->isResearcher())
+                            <button 
+                                x-data
+                                x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
+                                class="hover:text-[#00BBFF] hover:underline"
+                            >Create Survey</button>
+                            <a href="/my-surveys" wire:navigate class="hover:text-[#00BBFF] hover:underline">My Surveys</a>
+                        @endif
+
+                        @if(Auth::user()->isInstitutionAdmin())
+                            {{-- Institution Admin specific links --}}
+                            @if(Auth::user()->hasValidInstitution())
+                                {{-- Normal enabled links when institution is valid --}}
+                                <button 
+                                    x-data
+                                    x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
+                                    class="hover:text-[#00BBFF] hover:underline"
+                                >Create Institution Survey</button>
+                                <a href="/my-surveys" wire:navigate class="hover:text-[#00BBFF] hover:underline">My Institution Surveys</a>
+                                <a href="/institution/analytics" wire:navigate class="hover:text-[#00BBFF] hover:underline">Analytics</a>
+                                <a href="/institution/users" wire:navigate class="hover:text-[#00BBFF] hover:underline">Users</a>
+                                <a href="/institution/profile" wire:navigate class="hover:text-[#00BBFF] hover:underline">Institution Profile</a>
+                            @else
+                                {{-- Disabled links when institution is invalid --}}
+                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Create Institution Survey</span>
+                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">My Institution Surveys</span>
+                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Analytics</span>
+                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Users</span>
+                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Institution Profile</span>
+                            @endif
+                        @endif
+
+                        @if(Auth::user()->isSuperAdmin())
+                            {{-- Super Admin specific links --}}
+                            <a href="/admin/surveys" wire:navigate class="hover:text-[#00BBFF] hover:underline">Manage Surveys</a>
+                            <a href="/admin/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Manage Rewards</a>
+                            <a href="/admin/users" wire:navigate class="hover:text-[#00BBFF] hover:underline">Manage User List</a>
+                            <a href="/admin/reports" wire:navigate class="hover:text-[#00BBFF] hover:underline">Manage Reports</a>
+                        @endif
+                    @endauth
                 </div>
             </div>
 
@@ -51,7 +88,7 @@
                     </form>
                 @else
                     <a href="{{ route('login') }}" wire:navigate class="text-gray-700 hover:text-[#00BBFF] hover:underline">Login</a>
-                    <a href="/" wire:navigate class="text-gray-700 hover:text-[#00BBFF] hover:underline">Register</a>
+                    <a href="{{ route('register') }}" wire:navigate class="text-gray-700 hover:text-[#00BBFF] hover:underline">Register</a>
                 @endauth
             </div>
         </div>

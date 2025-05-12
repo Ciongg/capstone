@@ -1,19 +1,21 @@
 <?php
 
 use App\Http\Controllers\SurveyController;
-use App\Http\Controllers\SessionController;
+use App\Http\Controllers\SessionController; // Keep for logout and now for login view
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Livewire\Surveys\FormBuilder\FormBuilder;
-use App\Livewire\Surveys\FormResponses\IndividualResponses;
-use App\Models\Survey;
-use Illuminate\Support\Facades\Auth;
-
+use App\Http\Controllers\RegisteredUserController; // Ensure this is imported
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Authentication Routes
+Route::get('/login', [SessionController::class, 'create'])->name('login'); // Points to controller
+Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
+
+Route::get('/register', [RegisteredUserController::class, 'create'])->name('register'); // Points to controller
 
 
 Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
@@ -31,7 +33,3 @@ Route::post('/surveys/answer/{survey}', [SurveyController::class, 'submit'])->na
 
 Route::get('/surveys/{survey}/responses', [SurveyController::class, 'showResponses'])->name('surveys.responses');
 Route::get('/surveys/{survey}/responses/individual', [SurveyController::class, 'showIndividualResponses'])->name('surveys.responses.individual');
-
-Route::get('/login', [SessionController::class, 'showLogin'])->name('show.login');
-Route::post('/login', [SessionController::class, 'store'])->name('login');
-Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');

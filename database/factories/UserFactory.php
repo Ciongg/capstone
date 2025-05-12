@@ -24,11 +24,18 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'first_name' => fake()->firstName(), 
+            'last_name' => fake()->lastName(),   
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'phone_number' => fake()->unique()->numerify('09#########'),
+            // 'points' => fake()->numberBetween(0, 100),
+            // 'trust_score' => fake()->numberBetween(60, 100),
+            'type' => fake()->randomElement(['respondent', 'researcher']), // Default to respondent or researcher
+            // 'institution_id' => null, // You can set this specifically in your seeder or leave it null/set a default
+            // 'profile_photo_path' => null, // Default to null or set a fake image path
         ];
     }
 
