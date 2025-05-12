@@ -285,37 +285,42 @@ class AnswerSurvey extends Component
                         'response_id' => $response->id,
                         'survey_question_id' => $questionId,
                         'answer' => null,
-                        'other_text' => null, // Ensure this is initialized
+                        'other_text' => null,
                     ];
 
                     if ($question->question_type === 'multiple_choice') {
                         $selectedChoiceIds = collect($answerValue)->filter(fn($v) => $v === true)->keys()->toArray();
-                        if (!empty($selectedChoiceIds) || !$question->required) {
+                        if (!empty($selectedChoiceIds)) {
                             $answerData['answer'] = json_encode($selectedChoiceIds);
                             $otherChoice = $question->choices->firstWhere('is_other', true);
                             if ($otherChoice && in_array($otherChoice->id, $selectedChoiceIds)) {
-                                $answerData['other_text'] = $this->otherTexts[$questionId] ?? null; // This line is crucial
+                                $answerData['other_text'] = $this->otherTexts[$questionId] ?? null;
                             }
                             Answer::create($answerData);
                         }
                     } elseif ($question->question_type === 'radio') {
-                        if ($answerValue !== null || !$question->required) {
+                        if ($answerValue !== null) {
                             $answerData['answer'] = $answerValue;
                             $otherChoice = $question->choices->firstWhere('is_other', true);
                             if ($otherChoice && $answerValue == $otherChoice->id) {
-                                $answerData['other_text'] = $this->otherTexts[$questionId] ?? null; // This line is crucial
+                                $answerData['other_text'] = $this->otherTexts[$questionId] ?? null;
                             }
                             Answer::create($answerData);
                         }
                     } elseif ($question->question_type === 'likert') {
                         $filteredLikert = array_filter($answerValue ?? [], fn($v) => $v !== null);
-                        if (!empty($filteredLikert) || !$question->required) {
+                        if (!empty($filteredLikert)) {
                             $answerData['answer'] = json_encode($answerValue);
                             Answer::create($answerData);
                         }
                     } else {
-                        if (($answerValue !== null && $answerValue !== '') || !$question->required) {
+                        // For text, essay, date inputs, etc.
+                        if ($answerValue !== null && $answerValue !== '') {
                             $answerData['answer'] = $answerValue;
+                            Answer::create($answerData);
+                        } elseif (!$question->required) {
+                            // For non-required questions with empty answers, use an empty string instead of null
+                            $answerData['answer'] = '-';
                             Answer::create($answerData);
                         }
                     }

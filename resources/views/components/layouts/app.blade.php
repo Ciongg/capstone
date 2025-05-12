@@ -8,7 +8,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles <!-- Required Livewire styles -->
 </head>
-<body class="bg-gray-100">
+<body >
 
     <!-- Navigation Bar -->
     <nav class="bg-white p-4 "> 
@@ -26,8 +26,11 @@
                     @endguest
 
                     @auth
-                        <a href="/feed" wire:navigate class="hover:text-[#00BBFF] hover:underline">Feed</a>
-                        <a href="/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Rewards</a>
+                    {{-- Show  Redeem links only to regular users and researchers (not admins) --}}
+                        @if(!Auth::user()->isSuperAdmin())
+                            <a href="/feed" wire:navigate class="hover:text-[#00BBFF] hover:underline">Feed</a>
+                            <a href="/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Redeem</a>
+                        @endif
 
                         {{-- Show only to Researchers --}}
                         @if(Auth::user()->isResearcher())
@@ -36,7 +39,7 @@
                                 x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
                                 class="hover:text-[#00BBFF] hover:underline"
                             >Create Survey</button>
-                            <a href="/my-surveys" wire:navigate class="hover:text-[#00BBFF] hover:underline">My Surveys</a>
+                            {{-- <a href="/my-surveys" wire:navigate class="hover:text-[#00BBFF] hover:underline">My Surveys</a> --}}
                         @endif
 
                         @if(Auth::user()->isInstitutionAdmin())
@@ -48,17 +51,13 @@
                                     x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
                                     class="hover:text-[#00BBFF] hover:underline"
                                 >Create Institution Survey</button>
-                                <a href="/my-surveys" wire:navigate class="hover:text-[#00BBFF] hover:underline">My Institution Surveys</a>
                                 <a href="/institution/analytics" wire:navigate class="hover:text-[#00BBFF] hover:underline">Analytics</a>
                                 <a href="/institution/users" wire:navigate class="hover:text-[#00BBFF] hover:underline">Users</a>
-                                <a href="/institution/profile" wire:navigate class="hover:text-[#00BBFF] hover:underline">Institution Profile</a>
                             @else
                                 {{-- Disabled links when institution is invalid --}}
                                 <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Create Institution Survey</span>
-                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">My Institution Surveys</span>
                                 <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Analytics</span>
                                 <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Users</span>
-                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Institution Profile</span>
                             @endif
                         @endif
 
@@ -107,7 +106,7 @@
     </script>
 
     <!-- Main Content -->
-    <main class="container mx-auto p-6">
+    <main class=" mx-auto ">
         @yield('content')
     </main>
 

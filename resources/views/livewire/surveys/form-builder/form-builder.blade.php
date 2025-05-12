@@ -2,7 +2,7 @@
     use Illuminate\Support\Str; // Import Str helper
 @endphp
 <div
-    class="bg-gray-100 min-h-screen p-6"
+    class="bg-gray-100 min-h-screen p-16"
     x-data="{ selectedQuestionId: @entangle('selectedQuestionId').live, activePageId: @entangle('activePageId').live }"
     x-init="
         $watch('selectedQuestionId', (value) => {
