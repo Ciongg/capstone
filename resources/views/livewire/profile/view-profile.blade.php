@@ -27,7 +27,7 @@
     {{-- Profile Information Container --}}
     <div class="bg-white rounded-xl shadow-lg overflow-hidden w-full mb-4">
         {{-- Banner Image --}}
-        <div class="h-48 bg-[#00BBFF] relative w-full">
+        <div class="h-48 bg-[#03b8ff] relative w-full">
             {{-- Add a banner change option if needed --}}
         </div>
 

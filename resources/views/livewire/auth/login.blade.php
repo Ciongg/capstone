@@ -3,7 +3,7 @@
     <div class="min-h-screen flex flex-col items-center justify-center p-6">
         <div class="bg-white shadow-md rounded-lg p-8 w-full max-w-md">
             <header class="mb-10 text-center">
-                <h1 class="text-4xl font-bold text-[#00BBFF]">Formigo</h1>
+                <h1 class="text-4xl font-bold text-[#03b8ff]">Formigo</h1>
                 <p class="text-gray-500 mt-2">Welcome Back! Please login to continue.</p>
             </header>
 
@@ -40,7 +40,7 @@
                 <div class="flex justify-center">
                     <button 
                         type="submit" 
-                        class="w-full py-2 px-6 rounded-lg transition bg-[#00BBFF] hover:bg-blue-400 text-white cursor-pointer"
+                        class="w-full py-2 px-6 rounded-lg transition bg-[#03b8ff] hover:bg-[#02a0e0] text-white cursor-pointer"
                         wire:loading.attr="disabled"
                     >
                         <span wire:loading.remove wire:target="attemptLogin">Login</span>

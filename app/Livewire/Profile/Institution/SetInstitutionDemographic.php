@@ -61,8 +61,8 @@ class SetInstitutionDemographic extends Component
             }
         }
 
-        $this->reset(['newCategoryName', 'newTagNames']);
-        $this->newTagNames = [''];
+        $this->newCategoryName = ''; // Clear the category name input
+        $this->newTagNames = [''];   // Reset tag names to one empty field
         $this->loadCategories();
 
         $this->dispatch('notify', [

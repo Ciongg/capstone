@@ -11,25 +11,25 @@
 <body >
 
     <!-- Navigation Bar -->
-    <nav class="bg-white p-4 "> 
+    <nav class="bg-white p-6 "> 
         <div class="container mx-auto flex justify-between items-center">
             <!-- Left side -->
-            <div class="flex items-center space-x-4">
-                <a href="/" class="font-bold text-xl" style="color: #00BBFF;">Formigo</a>
-                <div class="border-l border-gray-300 h-6"></div> 
+            <div class="flex items-center space-x-6">
+                <a href="/" class="font-bold text-2xl" style="color: #03b8ff;">Formigo</a>
+                <div class="border-l border-gray-300 h-8"></div> 
 
-                <div class="flex items-center space-x-4 text-gray-700">
+                <div class="flex items-center space-x-5 text-gray-700 text-base">
                     @guest
-                        <a href="/" wire:navigate class="hover:text-[#00BBFF] hover:underline">Home</a>
-                        <a href="/" wire:navigate class="hover:text-[#00BBFF] hover:underline">About</a>
-                        <a href="/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Rewards</a>
+                        <a href="/" wire:navigate class="hover:text-[#03b8ff] hover:underline">Home</a>
+                        <a href="/" wire:navigate class="hover:text-[#03b8ff] hover:underline">About</a>
+                        <a href="/rewards" wire:navigate class="hover:text-[#03b8ff] hover:underline">Rewards</a>
                     @endguest
 
                     @auth
                     {{-- Show  Redeem links only to regular users and researchers (not admins) --}}
                         @if(!Auth::user()->isSuperAdmin())
-                            <a href="/feed" wire:navigate class="hover:text-[#00BBFF] hover:underline">Feed</a>
-                            <a href="/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Redeem</a>
+                            <a href="/feed" wire:navigate class="hover:text-[#03b8ff] hover:underline">Feed</a>
+                            <a href="/rewards" wire:navigate class="hover:text-[#03b8ff] hover:underline">Redeem</a>
                         @endif
 
                         {{-- Show only to Researchers --}}
@@ -37,9 +37,9 @@
                             <button 
                                 x-data
                                 x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
-                                class="hover:text-[#00BBFF] hover:underline"
+                                class="hover:text-[#03b8ff] hover:underline"
                             >Create Survey</button>
-                            {{-- <a href="/my-surveys" wire:navigate class="hover:text-[#00BBFF] hover:underline">My Surveys</a> --}}
+                            {{-- <a href="/my-surveys" wire:navigate class="hover:text-[#03b8ff] hover:underline">My Surveys</a> --}}
                         @endif
 
                         @if(Auth::user()->isInstitutionAdmin())
@@ -49,10 +49,10 @@
                                 <button 
                                     x-data
                                     x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
-                                    class="hover:text-[#00BBFF] hover:underline"
+                                    class="hover:text-[#03b8ff] hover:underline"
                                 >Create Institution Survey</button>
-                                <a href="/institution/analytics" wire:navigate class="hover:text-[#00BBFF] hover:underline">Analytics</a>
-                                <a href="/institution/users" wire:navigate class="hover:text-[#00BBFF] hover:underline">Users</a>
+                                <a href="/institution/analytics" wire:navigate class="hover:text-[#03b8ff] hover:underline">Analytics</a>
+                                <a href="/institution/users" wire:navigate class="hover:text-[#03b8ff] hover:underline">Users</a>
                             @else
                                 {{-- Disabled links when institution is invalid --}}
                                 <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Create Institution Survey</span>
@@ -63,31 +63,31 @@
 
                         @if(Auth::user()->isSuperAdmin())
                             {{-- Super Admin specific links --}}
-                            <a href="/admin/surveys" wire:navigate class="hover:text-[#00BBFF] hover:underline">Manage Surveys</a>
-                            <a href="/admin/rewards" wire:navigate class="hover:text-[#00BBFF] hover:underline">Manage Rewards</a>
-                            <a href="/admin/users" wire:navigate class="hover:text-[#00BBFF] hover:underline">Manage User List</a>
-                            <a href="/admin/reports" wire:navigate class="hover:text-[#00BBFF] hover:underline">Manage Reports</a>
+                            <a href="/admin/surveys" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Surveys</a>
+                            <a href="/admin/rewards" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Rewards</a>
+                            <a href="/admin/users" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage User List</a>
+                            <a href="/admin/reports" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Reports</a>
                         @endif
                     @endauth
                 </div>
             </div>
 
             <!-- Right side -->
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-5 text-base">
                 @auth
-                    <a href="/profile" wire:navigate class="flex items-center space-x-2 hover:underline text-gray-700 hover:text-[#00BBFF]">
-                        <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" class="w-8 h-8 rounded-full object-cover border border-gray-200">
+                    <a href="/profile" wire:navigate class="flex items-center space-x-2 hover:underline text-gray-700 hover:text-[#03b8ff]">
+                        <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" class="w-9 h-9 rounded-full object-cover border border-gray-200">
                         <span class="font-semibold">{{ Auth::user()->name }}</span>
                     </a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="text-red-600 hover:text-red-800 underline font-semibold text-sm">
+                        <button type="submit" class="text-red-600 hover:text-red-800 underline font-semibold">
                             Logout
                         </button>
                     </form>
                 @else
-                    <a href="{{ route('login') }}" wire:navigate class="text-gray-700 hover:text-[#00BBFF] hover:underline">Login</a>
-                    <a href="{{ route('register') }}" wire:navigate class="text-gray-700 hover:text-[#00BBFF] hover:underline">Register</a>
+                    <a href="{{ route('login') }}" wire:navigate class="text-gray-700 hover:text-[#03b8ff] hover:underline">Login</a>
+                    <a href="{{ route('register') }}" wire:navigate class="text-gray-700 hover:text-[#03b8ff] hover:underline">Register</a>
                 @endauth
             </div>
         </div>

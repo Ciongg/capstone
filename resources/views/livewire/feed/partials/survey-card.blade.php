@@ -70,7 +70,7 @@
                 })
             "
             class="px-4 py-1 rounded-full font-bold text-white cursor-pointer transition
-                   bg-[#00BBFF] hover:bg-[#0099cc] hover:shadow-lg focus:outline-none"
+                   bg-[#03b8ff] hover:bg-[#0295d1] hover:shadow-lg focus:outline-none"
             type="button"
         >
             Read More

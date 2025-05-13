@@ -3,7 +3,7 @@
     <div class="min-h-screen flex flex-col items-center justify-center p-6">
         <div class="bg-white shadow-md rounded-lg p-8 w-full max-w-md overflow-y-auto max-h-[90vh]">
             <header class="mb-6 text-center">
-                <h1 class="text-4xl font-bold text-[#00BBFF]">Formigo</h1>
+                <h1 class="text-4xl font-bold text-[#03b8ff]">Formigo</h1>
                 <p class="text-gray-500 mt-2">Create your account to get started.</p>
             </header>
 
@@ -118,7 +118,7 @@
                     <button 
                         type="submit" 
                         class="w-full py-2 px-6 rounded-lg transition"
-                        :class="{ 'bg-[#00BBFF] hover:bg-blue-400 text-white cursor-pointer': checkboxChecked, 'bg-gray-300 text-gray-500 cursor-not-allowed': !checkboxChecked }"
+                        :class="{ 'bg-[#03b8ff] hover:bg-[#02a0e0] text-white cursor-pointer': checkboxChecked, 'bg-gray-300 text-gray-500 cursor-not-allowed': !checkboxChecked }"
                         :disabled="!checkboxChecked"
                         wire:loading.attr="disabled"
                     >
