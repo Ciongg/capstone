@@ -79,7 +79,7 @@
                             wire:loading.attr="disabled"
                             wire:loading.class="opacity-50"
                             class="px-3 py-2 text-xs font-semibold rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis transition-all
-                                {{ in_array($tag->id, $activeFilters['tags']) ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200' }}"
+                                {{ in_array($tag->id, $activeFilters['tags']) ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200' }}"
                         >
                             {{ $tag->name }}
                         </button>

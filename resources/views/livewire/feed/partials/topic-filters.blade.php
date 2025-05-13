@@ -58,8 +58,6 @@
                   {{ is_null($activeFilters['topic']) 
                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-transparent shadow-md' 
                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}"
-            x-data
-            :class="{ 'shadow-md ring-2 ring-blue-300': $wire.activeFilters.topic === null }"
         >
             All Topics
         </button>
@@ -73,8 +71,6 @@
                       {{ $activeFilters['topic'] == $topic->id 
                          ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-transparent shadow-md' 
                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}"
-                x-data
-                :class="{ 'shadow-md ring-2 ring-blue-300': $wire.activeFilters.topic === {{ $topic->id }} }"
             >
                 {{ $topic->name }}
             </button>

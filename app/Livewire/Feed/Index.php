@@ -27,6 +27,7 @@ class Index extends Component
     // Panel for multi-tag selection
     public $showFilterPanel = false;
     public $tempSelectedTagIds = []; // Temporary storage for selected tags in panel
+    public $tempSelectedInstitutionTagIds = []; // Add this new property for institution tags
     
     // Add temporary properties for survey type and institution filters
     public $tempSurveyType = null;
@@ -58,6 +59,7 @@ class Index extends Component
         if ($this->showFilterPanel) {
             // Initialize temp selection with current tags when opening
             $this->tempSelectedTagIds = $this->activeFilters['tags'];
+            $this->tempSelectedInstitutionTagIds = $this->activeFilters['institutionTags'];
             // Initialize temp survey type and institution filter values
             $this->tempSurveyType = $this->activeFilters['type'];
             $this->tempInstitutionOnly = $this->activeFilters['institutionOnly'];
@@ -71,13 +73,16 @@ class Index extends Component
         // Check if tags have changed
         $tagsChanged = $this->tempSelectedTagIds != $this->activeFilters['tags'];
         
+        // Check if institution tags have changed
+        $institutionTagsChanged = $this->tempSelectedInstitutionTagIds != $this->activeFilters['institutionTags'];
+        
         // Check if survey type has changed
         $typeChanged = $this->tempSurveyType !== $this->activeFilters['type'];
         
         // Check if institution only setting has changed
         $institutionChanged = $this->tempInstitutionOnly !== $this->activeFilters['institutionOnly'];
         
-        return $tagsChanged || $typeChanged || $institutionChanged;
+        return $tagsChanged || $typeChanged || $institutionChanged || $institutionTagsChanged;
     }
 
     // Handle temporary survey type filter selection within panel
@@ -112,10 +117,19 @@ class Index extends Component
         $this->dispatch('activeTopicChanged', $this->activeFilters['topic']);
         
         // If we just removed this filter and there are no other filters, reset everything
-        if ($wasActive && empty($this->search) && empty($this->activeFilters['tags'])) {
+        if ($wasActive && 
+            empty($this->search) && 
+            empty($this->activeFilters['tags']) && 
+            empty($this->activeFilters['institutionTags']) && 
+            is_null($this->activeFilters['type']) &&
+            $this->activeFilters['institutionOnly'] === false) {
             $this->resetFiltersWithSpaExperience();
             return;
         }
+        
+        // Always reload surveys when toggling topic filter
+        $this->page = 1;
+        $this->loadSurveys();
     }
     
     // Clear topic filter
@@ -128,8 +142,16 @@ class Index extends Component
         $this->dispatch('activeTopicChanged', null);
         
         // If no other filters remain, reset everything
-        if (empty($this->search) && empty($this->activeFilters['tags'])) {
+        if (empty($this->search) && 
+            empty($this->activeFilters['tags']) && 
+            empty($this->activeFilters['institutionTags']) && 
+            is_null($this->activeFilters['type']) &&
+            $this->activeFilters['institutionOnly'] === false) {
             $this->resetFiltersWithSpaExperience();
+        } else {
+            // Otherwise just reload the surveys with remaining filters
+            $this->page = 1;
+            $this->loadSurveys();
         }
     }
 
@@ -151,7 +173,26 @@ class Index extends Component
         
         $this->pendingTagChanges = true;
     }
-
+    
+    // Handle institution tag selection in filter panel (temporary)
+    public function togglePanelInstitutionTagFilter($tagId)
+    {
+        // Check if tag is already in the temp selection
+        $index = array_search($tagId, $this->tempSelectedInstitutionTagIds);
+        
+        // Toggle the tag in temp selection
+        if ($index !== false) {
+            // Remove it if already selected
+            unset($this->tempSelectedInstitutionTagIds[$index]);
+            $this->tempSelectedInstitutionTagIds = array_values($this->tempSelectedInstitutionTagIds); // Reindex array
+        } else {
+            // Add it if not selected
+            $this->tempSelectedInstitutionTagIds[] = $tagId;
+        }
+        
+        $this->pendingTagChanges = true;
+    }
+    
     // Apply tag filters from panel
     public function applyPanelTagFilters()
     {
@@ -159,6 +200,7 @@ class Index extends Component
         
         // Save selected tags to the unified filter
         $this->activeFilters['tags'] = $this->tempSelectedTagIds;
+        $this->activeFilters['institutionTags'] = $this->tempSelectedInstitutionTagIds;
         
         // Save survey type and institution only settings
         $this->activeFilters['type'] = $this->tempSurveyType;
@@ -183,6 +225,7 @@ class Index extends Component
     {
         // Reset temp values to match current active filters
         $this->tempSelectedTagIds = $this->activeFilters['tags'];
+        $this->tempSelectedInstitutionTagIds = $this->activeFilters['institutionTags'];
         $this->tempSurveyType = $this->activeFilters['type'];
         $this->tempInstitutionOnly = $this->activeFilters['institutionOnly'];
         
@@ -205,6 +248,25 @@ class Index extends Component
             
             // If no other filters remain, reset everything
             if (empty($this->search) && is_null($this->activeFilters['topic'])) {
+                $this->resetFiltersWithSpaExperience();
+            }
+        }
+    }
+
+    // Clear all institution tags from panel
+    public function clearPanelInstitutionTagFilter()
+    {
+        if ($this->showFilterPanel) {
+            // Just clear the temp selection if panel is open
+            $this->tempSelectedInstitutionTagIds = [];
+            $this->pendingTagChanges = true;
+        } else {
+            // Otherwise clear the actual tag filters
+            $this->isLoading = true;
+            $this->activeFilters['institutionTags'] = [];
+            
+            // If no other filters remain, reset everything
+            if (empty($this->search) && is_null($this->activeFilters['topic']) && empty($this->activeFilters['tags'])) {
                 $this->resetFiltersWithSpaExperience();
             }
         }
@@ -251,10 +313,19 @@ class Index extends Component
             fn($id) => $id != $tagId
         ));
         
-        // If no filters remain, reset everything
-        if (empty($this->search) && is_null($this->activeFilters['topic']) && 
-            empty($this->activeFilters['tags']) && empty($this->activeFilters['institutionTags'])) {
+        // Only reset everything if ALL filters are empty (not just this specific tag type)
+        if (empty($this->search) && 
+            is_null($this->activeFilters['topic']) && 
+            empty($this->activeFilters['tags']) && 
+            empty($this->activeFilters['institutionTags']) &&
+            is_null($this->activeFilters['type']) &&
+            $this->activeFilters['institutionOnly'] === false) {
             $this->resetFiltersWithSpaExperience();
+        } else {
+            // Otherwise, just reload the surveys with the remaining filters
+            $this->page = 1;
+            $this->loadSurveys();
+            $this->dispatch('filter-changed');
         }
     }
 
@@ -386,9 +457,12 @@ class Index extends Component
         }
     }
 
-    // Modified reset filter to reset institution tags as well
+    // Modified reset filter to preserve panel state when clearing filters
     protected function resetFiltersWithSpaExperience()
     {
+        // Store current panel state - we want to preserve it
+        $currentPanelState = $this->showFilterPanel;
+        
         // Reset all filter values
         $this->search = '';
         $this->activeFilters = [
@@ -399,12 +473,16 @@ class Index extends Component
             'institutionOnly' => false
         ];
         $this->tempSelectedTagIds = [];
+        $this->tempSelectedInstitutionTagIds = [];
         $this->tempSurveyType = null;
         $this->tempInstitutionOnly = false;
         
         // Reset page and reload surveys
         $this->page = 1;
         $this->loadSurveys();
+        
+        // Restore panel state - don't close if it was open
+        $this->showFilterPanel = $currentPanelState;
         
         // Notify Alpine about the topic filter being reset
         $this->dispatch('activeTopicChanged', null);
