@@ -10,7 +10,7 @@ use App\Models\SurveyQuestion;
 use App\Models\SurveyChoice;
 use App\Models\User;
 use App\Models\Tag;
-use App\Models\TagCategory;
+use App\Models\SurveyTopic;
 use Illuminate\Support\Facades\DB;
 use Faker\Factory as Faker;
 use Illuminate\Support\Facades\Storage;
@@ -40,11 +40,17 @@ class SurveySeeder extends Seeder
             $researcherUsers = collect([$defaultResearcher]);
         }
         
-        // Create or ensure tag categories and tags exist
-        $this->ensureTagsExist();
-        
         // Get all available tags
         $availableTags = Tag::all();
+        
+        // Get all available survey topics - Remove conditional seeding
+        $surveyTopics = SurveyTopic::all();
+        
+        if ($surveyTopics->isEmpty()) {
+            // Just report error instead of calling the seeder again
+            $this->command->warn('No survey topics found. Please run SurveyTopicSeeder first.');
+            return;
+        }
         
         // Make sure storage/app/public/surveys directory exists (create if not)
         if (!File::isDirectory(storage_path('app/public/surveys'))) {
@@ -69,13 +75,14 @@ class SurveySeeder extends Seeder
             }
             $user = $researcherUsers->random();
             
-            // Create the survey
+            // Create the survey with a random topic
             $survey = Survey::create([
                 'user_id' => $user->id,
                 'title' => $faker->sentence(4),
                 'description' => $faker->paragraph(),
                 'status' => $surveyStatus,
                 'type' => $surveyType,
+                'survey_topic_id' => $surveyTopics->random()->id,
                 'points' => $points,
                 'target_respondents' => $faker->numberBetween(30, 100),
                 'start_date' => $faker->dateTimeBetween('-1 month', '+1 week'),
@@ -167,36 +174,5 @@ class SurveySeeder extends Seeder
         }
         
         $this->command->info('Created 10 surveys with standardized pages and question types!');
-    }
-
-    /**
-     * Ensure tags and tag categories exist
-     */
-    private function ensureTagsExist()
-    {
-        // Check if tags already exist
-        if (Tag::count() > 0) {
-            return;
-        }
-        
-        // Create tag categories
-        $categories = [
-            'Age Group' => ['18-24', '25-34', '35-44', '45-54', '55+'],
-            'Gender' => ['Male', 'Female', 'Non-binary', 'Prefer not to say'],
-            'Education' => ['High School', 'Bachelor\'s Degree', 'Master\'s Degree', 'PhD'],
-            'Employment' => ['Student', 'Employed', 'Self-employed', 'Unemployed', 'Retired'],
-            'Interests' => ['Technology', 'Health', 'Education', 'Entertainment', 'Sports', 'Finance', 'Food']
-        ];
-        
-        foreach ($categories as $categoryName => $tagNames) {
-            $category = TagCategory::create(['name' => $categoryName]);
-            
-            foreach ($tagNames as $tagName) {
-                Tag::create([
-                    'tag_category_id' => $category->id,
-                    'name' => $tagName
-                ]);
-            }
-        }
     }
 }

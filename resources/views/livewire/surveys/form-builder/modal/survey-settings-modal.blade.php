@@ -131,6 +131,18 @@
                 @error('type') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
+            <!-- Survey Topic -->
+            <div>
+                <label for="survey-topic-{{ $survey->id }}" class="block font-semibold mb-1">Survey Topic</label>
+                <select id="survey-topic-{{ $survey->id }}" wire:model.defer="survey_topic_id" class="w-full border rounded px-3 py-2">
+                    <option value="">Select a Topic</option>
+                    @foreach($topics as $topic)
+                        <option value="{{ $topic->id }}">{{ $topic->name }}</option>
+                    @endforeach
+                </select>
+                @error('survey_topic_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+            </div>
+
             <div>
                 <label class="block font-semibold mb-1">Target Respondents</label>
                 <input type="number" wire:model.defer="target_respondents" class="w-full border rounded px-3 py-2" min="1" />

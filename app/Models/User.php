@@ -86,6 +86,16 @@ class User extends Authenticatable
     }
 
     /**
+     * The institution tags associated with the user
+     */
+    public function institutionTags()
+    {
+        return $this->belongsToMany(\App\Models\InstitutionTag::class, 'institution_user_tags')
+                    ->withPivot('tag_name') // For denormalization
+                    ->withTimestamps();
+    }
+    
+    /**
      * Get the URL to the user's profile photo.
      *
      * @return string

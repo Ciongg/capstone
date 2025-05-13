@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
 
         // Find the 'Adamson University' institution
         $adamsonUniversity = Institution::where('name', 'Adamson University')->first();
+        $nationalUniversity = Institution::where('name', 'National University')->first();
 
         // User::factory(10)->create();
 
@@ -67,6 +68,15 @@ class DatabaseSeeder extends Seeder
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
         ]);
 
+          User::factory()->create([
+            'first_name' => 'Institution',
+            'last_name' => 'Admin',
+            'email' => 'instadmin_nu@nu.edu.ph',
+            'password' => Hash::make('password123'),
+            'type' => 'institution_admin',
+            'institution_id' => $nationalUniversity ? $nationalUniversity->id : null,
+        ]);
+
         User::factory()->create([
             'first_name' => 'Super',
             'last_name' => 'Admin',
@@ -85,10 +95,12 @@ class DatabaseSeeder extends Seeder
             'institution_id' => null, 
         ]);
 
+        // Updated seeder order - SurveyTopicSeeder before SurveySeeder
         $this->call([
             TagCategorySeeder::class,
             TagSeeder::class,
-            SurveySeeder::class,
+            SurveyTopicSeeder::class, // Run this first
+            SurveySeeder::class,      // Then run SurveySeeder
         ]);
     }
 }

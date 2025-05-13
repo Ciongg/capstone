@@ -14,6 +14,7 @@ class Survey extends Model
         'description',
         'status',   // 'pending', 'published', 'ongoing', 'finished'
         'type',     // 'basic', 'advanced'
+        'survey_topic_id', // Added survey topic
         'target_respondents',
         'start_date',
         'end_date',
@@ -60,5 +61,13 @@ class Survey extends Model
         return $this->belongsToMany(InstitutionTag::class, 'institution_survey_tags')
                     ->withPivot('tag_name')
                     ->withTimestamps();
+    }
+
+    /**
+     * Get the topic associated with the survey.
+     */
+    public function topic()
+    {
+        return $this->belongsTo(SurveyTopic::class, 'survey_topic_id');
     }
 }

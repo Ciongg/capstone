@@ -110,6 +110,18 @@
                     Survey History
                     <div :class="tab === 'history' ? 'absolute bottom-0 left-0 w-full h-0.5 bg-blue-600' : ''" class="transform -translate-y-2"></div>
                 </button>
+                
+                {{-- Only show Institution Demographics tab for Institution Admins --}}
+                @if($user->type === 'institution_admin')
+                <button
+                    class="px-4 py-2 font-medium transition relative"
+                    :class="tab === 'institution_demographics' ? 'text-blue-600 font-semibold' : 'text-gray-600 hover:text-blue-500'"
+                    @click="tab = 'institution_demographics'"
+                >
+                    Institution Demographics
+                    <div :class="tab === 'institution_demographics' ? 'absolute bottom-0 left-0 w-full h-0.5 bg-blue-600' : ''" class="transform -translate-y-2"></div>
+                </button>
+                @endif
             </div>
         </div>
 
@@ -124,6 +136,14 @@
             <div x-show="tab === 'history'" class="w-full">
                 <livewire:profile.view-history :user="$user" />
             </div>
+            
+
+            {{-- Institution Demographics Tab Content - Only loaded for Institution Admins --}}
+            @if($user->type === 'institution_admin')
+            <div x-show="tab === 'institution_demographics'" class="w-full">
+                <livewire:profile.institution.set-institution-demographic :user="$user" />
+            </div>
+            @endif
         </div>
     </div>
 </div>

@@ -3,6 +3,7 @@
 namespace App\Livewire\Surveys\FormBuilder\Modal;
 
 use App\Livewire\Surveys\FormBuilder\FormBuilder;
+use App\Models\SurveyTopic;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\TagCategory;
@@ -33,6 +34,9 @@ class SurveySettingsModal extends Component
     public $institutionTagCategories = [];
     public $selectedInstitutionTags = [];
 
+    public $survey_topic_id;
+    public $topics;
+
     // Add the listener property
     protected $listeners = ['surveyTitleUpdated' => 'updateTitleFromEvent'];
 
@@ -46,7 +50,9 @@ class SurveySettingsModal extends Component
         $this->start_date = $survey->start_date;
         $this->end_date = $survey->end_date;
         $this->isInstitutionOnly = (bool)$survey->is_institution_only; // Explicitly cast to boolean
-        
+        $this->survey_topic_id = $survey->survey_topic_id;
+        $this->topics = SurveyTopic::all();
+
         // Set points based on survey type
         $this->points_allocated = $this->getPointsForType($this->type);
 
@@ -109,6 +115,7 @@ class SurveySettingsModal extends Component
             $this->survey->end_date = $this->end_date;
             $this->survey->points_allocated = $this->getPointsForType($this->type);
             $this->survey->is_institution_only = $this->isInstitutionOnly; // Save the institution-only setting
+            $this->survey->survey_topic_id = $this->survey_topic_id;
             $this->survey->save();
 
             $surveyId = $this->survey->id;

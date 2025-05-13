@@ -18,16 +18,17 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->enum('status', ['pending', 'published', 'ongoing', 'finished'])->default('pending');
             $table->enum('type', ['basic', 'advanced'])->default('basic');
-            $table->timestamps();
-            
+            $table->foreignId('survey_topic_id')->nullable()->constrained('survey_topic')->nullOnDelete();
+
             //Survey Settings
             $table->boolean('is_institution_only')->default(false); // Added this line
             $table->decimal('points')->nullable()->default(0);
             $table->unsignedInteger('target_respondents')->nullable()->default(30);
-            $table->dateTime('start_date')->nullable();
-            $table->dateTime('end_date')->nullable();
             $table->unsignedInteger('points_allocated')->nullable();
             $table->string('image_path')->nullable();
+            $table->dateTime('start_date')->nullable();
+            $table->dateTime('end_date')->nullable();
+            $table->timestamps();
         });
     }
 

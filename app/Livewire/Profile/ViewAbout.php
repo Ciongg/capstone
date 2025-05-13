@@ -39,7 +39,7 @@ class ViewAbout extends Component
         }
         
         // If user belongs to an institution, load institution-specific tag categories
-        if ($this->user->institution_id && !$this->user->isInstitutionAdmin()) {
+        if ($this->user->institution_id) {
             $this->institutionTagCategories = InstitutionTagCategory::where('institution_id', $this->user->institution_id)
                 ->with('tags')
                 ->get();
@@ -49,7 +49,10 @@ class ViewAbout extends Component
             
             // Organize selected institution tags by category
             foreach ($this->institutionTagCategories as $category) {
+                // Get all tags belonging to this category
                 $categoryTags = $category->tags->pluck('id')->toArray();
+                
+                // Find which of the user's tags belong to this category
                 $userTagsForCategory = array_intersect($userInstitutionTags, $categoryTags);
                 
                 if (!empty($userTagsForCategory)) {
