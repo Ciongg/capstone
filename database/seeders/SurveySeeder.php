@@ -10,6 +10,7 @@ use App\Models\SurveyQuestion;
 use App\Models\SurveyChoice;
 use App\Models\User;
 use App\Models\Tag;
+use App\Models\TagCategory;
 use App\Models\SurveyTopic;
 use Illuminate\Support\Facades\DB;
 use Faker\Factory as Faker;
@@ -40,8 +41,18 @@ class SurveySeeder extends Seeder
             $researcherUsers = collect([$defaultResearcher]);
         }
         
-        // Get all available tags
-        $availableTags = Tag::all();
+        // Get all tag categories and their tags
+        $tagCategories = TagCategory::with('tags')->get();
+        
+        if ($tagCategories->isEmpty()) {
+            $this->command->warn('No tag categories found. Please run TagCategorySeeder first.');
+            return;
+        }
+        
+        // Flatten the collection of tags
+        $availableTags = $tagCategories->flatMap(function ($category) {
+            return $category->tags;
+        });
         
         // Get all available survey topics - Remove conditional seeding
         $surveyTopics = SurveyTopic::all();

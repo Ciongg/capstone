@@ -1,4 +1,4 @@
-{{-- Surveys Grid --}}
+
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8" id="survey-grid">
     @forelse($surveys as $survey)
         <div wire:key="survey-card-{{ $survey->id }}" class="relative bg-white shadow-lg rounded-xl p-0 flex flex-col min-h-[500px]">
@@ -78,6 +78,6 @@
             </div>
         </div> {{-- End of survey-card div --}}
     @empty
-        <div class="col-span-1 sm:col-span-2 md:col-span-3 text-gray-500 text-center py-10">No published surveys match your criteria.</div>
+       
     @endforelse
 </div>
