@@ -39,7 +39,21 @@ class Index extends Component
 
     public function toggleTopicFilter($topicId)
     {
+        // Store previous state to check if we're removing the filter
+        $wasActive = ($this->activeTopicId == $topicId);
+        
+        // Toggle the filter
         $this->activeTopicId = ($this->activeTopicId == $topicId) ? null : $topicId;
+        
+        // Notify Alpine for immediate UI update
+        $this->dispatch('activeTopicIdChanged', $this->activeTopicId);
+        
+        // If we just removed this filter and there are no other filters, reset with SPA experience
+        if ($wasActive && empty($this->search) && is_null($this->activePanelTagId)) {
+            $this->resetFiltersWithSpaExperience();
+        }
+        
+        return null;
     }
 
     public function togglePanelTagFilter($tagId)
@@ -52,33 +66,70 @@ class Index extends Component
         $this->activeTagId = ($this->activeTagId == $tagId) ? null : $tagId;
     }
 
-    public function clearSearch()
+    protected function refreshIfAllFiltersCleared()
     {
-        $this->search = '';
+        // Check if all filters are cleared
+        if (empty($this->search) && is_null($this->activeTopicId) && is_null($this->activePanelTagId)) {
+            // Redirect to the same route to force a page refresh
+            return $this->redirect(request()->header('Referer') ?? route('feed.index'));
+        }
+        
+        return null;
+    }
+
+    protected function resetFiltersWithSpaExperience()
+    {
+        // Reset all filter values
+        $this->reset(['search', 'activeTopicId', 'activePanelTagId', 'activeTagId']);
+        
+        // Notify Alpine about the topic filter being reset
+        $this->dispatch('activeTopicIdChanged', null);
+        
+        // Add a "loading" effect to simulate data being refreshed
+        $this->dispatch('filters-reset-loading');
+    }
+
+    public function clearAllFilters()
+    {
+        $this->resetFiltersWithSpaExperience();
     }
 
     public function clearTopicFilter()
     {
         $this->activeTopicId = null;
+        
+        // Notify Alpine
+        $this->dispatch('activeTopicIdChanged', null);
+        
+        // If no filters remain, reset everything with SPA experience
+        if (empty($this->search) && is_null($this->activePanelTagId)) {
+            $this->resetFiltersWithSpaExperience();
+        }
+    }
+
+    public function clearSearch()
+    {
+        $this->search = '';
+        
+        // If no filters remain, reset everything with SPA experience
+        if (is_null($this->activeTopicId) && is_null($this->activePanelTagId)) {
+            $this->resetFiltersWithSpaExperience();
+        }
     }
 
     public function clearPanelTagFilter()
     {
         $this->activePanelTagId = null;
+        
+        // If no filters remain, reset everything with SPA experience
+        if (empty($this->search) && is_null($this->activeTopicId)) {
+            $this->resetFiltersWithSpaExperience();
+        }
     }
-    
+
     public function clearTagFilter() // For the quick tag filter
     {
         $this->activeTagId = null;
-    }
-
-    public function clearAllFilters()
-    {
-        $this->search = '';
-        $this->activeTopicId = null;
-        $this->activePanelTagId = null;
-        $this->activeTagId = null; // Clear quick tag filter as well
-        $this->showFilterPanel = false;
     }
 
     // This method is called when the modal dispatches the 'close' event
