@@ -4,7 +4,12 @@
     <div class="w-full px-4 py-3 rounded-t-xl bg-gray-100 border-b border-gray-100 flex-shrink-0">
         <div class="flex items-center mb-2">
             <img src="{{ $survey->user->profile_photo_url }}" alt="{{ $survey->user->name ?? 'User' }}" class="w-10 h-10 rounded-full object-cover mr-3">
-            <span class="text-base font-semibold text-gray-800 truncate mr-4">{{ $survey->user->name ?? 'User' }}</span>
+            <div class="flex flex-col">
+                <span class="text-base font-semibold text-gray-800 truncate">{{ $survey->user->name ?? 'User' }}</span>
+                @if(isset($survey->user->institution) && $survey->user->institution)
+                    <span class="text-xs text-gray-500 truncate">{{ $survey->user->institution->name }}</span>
+                @endif
+            </div>
             <div class="flex-1"></div>
             <div class="flex items-center bg-gradient-to-r from-red-600 via-orange-400 to-yellow-300 px-3 py-1 rounded-full">
                 <span class="font-bold text-white drop-shadow">{{ $survey->points_allocated ?? 0 }}</span>
@@ -57,6 +62,48 @@
                     @endfor
                 @endif
             @endif
+        </div>
+    </div>
+
+    {{-- Survey Info Section --}}
+    <div class="w-full px-4 mb-3 flex-shrink-0">
+        <div class="flex flex-wrap gap-2 justify-between items-center">
+            {{-- Survey Type --}}
+            <div class="flex items-center">
+                <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $survey->type === 'advanced' ? 'bg-purple-200 text-purple-800' : 'bg-blue-200 text-blue-800' }}">
+                    {{ ucfirst($survey->type ?? 'Basic') }}
+                </span>
+            </div>
+
+            {{-- Respondents Needed --}}
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span class="text-xs text-gray-700">{{ $survey->responses()->count() }}/{{ $survey->target_respondents ?? '∞' }}</span>
+            </div>
+
+            {{-- Days Until Closing --}}
+            @php
+                $daysLeft = null;
+                if($survey->end_date) {
+                    $endDate = \Carbon\Carbon::parse($survey->end_date);
+                    $now = \Carbon\Carbon::now();
+                    $daysLeft = round($now->diffInDays($endDate, false));
+                }
+            @endphp
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                @if($daysLeft !== null)
+                    <span class="text-xs {{ $daysLeft < 3 ? 'text-red-600 font-semibold' : 'text-gray-700' }}">
+                        {{ $daysLeft > 0 ? $daysLeft.' days left' : 'Ended' }}
+                    </span>
+                @else
+                    <span class="text-xs text-gray-700">Open-ended</span>
+                @endif
+            </div>
         </div>
     </div>
 

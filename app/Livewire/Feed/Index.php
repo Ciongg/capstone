@@ -8,30 +8,45 @@ use App\Models\SurveyTopic;
 use App\Models\TagCategory;
 use App\Models\Tag;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class Index extends Component
 {
     // Basic search property remains the same
     public $search = '';
     
-    // Unified filter system
+    // Unified filter system - add type and institutionOnly keys
     public $activeFilters = [
         'topic' => null,
-        'tags' => []
+        'tags' => [],
+        'type' => null,
+        'institutionOnly' => false
     ];
     
     // Panel for multi-tag selection
     public $showFilterPanel = false;
     public $tempSelectedTagIds = []; // Temporary storage for selected tags in panel
+    
+    // Add temporary properties for survey type and institution filters
+    public $tempSurveyType = null;
+    public $tempInstitutionOnly = false;
+    
     public $pendingTagChanges = false;
     public $isLoading = false;
     
     // For the survey detail modal
     public $modalSurveyId = null;
 
+    // For infinite scroll
+    public $surveys = [];
+    public $page = 1;
+    public $perPage = 6;
+    public $hasMorePages = false;
+    public $loadingMore = false;
+    
     public function mount()
     {
-        // Initialize any default states if necessary
+        $this->loadSurveys();
     }
 
     // Toggle filter panel visibility and initialize temp selection
@@ -42,8 +57,43 @@ class Index extends Component
         if ($this->showFilterPanel) {
             // Initialize temp selection with current tags when opening
             $this->tempSelectedTagIds = $this->activeFilters['tags'];
+            // Initialize temp survey type and institution filter values
+            $this->tempSurveyType = $this->activeFilters['type'];
+            $this->tempInstitutionOnly = $this->activeFilters['institutionOnly'];
             $this->pendingTagChanges = false;
         }
+    }
+
+    // Check if there are pending changes to any filters
+    public function hasPendingChanges()
+    {
+        // Check if tags have changed
+        $tagsChanged = $this->tempSelectedTagIds != $this->activeFilters['tags'];
+        
+        // Check if survey type has changed
+        $typeChanged = $this->tempSurveyType !== $this->activeFilters['type'];
+        
+        // Check if institution only setting has changed
+        $institutionChanged = $this->tempInstitutionOnly !== $this->activeFilters['institutionOnly'];
+        
+        return $tagsChanged || $typeChanged || $institutionChanged;
+    }
+
+    // Handle temporary survey type filter selection within panel
+    public function toggleTempSurveyType($type)
+    {
+        // Toggle the type filter (set to null if already active)
+        $this->tempSurveyType = ($this->tempSurveyType === $type) ? null : $type;
+        // Set the pending changes flag
+        $this->pendingTagChanges = $this->hasPendingChanges();
+    }
+    
+    // Clear temporary survey type filter within panel
+    public function clearTempSurveyType()
+    {
+        $this->tempSurveyType = null;
+        // Set the pending changes flag
+        $this->pendingTagChanges = $this->hasPendingChanges();
     }
 
     // Handle topic filter selection
@@ -109,22 +159,33 @@ class Index extends Component
         // Save selected tags to the unified filter
         $this->activeFilters['tags'] = $this->tempSelectedTagIds;
         
+        // Save survey type and institution only settings
+        $this->activeFilters['type'] = $this->tempSurveyType;
+        $this->activeFilters['institutionOnly'] = $this->tempInstitutionOnly;
+        
         // Close the panel
         $this->showFilterPanel = false;
         $this->pendingTagChanges = false;
         
+        // Reset page and reload surveys
+        $this->page = 1;
+        $this->loadSurveys();
+        
+        $this->isLoading = false;
+        
         // Force a full component refresh
         $this->dispatch('filter-changed');
-        
-        // Ensure we reset the page if using pagination
-        if (method_exists($this, 'resetPage')) {
-            $this->resetPage();
-        }
     }
 
     // Cancel panel without applying changes
     public function cancelPanelTagFilters()
     {
+        // Reset temp values to match current active filters
+        $this->tempSelectedTagIds = $this->activeFilters['tags'];
+        $this->tempSurveyType = $this->activeFilters['type'];
+        $this->tempInstitutionOnly = $this->activeFilters['institutionOnly'];
+        
+        // Close panel
         $this->showFilterPanel = false;
         $this->pendingTagChanges = false;
     }
@@ -208,16 +269,127 @@ class Index extends Component
         $this->resetFiltersWithSpaExperience();
     }
 
-    // Reset all filters with SPA-like experience
+    // Handle survey type filter selection
+    public function toggleSurveyTypeFilter($type)
+    {
+        $this->isLoading = true;
+        
+        // Toggle the type filter (set to null if already active)
+        $this->activeFilters['type'] = ($this->activeFilters['type'] === $type) ? null : $type;
+        
+        // Force a full component refresh
+        $this->dispatch('filter-changed');
+        
+        // Ensure we reset the page if using pagination
+        if (method_exists($this, 'resetPage')) {
+            $this->resetPage();
+        }
+    }
+    
+    // Clear survey type filter
+    public function clearSurveyTypeFilter()
+    {
+        $this->isLoading = true;
+        $this->activeFilters['type'] = null;
+        
+        // Force a full component refresh
+        $this->dispatch('filter-changed');
+    }
+
+    // Load more surveys
+    public function loadMore()
+    {
+        $this->loadingMore = true;
+        $this->page++;
+        $this->loadSurveys(true);
+        $this->loadingMore = false;
+    }
+    
+    // Load surveys based on filters
+    protected function loadSurveys($append = false)
+    {
+        // Build query - Include all relevant statuses including 'pending'
+        $query = Survey::query()
+            ->whereIn('status', ['pending', 'ongoing', 'published'])
+            ->with(['user', 'tags', 'topic']);
+
+        // Apply search filter
+        if (!empty($this->search)) {
+            $query->where('title', 'like', '%' . $this->search . '%');
+        }
+
+        // Apply topic filter - Only when a specific topic is selected
+        if (!is_null($this->activeFilters['topic'])) {
+            $query->where('survey_topic_id', $this->activeFilters['topic']);
+        }
+        
+        // Apply tag filters (AND logic)
+        if (!empty($this->activeFilters['tags'])) {
+            foreach ($this->activeFilters['tags'] as $tagId) {
+                $query->whereHas('tags', function ($q) use ($tagId) {
+                    $q->where('tags.id', $tagId);
+                });
+            }
+        }
+        
+        // Apply survey type filter
+        if (!is_null($this->activeFilters['type'])) {
+            $query->where('type', $this->activeFilters['type']);
+        }
+        
+        // Apply institution only filter
+        if ($this->activeFilters['institutionOnly']) {
+            $query->where('is_institution_only', true);
+        }
+
+        // Custom ordering logic:
+        // 1. Highest points first
+        // 2. Then advanced surveys before basic
+        // 3. Then surveys with closer end dates first
+        $query->orderBy('points_allocated', 'desc')
+              ->orderByRaw("CASE WHEN type = 'advanced' THEN 0 ELSE 1 END")
+              ->orderByRaw("CASE WHEN end_date IS NULL THEN 1 ELSE 0 END")
+              ->orderBy('end_date', 'asc');
+
+        // Get surveys with limit and offset
+        $newSurveys = $query->skip(($this->page - 1) * $this->perPage)
+                            ->take($this->perPage + 1)  // Take one extra to check if there are more
+                            ->get();
+        
+        // Check if we have more pages
+        $this->hasMorePages = $newSurveys->count() > $this->perPage;
+        
+        // Remove the extra item if we have more pages
+        if ($this->hasMorePages) {
+            $newSurveys = $newSurveys->take($this->perPage);
+        }
+        
+        // Either append or replace surveys
+        if ($append) {
+            $this->surveys = collect($this->surveys)->concat($newSurveys)->values();
+        } else {
+            $this->surveys = $newSurveys;
+        }
+    }
+
+    // Modified reset filter to reset page as well
     protected function resetFiltersWithSpaExperience()
     {
         // Reset all filter values
         $this->search = '';
         $this->activeFilters = [
             'topic' => null,
-            'tags' => []
+            'tags' => [],
+            'type' => null,
+            'institutionOnly' => false
         ];
         $this->tempSelectedTagIds = [];
+        $this->tempSurveyType = null;
+        $this->tempInstitutionOnly = false;
+        
+        // Reset page and reload surveys
+        $this->page = 1;
+        $this->loadSurveys();
         
         // Notify Alpine about the topic filter being reset
         $this->dispatch('activeTopicChanged', null);
@@ -225,7 +397,7 @@ class Index extends Component
         // Add a "loading" effect to simulate data being refreshed
         $this->dispatch('filters-reset-loading');
     }
-
+    
     // Listen for filter change events
     protected function getListeners()
     {
@@ -240,38 +412,7 @@ class Index extends Component
     // Main render method with unified filtering
     public function render()
     {
-        // Build query
-        $query = Survey::query()
-            ->whereIn('status', ['ongoing', 'published'])
-            ->with(['user', 'tags', 'topic']);
-
-        // Apply search filter
-        if (!empty($this->search)) {
-            $query->where('title', 'like', '%' . $this->search . '%');
-        }
-
-        // Apply topic filter
-        if (!is_null($this->activeFilters['topic'])) {
-            $query->where('survey_topic_id', $this->activeFilters['topic']);
-        }
-        
-        // Apply tag filters (AND logic)
-        if (!empty($this->activeFilters['tags'])) {
-            foreach ($this->activeFilters['tags'] as $tagId) {
-                $query->whereHas('tags', function ($q) use ($tagId) {
-                    $q->where('tags.id', $tagId);
-                });
-            }
-        }
-
-        // Get surveys with pagination
-        $surveys = $query->latest()->paginate(10);
-        
-        // Reset loading state after render
-        $this->isLoading = false;
-        
         return view('livewire.feed.index', [
-            'surveys' => $surveys,
             'userPoints' => Auth::user()?->points ?? 0,
             'topics' => SurveyTopic::orderBy('name')->get(),
             'tagCategories' => TagCategory::with('tags')->orderBy('name')->get(),

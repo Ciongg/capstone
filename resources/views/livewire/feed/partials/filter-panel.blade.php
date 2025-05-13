@@ -1,10 +1,77 @@
-
 {{-- Filter Panel - Controlled by Livewire --}}
 @if($showFilterPanel)
 <div 
+
+
     class="mb-6 p-4 bg-white rounded-lg shadow-md border border-gray-100"
     wire:transition.origin.top.left
 >
+
+{{-- Survey Type Filters --}}
+    <div class="mt-6 border-t border-gray-200 pt-4">
+        <h3 class="font-medium text-gray-700 mb-3">Filter by Survey Type</h3>
+        
+        <div class="mb-4">
+            <h4 class="text-sm text-gray-600 mb-2">Survey Complexity</h4>
+            <div class="flex space-x-3">
+                <button 
+                    wire:click="toggleTempSurveyType('basic')" 
+                    type="button"
+                    class="px-4 py-2 rounded-md text-sm transition-colors duration-150
+                           {{ $tempSurveyType === 'basic' 
+                               ? 'bg-blue-500 text-white font-semibold shadow-md' 
+                               : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
+                >
+                    Basic
+                </button>
+                <button 
+                    wire:click="toggleTempSurveyType('advanced')" 
+                    type="button"
+                    class="px-4 py-2 rounded-md text-sm transition-colors duration-150
+                           {{ $tempSurveyType === 'advanced' 
+                               ? 'bg-blue-500 text-white font-semibold shadow-md' 
+                               : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
+                >
+                    Advanced
+                </button>
+                <button 
+                    wire:click="clearTempSurveyType" 
+                    type="button"
+                    class="px-4 py-2 rounded-md text-sm transition-colors duration-150
+                           {{ $tempSurveyType === null 
+                               ? 'bg-blue-500 text-white font-semibold shadow-md' 
+                               : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
+                >
+                    All Types
+                </button>
+            </div>
+        </div>
+        
+        <div>
+            <h4 class="text-sm text-gray-600 mb-2">Survey Access</h4>
+            <div class="flex items-center">
+                <label for="institution-only" class="flex items-center cursor-pointer">
+                    <div class="relative">
+                        <input 
+                            type="checkbox" 
+                            id="institution-only" 
+                            wire:model="tempInstitutionOnly" 
+                            wire:change="$set('pendingTagChanges', true)"
+                            class="sr-only"
+                        >
+                        <div class="w-10 h-5 bg-gray-300 rounded-full shadow-inner"></div>
+                        <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-0 transition" 
+                             :class="{ 'transform translate-x-5 bg-blue-500': $wire.tempInstitutionOnly }"></div>
+                    </div>
+                    <div class="ml-3 text-sm font-medium text-gray-700">
+                        Institution Only Surveys
+                    </div>
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    {{-- Tag Filters --}}
     <div class="mb-3 flex items-center justify-between">
         <h3 class="font-medium text-gray-700">Filter Surveys by Tag</h3>
         <button wire:click="cancelPanelTagFilters" class="text-gray-400 hover:text-gray-600" title="Close panel">
@@ -51,6 +118,8 @@
             <div class="p-3 text-center text-gray-500">No tag categories available</div>
         @endforelse
     </div>
+    
+    
     
     <div class="mt-4 flex justify-end space-x-3">
         <button 
