@@ -12,14 +12,14 @@
         <h3 class="font-medium text-gray-700 mb-3">Filter by Survey Type</h3>
         
         <div class="mb-4">
-            <h4 class="text-sm text-gray-600 mb-2">Survey Complexity</h4>
+            <h4 class="font-semibold text-gray-600 mb-2">Survey Complexity</h4> {{-- Size changed, mb-2 for space below heading --}}
             <div class="flex space-x-3">
                 <button 
                     wire:click="toggleTempSurveyType('basic')" 
                     type="button"
                     class="px-4 py-2 rounded-md text-sm transition-colors duration-150
                            {{ $tempSurveyType === 'basic' 
-                               ? 'bg-blue-500 text-white font-semibold shadow-md' 
+                               ? 'bg-[#03b8ff] text-white font-semibold shadow-md'  // Color updated
                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
                 >
                     Basic
@@ -29,7 +29,7 @@
                     type="button"
                     class="px-4 py-2 rounded-md text-sm transition-colors duration-150
                            {{ $tempSurveyType === 'advanced' 
-                               ? 'bg-blue-500 text-white font-semibold shadow-md' 
+                               ? 'bg-[#03b8ff] text-white font-semibold shadow-md' // Color updated
                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
                 >
                     Advanced
@@ -39,7 +39,7 @@
                     type="button"
                     class="px-4 py-2 rounded-md text-sm transition-colors duration-150
                            {{ $tempSurveyType === null 
-                               ? 'bg-blue-500 text-white font-semibold shadow-md' 
+                               ? 'bg-[#03b8ff] text-white font-semibold shadow-md' // Color updated
                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
                 >
                     All Types
@@ -47,21 +47,21 @@
             </div>
         </div>
         
-        <div>
-            <h4 class="text-sm text-gray-600 mb-2">Survey Access</h4>
+        <div class="mt-6"> {{-- Added mt-6 for spacing --}}
+            <h4 class="font-semibold text-gray-600 mb-2">Survey Access</h4> {{-- Size changed, mb-2 for space below heading --}}
             <div class="flex items-center">
                 <label for="institution-only" class="flex items-center cursor-pointer">
                     <div class="relative">
                         <input 
                             type="checkbox" 
                             id="institution-only" 
-                            wire:model="tempInstitutionOnly" 
+                            wire:model.live="tempInstitutionOnly" {{-- Consider .live for immediate UI update with Alpine if needed, or ensure pendingTagChanges handles it --}}
                             wire:change="$set('pendingTagChanges', true)"
                             class="sr-only"
                         >
                         <div class="w-10 h-5 bg-gray-300 rounded-full shadow-inner"></div>
                         <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-0 transition" 
-                             :class="{ 'transform translate-x-5 bg-blue-500': $wire.tempInstitutionOnly }"></div>
+                             :class="{ 'transform translate-x-5 bg-[#03b8ff]': $wire.tempInstitutionOnly }"></div> {{-- Color updated --}}
                     </div>
                     <div class="ml-3 text-sm font-medium text-gray-700">
                         Institution Only Surveys
@@ -72,41 +72,42 @@
     </div>
     
     {{-- Tag Filters --}}
-    <div class="mb-3 flex items-center justify-between">
-        <h3 class="font-medium text-gray-700">Filter Surveys by Tag</h3>
-        <button wire:click="cancelPanelTagFilters" class="text-gray-400 hover:text-gray-600" title="Close panel">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-            </svg>
-        </button>
-    </div>
-    
-    @if(!empty($tempSelectedTagIds))
-        <div class="mb-4 p-2 bg-blue-50 border border-blue-100 rounded-md">
-            <div class="flex items-center justify-between">
-                <span class="text-sm text-blue-700">
-                    {{ count($tempSelectedTagIds) }} tag(s) selected
-                </span>
-                <button wire:click="clearPanelTagFilter" class="text-xs text-blue-600 hover:text-blue-800 underline">
-                    Clear selection
-                </button>
-            </div>
+    <div class="mt-6 border-t border-gray-200 pt-4"> {{-- Added wrapper for consistent section spacing and separator --}}
+        <div class="mb-3 flex items-center justify-between">
+            <h3 class="font-medium text-gray-700">Filter Surveys by Tag</h3>
+            <button wire:click="closeFilterPanel" class="text-gray-400 hover:text-gray-600" title="Close panel"> {{-- Assuming closeFilterPanel is the correct method to close the whole panel --}}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>
         </div>
-    @endif
-    
-    <div class="space-y-4 max-h-96 overflow-y-auto">
-        @forelse($tagCategories as $category)
-            <div wire:key="filter-category-{{ $category->id }}">
-                <h4 class="font-semibold text-gray-600 mb-2">{{ $category->name }}</h4>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                    @foreach($category->tags as $tag)
-                        <button 
-                            wire:click="togglePanelTagFilter({{ $tag->id }})"
-                            wire:key="filter-tag-{{ $tag->id }}"
-                            type="button"
-                            class="w-full text-left px-3 py-2 rounded-md text-sm transition-colors duration-150
-                                   {{ in_array($tag->id, $tempSelectedTagIds) 
-                                       ? 'bg-blue-500 text-white font-semibold shadow-md' 
+        
+        @if(!empty($tempSelectedTagIds))
+            <div class="mb-4 p-2 bg-blue-50 border border-blue-100 rounded-md">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-blue-700">
+                        {{ count($tempSelectedTagIds) }} tag(s) selected
+                    </span>
+                    <button wire:click="clearPanelTagFilter" class="text-xs text-blue-600 hover:text-blue-800 underline">
+                        Clear selection
+                    </button>
+                </div>
+            </div>
+        @endif
+        
+        <div class="space-y-4 max-h-96 overflow-y-auto">
+            @forelse($tagCategories as $category)
+                <div wire:key="filter-category-{{ $category->id }}">
+                    <h4 class="font-semibold text-gray-600 mb-2">{{ $category->name }}</h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                        @foreach($category->tags as $tag)
+                            <button 
+                                wire:click="togglePanelTagFilter({{ $tag->id }})"
+                                wire:key="filter-tag-{{ $tag->id }}"
+                                type="button"
+                                class="w-full text-left px-3 py-2 rounded-md text-sm transition-colors duration-150
+                                       {{ in_array($tag->id, $tempSelectedTagIds) 
+                                       ? 'bg-[#03b8ff] text-white font-semibold shadow-md' // Color updated
                                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
                         >
                             {{ $tag->name }}
@@ -123,14 +124,14 @@
     
     <div class="mt-4 flex justify-end space-x-3">
         <button 
-            wire:click="cancelPanelTagFilters"
+            wire:click="cancelPanelTagFilters" {{-- Or closeFilterPanel if it cancels all pending changes and closes --}}
             class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
         >
             Cancel
         </button>
         <button 
             wire:click="applyPanelTagFilters"
-            class="px-4 py-2 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 shadow-sm
+            class="px-4 py-2 bg-[#03b8ff] text-white text-sm rounded-md hover:bg-[#0295d1] shadow-sm {{-- Color updated, hover color added --}}
                   {{ $pendingTagChanges ? '' : 'opacity-50 cursor-not-allowed' }}"
             {{ $pendingTagChanges ? '' : 'disabled' }}
         >

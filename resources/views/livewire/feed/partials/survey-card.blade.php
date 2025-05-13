@@ -24,7 +24,7 @@
     </div>
     
     {{-- Image --}}
-    <div class="w-full flex-grow mt-4 flex items-center justify-center mb-2 relative px-4 min-h-0">
+    <div class="w-full flex-grow mt-1 flex items-center justify-center mb-2 relative px-4 min-h-0">
         @if($survey->image_path)
             @php $imageUrl = asset('storage/' . $survey->image_path); @endphp
             <button @click="fullscreenImageSrc = '{{ $imageUrl }}'" class="cursor-pointer w-full h-full flex items-center justify-center">
@@ -38,28 +38,57 @@
     {{-- Tags Section --}}
     <div class="w-full px-4 mb-3 flex-shrink-0">
         <div class="flex flex-wrap gap-2 justify-center min-h-[36px] items-center">
-            @if($survey->tags->isEmpty())
-                <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
-                <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
-                <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+            @if($survey->is_institution_only)
+                {{-- Show institution tags for institution-only surveys --}}
+                @if($survey->institutionTags->isEmpty())
+                    <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                    <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                    <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                @else
+                    @php $tagsToShow = $survey->institutionTags->take(3); @endphp
+                    @foreach($tagsToShow as $tag)
+                        <button
+                            wire:click="filterByTag({{ $tag->id }}, true)"
+                            wire:key="survey-{{ $survey->id }}-inst-tag-{{ $tag->id }}"
+                            wire:loading.attr="disabled"
+                            wire:loading.class="opacity-50"
+                            class="px-3 py-2 text-xs font-semibold rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis transition-all
+                                {{ in_array($tag->id, $activeFilters['institutionTags']) ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200' }}"
+                        >
+                            {{ $tag->name }}
+                        </button>
+                    @endforeach
+                    @if($tagsToShow->count() < 3)
+                        @for($i = $tagsToShow->count(); $i < 3; $i++)
+                            <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                        @endfor
+                    @endif
+                @endif
             @else
-                @php $tagsToShow = $survey->tags->take(3); @endphp
-                @foreach($tagsToShow as $tag)
-                    <button
-                        wire:click="filterByTag({{ $tag->id }})"
-                        wire:key="survey-{{ $survey->id }}-tag-{{ $tag->id }}"
-                        wire:loading.attr="disabled"
-                        wire:loading.class="opacity-50"
-                        class="px-3 py-2 text-xs font-semibold rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis transition-all
-                               {{ in_array($tag->id, $activeFilters['tags']) ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200' }}"
-                    >
-                        {{ $tag->name }}
-                    </button>
-                @endforeach
-                @if($tagsToShow->count() < 3)
-                    @for($i = $tagsToShow->count(); $i < 3; $i++)
-                        <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
-                    @endfor
+                {{-- Show regular tags for standard surveys --}}
+                @if($survey->tags->isEmpty())
+                    <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                    <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                    <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                @else
+                    @php $tagsToShow = $survey->tags->take(3); @endphp
+                    @foreach($tagsToShow as $tag)
+                        <button
+                            wire:click="filterByTag({{ $tag->id }})"
+                            wire:key="survey-{{ $survey->id }}-tag-{{ $tag->id }}"
+                            wire:loading.attr="disabled"
+                            wire:loading.class="opacity-50"
+                            class="px-3 py-2 text-xs font-semibold rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis transition-all
+                                {{ in_array($tag->id, $activeFilters['tags']) ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200' }}"
+                        >
+                            {{ $tag->name }}
+                        </button>
+                    @endforeach
+                    @if($tagsToShow->count() < 3)
+                        @for($i = $tagsToShow->count(); $i < 3; $i++)
+                            <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                        @endfor
+                    @endif
                 @endif
             @endif
         </div>
@@ -68,11 +97,16 @@
     {{-- Survey Info Section --}}
     <div class="w-full px-4 mb-3 flex-shrink-0">
         <div class="flex flex-wrap gap-2 justify-between items-center">
-            {{-- Survey Type --}}
+            {{-- Survey Topic (Moved here from bottom) --}}
             <div class="flex items-center">
-                <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $survey->type === 'advanced' ? 'bg-purple-200 text-purple-800' : 'bg-blue-200 text-blue-800' }}">
-                    {{ ucfirst($survey->type ?? 'Basic') }}
-                </span>
+                @if($survey->topic)
+                    <span class="px-3 py-1 text-xs font-semibold rounded-full text-gray-800">
+                        {{ $survey->topic->name }}
+                    </span>
+                @else
+                    {{-- Optional: Placeholder if no topic --}}
+                    <span class="px-3 py-1 text-xs font-semibold text-gray-400 italic">No Topic</span>
+                @endif
             </div>
 
             {{-- Respondents Needed --}}
@@ -98,7 +132,7 @@
                 </svg>
                 @if($daysLeft !== null)
                     <span class="text-xs {{ $daysLeft < 3 ? 'text-red-600 font-semibold' : 'text-gray-700' }}">
-                        {{ $daysLeft > 0 ? $daysLeft.' days left' : 'Ended' }}
+                        {{ $daysLeft >= 0 ? ($daysLeft == 0 ? 'Ends Today' : ($daysLeft == 1 ? '1 day left' : $daysLeft.' days left')) : 'Ended' }}
                     </span>
                 @else
                     <span class="text-xs text-gray-700">Open-ended</span>
@@ -107,23 +141,40 @@
         </div>
     </div>
 
-    {{-- Read More Button & Topic Badge --}}
-    <div class="w-full flex justify-between items-center mt-auto mb-4 px-4 flex-shrink-0">
-        <button
-            @click="
-                $wire.set('modalSurveyId', null).then(() => {
-                    $wire.set('modalSurveyId', {{ $survey->id }});
-                    $nextTick(() => $dispatch('open-modal', { name: 'surveyDetailModal' }));
-                })
-            "
-            class="px-4 py-1 rounded-full font-bold text-white cursor-pointer transition
-                   bg-[#03b8ff] hover:bg-[#0295d1] hover:shadow-lg focus:outline-none"
-            type="button"
-        >
-            Read More
-        </button>
-        @if($survey->topic)
-            <span class="text-xs text-gray-500">{{ $survey->topic->name }}</span>
-        @endif
+    {{-- Read More Button, Institution Indicator & Survey Type --}}
+    <div class="w-full flex items-center mt-auto mb-4 px-4 flex-shrink-0">
+        {{-- Read More Button --}}
+        <div>
+            <button
+                class="px-4 py-1 rounded-full font-bold text-white cursor-pointer transition
+                       bg-[#03b8ff] hover:bg-[#0295d1] hover:shadow-lg focus:outline-none"
+                       
+                type="button"
+
+                @click="
+                    $wire.set('modalSurveyId', null).then(() => {
+                        $wire.set('modalSurveyId', {{ $survey->id }});
+                        $nextTick(() => $dispatch('open-modal', { name: 'surveyDetailModal' }));
+                    })
+                "
+                
+            >
+                Read More
+            </button>
+        </div>
+
+        {{-- Institution Only Indicator (Centered) --}}
+        <div class="flex-grow text-center">
+            @if($survey->is_institution_only)
+                <span class="text-xs font-bold rounded-full px-3 py-1 bg-yellow-500 text-white">Institution Only</span>
+            @endif
+        </div>
+        
+        {{-- Survey Type (Moved here from Info Section) --}}
+        <div class="ml-auto">
+            <span class="px-3 py-1 text-xs font-bold rounded-full {{ $survey->type === 'advanced' ? 'bg-purple-200 text-purple-800' : 'bg-blue-200 text-blue-800' }}">
+                {{ ucfirst($survey->type ?? 'Basic') }}
+            </span>
+        </div>
     </div>
 </div>

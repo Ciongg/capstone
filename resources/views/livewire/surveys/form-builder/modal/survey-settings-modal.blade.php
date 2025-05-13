@@ -212,12 +212,26 @@
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
                     <div class="flex">
                         <div class="ml-3">
-                            <p class="text-sm text-yellow-700">
-                                No institutional demographics have been set up yet. 
-                                <a href="{{ route('profile.index') }}" class="font-medium underline text-yellow-700 hover:text-yellow-600">
-                                    Set up institution demographics
-                                </a>
-                            </p>
+                            @if(Auth::user()->isInstitutionAdmin())
+                                <p class="text-sm text-yellow-700">
+                                    No institutional demographics have been set up yet. 
+                                    <a href="{{ route('profile.index') }}" class="font-medium underline text-yellow-700 hover:text-yellow-600">
+                                        Set up institution demographics
+                                    </a>
+                                </p>
+                            @elseif(Auth::user()->isResearcher())
+                                <p class="text-sm text-yellow-700">
+                                    No institutional demographics have been set up by your organization. 
+                                    <span class="font-medium underline text-yellow-700">
+                                        Notify them if this is wrong
+                                    </span>
+                                </p>
+                            @else 
+                                {{-- Fallback for other user types if necessary, or remove if not needed --}}
+                                <p class="text-sm text-yellow-700">
+                                    Institutional demographics are not yet available.
+                                </p>
+                            @endif
                         </div>
                     </div>
                 </div>

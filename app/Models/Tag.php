@@ -23,5 +23,14 @@ class Tag extends Model
     public function users()
     {
         return $this->belongsToMany(User::class);
+        
     }
+
+    //    public function users()
+    // {
+    //     return $this->belongsToMany(User::class, 'tag_user')
+    //         ->withPivot('tag_name')
+    //         ->withTimestamps();
+    // }
+
 }

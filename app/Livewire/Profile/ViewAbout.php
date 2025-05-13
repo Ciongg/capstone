@@ -68,7 +68,11 @@ class ViewAbout extends Component
         $tagsToSync = [];
         foreach ($this->selectedTags as $categoryId => $tagId) {
             if (!empty($tagId)) {
-                $tagsToSync[] = $tagId;
+                // Get tag name for denormalization
+                $tag = Tag::find($tagId);
+                if ($tag) {
+                    $tagsToSync[$tagId] = ['tag_name' => $tag->name];
+                }
             }
         }
         

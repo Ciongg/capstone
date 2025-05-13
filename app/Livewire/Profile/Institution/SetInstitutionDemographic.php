@@ -61,14 +61,21 @@ class SetInstitutionDemographic extends Component
             }
         }
 
-        $this->newCategoryName = ''; // Clear the category name input
-        $this->newTagNames = [''];   // Reset tag names to one empty field
-        $this->loadCategories();
-
+        // First send success notification
         $this->dispatch('notify', [
             'type' => 'success', 
             'message' => 'Demographic category added successfully!'
         ]);
+
+        // Then reset form fields in Livewire
+        $this->newCategoryName = '';
+        $this->newTagNames = [''];
+        
+        // Dispatch a custom event for JavaScript to handle the form reset
+        $this->dispatch('form-reset');
+        
+        // Refresh the categories list
+        $this->loadCategories();
     }
 
     public function addTagField()

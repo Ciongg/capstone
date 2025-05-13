@@ -57,7 +57,7 @@
             {{-- Survey grid - with infinite scroll --}}
             <div wire:loading.class="opacity-0" wire:target="toggleTopicFilter, clearTopicFilter, filterByTag, applyPanelTagFilters, removeTagFilter, clearPanelTagFilter, clearAllFilters">
                 @if(count($surveys) > 0)
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
                         @foreach($surveys as $survey)
                             @include('livewire.feed.partials.survey-card', ['survey' => $survey])
                         @endforeach

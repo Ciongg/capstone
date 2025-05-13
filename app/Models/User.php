@@ -82,7 +82,9 @@ class User extends Authenticatable
 
     public function tags()
     {
-        return $this->belongsToMany(\App\Models\Tag::class);
+        return $this->belongsToMany(\App\Models\Tag::class)
+                   ->withPivot('tag_name')
+                   ->withTimestamps();
     }
 
     /**

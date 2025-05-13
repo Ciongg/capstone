@@ -15,10 +15,11 @@ class Index extends Component
     // Basic search property remains the same
     public $search = '';
     
-    // Unified filter system - add type and institutionOnly keys
+    // Unified filter system - add institutionTags key
     public $activeFilters = [
         'topic' => null,
         'tags' => [],
+        'institutionTags' => [], // Add a new filter for institution tags
         'type' => null,
         'institutionOnly' => false
     ];
@@ -209,21 +210,23 @@ class Index extends Component
         }
     }
 
-    // Quick tag filter from survey cards
-    public function filterByTag($tagId)
+    // Quick tag filter from survey cards - Modified to handle institution tags
+    public function filterByTag($tagId, $isInstitutionTag = false)
     {
         $this->isLoading = true;
         
+        $filterKey = $isInstitutionTag ? 'institutionTags' : 'tags';
+        
         // Check if this tag is already active
-        $index = array_search($tagId, $this->activeFilters['tags']);
+        $index = array_search($tagId, $this->activeFilters[$filterKey]);
         
         if ($index !== false) {
             // Remove tag if already selected (toggle off)
-            unset($this->activeFilters['tags'][$index]);
-            $this->activeFilters['tags'] = array_values($this->activeFilters['tags']);
+            unset($this->activeFilters[$filterKey][$index]);
+            $this->activeFilters[$filterKey] = array_values($this->activeFilters[$filterKey]);
         } else {
             // Add tag if not selected (toggle on)
-            $this->activeFilters['tags'] = [$tagId]; // Replace existing tags with just this one
+            $this->activeFilters[$filterKey] = [$tagId]; // Replace existing tags with just this one
         }
         
         // Force a full component refresh
@@ -235,19 +238,22 @@ class Index extends Component
         }
     }
 
-    // Remove a specific tag filter
-    public function removeTagFilter($tagId)
+    // Remove a specific tag filter - Modified to handle institution tags
+    public function removeTagFilter($tagId, $isInstitutionTag = false)
     {
         $this->isLoading = true;
         
+        $filterKey = $isInstitutionTag ? 'institutionTags' : 'tags';
+        
         // Remove this tag from filters
-        $this->activeFilters['tags'] = array_values(array_filter(
-            $this->activeFilters['tags'],
+        $this->activeFilters[$filterKey] = array_values(array_filter(
+            $this->activeFilters[$filterKey],
             fn($id) => $id != $tagId
         ));
         
         // If no filters remain, reset everything
-        if (empty($this->search) && is_null($this->activeFilters['topic']) && empty($this->activeFilters['tags'])) {
+        if (empty($this->search) && is_null($this->activeFilters['topic']) && 
+            empty($this->activeFilters['tags']) && empty($this->activeFilters['institutionTags'])) {
             $this->resetFiltersWithSpaExperience();
         }
     }
@@ -305,13 +311,13 @@ class Index extends Component
         $this->loadingMore = false;
     }
     
-    // Load surveys based on filters
+    // Load surveys based on filters - Modified to handle institution tags
     protected function loadSurveys($append = false)
     {
         // Build query - Include all relevant statuses including 'pending'
         $query = Survey::query()
             ->whereIn('status', ['pending', 'ongoing', 'published'])
-            ->with(['user', 'tags', 'topic']);
+            ->with(['user', 'tags', 'institutionTags', 'topic']);
 
         // Apply search filter
         if (!empty($this->search)) {
@@ -323,8 +329,16 @@ class Index extends Component
             $query->where('survey_topic_id', $this->activeFilters['topic']);
         }
         
-        // Apply tag filters (AND logic)
-        if (!empty($this->activeFilters['tags'])) {
+        // Apply tag filters based on whether we're filtering by institution tags or regular tags
+        if ($this->activeFilters['institutionOnly'] && !empty($this->activeFilters['institutionTags'])) {
+            // For institution-only surveys, use institution tags
+            foreach ($this->activeFilters['institutionTags'] as $tagId) {
+                $query->whereHas('institutionTags', function ($q) use ($tagId) {
+                    $q->where('institution_tags.id', $tagId);
+                });
+            }
+        } else if (!empty($this->activeFilters['tags'])) {
+            // For regular surveys, use regular tags
             foreach ($this->activeFilters['tags'] as $tagId) {
                 $query->whereHas('tags', function ($q) use ($tagId) {
                     $q->where('tags.id', $tagId);
@@ -372,7 +386,7 @@ class Index extends Component
         }
     }
 
-    // Modified reset filter to reset page as well
+    // Modified reset filter to reset institution tags as well
     protected function resetFiltersWithSpaExperience()
     {
         // Reset all filter values
@@ -380,6 +394,7 @@ class Index extends Component
         $this->activeFilters = [
             'topic' => null,
             'tags' => [],
+            'institutionTags' => [],
             'type' => null,
             'institutionOnly' => false
         ];
