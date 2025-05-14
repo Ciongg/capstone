@@ -7,6 +7,9 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles <!-- Required Livewire styles -->
+    
+    <!-- Add Confetti.js for level-up animations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body >
 

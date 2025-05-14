@@ -1,5 +1,6 @@
 import './bootstrap';
 import Alpine from 'alpinejs';
+import './level-up-animation.js';
 
 window.Alpine = Alpine;
 

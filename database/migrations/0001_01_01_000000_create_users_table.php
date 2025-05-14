@@ -19,6 +19,9 @@ return new class extends Migration
             $table->string('phone_number')->unique()->nullable();
             $table->decimal('points')->default(0);
             $table->decimal('trust_score')->default(100);
+            $table->integer('account_level')->default(0);
+            $table->decimal('experience_points')->default(0);
+            $table->string('title')->default(0);
             $table->timestamp('email_verified_at')->nullable();
             $table->enum('type', ['respondent', 'researcher', 'institution_admin', 'super_admin'])->default('respondent');
             $table->foreignId('institution_id')->nullable()->constrained('institutions')->onDelete('set null'); // Add this line

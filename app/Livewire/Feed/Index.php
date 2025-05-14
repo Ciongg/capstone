@@ -409,6 +409,8 @@ class Index extends Component
 {
     // Get authenticated user
     $user = Auth::user();
+
+    // These relationships are defined in the User model but IDE may flag them incorrectly
     $userGeneralTags = $user ? $user->tags()->pluck('tags.id')->toArray() : [];
     $userInstitutionTags = $user ? $user->institutionTags()->pluck('institution_tags.id')->toArray() : [];
     

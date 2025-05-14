@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use App\Services\UserExperienceService;
 
 class User extends Authenticatable
 {
@@ -29,13 +30,14 @@ class User extends Authenticatable
         'first_name',
         'last_name',
         'email',
-        'phone_number',
         'password',
-        'type',
-        'institution_id',
-        'profile_photo_path',
+        'phone_number',
         'points',
         'trust_score',
+        'experience_points', // Add experience_points to fillable
+        'type',
+        'profile_photo_path',
+        'institution_id',
     ];
 
     /**
@@ -179,5 +181,103 @@ class User extends Authenticatable
         
         $emailDomain = Str::after($this->email, '@');
         return Str::endsWith($emailDomain, '.edu') || Str::endsWith($emailDomain, '.edu.ph');
+    }
+    
+    /**
+     * Add experience points to the user.
+     *
+     * @param int $amount
+     * @return array Information about level change, perks, etc.
+     */
+    public function addExperiencePoints(int $amount): array
+    {
+        $previousXp = $this->experience_points;
+        $previousLevel = UserExperienceService::calculateLevel($previousXp);
+        
+        // Add XP
+        $this->experience_points += $amount;
+        
+        // Calculate new level
+        $currentLevel = UserExperienceService::calculateLevel($this->experience_points);
+        
+        $result = [
+            'previous_xp' => $previousXp,
+            'current_xp' => $this->experience_points,
+            'previous_level' => $previousLevel,
+            'current_level' => $currentLevel,
+            'leveled_up' => $currentLevel > $previousLevel,
+            'perks' => [],
+        ];
+        
+        // If leveled up, update title and apply perks
+        if ($result['leveled_up']) {
+            // Update title
+            $this->title = UserExperienceService::getTitleForLevel($currentLevel);
+            
+            // Apply perks
+            $result['perks'] = UserExperienceService::applyLevelPerks($this, $previousLevel, $currentLevel);
+        }
+        
+        // Save changes
+        $this->save();
+        
+        return $result;
+    }
+    
+    /**
+     * Get current level based on XP.
+     *
+     * @return int
+     */
+    public function getLevel(): int
+    {
+        return UserExperienceService::calculateLevel($this->experience_points);
+    }
+    
+    /**
+     * Get progress to next level (percentage).
+     *
+     * @return float
+     */
+    public function getLevelProgressPercentage(): float
+    {
+        $currentLevel = $this->getLevel();
+        $currentLevelXp = UserExperienceService::xpRequiredForLevel($currentLevel);
+        $nextLevelXp = UserExperienceService::xpRequiredForLevel($currentLevel + 1);
+        
+        $xpForThisLevel = $this->experience_points - $currentLevelXp;
+        $xpRequiredForNextLevel = $nextLevelXp - $currentLevelXp;
+        
+        return min(100, round(($xpForThisLevel / $xpRequiredForNextLevel) * 100, 1));
+    }
+    
+    /**
+     * Get XP required for next level.
+     *
+     * @return int
+     */
+    public function getXpRequiredForNextLevel(): int
+    {
+        $currentLevel = $this->getLevel();
+        return UserExperienceService::xpRequiredForLevel($currentLevel + 1);
+    }
+    
+    /**
+     * Update user's title based on current XP level.
+     *
+     * @return bool True if title was updated
+     */
+    public function updateTitle(): bool
+    {
+        $currentLevel = $this->getLevel();
+        $newTitle = UserExperienceService::getTitleForLevel($currentLevel);
+        
+        if ($this->title !== $newTitle) {
+            $this->title = $newTitle;
+            $this->save();
+            return true;
+        }
+        
+        return false;
     }
 }
