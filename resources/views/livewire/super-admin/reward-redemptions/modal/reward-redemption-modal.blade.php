@@ -59,6 +59,15 @@
                     <div>
                         <span class="font-bold">Points Spent:</span> {{ $redemption->points_spent }}
                     </div>
+                    
+                    <!-- GCash Number (Only shown for monetary rewards) -->
+                    @if($redemption->reward->type === 'monetary')
+                        <div>
+                            <span class="font-bold">GCash Number:</span> 
+                            <span class="font-mono">{{ $redemption->gcash_number ?: 'Not provided' }}</span>
+                        </div>
+                    @endif
+                    
                     <div>
                         <span class="font-bold">Type:</span> {{ ucfirst($redemption->reward->type) }}
                     </div>
@@ -98,7 +107,7 @@
                             {{ $redemption->reward->type !== 'monetary' ? 'disabled' : '' }}
                         >
                             <span wire:loading wire:target="updateStatus('completed')">Processing...</span>
-                            <span wire:loading.remove wire:target="updateStatus('completed')">Approve</span>
+                            <span wire:loading.remove wire:target="updateStatus('completed')">Completed</span>
                         </button>
                         
                         <button 

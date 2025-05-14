@@ -19,6 +19,7 @@ return new class extends Migration
             $table->integer('cost'); // Points required to redeem
             $table->integer('quantity')->default(0); // How many rewards are available
             $table->enum('type', ['voucher', 'system', 'monetary']);
+            
             $table->string('image_path')->nullable();
             $table->timestamps();
         });

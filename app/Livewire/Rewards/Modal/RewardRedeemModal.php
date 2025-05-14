@@ -12,6 +12,28 @@ class RewardRedeemModal extends Component
 {
     public $reward;
     public $redeemQuantity = 1;
+    public $gcashNumber = '';
+    public $confirmGcashCorrect = false;
+
+    // Add validation rules
+    protected function rules()
+    {
+        $rules = [
+            'redeemQuantity' => 'required|integer|min:1',
+        ];
+        
+        // Add GCash validation only for monetary rewards
+        if ($this->reward && $this->reward->type === 'monetary') {
+            $rules['gcashNumber'] = 'required|numeric|digits:11';
+            $rules['confirmGcashCorrect'] = 'accepted';
+        }
+        
+        return $rules;
+    }
+    
+    protected $messages = [
+        'confirmGcashCorrect.accepted' => 'Please confirm your GCash number is correct before proceeding.',
+    ];
 
     // Mount the component with the selected reward
     public function mount($reward)
@@ -30,6 +52,15 @@ class RewardRedeemModal extends Component
         $user = Auth::user();
         $quantityToRedeem = (int)$this->redeemQuantity;
         $totalCost = $this->reward->cost * $quantityToRedeem;
+
+        // Validate the input
+        if ($this->reward->type === 'monetary') {
+            $this->validate();
+        } else {
+            $this->validate([
+                'redeemQuantity' => 'required|integer|min:1'
+            ]);
+        }
 
         if ($quantityToRedeem <= 0) {
             $this->dispatch('redemptionError', 'Quantity must be at least 1.');
@@ -95,19 +126,25 @@ class RewardRedeemModal extends Component
                     $this->reward->save();
                 }
 
-                // Determine status based on reward type
-                // Only monetary rewards need approval (pending)
+                // Set status based on reward type
                 $status = ($this->reward->type === 'monetary') 
                     ? RewardRedemption::STATUS_PENDING 
                     : RewardRedemption::STATUS_COMPLETED;
 
-                // Create redemption record with determined status
-                RewardRedemption::create([
+                // Create redemption record with determined status and GCash number if applicable
+                $redemptionData = [
                     'user_id' => $user->id,
                     'reward_id' => $this->reward->id,
                     'points_spent' => $totalCost,
                     'status' => $status,
-                ]);
+                ];
+
+                // Add GCash number if this is a monetary reward
+                if ($this->reward->type === 'monetary') {
+                    $redemptionData['gcash_number'] = $this->gcashNumber;
+                }
+
+                RewardRedemption::create($redemptionData);
 
                 // Set success message with any additional info
                 $successMessage = "Reward redeemed successfully!";

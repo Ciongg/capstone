@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('reward_id')->constrained()->onDelete('cascade');
+            $table->string('gcash_number')->nullable();
             $table->integer('points_spent');
             $table->enum('status', ['pending', 'completed', 'rejected'])->default('pending');
             $table->timestamps();

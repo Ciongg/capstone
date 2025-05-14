@@ -19,6 +19,7 @@ class RewardRedemption extends Model
         'user_id',
         'reward_id',
         'points_spent',
+        'gcash_number',
         'reward_type',
         'status',
         
