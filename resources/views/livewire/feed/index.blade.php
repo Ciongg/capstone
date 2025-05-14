@@ -45,8 +45,8 @@
     <div class="mt-4">
         {{-- Loading indicator with centered positioning --}}
         <div class="relative min-h-[200px]"> 
-            {{-- Loading indicator - with unified targets --}}
-            <div wire:loading wire:target="toggleTopicFilter, clearTopicFilter, filterByTag, applyPanelTagFilters, removeTagFilter, clearPanelTagFilter, clearAllFilters" 
+            {{-- Loading indicator - add clearSurveyTypeFilter to the wire:target --}}
+            <div wire:loading wire:target="toggleTopicFilter, clearTopicFilter, filterByTag, applyPanelTagFilters, removeTagFilter, clearPanelTagFilter, clearAllFilters, clearSurveyTypeFilter, toggleSurveyTypeFilter" 
                  class="absolute inset-0 flex justify-center items-center">
                 <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200 flex flex-col items-center space-y-3">
                     <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -54,8 +54,8 @@
                 </div>
             </div>
 
-            {{-- Survey grid - with infinite scroll --}}
-            <div wire:loading.class="opacity-0" wire:target="toggleTopicFilter, clearTopicFilter, filterByTag, applyPanelTagFilters, removeTagFilter, clearPanelTagFilter, clearAllFilters">
+            {{-- Survey grid - also update here to match the targets above --}}
+            <div wire:loading.class="opacity-0" wire:target="toggleTopicFilter, clearTopicFilter, filterByTag, applyPanelTagFilters, removeTagFilter, clearPanelTagFilter, clearAllFilters, clearSurveyTypeFilter, toggleSurveyTypeFilter">
                 @if(count($surveys) > 0)
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
                         @foreach($surveys as $survey)

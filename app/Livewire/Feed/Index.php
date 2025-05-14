@@ -148,10 +148,13 @@ class Index extends Component
             is_null($this->activeFilters['type']) &&
             $this->activeFilters['institutionOnly'] === false) {
             $this->resetFiltersWithSpaExperience();
+            
         } else {
             // Otherwise just reload the surveys with remaining filters
             $this->page = 1;
             $this->loadSurveys();
+            $this->dispatch('filters-reset-loading');
+            $this->dispatch('filter-changed');
         }
     }
 
@@ -338,6 +341,8 @@ class Index extends Component
         if (is_null($this->activeFilters['topic']) && empty($this->activeFilters['tags'])) {
             $this->resetFiltersWithSpaExperience();
         }
+
+        
     }
 
     // Clear all filters
@@ -368,10 +373,27 @@ class Index extends Component
     {
         $this->isLoading = true;
         $this->activeFilters['type'] = null;
+         $this->dispatch('activeTopicChanged', null);
         
-        // Force a full component refresh
-        $this->dispatch('filter-changed');
+        // If no other filters remain, reset everything
+        if (empty($this->search) && 
+            is_null($this->activeFilters['topic']) && 
+            empty($this->activeFilters['tags']) && 
+            empty($this->activeFilters['institutionTags']) &&
+            $this->activeFilters['institutionOnly'] === false) {
+            $this->resetFiltersWithSpaExperience();
+        } else {
+            // Otherwise just reload the surveys with remaining filters
+            $this->page = 1;
+            $this->loadSurveys();
+            
+            // Add a "loading" effect to simulate data being refreshed
+            $this->dispatch('filters-reset-loading');
+            $this->dispatch('filter-changed');
+        }
     }
+
+    
 
     // Load more surveys
     public function loadMore()
@@ -384,79 +406,172 @@ class Index extends Component
     
     // Load surveys based on filters - Modified to handle institution tags
     protected function loadSurveys($append = false)
-    {
-        // Build query - Include all relevant statuses including 'pending'
-        $query = Survey::query()
-            ->whereIn('status', ['pending', 'ongoing', 'published'])
-            ->with(['user', 'tags', 'institutionTags', 'topic']);
+{
+    // Get authenticated user
+    $user = Auth::user();
+    $userGeneralTags = $user ? $user->tags()->pluck('tags.id')->toArray() : [];
+    $userInstitutionTags = $user ? $user->institutionTags()->pluck('institution_tags.id')->toArray() : [];
+    
+    // STEP 1: First get basic surveys with standard filters
+    $basicQuery = Survey::query()
+        ->where('type', 'basic')
+        ->whereIn('status', ['pending', 'ongoing', 'published'])
+        ->with(['user', 'tags', 'institutionTags', 'topic']);
+        
+    // Apply common filters to basic survey query
+    $this->applyCommonFilters($basicQuery);
+    
+    // STEP 2: Then get advanced surveys with demographic filters
+    $advancedQuery = Survey::query()
+        ->where('type', 'advanced')
+        ->whereIn('status', ['pending', 'ongoing', 'published'])
+        ->with(['user', 'tags', 'institutionTags', 'topic']);
+        
+    // Apply common filters to advanced survey query
+    $this->applyCommonFilters($advancedQuery);
+    
+    // STEP 3: Based on filter type, decide what surveys to show
+    if ($this->activeFilters['type'] === 'basic') {
+        // If explicitly filtering for basic, only run basic query
+        $basicSurveys = $basicQuery->get();
+        $advancedSurveys = collect([]);
+    }
+    else if ($this->activeFilters['type'] === 'advanced') {
+        // If explicitly filtering for advanced, only run advanced query
+        // but still apply demographic filtering to advanced surveys
+        $basicSurveys = collect([]);
+        $advancedSurveys = $advancedQuery->get();
+        
+        // Apply demographic filtering to advanced surveys
+        $advancedSurveys = $this->filterAdvancedSurveysByDemographics($advancedSurveys, $userGeneralTags, $userInstitutionTags);
+    }
+    else {
+        // Default case (All Types) - get both types with appropriate filtering
+        $basicSurveys = $basicQuery->get();
+        $advancedSurveys = $advancedQuery->get();
+        
+        // Apply demographic filtering to advanced surveys
+        $advancedSurveys = $this->filterAdvancedSurveysByDemographics($advancedSurveys, $userGeneralTags, $userInstitutionTags);
+    }
+    
+    // STEP 4: Combine surveys and apply ordering/pagination
+    $combinedSurveys = $basicSurveys->concat($advancedSurveys)->unique('id');
+    
+    // Apply global sorting
+    $combinedSurveys = $combinedSurveys->sortByDesc('points_allocated')
+        ->sortBy(function($survey) {
+            // Advanced surveys first, then basic
+            return $survey->type === 'advanced' ? 0 : 1;
+        })
+        ->sortBy(function($survey) {
+            // Surveys with end dates first, then null dates
+            return $survey->end_date === null ? 1 : 0;
+        })
+        ->sortBy('end_date')
+        ->values();
+    
+    // Log counts for debugging
+    Log::info('Survey counts in feed:', [
+        'basic_count' => $basicSurveys->count(),
+        'advanced_filtered_count' => $advancedSurveys->count(),
+        'total_combined' => $combinedSurveys->count()
+    ]);
+    
+    // Handle pagination
+    $total = $combinedSurveys->count();
+    $this->hasMorePages = $total > ($this->page * $this->perPage);
+    
+    $paginatedSurveys = $combinedSurveys->slice(($this->page - 1) * $this->perPage, $this->perPage + 1);
+    if ($this->hasMorePages && $paginatedSurveys->count() > $this->perPage) {
+        $paginatedSurveys = $paginatedSurveys->take($this->perPage);
+    }
+    
+    // Either append or replace surveys
+    if ($append) {
+        $this->surveys = collect($this->surveys)->concat($paginatedSurveys)->values();
+    } else {
+        $this->surveys = $paginatedSurveys;
+    }
+}
 
-        // Apply search filter
-        if (!empty($this->search)) {
-            $query->where('title', 'like', '%' . $this->search . '%');
-        }
-
-        // Apply topic filter - Only when a specific topic is selected
-        if (!is_null($this->activeFilters['topic'])) {
-            $query->where('survey_topic_id', $this->activeFilters['topic']);
-        }
-        
-        // Apply tag filters based on whether we're filtering by institution tags or regular tags
-        if ($this->activeFilters['institutionOnly'] && !empty($this->activeFilters['institutionTags'])) {
-            // For institution-only surveys, use institution tags
-            foreach ($this->activeFilters['institutionTags'] as $tagId) {
-                $query->whereHas('institutionTags', function ($q) use ($tagId) {
-                    $q->where('institution_tags.id', $tagId);
-                });
-            }
-        } else if (!empty($this->activeFilters['tags'])) {
-            // For regular surveys, use regular tags
-            foreach ($this->activeFilters['tags'] as $tagId) {
-                $query->whereHas('tags', function ($q) use ($tagId) {
-                    $q->where('tags.id', $tagId);
-                });
-            }
-        }
-        
-        // Apply survey type filter
-        if (!is_null($this->activeFilters['type'])) {
-            $query->where('type', $this->activeFilters['type']);
-        }
-        
-        // Apply institution only filter
-        if ($this->activeFilters['institutionOnly']) {
-            $query->where('is_institution_only', true);
-        }
-
-        // Custom ordering logic:
-        // 1. Highest points first
-        // 2. Then advanced surveys before basic
-        // 3. Then surveys with closer end dates first
-        $query->orderBy('points_allocated', 'desc')
-              ->orderByRaw("CASE WHEN type = 'advanced' THEN 0 ELSE 1 END")
-              ->orderByRaw("CASE WHEN end_date IS NULL THEN 1 ELSE 0 END")
-              ->orderBy('end_date', 'asc');
-
-        // Get surveys with limit and offset
-        $newSurveys = $query->skip(($this->page - 1) * $this->perPage)
-                            ->take($this->perPage + 1)  // Take one extra to check if there are more
-                            ->get();
-        
-        // Check if we have more pages
-        $this->hasMorePages = $newSurveys->count() > $this->perPage;
-        
-        // Remove the extra item if we have more pages
-        if ($this->hasMorePages) {
-            $newSurveys = $newSurveys->take($this->perPage);
-        }
-        
-        // Either append or replace surveys
-        if ($append) {
-            $this->surveys = collect($this->surveys)->concat($newSurveys)->values();
-        } else {
-            $this->surveys = $newSurveys;
-        }
+// Helper method to apply common filters to any survey query
+private function applyCommonFilters($query)
+{
+    // Apply search filter
+    if (!empty($this->search)) {
+        $query->where('title', 'like', '%' . $this->search . '%');
     }
 
+    // Apply topic filter - Only when a specific topic is selected
+    if (!is_null($this->activeFilters['topic'])) {
+        $query->where('survey_topic_id', $this->activeFilters['topic']);
+    }
+    
+    // Apply tag filters based on whether we're filtering by institution tags or regular tags
+    if ($this->activeFilters['institutionOnly'] && !empty($this->activeFilters['institutionTags'])) {
+        // For institution-only surveys, use institution tags
+        foreach ($this->activeFilters['institutionTags'] as $tagId) {
+            $query->whereHas('institutionTags', function ($q) use ($tagId) {
+                $q->where('institution_tags.id', $tagId);
+            });
+        }
+    } else if (!empty($this->activeFilters['tags'])) {
+        // For regular surveys, use regular tags
+        foreach ($this->activeFilters['tags'] as $tagId) {
+            $query->whereHas('tags', function ($q) use ($tagId) {
+                $q->where('tags.id', $tagId);
+            });
+        }
+    }
+    
+    // Apply institution only filter
+    if ($this->activeFilters['institutionOnly']) {
+        $query->where('is_institution_only', true);
+    }
+}
+
+// Helper method to filter advanced surveys by user demographics
+private function filterAdvancedSurveysByDemographics($advancedSurveys, $userGeneralTags, $userInstitutionTags)
+{
+    return $advancedSurveys->filter(function ($survey) use ($userGeneralTags, $userInstitutionTags) {
+        $surveyTags = $survey->tags->pluck('id')->toArray();
+        $surveyInstTags = $survey->institutionTags->pluck('id')->toArray();
+        
+        // If advanced survey has no tags at all, include it
+        if (empty($surveyTags) && empty($surveyInstTags)) {
+            return true;
+        }
+        
+        // STRICT MATCHING: ALL survey tags must be in user's demographics
+        // Check if ANY survey tags exist that are NOT in user tags
+        $unmatchedGeneralTags = array_diff($surveyTags, $userGeneralTags);
+        $unmatchedInstTags = array_diff($surveyInstTags, $userInstitutionTags);
+        
+        // If both arrays are empty, it means all tags are matched
+        // For general tags: if survey has general tags, ALL must match
+        // For institution tags: if survey has institution tags, ALL must match
+        $generalTagsMatch = empty($surveyTags) || empty($unmatchedGeneralTags);
+        $institutionTagsMatch = empty($surveyInstTags) || empty($unmatchedInstTags);
+        
+        // Log the matching process for debugging
+        Log::debug('Advanced survey filter:', [
+            'survey_id' => $survey->id,
+            'survey_title' => $survey->title,
+            'survey_tags' => $surveyTags,
+            'survey_inst_tags' => $surveyInstTags,
+            'user_tags' => $userGeneralTags,
+            'user_inst_tags' => $userInstitutionTags,
+            'unmatched_general' => $unmatchedGeneralTags,
+            'unmatched_inst' => $unmatchedInstTags,
+            'general_match' => $generalTagsMatch,
+            'inst_match' => $institutionTagsMatch,
+            'overall_match' => $generalTagsMatch && $institutionTagsMatch
+        ]);
+        
+        // Only include survey if ALL of its tags match the user's demographics
+        return $generalTagsMatch && $institutionTagsMatch;
+    });
+}
     // Modified reset filter to preserve panel state when clearing filters
     protected function resetFiltersWithSpaExperience()
     {
