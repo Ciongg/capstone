@@ -25,14 +25,14 @@
                     @guest
                         <a href="/" wire:navigate class="hover:text-[#03b8ff] hover:underline">Home</a>
                         <a href="/" wire:navigate class="hover:text-[#03b8ff] hover:underline">About</a>
-                        <a href="/rewards" wire:navigate class="hover:text-[#03b8ff] hover:underline">Rewards</a>
+                        <a href="/rewards"  class="hover:text-[#03b8ff] hover:underline">Rewards</a>
                     @endguest
 
                     @auth
                     {{-- Show  Redeem links only to regular users and researchers (not admins) --}}
                         @if(!Auth::user()->isSuperAdmin())
                             <a href="/feed" wire:navigate class="hover:text-[#03b8ff] hover:underline">Feed</a>
-                            <a href="/rewards" wire:navigate class="hover:text-[#03b8ff] hover:underline">Redeem</a>
+                            <a href="/rewards"  class="hover:text-[#03b8ff] hover:underline">Redeem</a>
                         @endif
 
                         {{-- Show only to Researchers --}}
@@ -42,6 +42,7 @@
                                 x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
                                 class="hover:text-[#03b8ff] hover:underline"
                             >Create Survey</button>
+                            <a href="/admin/reward-redemptions" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Rewards</a>
                             {{-- <a href="/my-surveys" wire:navigate class="hover:text-[#03b8ff] hover:underline">My Surveys</a> --}}
                         @endif
 
@@ -67,7 +68,7 @@
                         @if(Auth::user()->isSuperAdmin())
                             {{-- Super Admin specific links --}}
                             <a href="/admin/surveys" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Surveys</a>
-                            <a href="/admin/rewards" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Rewards</a>
+                            <a href="/admin/reward-redemptions" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Rewards</a>
                             <a href="/admin/users" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage User List</a>
                             <a href="/admin/reports" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Reports</a>
                         @endif

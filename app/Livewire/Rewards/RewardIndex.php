@@ -3,9 +3,9 @@
 namespace App\Livewire\Rewards;
 
 use App\Models\Reward;
+use App\Services\UserExperienceService;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
-use App\Services\UserExperienceService;
 
 class RewardIndex extends Component
 {
@@ -85,8 +85,11 @@ class RewardIndex extends Component
         session()->flash('message', "-{$amount} points subtracted!");
     }
 
+
+
+    
     /**
-     * Level up the current user (for testing purposes)
+     * Level up the user immediately (for testing purposes)
      */
     public function levelUp()
     {
@@ -96,30 +99,31 @@ class RewardIndex extends Component
         
         $user = Auth::user();
         $currentLevel = $user->getLevel();
-        $nextLevelXp = UserExperienceService::xpRequiredForLevel($currentLevel + 1);
+        $xpNeeded = $user->getXpRequiredForNextLevel() - ($user->experience_points % $user->getXpRequiredForNextLevel());
         
-        // Calculate how many XP to add to reach next level
-        $xpNeeded = $nextLevelXp - $user->experience_points + 10; // Add 10 extra to ensure level up
+        // Add just enough XP to level up
+        $result = $user->addExperiencePoints($xpNeeded);
         
-        if ($xpNeeded > 0) {
-            $result = $user->addExperiencePoints($xpNeeded);
-            
-            // Show level-up animation
-            if ($result['leveled_up']) {
-                $this->dispatch('level-up', [
-                    'level' => $result['current_level'],
-                    'title' => $user->title
-                ]);
-            }
-            
-            session()->flash('message', "Added {$xpNeeded} XP! Now at level {$user->getLevel()}.");
-        } else {
-            session()->flash('message', "Already at required XP for next level. Add more points manually.");
+        $newLevel = $user->getLevel();
+        
+        // Make sure title is updated
+        if ($result['leveled_up'] && empty($user->title)) {
+            $user->updateTitle();
         }
+        
+        $newTitle = $user->title ?: 'Newbie';
+        
+        // Show level up animation
+        $this->dispatch('level-up', [
+            'level' => $newLevel,
+            'title' => $newTitle
+        ]);
+        
+        session()->flash('message', "Leveled up to level {$newLevel}! Your new title is: {$newTitle}");
     }
     
     /**
-     * Reset level of the current user to 0 (for testing purposes)
+     * Reset user to level 1 (for testing purposes)
      */
     public function resetLevel()
     {
@@ -129,12 +133,15 @@ class RewardIndex extends Component
         
         $user = Auth::user();
         $user->experience_points = 0;
+        
+        // Reset title to Level 1 title
         $user->title = UserExperienceService::getTitleForLevel(1);
+        
         $user->save();
         
-        session()->flash('message', "Level reset! Now at level 1.");
+        session()->flash('message', "Reset to level 1 with title: {$user->title}!");
     }
-
+    
     protected function getListeners()
     {
         return [

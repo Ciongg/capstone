@@ -7,6 +7,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RegisteredUserController; // Ensure this is imported
 use App\Http\Controllers\RewardController; // Ensure this is imported
+use App\Http\Controllers\SuperAdminController; // Ensure this is imported
 
 Route::get('/', function () {
     return view('welcome');
@@ -26,7 +27,7 @@ Route::get('/rewards', [RewardController::class, 'index'])->name('rewards.index'
 Route::middleware('auth')->group(function () {
     Route::get('/surveys/create/{survey?}', [SurveyController::class, 'create'])->name('surveys.create'); // For opening/editing existing
     // Route::get('/my-surveys', [SurveyController::class, 'showSurveys'])->name('my-surveys.index');
-
+    
     Route::get('/surveys/{survey}/preview', [SurveyController::class, 'showAnswerForm'])->name('surveys.preview')->defaults('isPreview', true);
 });
 
@@ -35,3 +36,6 @@ Route::post('/surveys/answer/{survey}', [SurveyController::class, 'submit'])->na
 
 Route::get('/surveys/{survey}/responses', [SurveyController::class, 'showResponses'])->name('surveys.responses');
 Route::get('/surveys/{survey}/responses/individual', [SurveyController::class, 'showIndividualResponses'])->name('surveys.responses.individual');
+
+
+Route::get('/admin/reward-redemptions', [SuperAdminController::class, 'rewardIndex'])->name('reward-redemptions.index');

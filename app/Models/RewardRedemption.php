@@ -19,8 +19,9 @@ class RewardRedemption extends Model
         'user_id',
         'reward_id',
         'points_spent',
+        'reward_type',
         'status',
-        'notes',
+        
     ];
 
     /**

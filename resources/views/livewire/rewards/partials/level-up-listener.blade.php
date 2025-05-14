@@ -33,5 +33,49 @@
                 // window.showLevelUpAnimation('N/A', 'Error'); 
             }
         });
+
+        // New event listener for reward purchase
+        Livewire.on('reward-purchased', (event) => {
+            console.log('Reward purchased!', event);
+            window.showPurchaseConfetti();
+        });
     });
+
+    // Replace the confetti function with one that launches from bottom edges
+    window.showPurchaseConfetti = function() {
+        // Simultaneous confetti from bottom left
+        confetti({
+            particleCount: 50,
+            spread: 80,
+            origin: { x: 0, y: 1 },  // Off-screen bottom left
+            angle: 80, // Upward angle
+            startVelocity: 50,
+            colors: ['#FFB349', '#03b8ff', '#4CAF50', '#FF5722', '#FFEB3B', '#9C27B0'],
+            zIndex: 10000
+        });
+        
+        // Simultaneous confetti from bottom right
+        confetti({
+            particleCount: 50,
+            spread: 80,
+            origin: { x: 1, y: 1 },  // Off-screen bottom right
+            angle: 100, // Upward angle
+            startVelocity: 50,
+            colors: ['#FFB349', '#03b8ff', '#4CAF50', '#FF5722', '#FFEB3B', '#9C27B0'],
+            zIndex: 10000
+        });
+        
+        // Add extra confetti burst from middle bottom after a tiny delay
+        setTimeout(() => {
+            confetti({
+                particleCount: 50,
+                spread: 120,
+                origin: { x: 0.5, y: 1 },  // Off-screen bottom center
+                angle: 90, // Straight up
+                startVelocity: 60,
+                colors: ['#FFB349', '#03b8ff', '#4CAF50', '#FF5722', '#FFEB3B', '#9C27B0'],
+                zIndex: 10000
+            });
+        }, 100);
+    };
 </script>

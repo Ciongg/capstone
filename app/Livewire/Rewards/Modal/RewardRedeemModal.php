@@ -23,7 +23,7 @@ class RewardRedeemModal extends Component
     {
         if (!$this->reward || !Auth::check()) {
             $this->dispatch('redemptionError', 'Could not process redemption. Please try again.');
-            $this->dispatch('close-modal', ['name' => 'reward-redeem-modal']);
+            $this->dispatch('close-modal', name: 'reward-redeem-modal'); // Use named parameters for clarity
             return;
         }
 
@@ -33,19 +33,19 @@ class RewardRedeemModal extends Component
 
         if ($quantityToRedeem <= 0) {
             $this->dispatch('redemptionError', 'Quantity must be at least 1.');
-            $this->dispatch('close-modal', ['name' => 'reward-redeem-modal']);
+            $this->dispatch('close-modal', name: 'reward-redeem-modal');
             return;
         }
 
         if ($user->points < $totalCost) {
             $this->dispatch('redemptionError', 'Not enough points to redeem this quantity.');
-            $this->dispatch('close-modal', ['name' => 'reward-redeem-modal']);
+            $this->dispatch('close-modal', name: 'reward-redeem-modal');
             return;
         }
 
         if ($this->reward->quantity != -1 && $this->reward->quantity < $quantityToRedeem) {
             $this->dispatch('redemptionError', 'Not enough stock available for this quantity.');
-            $this->dispatch('close-modal', ['name' => 'reward-redeem-modal']);
+            $this->dispatch('close-modal', name: 'reward-redeem-modal');
             return;
         }
 
@@ -95,16 +95,30 @@ class RewardRedeemModal extends Component
                     $this->reward->save();
                 }
 
-                // Create redemption record
+                // Determine status based on reward type
+                // Only monetary rewards need approval (pending)
+                $status = ($this->reward->type === 'monetary') 
+                    ? RewardRedemption::STATUS_PENDING 
+                    : RewardRedemption::STATUS_COMPLETED;
+
+                // Create redemption record with determined status
                 RewardRedemption::create([
                     'user_id' => $user->id,
                     'reward_id' => $this->reward->id,
                     'points_spent' => $totalCost,
-                    'status' => 'pending',
+                    'status' => $status,
                 ]);
 
                 // Set success message with any additional info
                 $successMessage = "Reward redeemed successfully!";
+                
+                // Add status-specific message
+                if ($status === RewardRedemption::STATUS_COMPLETED) {
+                    $successMessage .= " Your reward has been completed automatically.";
+                } else {
+                    $successMessage .= " Your reward redemption is pending approval.";
+                }
+                
                 if (!empty($additionalMessage)) {
                     $successMessage .= " {$additionalMessage}";
                 }
@@ -123,11 +137,19 @@ class RewardRedeemModal extends Component
                 }
             });
 
+            // Close modal first before any other dispatches to ensure it closes
+            $this->dispatch('close-modal', name: 'reward-redeem-modal');
+            
+            // Now that the modal is closing, dispatch other events
+            session()->flash('redeem_success', 'Reward redeemed successfully!');
             $this->dispatch('rewardRedeemed');
-            $this->dispatch('close-modal', ['name' => 'reward-redeem-modal']);
+            
+            // Add new dispatch for confetti animation
+            $this->dispatch('reward-purchased');
+            
         } catch (\Exception $e) {
             $this->dispatch('redemptionError', 'An error occurred: ' . $e->getMessage());
-            $this->dispatch('close-modal', ['name' => 'reward-redeem-modal']);
+            $this->dispatch('close-modal', name: 'reward-redeem-modal');
         }
     }
 

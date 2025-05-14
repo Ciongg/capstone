@@ -3,7 +3,7 @@
     @include('livewire.rewards.partials.level-up-listener')
 
     <div class="mb-8">
-        {{-- @if(Auth::check())
+        @if(Auth::check())
             <div class="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-md">
                 <div class="flex flex-wrap gap-2 items-center">
                     <span class="text-sm font-semibold text-purple-800">Test Controls:</span>
@@ -56,7 +56,7 @@
                     </div>
                 @endif
             </div>
-        @endif --}}
+        @endif
 
         {{-- Flash Messages for Redemption --}}
         @if(session()->has('redeem_success'))

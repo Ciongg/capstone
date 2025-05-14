@@ -94,11 +94,29 @@ class UserExperienceService
             }
         }
         
-        // Save the user if any perks were applied
-        if (!empty($perksApplied)) {
-            $user->save();
-        }
+        // Always update the user's title to match their new level
+        $user->title = self::getTitleForLevel($currentLevel);
+        
+        // Save the user
+        $user->save();
         
         return $perksApplied;
+    }
+    
+    /**
+     * Method to refresh a user's title based on their current XP/level
+     * 
+     * @param \App\Models\User $user
+     * @return string The new title
+     */
+    public static function refreshUserTitle($user): string
+    {
+        $level = self::calculateLevel($user->experience_points);
+        $title = self::getTitleForLevel($level);
+        
+        $user->title = $title;
+        $user->save();
+        
+        return $title;
     }
 }
