@@ -10,11 +10,12 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use App\Services\UserExperienceService;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     public const ROLE_RESPONDENT = 'respondent';
     public const ROLE_RESEARCHER = 'researcher';
@@ -38,6 +39,7 @@ class User extends Authenticatable
         'type',
         'profile_photo_path',
         'institution_id',
+        'is_active',
     ];
 
     /**
@@ -209,6 +211,9 @@ class User extends Authenticatable
         $currentLevel = $this->getLevel();
         $leveled_up = $currentLevel > $previousLevel;
         
+        // Update account_level in database
+        $this->account_level = $currentLevel;
+        
         // Update title if leveled up
         if ($leveled_up) {
             $this->title = \App\Services\UserExperienceService::getTitleForLevel($currentLevel);
@@ -265,5 +270,19 @@ class User extends Authenticatable
     {
         $currentLevel = $this->getLevel();
         return UserExperienceService::xpRequiredForLevel($currentLevel + 1);
+    }
+
+    /**
+     * Get the user's status label
+     * 
+     * @return string
+     */
+    public function getStatusLabelAttribute()
+    {
+        if ($this->trashed()) {
+            return 'archived';
+        }
+        
+        return $this->is_active ? 'active' : 'inactive';
     }
 }

@@ -17,6 +17,9 @@ return new class extends Migration
             $table->string('last_name');
             $table->string('email')->unique();
             $table->string('phone_number')->unique()->nullable();
+            $table->boolean('is_active');
+            $table->softDeletes();
+            
             $table->decimal('points')->default(0);
             $table->decimal('trust_score')->default(100);
             $table->integer('account_level')->default(0);

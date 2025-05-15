@@ -6,7 +6,9 @@ use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use App\Models\Institution;
+use App\Models\User;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 
 class Login extends Component
 {
@@ -95,16 +97,38 @@ class Login extends Component
     {
         $this->validate();
 
+        // First check if the user is archived (soft-deleted)
+        $archivedUser = User::withTrashed()
+            ->where('email', $this->email)
+            ->whereNotNull('deleted_at')
+            ->first();
+            
+        if ($archivedUser) {
+            // Show archived message regardless of password correctness
+            throw ValidationException::withMessages([
+                'email' => ['This account has been archived. Please contact the Formigo support team for assistance.'],
+            ]);
+        }
+
+        // Proceed with normal authentication if not archived
         if (!Auth::attempt(['email' => $this->email, 'password' => $this->password])) {
             throw ValidationException::withMessages([
                 'email' => [trans('auth.failed')], 
             ]);
         }
 
+        // Also check if the user is inactive (not archived but disabled)
+        $user = Auth::user();
+        if (!$user->is_active) {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => ['This account has been deactivated. Please contact the Formigo support team for assistance.'],
+            ]);
+        }
+
         session()->regenerate();
         
         // After successful login, check user's institution status
-        $user = Auth::user();
         $statusChange = $this->checkInstitutionStatus($user);
         
         // Flash appropriate message based on the status change

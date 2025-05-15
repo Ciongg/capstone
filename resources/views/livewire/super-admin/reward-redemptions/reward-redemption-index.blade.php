@@ -98,12 +98,8 @@
     </div>
 
     <!-- Modal for viewing redemption details -->
-    <x-modal name="reward-redemption-modal" focusable>
+    <x-modal name="reward-redemption-modal" title="Redemption Details" focusable>
         <div class="p-6 relative min-h-[400px] flex flex-col">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">
-                Redemption Details
-            </h2>
-            
             <div wire:loading class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
                 <div class="flex flex-col items-center justify-center h-full">
                     <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>

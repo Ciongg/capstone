@@ -96,6 +96,7 @@ class RewardIndex extends Component
         if (!Auth::check()) {
             return;
         }
+
         
         $user = Auth::user();
         $currentLevel = $user->getLevel();

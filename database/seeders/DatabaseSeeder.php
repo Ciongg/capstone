@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password123'),
             'type' => 'researcher',
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
+            'is_active' => true, // Add is_active flag
         ]);
 
         User::factory()->create([
@@ -39,6 +40,7 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password123'),
             'type' => 'researcher',
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
+            'is_active' => true, // Add is_active flag
         ]);
 
         User::factory()->create([
@@ -48,6 +50,7 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password123'),
             'type' => 'researcher',
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
+            'is_active' => true, // Add is_active flag
         ]);
 
         User::factory()->create([
@@ -57,6 +60,7 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password123'),
             'type' => 'researcher',
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
+            'is_active' => true, // Add is_active flag
         ]);
 
         User::factory()->create([
@@ -66,15 +70,17 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password123'),
             'type' => 'institution_admin',
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
+            'is_active' => true, // Add is_active flag
         ]);
 
-          User::factory()->create([
+        User::factory()->create([
             'first_name' => 'Institution',
             'last_name' => 'Admin',
             'email' => 'instadmin_nu@nu.edu.ph',
             'password' => Hash::make('password123'),
             'type' => 'institution_admin',
             'institution_id' => $nationalUniversity ? $nationalUniversity->id : null,
+            'is_active' => true, // Add is_active flag
         ]);
 
         User::factory()->create([
@@ -83,7 +89,8 @@ class DatabaseSeeder extends Seeder
             'email' => 'superadmin@example.com',
             'password' => Hash::make('password123'),
             'type' => 'super_admin',
-            'institution_id' => null, 
+            'institution_id' => null,
+            'is_active' => true, // Add is_active flag
         ]);
 
         User::factory()->create([
@@ -92,7 +99,8 @@ class DatabaseSeeder extends Seeder
             'email' => 'respondent@example.com',
             'password' => Hash::make('password123'),
             'type' => 'respondent',
-            'institution_id' => null, 
+            'institution_id' => null,
+            'is_active' => true, // Add is_active flag
         ]);
 
         // Updated seeder order - SurveyTopicSeeder before SurveySeeder

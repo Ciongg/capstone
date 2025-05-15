@@ -97,6 +97,9 @@ class UserExperienceService
         // Always update the user's title to match their new level
         $user->title = self::getTitleForLevel($currentLevel);
         
+        // Update account_level in database 
+        $user->account_level = $currentLevel;
+        
         // Save the user
         $user->save();
         
@@ -115,6 +118,7 @@ class UserExperienceService
         $title = self::getTitleForLevel($level);
         
         $user->title = $title;
+        $user->account_level = $level; // Update account_level when refreshing title
         $user->save();
         
         return $title;

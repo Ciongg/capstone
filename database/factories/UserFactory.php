@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -11,6 +12,13 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
+    /**
+     * The name of the factory's corresponding model.
+     *
+     * @var string
+     */
+    protected $model = User::class;
+
     /**
      * The current password being used by the factory.
      */
@@ -31,8 +39,7 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'phone_number' => fake()->unique()->numerify('09#########'),
-            // 'points' => fake()->numberBetween(0, 100),
-            // 'trust_score' => fake()->numberBetween(60, 100),
+            'is_active' => true, // Add default is_active status
             'type' => fake()->randomElement(['respondent', 'researcher']), // Default to respondent or researcher
             // 'institution_id' => null, // You can set this specifically in your seeder or leave it null/set a default
             // 'profile_photo_path' => null, // Default to null or set a fake image path

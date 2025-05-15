@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'Survey Builder' }}</title>
+    <title>{{ $title ?? 'Formigo' }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles <!-- Required Livewire styles -->
@@ -43,6 +43,7 @@
                                 class="hover:text-[#03b8ff] hover:underline"
                             >Create Survey</button>
                             <a href="/admin/reward-redemptions" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Rewards</a>
+                            <a href="/admin/users" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Users</a>
                             {{-- <a href="/my-surveys" wire:navigate class="hover:text-[#03b8ff] hover:underline">My Surveys</a> --}}
                         @endif
 
@@ -69,7 +70,7 @@
                             {{-- Super Admin specific links --}}
                             <a href="/admin/surveys" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Surveys</a>
                             <a href="/admin/reward-redemptions" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Rewards</a>
-                            <a href="/admin/users" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage User List</a>
+                            <a href="/admin/users" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Users</a>
                             <a href="/admin/reports" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Reports</a>
                         @endif
                     @endauth
