@@ -417,7 +417,7 @@ class Index extends Component
     // STEP 1: First get basic surveys with standard filters
     $basicQuery = Survey::query()
         ->where('type', 'basic')
-        ->whereIn('status', ['pending', 'ongoing', 'published'])
+        ->whereIn('status', ['published', 'ongoing']) // Only published and ongoing surveys
         ->with(['user', 'tags', 'institutionTags', 'topic']);
         
     // Apply common filters to basic survey query
@@ -426,7 +426,7 @@ class Index extends Component
     // STEP 2: Then get advanced surveys with demographic filters
     $advancedQuery = Survey::query()
         ->where('type', 'advanced')
-        ->whereIn('status', ['pending', 'ongoing', 'published'])
+        ->whereIn('status', ['published', 'ongoing']) // Only published and ongoing surveys
         ->with(['user', 'tags', 'institutionTags', 'topic']);
         
     // Apply common filters to advanced survey query

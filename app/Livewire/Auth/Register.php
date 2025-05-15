@@ -67,6 +67,7 @@ class Register extends Component
             'password' => Hash::make($this->password),
             'type' => $userType,
             'institution_id' => $institutionId,
+            'is_active' => true, // Set new users to active by default
         ]);
 
         Auth::login($user);
