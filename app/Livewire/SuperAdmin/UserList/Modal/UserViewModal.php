@@ -100,7 +100,7 @@ class UserViewModal extends Component
                     'type' => 'survey_response',
                     'action' => 'Answered Survey',
                     'details' => $response->survey ? $response->survey->title : 'Unknown Survey',
-                    'created_at' => $response->created_at,
+                    'created_at' => $response->created_at, // This is already a Carbon instance
                 ];
             });
             
@@ -116,7 +116,7 @@ class UserViewModal extends Component
                     'details' => $redemption->reward ? 
                         "{$redemption->reward->name} ({$redemption->reward->type}) - {$redemption->points_spent} points" : 
                         "Unknown Reward - {$redemption->points_spent} points",
-                    'created_at' => $redemption->created_at,
+                    'created_at' => $redemption->created_at, // This is already a Carbon instance
                     'status' => $redemption->status,
                 ];
             });
@@ -130,7 +130,7 @@ class UserViewModal extends Component
                     'type' => 'survey_created',
                     'action' => 'Created Survey',
                     'details' => "{$survey->title} ({$survey->status})",
-                    'created_at' => $survey->created_at,
+                    'created_at' => $survey->created_at, // This is already a Carbon instance
                 ];
             });
             

@@ -20,8 +20,9 @@ return new class extends Migration
             $table->enum('type', ['basic', 'advanced'])->default('basic');
             $table->foreignId('survey_topic_id')->nullable()->constrained('survey_topic')->nullOnDelete();
 
-            //Survey Settings
-            $table->boolean('is_institution_only')->default(false); // Added this line
+            // Survey Settings
+            $table->boolean('is_institution_only')->default(false);
+            $table->boolean('is_locked')->default(false); // Added for lock/unlock functionality
             $table->decimal('points')->nullable()->default(0);
             $table->unsignedInteger('target_respondents')->nullable()->default(30);
             $table->unsignedInteger('points_allocated')->nullable();
@@ -29,6 +30,7 @@ return new class extends Migration
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date')->nullable();
             $table->timestamps();
+            $table->softDeletes(); // Added for archiving functionality
         });
     }
 

@@ -42,41 +42,42 @@
                                 x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
                                 class="hover:text-[#03b8ff] hover:underline"
                             >Create Survey</button>
+                            <a href="/admin/surveys" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Surveys</a>
                             <a href="/admin/reward-redemptions" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Rewards</a>
                             <a href="/admin/users" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Users</a>
                             {{-- <a href="/my-surveys" wire:navigate class="hover:text-[#03b8ff] hover:underline">My Surveys</a> --}}
-                        @endif
-
-                        @if(Auth::user()->isInstitutionAdmin())
+                            @endif
+                            
+                            @if(Auth::user()->isInstitutionAdmin())
                             {{-- Institution Admin specific links --}}
                             @if(Auth::user()->hasValidInstitution())
-                                {{-- Normal enabled links when institution is valid --}}
-                                <button 
-                                    x-data
-                                    x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
-                                    class="hover:text-[#03b8ff] hover:underline"
-                                >Create Institution Survey</button>
-                                <a href="/institution/analytics" wire:navigate class="hover:text-[#03b8ff] hover:underline">Analytics</a>
-                                <a href="/institution/users" wire:navigate class="hover:text-[#03b8ff] hover:underline">Users</a>
+                            {{-- Normal enabled links when institution is valid --}}
+                            <button 
+                            x-data
+                            x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
+                            class="hover:text-[#03b8ff] hover:underline"
+                            >Create Institution Survey</button>
+                            <a href="/institution/analytics" wire:navigate class="hover:text-[#03b8ff] hover:underline">Analytics</a>
+                            <a href="/institution/users" wire:navigate class="hover:text-[#03b8ff] hover:underline">Users</a>
                             @else
-                                {{-- Disabled links when institution is invalid --}}
-                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Create Institution Survey</span>
-                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Analytics</span>
-                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Users</span>
+                            {{-- Disabled links when institution is invalid --}}
+                            <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Create Institution Survey</span>
+                            <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Analytics</span>
+                            <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Users</span>
                             @endif
-                        @endif
-
-                        @if(Auth::user()->isSuperAdmin())
+                            @endif
+                            
+                            @if(Auth::user()->isSuperAdmin())
                             {{-- Super Admin specific links --}}
                             <a href="/admin/surveys" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Surveys</a>
                             <a href="/admin/reward-redemptions" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Rewards</a>
                             <a href="/admin/users" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Users</a>
                             <a href="/admin/reports" wire:navigate class="hover:text-[#03b8ff] hover:underline">Manage Reports</a>
-                        @endif
-                    @endauth
+                            @endif
+                            @endauth
                 </div>
             </div>
-
+            
             <!-- Right side -->
             <div class="flex items-center space-x-5 text-base">
                 @auth

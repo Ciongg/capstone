@@ -3,10 +3,11 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Survey extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -21,6 +22,20 @@ class Survey extends Model
         'points_allocated',
         'image_path',
         'is_institution_only',
+        'is_locked', // Added for lock/unlock functionality
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
+        'is_institution_only' => 'boolean',
+        'is_locked' => 'boolean',
+        'points' => 'decimal:2', // Assuming points can have decimals, adjust if not
     ];
 
     public function pages()

@@ -266,6 +266,13 @@ class AnswerSurvey extends Component
 
             if ($this->isPreview) {
                 session()->flash('success', 'Preview submitted successfully! (No data saved)');
+                
+                // If the user is a super admin, redirect to the surveys index page
+                if (Auth::check() && Auth::user()->isSuperAdmin()) {
+                    return redirect()->route('surveys.index');
+                }
+                
+                // Otherwise redirect to the form builder as before
                 return redirect()->route('surveys.create', ['survey' => $this->survey->id]);
             }
 

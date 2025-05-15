@@ -83,6 +83,31 @@
 
     {{-- Modals and overlays --}}
     @include('livewire.feed.partials.modals')
+
+    <!-- Fullscreen Image Overlay -->
+    <div x-show="fullscreenImageSrc"
+         x-transition:enter="transition ease-out duration-100"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="fullscreenImageSrc = null"  {{-- Click background to close --}}
+         @keydown.escape.window="fullscreenImageSrc = null" {{-- Press Escape to close --}}
+         class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 cursor-pointer"
+         style="display: none;"> {{-- Add display:none to prevent flash on load --}}
+        
+        <img :src="fullscreenImageSrc" 
+             alt="Fullscreen Survey Image" 
+             class="max-w-full max-h-full object-contain"
+             @click.stop> {{-- Prevent closing when clicking the image itself --}}
+                  
+        {{-- Larger, easier-to-tap close button for mobile - made identical to user-survey-view-modal --}}
+        <button @click="fullscreenImageSrc = null" 
+                class="cursor-pointer absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-white text-4xl sm:text-3xl font-bold leading-none rounded-full hover:bg-black hover:bg-opacity-25 focus:outline-none">
+            &times;
+        </button>
+    </div>
 </div>
 
 <script>

@@ -192,7 +192,7 @@
                                                 </span>
                                             @endif
                                         </span> - 
-                                        {{ $activity['created_at']->format('M d, Y h:i A') }}
+                                        {{ is_string($activity['created_at']) ? $activity['created_at'] : $activity['created_at']->format('M d, Y h:i A') }}
                                     </p>
                                     <p class="text-xs text-gray-500">{{ $activity['details'] }}</p>
                                 </div>

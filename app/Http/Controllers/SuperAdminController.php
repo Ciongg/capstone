@@ -92,4 +92,14 @@ class SuperAdminController extends Controller
         
         return back()->with('success', 'User has been restored successfully.');
     }
+    
+    /**
+     * Show the survey management page.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function surveysIndex()
+    {
+        return view('super-admin.show-user-surveys');
+    }
 }

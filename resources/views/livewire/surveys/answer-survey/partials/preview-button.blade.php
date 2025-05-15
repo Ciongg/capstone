@@ -1,12 +1,22 @@
-@if($isPreview)
-    <div class="mb-4">
-        <a href="{{ route('surveys.create', $survey->id) }}"
-           class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded hover:bg-gray-300 transition"
-        >
-            <svg class="w-4 h-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-            </svg>
-            Back
-        </a>
+@if($isPreview && !auth()->user()->isSuperAdmin())
+    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded shadow-sm">
+        <div class="flex justify-between items-center">
+            <div>
+                <span class="font-semibold text-blue-800">Preview Mode</span>
+                <p class="text-sm text-blue-600">This is a preview of your survey. Responses will not be recorded.</p>
+            </div>
+            <a href="{{ url()->previous() }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
+                &larr; Back to Editor
+            </a>
+        </div>
+    </div>
+@elseif($isPreview && auth()->user()->isSuperAdmin())
+    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded shadow-sm">
+        <div class="flex justify-between items-center">
+            <div>
+                <span class="font-semibold text-blue-800">Admin Preview Mode</span>
+                <p class="text-sm text-blue-600">This is a preview of the survey. Responses will not be recorded.</p>
+            </div>
+        </div>
     </div>
 @endif
