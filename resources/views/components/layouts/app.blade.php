@@ -26,13 +26,14 @@
                         <a href="/" wire:navigate class="hover:text-[#03b8ff] hover:underline">Home</a>
                         <a href="/" wire:navigate class="hover:text-[#03b8ff] hover:underline">About</a>
                         <a href="/rewards"  class="hover:text-[#03b8ff] hover:underline">Rewards</a>
-                    @endguest
-
-                    @auth
-                    {{-- Show  Redeem links only to regular users and researchers (not admins) --}}
+                        @endguest
+                        
+                        @auth
+                        {{-- Show  Redeem links only to regular users and researchers (not admins) --}}
                         @if(!Auth::user()->isSuperAdmin())
-                            <a href="/feed" wire:navigate class="hover:text-[#03b8ff] hover:underline">Feed</a>
-                            <a href="/rewards"  class="hover:text-[#03b8ff] hover:underline">Redeem</a>
+                        <a href="/feed" wire:navigate class="hover:text-[#03b8ff] hover:underline">Feed</a>
+                        <a href="/rewards"  class="hover:text-[#03b8ff] hover:underline">Redeem</a>
+                        <a href="/vouchers"  class="hover:text-[#03b8ff] hover:underline">Vouchers</a>
                         @endif
 
                         {{-- Show only to Researchers --}}

@@ -9,4 +9,8 @@ class RewardController extends Controller
     public function index(){
         return view('respondent.show-rewards');
     }
+
+      public function vouchersIndex(){
+        return view('respondent.show-vouchers');
+    }
 }

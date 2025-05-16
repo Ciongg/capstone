@@ -23,6 +23,7 @@ Route::get('/register', [RegisteredUserController::class, 'create'])->name('regi
 Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
 Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
 Route::get('/rewards', [RewardController::class, 'index'])->name('rewards.index');
+Route::get('/vouchers', [RewardController::class, 'vouchersIndex'])->name('vouchers.index');
 
 Route::middleware('auth')->group(function () {
     Route::get('/surveys/create/{survey?}', [SurveyController::class, 'create'])->name('surveys.create'); // For opening/editing existing
