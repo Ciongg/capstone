@@ -88,6 +88,9 @@
     "
 >
 
+    <!-- Survey Locked Warning -->
+    @include('livewire.surveys.form-builder.partials.locked-warning', ['survey' => $survey])
+
     <!-- Display Flash Messages -->
     @if (session()->has('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -102,186 +105,201 @@
         </div>
     @endif
 
-    <!-- Sticky Survey Navbar -->
-    @include('livewire.surveys.form-builder.partials.survey-navbar')
-
-    <!-- Modal -->
-    <x-modal name="survey-settings-modal-{{ $survey->id }}" title="Survey Settings">
-        {{-- Add a wire:key that changes when the survey is updated --}}
-        <livewire:surveys.form-builder.modal.survey-settings-modal 
-            :survey="$survey" 
-            :key="'settings-modal-' . $survey->id . '-' . $survey->updated_at->timestamp" 
-        />
-    </x-modal>
-
-    <div class="space-y-6">
-
-        <!-- Sticky Page Selector Container -->
-        <div class="sticky top-0 z-30 bg-white shadow px-6 py-3 mb-4 rounded">
-            <!-- Page Selector -->
-            @if ($pages->isEmpty())
-                <div class="text-center">
-                    <button
-                        wire:click="addPage"
-                        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                        + Add Page
-                    </button>
+    <!-- Wrapper for all interactive elements - disabled when survey is locked -->
+    <div @class([
+        'relative', // Always relative
+        'opacity-50 pointer-events-none select-none' => $survey->is_locked, // Disabled when locked
+    ])>
+        @if($survey->is_locked)
+            <!-- Overlay message explaining the form is locked -->
+            <div class="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+                <div class="bg-white/80 p-6 rounded-lg shadow-lg border-2 border-red-300 max-w-lg text-center">
+                    <h3 class="text-xl font-bold text-red-600">Survey Locked</h3>
+                    <p class="mt-2 text-gray-700">This survey has been locked by an administrator and cannot be edited.</p>
                 </div>
-            @else
-                <div class="flex items-center space-x-1 overflow-x-auto py-1">
-                    @foreach ($pages as $page)
-                        <div wire:key="sticky-page-{{ $page->id }}" class="flex items-center group flex-shrink-0">
-                            {{-- Page Button --}}
-                            <button
-                                @click="
-                                    const newActivePageId = {{ $page->id }};
-                                    if (activePageId !== newActivePageId) { // Check if it's actually changing
-                                        selectedQuestionId = null; // Deselect question when changing page
-                                        activePageId = newActivePageId; // Set Alpine ID first
-                                        $wire.setActivePage(newActivePageId); // Then call Livewire
-                                    }
-                                    // Scroll is handled by $watch('activePageId', ...)
-                                "
-                                type="button"
-                                :class="{
-                                    'px-3 py-2 rounded cursor-pointer transition duration-150 ease-in-out whitespace-nowrap': true,
-                                    'rounded-l': activePageId !== {{ $page->id }},
-                                    'rounded': activePageId === {{ $page->id }},
-                                    'bg-blue-500 text-white hover:bg-blue-600': activePageId === {{ $page->id }},
-                                    'bg-gray-200 text-gray-700 hover:bg-gray-300': activePageId !== {{ $page->id }}
-                                }"
-                                title="{{ $page->title ?: 'Page ' . $page->page_number }}"
-                            >
-                                {{ Str::limit($page->title ?: 'Page ' . $page->page_number, 12) }}
-                            </button>
-                            {{-- Reorder Buttons (Only show if page is active) --}}
-                            <div
-                                x-show="activePageId === {{ $page->id }}"
-                                x-transition:enter="transition ease-out duration-100"
-                                x-transition:enter-start="opacity-0 scale-95"
-                                x-transition:enter-end="opacity-100 scale-100"
-                                x-transition:leave="transition ease-in duration-75"
-                                x-transition:leave-start="opacity-100 scale-100"
-                                x-transition:leave-end="opacity-0 scale-95"
-                                class="flex flex-col  ml-1 flex-shrink-0"
-                                x-cloak
-                            >
-                                <button
-                                    wire:click.stop="movePageUp({{ $page->id }})"
-                                    type="button"
-                                    class="px-1 py-0 text-xs rounded-tr {{ $loop->first ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800' }}"
-                                    {{ $loop->first ? 'disabled' : '' }}
-                                    aria-label="Move page up"
-                                >
-                                    ▲
-                                </button>
-                                <button
-                                    wire:click.stop="movePageDown({{ $page->id }})"
-                                    type="button"
-                                    class="px-1 py-0 text-xs rounded-br {{ $loop->last ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800' }}"
-                                    {{ $loop->last ? 'disabled' : '' }}
-                                    aria-label="Move page down"
-                                >
-                                    ▼
-                                </button>
-                            </div>
-                        </div>
-                    @endforeach
-                    {{-- Add Page Button --}}
-                    <button
-                        wire:click="addPage"
-                        class="ml-4 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex-shrink-0"
-                    >
-                        + Add Page
-                    </button>
-                </div>
-            @endif
-        </div>
+            </div>
+        @endif
 
-        <!-- Pages and Questions -->
-        <div>
-            @foreach ($pages as $page)
-                <div id="page-container-{{ $page->id }}" class="bg-white shadow-md rounded-lg p-6 mb-6" wire:key="page-{{ $page->id }}">
-                    @include('livewire.surveys.form-builder.partials.page-header', ['page' => $page])
+        <!-- Sticky Survey Navbar -->
+        @include('livewire.surveys.form-builder.partials.survey-navbar')
 
-                    @php
-                        // Ensure questions are sorted by order for accurate indexing
-                        $sortedQuestions = $page->questions->sortBy('order')->values();
-                    @endphp
-                    @foreach ($sortedQuestions as $qIndex => $question)
-                        <div
-                            id="question-{{ $question->id }}"
-                            wire:key="question-{{ $page->id }}-{{ $question->id }}"
-                            :class="{ 'border-2 border-blue-500': selectedQuestionId === {{ $question->id }} }"
-                            class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4 transition hover:shadow-md relative group"
+        <!-- Modal -->
+        <x-modal name="survey-settings-modal-{{ $survey->id }}" title="Survey Settings">
+            {{-- Add a wire:key that changes when the survey is updated --}}
+            <livewire:surveys.form-builder.modal.survey-settings-modal 
+                :survey="$survey" 
+                :key="'settings-modal-' . $survey->id . '-' . $survey->updated_at->timestamp" 
+            />
+        </x-modal>
+
+        <div class="space-y-6">
+            <!-- Sticky Page Selector Container -->
+            <div class="sticky top-0 z-30 bg-white shadow px-6 py-3 mb-4 rounded">
+                <!-- Page Selector -->
+                @if ($pages->isEmpty())
+                    <div class="text-center">
+                        <button
+                            wire:click="addPage"
+                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                         >
-                            {{-- Clickable Overlay --}}
-                            <div
-                                x-show="selectedQuestionId !== {{ $question->id }}"
-                                @click="selectedQuestionId = {{ $question->id }}; activePageId = {{ $page->id }}; $wire.selectQuestion({{ $question->id }})"
-                                class="absolute inset-0 bg-transparent hover:bg-blue-500/5 z-10 rounded-lg transition-all duration-200 cursor-pointer"
-                            ></div>
-
-                            {{-- Question Content --}}
-                            <div class="flex justify-between items-start">
-                                <div class="flex items-start space-x-2 w-full pr-16">
-                                    <span class="text-gray-500 font-bold self-start pt-2">Q{{ $question->order }}.</span>
-                                    <textarea
-                                        id="question-text-{{ $question->id }}"
-                                        x-data="{
-                                            init() {
-                                                $nextTick(() => this.adjustHeight());
-                                            },
-                                            adjustHeight() {
-                                                const id = $el.id; // Get the ID
-                                                $el.style.height = 'auto';
-                                                const newHeight = `${$el.scrollHeight}px`;
-                                                $el.style.height = newHeight;
-                                                // Ensure it sets the store value
-                                                Alpine.store('textareaHeights').set(id, newHeight);
-                                            }
-                                        }"
-                                        @input="adjustHeight()"
-                                        wire:model.defer="questions.{{ $question->id }}.question_text"
-                                        wire:blur="updateQuestion({{ $question->id }})"
-                                        placeholder="Enter question text"
-                                        onfocus="this.select()"
-                                        class="w-full p-2 border border-gray-300 rounded resize-none overflow-hidden"
-                                        rows="1"
-                                        data-autoresize
-                                        :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('question-text-{{ $question->id }}') : 'auto' }"
-                                    ></textarea>
+                            + Add Page
+                        </button>
+                    </div>
+                @else
+                    <div class="flex items-center space-x-1 overflow-x-auto py-1">
+                        @foreach ($pages as $page)
+                            <div wire:key="sticky-page-{{ $page->id }}" class="flex items-center group flex-shrink-0">
+                                {{-- Page Button --}}
+                                <button
+                                    @click="
+                                        const newActivePageId = {{ $page->id }};
+                                        if (activePageId !== newActivePageId) { // Check if it's actually changing
+                                            selectedQuestionId = null; // Deselect question when changing page
+                                            activePageId = newActivePageId; // Set Alpine ID first
+                                            $wire.setActivePage(newActivePageId); // Then call Livewire
+                                        }
+                                        // Scroll is handled by $watch('activePageId', ...)
+                                    "
+                                    type="button"
+                                    :class="{
+                                        'px-3 py-2 rounded cursor-pointer transition duration-150 ease-in-out whitespace-nowrap': true,
+                                        'rounded-l': activePageId !== {{ $page->id }},
+                                        'rounded': activePageId === {{ $page->id }},
+                                        'bg-blue-500 text-white hover:bg-blue-600': activePageId === {{ $page->id }},
+                                        'bg-gray-200 text-gray-700 hover:bg-gray-300': activePageId !== {{ $page->id }}
+                                    }"
+                                    title="{{ $page->title ?: 'Page ' . $page->page_number }}"
+                                >
+                                    {{ Str::limit($page->title ?: 'Page ' . $page->page_number, 12) }}
+                                </button>
+                                {{-- Reorder Buttons (Only show if page is active) --}}
+                                <div
+                                    x-show="activePageId === {{ $page->id }}"
+                                    x-transition:enter="transition ease-out duration-100"
+                                    x-transition:enter-start="opacity-0 scale-95"
+                                    x-transition:enter-end="opacity-100 scale-100"
+                                    x-transition:leave="transition ease-in duration-75"
+                                    x-transition:leave-start="opacity-100 scale-100"
+                                    x-transition:leave-end="opacity-0 scale-95"
+                                    class="flex flex-col ml-1 flex-shrink-0"
+                                    x-cloak
+                                >
+                                    <button
+                                        wire:click.stop="movePageUp({{ $page->id }})"
+                                        type="button"
+                                        class="px-1 py-0 text-xs rounded-tr {{ $loop->first ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800' }}"
+                                        {{ $loop->first ? 'disabled' : '' }}
+                                        aria-label="Move page up"
+                                    >
+                                        ▲
+                                    </button>
+                                    <button
+                                        wire:click.stop="movePageDown({{ $page->id }})"
+                                        type="button"
+                                        class="px-1 py-0 text-xs rounded-br {{ $loop->last ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800' }}"
+                                        {{ $loop->last ? 'disabled' : '' }}
+                                        aria-label="Move page down"
+                                    >
+                                        ▼
+                                    </button>
                                 </div>
-                                <span class="ml-4 whitespace-nowrap text-sm text-gray-500 self-start pt-2">
-                                    {{ $question->question_type === 'radio' ? 'Single Choice' : ucwords(str_replace('_', ' ', $question->question_type)) }}
-                                </span>
                             </div>
+                        @endforeach
+                        {{-- Add Page Button --}}
+                        <button
+                            wire:click="addPage"
+                            class="ml-4 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex-shrink-0"
+                        >
+                            + Add Page
+                        </button>
+                    </div>
+                @endif
+            </div>
 
-                            {{-- Include Question Type Specific Fields --}}
-                            @include('livewire.surveys.form-builder.partials.question-types.'.$question->question_type, ['question' => $question])
+            <!-- Pages and Questions -->
+            <div>
+                @foreach ($pages as $page)
+                    <div id="page-container-{{ $page->id }}" class="bg-white shadow-md rounded-lg p-6 mb-6" wire:key="page-{{ $page->id }}">
+                        @include('livewire.surveys.form-builder.partials.page-header', ['page' => $page])
 
-                            {{-- Include Type Picker and Delete Button (when selected) --}}
-                            <div x-show="selectedQuestionId === {{ $question->id }}" x-cloak class="mt-4 space-y-4">
-                                @include('livewire.surveys.form-builder.partials.type-picker', [
-                                    'context' => 'question',
-                                    'id' => $question->id,
-                                    'order' => $question->order,
-                                    'questionTypes' => $questionTypes
+                        @php
+                            // Ensure questions are sorted by order for accurate indexing
+                            $sortedQuestions = $page->questions->sortBy('order')->values();
+                        @endphp
+                        @foreach ($sortedQuestions as $qIndex => $question)
+                            <div
+                                id="question-{{ $question->id }}"
+                                wire:key="question-{{ $page->id }}-{{ $question->id }}"
+                                :class="{ 'border-2 border-blue-500': selectedQuestionId === {{ $question->id }} }"
+                                class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4 transition hover:shadow-md relative group"
+                            >
+                                {{-- Clickable Overlay --}}
+                                <div
+                                    x-show="selectedQuestionId !== {{ $question->id }}"
+                                    @click="selectedQuestionId = {{ $question->id }}; activePageId = {{ $page->id }}; $wire.selectQuestion({{ $question->id }})"
+                                    class="absolute inset-0 bg-transparent hover:bg-blue-500/5 z-10 rounded-lg transition-all duration-200 cursor-pointer"
+                                ></div>
+
+                                {{-- Question Content --}}
+                                <div class="flex justify-between items-start">
+                                    <div class="flex items-start space-x-2 w-full pr-16">
+                                        <span class="text-gray-500 font-bold self-start pt-2">Q{{ $question->order }}.</span>
+                                        <textarea
+                                            id="question-text-{{ $question->id }}"
+                                            x-data="{
+                                                init() {
+                                                    $nextTick(() => this.adjustHeight());
+                                                },
+                                                adjustHeight() {
+                                                    const id = $el.id; // Get the ID
+                                                    $el.style.height = 'auto';
+                                                    const newHeight = `${$el.scrollHeight}px`;
+                                                    $el.style.height = newHeight;
+                                                    // Ensure it sets the store value
+                                                    Alpine.store('textareaHeights').set(id, newHeight);
+                                                }
+                                            }"
+                                            @input="adjustHeight()"
+                                            wire:model.defer="questions.{{ $question->id }}.question_text"
+                                            wire:blur="updateQuestion({{ $question->id }})"
+                                            placeholder="Enter question text"
+                                            onfocus="this.select()"
+                                            class="w-full p-2 border border-gray-300 rounded resize-none overflow-hidden"
+                                            rows="1"
+                                            data-autoresize
+                                            :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('question-text-{{ $question->id }}') : 'auto' }"
+                                        ></textarea>
+                                    </div>
+                                    <span class="ml-4 whitespace-nowrap text-sm text-gray-500 self-start pt-2">
+                                        {{ $question->question_type === 'radio' ? 'Single Choice' : ucwords(str_replace('_', ' ', $question->question_type)) }}
+                                    </span>
+                                </div>
+
+                                {{-- Include Question Type Specific Fields --}}
+                                @include('livewire.surveys.form-builder.partials.question-types.'.$question->question_type, ['question' => $question])
+
+                                {{-- Include Type Picker and Delete Button (when selected) --}}
+                                <div x-show="selectedQuestionId === {{ $question->id }}" x-cloak class="mt-4 space-y-4">
+                                    @include('livewire.surveys.form-builder.partials.type-picker', [
+                                        'context' => 'question',
+                                        'id' => $question->id,
+                                        'order' => $question->order,
+                                        'questionTypes' => $questionTypes
+                                    ])
+                                </div>
+
+                                {{-- Include Question Settings --}}
+                                @include('livewire.surveys.form-builder.partials.question-settings', [
+                                    'question' => $question,
+                                    'qIndex' => $qIndex,
+                                    'totalQuestions' => $sortedQuestions->count()
                                 ])
                             </div>
-
-                            {{-- Include Question Settings --}}
-                            @include('livewire.surveys.form-builder.partials.question-settings', [
-                                'question' => $question,
-                                'qIndex' => $qIndex,
-                                'totalQuestions' => $sortedQuestions->count()
-                            ])
-                        </div>
-                    @endforeach
-                 
-                </div>
-            @endforeach
+                        @endforeach
+                     
+                    </div>
+                @endforeach
+            </div>
         </div>
-    </div>
+    </div> <!-- End of wrapper for interactive elements -->
 </div>

@@ -7,6 +7,7 @@
             wire:blur="updateSurveyTitle"
             class="text-xl font-bold border-b border-gray-300 focus:border-blue-500 outline-none bg-transparent py-1"
             style="min-width: 200px;"
+            @if($survey->is_locked) readonly @endif
         />
         <span class="text-gray-500 italic text-sm">Survey Title</span>
     </div>
@@ -28,7 +29,7 @@
                 Status: {{ ucfirst($survey->status) }}
             </span>
 
-            {{-- Preview Button --}}
+            {{-- Preview Button - still accessible when locked --}}
             <a href="{{ route('surveys.preview', $survey->id) }}" wire:navigate
                class="inline-flex items-center h-9 px-4 py-1.5 bg-purple-500 text-white text-sm font-medium rounded hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
             >
@@ -39,7 +40,7 @@
                Preview
             </a>
 
-            {{-- View Responses Button --}}
+            {{-- View Responses Button - still accessible when locked --}}
             @if($hasResponses)
                 <a href="{{ route('surveys.responses', $survey->id) }}"
                    class="inline-flex items-center h-9 px-4 py-1.5 bg-blue-500 text-white text-sm font-medium rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -48,11 +49,12 @@
                 </a>
             @endif
 
-            {{-- Publish/Unpublish Buttons --}}
+            {{-- Publish/Unpublish Buttons - disabled when locked --}}
             @if($survey->status === 'published' || $survey->status === 'ongoing')
                 <button
                     wire:click="unpublishSurvey"
                     class="inline-flex items-center h-9 px-4 py-1.5 bg-yellow-500 text-white text-sm font-medium rounded hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                    @if($survey->is_locked) disabled @endif
                 >
                     Unpublish
                 </button>
@@ -60,21 +62,23 @@
                 <button
                     wire:click="publishSurvey"
                     class="inline-flex items-center h-9 px-4 py-1.5 bg-green-500 text-white text-sm font-medium rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    @if($survey->is_locked) disabled @endif
                 >
                     Publish
                 </button>
             @endif
 
-            {{-- Delete All Button --}}
+            {{-- Delete All Button - disabled when locked --}}
             <button
                 wire:click="deleteAll"
                 class="inline-flex items-center h-9 px-4 py-1.5 bg-red-500 text-white text-sm font-medium rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 title="Delete All Questions and Pages"
+                @if($survey->is_locked) disabled @endif
             >
                 Delete All
             </button>
 
-            {{-- Survey Settings Button (Icon) - MOVED TO END --}}
+            {{-- Survey Settings Button (Icon) - settings modal might be viewable but not editable when locked --}}
             <button
                 x-data
                 x-on:click="$dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'})"
@@ -130,11 +134,12 @@
                     </a>
                 @endif
 
-                {{-- Publish/Unpublish Buttons --}}
+                {{-- Publish/Unpublish Buttons - disabled when locked --}}
                 @if($survey->status === 'published' || $survey->status === 'ongoing')
                     <button
                         wire:click="unpublishSurvey" @click="open = false"
                         class="w-full text-left block px-4 py-2 text-sm text-yellow-700 hover:bg-gray-100 hover:text-yellow-900" role="menuitem"
+                        @if($survey->is_locked) disabled @endif
                     >
                         Unpublish
                     </button>
@@ -142,16 +147,18 @@
                     <button
                         wire:click="publishSurvey" @click="open = false"
                         class="w-full text-left block px-4 py-2 text-sm text-green-700 hover:bg-gray-100 hover:text-green-900" role="menuitem"
+                        @if($survey->is_locked) disabled @endif
                     >
                         Publish
                     </button>
                 @endif
 
-                {{-- Delete All Button --}}
+                {{-- Delete All Button - disabled when locked --}}
                 <button
                     wire:click="deleteAll" @click="open = false"
                     class="w-full text-left block px-4 py-2 text-sm text-red-700 hover:bg-gray-100 hover:text-red-900" role="menuitem"
                     title="Delete All Questions and Pages"
+                    @if($survey->is_locked) disabled @endif
                 >
                     Delete All
                 </button>

@@ -70,6 +70,30 @@
                            class="px-2.5 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
                             Open
                         </a>
+                        
+                        {{-- Lock Warning (shown only if survey is locked) --}}
+                        @if($survey->is_locked)
+                            <div class="tooltip" x-data="{ isOpen: false }">
+                                <button 
+                                    @mouseenter="isOpen = true" 
+                                    @mouseleave="isOpen = false"
+                                    class="text-red-500 hover:text-red-600"
+                                    title="Survey Locked"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </button>
+                                <div x-show="isOpen" class="tooltip-text bg-gray-800 text-white text-xs rounded py-1 px-2 absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 mb-1 w-48" style="display:none">
+                                    <strong>Survey Locked:</strong> {{ $survey->lock_reason ?? 'This survey has been locked by an administrator' }}
+                                </div>
+                            </div>
+                        @else
+                            <div class="w-5"></div> {{-- Empty spacer when not locked --}}
+                        @endif
+
+
+                        
 
                         {{-- Delete Button --}}
                         <button

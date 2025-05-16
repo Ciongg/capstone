@@ -23,6 +23,7 @@ return new class extends Migration
             // Survey Settings
             $table->boolean('is_institution_only')->default(false);
             $table->boolean('is_locked')->default(false); // Added for lock/unlock functionality
+            $table->text('lock_reason')->nullable();
             $table->decimal('points')->nullable()->default(0);
             $table->unsignedInteger('target_respondents')->nullable()->default(30);
             $table->unsignedInteger('points_allocated')->nullable();

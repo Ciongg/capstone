@@ -413,6 +413,7 @@ class Index extends Component
     // These relationships are defined in the User model but IDE may flag them incorrectly
     $userGeneralTags = $user ? $user->tags()->pluck('tags.id')->toArray() : [];
     $userInstitutionTags = $user ? $user->institutionTags()->pluck('institution_tags.id')->toArray() : [];
+    $userInstitutionId = $user ? $user->institution_id : null;
     
     // STEP 1: First get basic surveys with standard filters
     $basicQuery = Survey::query()
@@ -440,24 +441,36 @@ class Index extends Component
     }
     else if ($this->activeFilters['type'] === 'advanced') {
         // If explicitly filtering for advanced, only run advanced query
-        // but still apply demographic filtering to advanced surveys
         $basicSurveys = collect([]);
         $advancedSurveys = $advancedQuery->get();
         
-        // Apply demographic filtering to advanced surveys
-        $advancedSurveys = $this->filterAdvancedSurveysByDemographics($advancedSurveys, $userGeneralTags, $userInstitutionTags);
+        // Mark advanced surveys as locked if demographics don't match
+        $advancedSurveys = $this->markLockedAdvancedSurveys($advancedSurveys, $userGeneralTags, $userInstitutionTags);
     }
     else {
         // Default case (All Types) - get both types with appropriate filtering
         $basicSurveys = $basicQuery->get();
         $advancedSurveys = $advancedQuery->get();
         
-        // Apply demographic filtering to advanced surveys
-        $advancedSurveys = $this->filterAdvancedSurveysByDemographics($advancedSurveys, $userGeneralTags, $userInstitutionTags);
+        // Mark advanced surveys as locked if demographics don't match
+        $advancedSurveys = $this->markLockedAdvancedSurveys($advancedSurveys, $userGeneralTags, $userInstitutionTags);
     }
     
-    // STEP 4: Combine surveys and apply ordering/pagination
-    $combinedSurveys = $basicSurveys->concat($advancedSurveys)->unique('id');
+    // STEP 4: Mark institution-only surveys as locked if user doesn't match institution
+    $combinedSurveys = $basicSurveys->concat($advancedSurveys);
+    
+    // Check for institution-only surveys that should be locked
+    $combinedSurveys->each(function ($survey) use ($user, $userInstitutionId) {
+        if ($survey->is_institution_only && $user) {
+            $surveyCreatorInstitutionId = $survey->user->institution_id;
+            $survey->is_institution_locked = ($userInstitutionId !== $surveyCreatorInstitutionId);
+        } else {
+            $survey->is_institution_locked = $survey->is_institution_only;
+        }
+    });
+    
+    // STEP 5: Apply ordering/pagination
+    $combinedSurveys = $combinedSurveys->unique('id');
     
     // Apply global sorting
     $combinedSurveys = $combinedSurveys->sortByDesc('points_allocated')
@@ -475,7 +488,7 @@ class Index extends Component
     // Log counts for debugging
     Log::info('Survey counts in feed:', [
         'basic_count' => $basicSurveys->count(),
-        'advanced_filtered_count' => $advancedSurveys->count(),
+        'advanced_count' => $advancedSurveys->count(),
         'total_combined' => $combinedSurveys->count()
     ]);
     
@@ -496,9 +509,41 @@ class Index extends Component
     }
 }
 
+// Helper method to mark advanced surveys as locked based on user demographics
+private function markLockedAdvancedSurveys($advancedSurveys, $userGeneralTags, $userInstitutionTags)
+{
+    return $advancedSurveys->map(function ($survey) use ($userGeneralTags, $userInstitutionTags) {
+        $surveyTags = $survey->tags->pluck('id')->toArray();
+        $surveyInstTags = $survey->institutionTags->pluck('id')->toArray();
+        
+        // If advanced survey has no tags at all, it's not locked
+        if (empty($surveyTags) && empty($surveyInstTags)) {
+            $survey->is_demographic_locked = false;
+            return $survey;
+        }
+        
+        // STRICT MATCHING: ALL survey tags must be in user's demographics
+        // Check if ANY survey tags exist that are NOT in user tags
+        $unmatchedGeneralTags = array_diff($surveyTags, $userGeneralTags);
+        $unmatchedInstTags = array_diff($surveyInstTags, $userInstitutionTags);
+        
+        // If both arrays are empty, it means all tags are matched
+        $generalTagsMatch = empty($surveyTags) || empty($unmatchedGeneralTags);
+        $institutionTagsMatch = empty($surveyInstTags) || empty($unmatchedInstTags);
+        
+        // Survey is locked if any tags don't match
+        $survey->is_demographic_locked = !($generalTagsMatch && $institutionTagsMatch);
+        
+        return $survey;
+    });
+}
+
 // Helper method to apply common filters to any survey query
 private function applyCommonFilters($query)
 {
+    // Exclude locked surveys
+    $query->where('is_locked', false);
+    
     // Apply search filter
     if (!empty($this->search)) {
         $query->where('title', 'like', '%' . $this->search . '%');
@@ -532,81 +577,39 @@ private function applyCommonFilters($query)
     }
 }
 
-// Helper method to filter advanced surveys by user demographics
-private function filterAdvancedSurveysByDemographics($advancedSurveys, $userGeneralTags, $userInstitutionTags)
+// Modified reset filter to preserve panel state when clearing filters
+protected function resetFiltersWithSpaExperience()
 {
-    return $advancedSurveys->filter(function ($survey) use ($userGeneralTags, $userInstitutionTags) {
-        $surveyTags = $survey->tags->pluck('id')->toArray();
-        $surveyInstTags = $survey->institutionTags->pluck('id')->toArray();
-        
-        // If advanced survey has no tags at all, include it
-        if (empty($surveyTags) && empty($surveyInstTags)) {
-            return true;
-        }
-        
-        // STRICT MATCHING: ALL survey tags must be in user's demographics
-        // Check if ANY survey tags exist that are NOT in user tags
-        $unmatchedGeneralTags = array_diff($surveyTags, $userGeneralTags);
-        $unmatchedInstTags = array_diff($surveyInstTags, $userInstitutionTags);
-        
-        // If both arrays are empty, it means all tags are matched
-        // For general tags: if survey has general tags, ALL must match
-        // For institution tags: if survey has institution tags, ALL must match
-        $generalTagsMatch = empty($surveyTags) || empty($unmatchedGeneralTags);
-        $institutionTagsMatch = empty($surveyInstTags) || empty($unmatchedInstTags);
-        
-        // Log the matching process for debugging
-        Log::debug('Advanced survey filter:', [
-            'survey_id' => $survey->id,
-            'survey_title' => $survey->title,
-            'survey_tags' => $surveyTags,
-            'survey_inst_tags' => $surveyInstTags,
-            'user_tags' => $userGeneralTags,
-            'user_inst_tags' => $userInstitutionTags,
-            'unmatched_general' => $unmatchedGeneralTags,
-            'unmatched_inst' => $unmatchedInstTags,
-            'general_match' => $generalTagsMatch,
-            'inst_match' => $institutionTagsMatch,
-            'overall_match' => $generalTagsMatch && $institutionTagsMatch
-        ]);
-        
-        // Only include survey if ALL of its tags match the user's demographics
-        return $generalTagsMatch && $institutionTagsMatch;
-    });
+    // Store current panel state - we want to preserve it
+    $currentPanelState = $this->showFilterPanel;
+    
+    // Reset all filter values
+    $this->search = '';
+    $this->activeFilters = [
+        'topic' => null,
+        'tags' => [],
+        'institutionTags' => [],
+        'type' => null,
+        'institutionOnly' => false
+    ];
+    $this->tempSelectedTagIds = [];
+    $this->tempSelectedInstitutionTagIds = [];
+    $this->tempSurveyType = null;
+    $this->tempInstitutionOnly = false;
+    
+    // Reset page and reload surveys
+    $this->page = 1;
+    $this->loadSurveys();
+    
+    // Restore panel state - don't close if it was open
+    $this->showFilterPanel = $currentPanelState;
+    
+    // Notify Alpine about the topic filter being reset
+    $this->dispatch('activeTopicChanged', null);
+    
+    // Add a "loading" effect to simulate data being refreshed
+    $this->dispatch('filters-reset-loading');
 }
-    // Modified reset filter to preserve panel state when clearing filters
-    protected function resetFiltersWithSpaExperience()
-    {
-        // Store current panel state - we want to preserve it
-        $currentPanelState = $this->showFilterPanel;
-        
-        // Reset all filter values
-        $this->search = '';
-        $this->activeFilters = [
-            'topic' => null,
-            'tags' => [],
-            'institutionTags' => [],
-            'type' => null,
-            'institutionOnly' => false
-        ];
-        $this->tempSelectedTagIds = [];
-        $this->tempSelectedInstitutionTagIds = [];
-        $this->tempSurveyType = null;
-        $this->tempInstitutionOnly = false;
-        
-        // Reset page and reload surveys
-        $this->page = 1;
-        $this->loadSurveys();
-        
-        // Restore panel state - don't close if it was open
-        $this->showFilterPanel = $currentPanelState;
-        
-        // Notify Alpine about the topic filter being reset
-        $this->dispatch('activeTopicChanged', null);
-        
-        // Add a "loading" effect to simulate data being refreshed
-        $this->dispatch('filters-reset-loading');
-    }
     
     // Listen for filter change events
     protected function getListeners()

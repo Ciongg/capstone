@@ -42,6 +42,7 @@
         rows="1"
         data-autoresize
         :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('page-title-{{ $page->id }}') : 'auto' }"
+        @if(isset($survey) && $survey->is_locked) readonly @endif
     >{{ $page->title }}</textarea>
 
     {{-- Page Subtitle Textarea --}}
@@ -68,6 +69,7 @@
         rows="1"
         data-autoresize
         :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('page-subtitle-{{ $page->id }}') : 'auto' }"
+        @if(isset($survey) && $survey->is_locked) readonly @endif
     >{{ $page->subtitle }}</textarea>
         
     {{-- Container for Page Actions (Delete Button & Add Question Picker) --}}

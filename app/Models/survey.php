@@ -23,6 +23,7 @@ class Survey extends Model
         'image_path',
         'is_institution_only',
         'is_locked', // Added for lock/unlock functionality
+        'lock_reason', // Added to store the reason for locking
     ];
 
     /**
