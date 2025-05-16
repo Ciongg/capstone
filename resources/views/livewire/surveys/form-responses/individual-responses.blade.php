@@ -3,7 +3,32 @@
 
         @if($currentRespondent)
             {{-- Top Navigation & Respondent Info --}}
-            <div class="bg-white shadow-xl rounded-2xl p-10 mb-8">
+            <div class="bg-white shadow-xl rounded-2xl p-10 mb-8 relative">
+                {{-- Back button in top left --}}
+                <a href="{{ route('surveys.responses', $survey->id) }}"
+                   class="absolute top-4 left-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg shadow hover:bg-gray-200 flex items-center"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back
+                </a>
+                
+                {{-- Report button in top right --}}
+                <button
+                    x-data
+                    x-on:click="$dispatch('open-modal', {name : 'view-report-response-modal'})"
+                    class="absolute top-4 right-4 p-2 text-red-500 hover:text-red-700"
+                    type="button"
+                    aria-label="Report Response"
+                >
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                        </path>
+                    </svg>
+                </button>
+                
                 <div class="flex items-center justify-center mb-8">
                     <button
                         class="p-3 rounded-full bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
@@ -31,26 +56,28 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {{-- Demographic Matched Box --}}
-                    <div class="bg-gray-100 rounded-lg shadow p-6 flex flex-col items-center min-h-[120px] relative">
-                        <span class="text-lg font-semibold text-gray-700 mb-3">Demographic Matched</span>
+                    <div class="bg-gray-100 font-bold rounded-lg shadow p-6 relative">
+                        <span class="text-lg font-semibold text-gray-500 mb-3 block text-left">Demographic Matched</span>
                         @if($respondentUser)
-                            <div class="flex flex-wrap justify-center gap-4 w-full px-4">
-                                @if($matchedSurveyTagsInfo['status'] === 'has_matches')
-                                    @foreach ($matchedSurveyTagsInfo as $tagInfo)
-                                        @if(is_array($tagInfo) && $tagInfo['matched'])
-                                            <span class="px-4 py-1.5 text-base font-medium rounded-full whitespace-nowrap bg-green-200 text-green-800 shadow-md">
-                                                {{ $tagInfo['name'] }}
-                                            </span>
-                                        @endif
-                                    @endforeach
-                                @elseif($matchedSurveyTagsInfo['status'] === 'none_matched')
-                                    <span class="text-sm text-gray-500 italic">None matched.</span>
-                                @elseif($matchedSurveyTagsInfo['status'] === 'no_target_demographics')
-                                    <span class="text-sm text-gray-500 italic">No target demographics set.</span>
-                                @endif
+                            <div class="flex items-center">
+                                <div class="flex flex-wrap gap-2 flex-1">
+                                    @if($matchedSurveyTagsInfo['status'] === 'has_matches')
+                                        @foreach ($matchedSurveyTagsInfo as $tagInfo)
+                                            @if(is_array($tagInfo) && $tagInfo['matched'])
+                                                <span class="px-3 py-1 text-sm font-medium rounded-full whitespace-nowrap bg-green-200 text-green-800 shadow-md">
+                                                    {{ $tagInfo['name'] }}
+                                                </span>
+                                            @endif
+                                        @endforeach
+                                    @elseif($matchedSurveyTagsInfo['status'] === 'none_matched')
+                                        <span class="text-sm text-gray-500 italic">None matched.</span>
+                                    @elseif($matchedSurveyTagsInfo['status'] === 'no_target_demographics')
+                                        <span class="text-sm text-gray-500 italic">No target demographics set.</span>
+                                    @endif
+                                </div>
                             </div>
                             {{-- View All button at the bottom right --}}
-                            <div class="absolute left-0 right-0 bottom-2 flex justify-end pr-4">
+                            <div class="absolute right-4 bottom-2">
                                 <button
                                     x-data
                                     x-on:click="$dispatch('open-modal', {name : 'view-all-demographic-modal'})"
@@ -65,41 +92,71 @@
                                 <livewire:surveys.form-responses.modal.view-all-demographic-modal :survey="$survey" :user="$respondentUser" />
                             </x-modal>
                         @else
-                            <span class="text-2xl font-bold text-gray-600">--</span>
+                            <div class="flex items-center justify-between">
+                                <span class="text-2xl font-bold text-gray-600">--</span>
+                            </div>
                         @endif
                     </div>
 
                     {{-- Trust Score Box --}}
-                    <div class="bg-gray-100 rounded-lg shadow p-6 flex flex-col items-center min-h-[100px]">
-                        <span class="text-lg font-semibold text-gray-700 mb-2">Trust Score</span>
+                    <div class="bg-gray-100 rounded-lg font-bold shadow p-6">
+                        <span class="text-lg font-semibold text-gray-500 mb-3 block text-left">Trust Score</span>
                         @if($respondentUser)
                             @php
                                 $scoreColorClass = match (true) {
-                                    $trustScore === 100 => 'text-blue-500',
-                                    $trustScore < 60 => 'text-red-500',
-                                    default => 'text-yellow-500',
+                                    $trustScore === 100 => 'text-[#03b8ff]',
+                                    $trustScore >= 80 => 'text-yellow-500',
+                                    default => 'text-red-500',
                                 };
                             @endphp
-                            <span @class(['text-3xl font-bold', $scoreColorClass])>
-                                {{ $trustScore }}/100
-                            </span>
+                            <div class="flex items-center justify-between">
+                                <span @class(['text-5xl font-bold', $scoreColorClass])>
+                                    {{ $trustScore }}
+                                </span>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-14 h-14 text-gray-500">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                                </svg>
+                            </div>
                         @else
-                            <span class="text-2xl font-bold text-gray-600">--</span>
+                            <div class="flex items-center justify-between">
+                                <span class="text-2xl font-bold text-gray-600">--</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-14 h-14 text-gray-300">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                                </svg>
+                            </div>
                         @endif
                     </div>
 
                     {{-- Time Completed Box --}}
-                    <div class="bg-gray-100 rounded-lg shadow p-6 flex flex-col items-center min-h-[100px]">
-                        <span class="text-lg font-semibold text-gray-700 mb-2">Time Completed</span>
+                    <div class="bg-gray-100 rounded-lg font-bold shadow p-6">
+                        <span class="text-lg font-semibold text-gray-500 mb-3 block text-left">Time Completed</span>
                         @if($timeCompleted)
-                             <span class="text-xl font-bold text-gray-600 text-center">{{ $timeCompleted }}</span>
+                            <div class="flex items-center justify-between">
+                                <span class="text-5xl font-bold" style="color: #03b8ff;">4:34</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-14 h-14 text-gray-500">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                            </div>
                         @else
-                            <span class="text-2xl font-bold text-gray-600">--:--</span>
+                            <div class="flex items-center justify-between">
+                                <span class="text-3xl font-bold" style="color: #03b8ff;">49s</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-14 h-14 text-gray-500">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                            </div>
                         @endif
                     </div>
                 </div>
+
+                {{-- Report Response Modal --}}
+                <x-modal name="view-report-response-modal" title="Report Response">
+                    <livewire:surveys.form-responses.modal.view-report-response-modal :response="$currentRespondent" :survey="$survey" />
+                </x-modal>
+
             </div>
 
+           
+            
             {{-- Survey Pages, Questions, and Answers --}}
             @foreach($pagesWithProcessedAnswers as $page)
                 <div class="bg-white shadow-xl rounded-2xl p-10 space-y-12 mb-10">
