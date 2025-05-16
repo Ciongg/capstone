@@ -17,7 +17,7 @@
     <div x-on:click="show = false; $dispatch('close');" class="fixed inset-0 bg-gray-900 opacity-20"></div>
 
     {{-- Modal Panel --}}
-    <div class="bg-white rounded-lg m-auto fixed inset-0 max-w-3xl max-h-[600px] p-2 flex flex-col">
+    <div class="bg-white rounded-lg m-auto fixed inset-0 max-w-3xl max-h-[650px] p-2 flex flex-col">
         <div class="flex justify-between items-center p-4 border-b"> {{-- Container for title and close button --}}
             @if(isset($title))
                 <h1 class="text-2xl font-bold">{{$title}}</h1>

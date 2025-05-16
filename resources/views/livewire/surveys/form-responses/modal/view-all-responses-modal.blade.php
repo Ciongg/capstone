@@ -5,8 +5,10 @@
             {{ $question->answers->unique('response_id')->count() }} responses
         </span>
     </div>
-    <div class="overflow-x-auto">
-        <table class="min-w-full border border-gray-200 rounded">
+    
+    {{-- Scrollable Table Container --}}
+    <div class="overflow-x-auto overflow-y-auto max-h-[200px] mb-6 border rounded-lg">
+        <table class="min-w-full border border-gray-200">
             
             {{-- Simple Case: Essay, Short Text, Date, Rating --}}
             @if(in_array($question->question_type, ['essay', 'short_text', 'date', 'rating']))
@@ -158,5 +160,31 @@
             @endif
             
         </table>
+    </div>
+
+    {{-- AI Summarization Section --}}
+    <div class="mt-8">
+        <div class="flex items-center mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-blue-600 mr-2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+            </svg>
+            <span class="text-lg font-semibold">Summarize With AI</span>
+        </div>
+        
+        <div class="space-y-4">
+            <textarea 
+                class="w-full h-24 p-3 border border-gray-300 rounded-lg focus:ring focus:ring-blue-200 focus:border-blue-500" 
+                placeholder="Generates a summary of the responses gathered..."
+            ></textarea>
+            
+            <div class="flex justify-end">
+                <button 
+                    class="px-5 py-2 font-medium rounded-md text-white" 
+                    style="background-color: #03b8ff;"
+                >
+                    Generate
+                </button>
+            </div>
+        </div>
     </div>
 </div>

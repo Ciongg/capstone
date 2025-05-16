@@ -1,5 +1,7 @@
 <div class="bg-gray-100 min-h-screen py-8">
-    <div class="max-w-7xl mx-auto">
+    <div class="max-w-7xl mx-auto relative">
+        {{-- Translate button in top right --}}
+        
 
         {{-- Back Button (Only in Preview Mode) --}}
         @include('livewire.surveys.answer-survey.partials.preview-button')
@@ -10,9 +12,10 @@
             <div x-data="{ navAction: 'submit' }">
                 @php $questionNumber = 1; @endphp
                 @foreach($survey->pages as $pageIndex => $page)
-                    <div @if($pageIndex !== $currentPage) style="display:none" @endif>
-                        {{-- Page Header --}}
-                        @include('livewire.surveys.answer-survey.partials.page-header', ['page' => $page])
+                <div @if($pageIndex !== $currentPage) style="display:none" @endif>
+                    {{-- Page Header --}}
+                    @include('livewire.surveys.answer-survey.partials.page-header', ['page' => $page])
+                        
                         
                         @foreach($page->questions->sortBy('order') as $question)
                             <div class="mb-8">

@@ -5,4 +5,14 @@
             <span class="block sm:inline">{{ session('error') }}</span>
         </div>
     @endif
-    <h1 class="text-3xl font-bold mb-8">{{ $survey->title }}</h1>
+
+    <!-- Survey Title -->
+    <h1 class="text-3xl font-bold mb-4 text-justify">{{ $survey->title }}</h1>
+
+    <!-- Survey Description -->
+    <p class="text-gray-600 text-base leading-relaxed tracking-wide text-justify mb-8">
+        {{ $survey->description }}
+    </p>
+
+
+
