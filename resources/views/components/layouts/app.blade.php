@@ -56,7 +56,7 @@
                             <a href="/feed" wire:navigate class="{{ request()->routeIs('feed.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Feed</a>
                             <a href="/rewards" class="{{ request()->routeIs('rewards.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Redeem</a>
                             <a href="/vouchers" wire:navigate class="{{ request()->routeIs('vouchers.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Vouchers</a>
-                            {{-- Institution Admin specific links --}}
+                            
                             @if(Auth::user()->hasValidInstitution())
                                 {{-- Normal enabled links when institution is valid --}}
                                 <button 
@@ -64,23 +64,68 @@
                                 x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
                                 class="{{ request()->is('surveys/create*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline"
                                 >Create Survey</button>
-                                <a href="/institution/analytics"  class="{{ request()->is('institution/analytics') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Analytics</a>
-                                <a href="/institution/users" wire:navigate class="{{ request()->is('institution/users') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Users</a>
+                                
+                                {{-- Institution dropdown menu --}}
+                                <div x-data="{ open: false }" class="relative" @click.outside="open = false">
+                                    <button 
+                                        @click="open = !open" 
+                                        class="{{ request()->is('institution/*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline flex items-center"
+                                    >
+                                        Institution
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    
+                                    <div 
+                                        x-show="open" 
+                                        x-transition:enter="transition ease-out duration-100" 
+                                        x-transition:enter-start="transform opacity-0 scale-95" 
+                                        x-transition:enter-end="transform opacity-100 scale-100" 
+                                        class="absolute z-50 mt-2 bg-white border border-gray-200 rounded-md shadow-lg py-1 w-48"
+                                        style="display: none;"
+                                    >
+                                        <a href="/institution/analytics" class="block px-4 py-2 text-sm {{ request()->is('institution/analytics') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:bg-gray-100">Analytics</a>
+                                        <a href="/institution/users" wire:navigate class="block px-4 py-2 text-sm {{ request()->is('institution/users') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:bg-gray-100">Users</a>
+                                    </div>
+                                </div>
                             @else
                                 {{-- Disabled links when institution is invalid --}}
                                 <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Create Survey</span>
-                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Analytics</span>
-                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Users</span>
+                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Institution</span>
                             @endif
                         @elseif(Auth::user()->isSuperAdmin())
                             {{-- Super Admin specific links --}}
                             <a href="/feed" wire:navigate class="{{ request()->routeIs('feed.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Feed</a>
                             <a href="/rewards" class="{{ request()->routeIs('rewards.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Redeem</a>
                             <a href="/vouchers" wire:navigate class="{{ request()->routeIs('vouchers.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Vouchers</a>
-                            <a href="/admin/surveys" wire:navigate class="{{ request()->routeIs('surveys.index') && request()->is('admin/surveys*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Manage Surveys</a>
-                            <a href="/admin/reward-redemptions" wire:navigate class="{{ request()->routeIs('reward-redemptions.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Manage Rewards</a>
-                            <a href="/admin/users" wire:navigate class="{{ request()->routeIs('users.index') && request()->is('admin/users*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Manage Users</a>
-                            <a href="/admin/reports" wire:navigate class="{{ request()->is('admin/reports') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Manage Support Request</a>
+                            
+                            {{-- Manage dropdown menu --}}
+                            <div x-data="{ open: false }" class="relative" @click.outside="open = false">
+                                <button 
+                                    @click="open = !open" 
+                                    class="{{ request()->is('admin/*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline flex items-center"
+                                >
+                                    Manage
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                
+                                <div 
+                                    x-show="open" 
+                                    x-transition:enter="transition ease-out duration-100" 
+                                    x-transition:enter-start="transform opacity-0 scale-95" 
+                                    x-transition:enter-end="transform opacity-100 scale-100" 
+                                    class="absolute z-50 mt-2 bg-white border border-gray-200 rounded-md shadow-lg py-1 w-48"
+                                    style="display: none;"
+                                >
+                                    <a href="/admin/surveys" wire:navigate class="block px-4 py-2 text-sm {{ request()->is('admin/surveys*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:bg-gray-100">Manage Surveys</a>
+                                    <a href="/admin/reward-redemptions" wire:navigate class="block px-4 py-2 text-sm {{ request()->routeIs('reward-redemptions.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:bg-gray-100">Manage Rewards</a>
+                                    <a href="/admin/users" wire:navigate class="block px-4 py-2 text-sm {{ request()->is('admin/users*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:bg-gray-100">Manage Users</a>
+                                    <a href="/admin/reports" wire:navigate class="block px-4 py-2 text-sm {{ request()->is('admin/reports') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:bg-gray-100">Manage Support Request</a>
+                                </div>
+                            </div>
                         @else
                             {{-- Default for other authenticated users (e.g., 'respondent') --}}
                             <a href="/feed" wire:navigate class="{{ request()->routeIs('feed.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Feed</a>
