@@ -14,8 +14,7 @@
                     Back
                 </a>
                 
-                {{-- Translate button in top right --}}
-                <x-translate-button class="absolute top-4 right-20" />
+             
                 
                 {{-- Report button in top right --}}
                 <button

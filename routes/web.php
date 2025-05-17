@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RegisteredUserController; // Ensure this is imported
 use App\Http\Controllers\RewardController; // Ensure this is imported
 use App\Http\Controllers\SuperAdminController; // Ensure this is imported
+use App\Http\Controllers\InstitutionAdminController; // Ensure this is imported
 
 Route::get('/', function () {
     return view('welcome');
@@ -30,6 +31,7 @@ Route::middleware('auth')->group(function () {
     // Route::get('/my-surveys', [SurveyController::class, 'showSurveys'])->name('my-surveys.index');
     
     Route::get('/surveys/{survey}/preview', [SurveyController::class, 'showAnswerForm'])->name('surveys.preview')->defaults('isPreview', true);
+    Route::get('/institution/analytics', [InstitutionAdminController::class, 'analyticsIndex'])->name('institution.analytics');
 });
 
 Route::get('/surveys/answer/{survey}', [SurveyController::class, 'showAnswerForm'])->name('surveys.answer');

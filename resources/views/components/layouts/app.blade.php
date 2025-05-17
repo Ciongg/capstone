@@ -37,12 +37,12 @@
                                 x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
                                 class="{{ request()->is('surveys/create*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline"
                             >Create Survey</button>
-                            <a href="/rewards" wire:navigate class="{{ request()->routeIs('rewards.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Redeem</a>
+                            <a href="/rewards"  class="{{ request()->routeIs('rewards.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Redeem</a>
                             <a href="/vouchers" wire:navigate class="{{ request()->routeIs('vouchers.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Vouchers</a>
                         @elseif(Auth::user()->isInstitutionAdmin())
                             {{-- Common links for Institution Admin --}}
                             <a href="/feed" wire:navigate class="{{ request()->routeIs('feed.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Feed</a>
-                            <a href="/rewards" wire:navigate class="{{ request()->routeIs('rewards.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Redeem</a>
+                            <a href="/rewards" class="{{ request()->routeIs('rewards.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Redeem</a>
                             <a href="/vouchers" wire:navigate class="{{ request()->routeIs('vouchers.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Vouchers</a>
                             {{-- Institution Admin specific links --}}
                             @if(Auth::user()->hasValidInstitution())
@@ -52,7 +52,7 @@
                                 x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
                                 class="{{ request()->is('surveys/create*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline"
                                 >Create Institution Survey</button>
-                                <a href="/institution/analytics" wire:navigate class="{{ request()->is('institution/analytics') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Analytics</a>
+                                <a href="/institution/analytics"  class="{{ request()->is('institution/analytics') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Analytics</a>
                                 <a href="/institution/users" wire:navigate class="{{ request()->is('institution/users') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Users</a>
                             @else
                                 {{-- Disabled links when institution is invalid --}}
@@ -63,7 +63,7 @@
                         @elseif(Auth::user()->isSuperAdmin())
                             {{-- Super Admin specific links --}}
                             <a href="/feed" wire:navigate class="{{ request()->routeIs('feed.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Feed</a>
-                            <a href="/rewards" wire:navigate class="{{ request()->routeIs('rewards.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Redeem</a>
+                            <a href="/rewards" class="{{ request()->routeIs('rewards.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Redeem</a>
                             <a href="/vouchers" wire:navigate class="{{ request()->routeIs('vouchers.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Vouchers</a>
                             <a href="/admin/surveys" wire:navigate class="{{ request()->routeIs('surveys.index') && request()->is('admin/surveys*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Manage Surveys</a>
                             <a href="/admin/reward-redemptions" wire:navigate class="{{ request()->routeIs('reward-redemptions.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Manage Rewards</a>
@@ -72,7 +72,7 @@
                         @else
                             {{-- Default for other authenticated users (e.g., 'respondent') --}}
                             <a href="/feed" wire:navigate class="{{ request()->routeIs('feed.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Feed</a>
-                            <a href="/rewards" wire:navigate class="{{ request()->routeIs('rewards.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Redeem</a>
+                            <a href="/rewards"  class="{{ request()->routeIs('rewards.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Redeem</a>
                             <a href="/vouchers" wire:navigate class="{{ request()->routeIs('vouchers.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Vouchers</a>
                         @endif
                     @endauth
