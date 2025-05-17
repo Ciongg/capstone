@@ -4,9 +4,12 @@ namespace App\Livewire\Rewards\Modal;
 
 use App\Models\Reward;
 use App\Models\RewardRedemption;
+use App\Models\Voucher; // Import Voucher model
+use App\Models\UserVoucher; // Import UserVoucher model
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log; // Import Log
 
 class RewardRedeemModal extends Component
 {
@@ -50,109 +53,141 @@ class RewardRedeemModal extends Component
         }
 
         $user = Auth::user();
-        $quantityToRedeem = (int)$this->redeemQuantity;
+        $quantityToRedeem = ($this->reward->type === 'system') ? (int)$this->redeemQuantity : 1; // Vouchers/Monetary are 1 at a time
         $totalCost = $this->reward->cost * $quantityToRedeem;
 
         // Validate the input
         if ($this->reward->type === 'monetary') {
-            $this->validate();
-        } else {
-            $this->validate([
-                'redeemQuantity' => 'required|integer|min:1'
-            ]);
+            $this->validate(); // Validates gcashNumber and confirmGcashCorrect
+        } elseif ($this->reward->type === 'system') {
+            $this->validate(['redeemQuantity' => 'required|integer|min:1']);
         }
+        // No specific validation for voucher type beyond general checks, quantity is 1
 
-        if ($quantityToRedeem <= 0) {
+        if ($quantityToRedeem <= 0 && $this->reward->type === 'system') { // Only system rewards can have variable quantity > 0
             $this->dispatch('redemptionError', 'Quantity must be at least 1.');
-            $this->dispatch('close-modal', name: 'reward-redeem-modal');
+            // $this->dispatch('close-modal', name: 'reward-redeem-modal'); // Keep modal open to show error
             return;
         }
 
         if ($user->points < $totalCost) {
-            $this->dispatch('redemptionError', 'Not enough points to redeem this quantity.');
-            $this->dispatch('close-modal', name: 'reward-redeem-modal');
+            $this->dispatch('redemptionError', 'Not enough points to redeem this reward.');
+            // $this->dispatch('close-modal', name: 'reward-redeem-modal');
+            return;
+        }
+        
+        // For non-system rewards, quantity check is against the reward itself.
+        // For system rewards with quantity != -1, it's against reward->quantity.
+        // For voucher rewards, we also need to check if a specific voucher instance is available.
+        if ($this->reward->type !== 'system' && $this->reward->quantity != -1 && $this->reward->quantity < 1) {
+             $this->dispatch('redemptionError', 'This reward is out of stock.');
+             return;
+        }
+        if ($this->reward->type === 'system' && $this->reward->quantity != -1 && $this->reward->quantity < $quantityToRedeem) {
+            $this->dispatch('redemptionError', 'Not enough stock available for this quantity.');
+            // $this->dispatch('close-modal', name: 'reward-redeem-modal');
             return;
         }
 
-        if ($this->reward->quantity != -1 && $this->reward->quantity < $quantityToRedeem) {
-            $this->dispatch('redemptionError', 'Not enough stock available for this quantity.');
-            $this->dispatch('close-modal', name: 'reward-redeem-modal');
-            return;
-        }
 
         try {
             DB::transaction(function () use ($user, $quantityToRedeem, $totalCost) {
+                $createdRedemption = null; // To store the created redemption record
+
                 // Deduct points
                 $user->points -= $totalCost;
 
-                // Handle specific reward types
                 $additionalMessage = '';
                 $levelUpMessage = '';
                 $leveledUp = false;
                 $newLevel = 0;
                 $newTitle = '';
+                $redemptionStatus = RewardRedemption::STATUS_COMPLETED; // Default to completed
 
-                if ($this->reward->name === 'Experience Level Increase') {
-                    // Add experience points (500 per quantity redeemed)
-                    $xpToAdd = 500 * $quantityToRedeem;
-                    $result = $user->addExperiencePoints($xpToAdd);
+                if ($this->reward->type === 'system') {
+                    if ($this->reward->name === 'Experience Level Increase') {
+                        $xpToAdd = 500 * $quantityToRedeem;
+                        $result = $user->addExperiencePoints($xpToAdd);
+                        $additionalMessage = "You gained {$xpToAdd} experience points!";
+                        if ($result['leveled_up']) {
+                            $leveledUp = true;
+                            $newLevel = $result['current_level'];
+                            $newTitle = $user->title;
+                            $levelUpMessage = " You reached level {$result['current_level']} and earned the title: {$user->title}";
+                            if (!empty($result['perks'])) {
+                                $levelUpMessage .= ". Bonus: " . implode(', ', $result['perks']);
+                            }
+                        }
+                    }
+                    // Handle other system rewards
+                } elseif ($this->reward->type === 'voucher') {
+                    // Find an available voucher instance for this reward
+                    $voucherInstance = Voucher::where('reward_id', $this->reward->id)
+                                              ->where('availability', 'available')
+                                              ->lockForUpdate() // Prevent race conditions
+                                              ->first();
 
-                    $additionalMessage = "You gained {$xpToAdd} experience points!";
+                    if (!$voucherInstance) {
+                        throw new \Exception('Sorry, no specific vouchers are currently available for this reward. Please try again later.');
+                    }
 
-                    // If leveled up, add more info and prepare data for animation
-                    if ($result['leveled_up']) {
-                        $leveledUp = true;
-                        $newLevel = $result['current_level'];
-                        $newTitle = $user->title;
-                        
-                        $levelUpMessage = " You reached level {$result['current_level']} and earned the title: {$user->title}";
+                    // Mark the specific voucher instance as unavailable (or used by system)
+                    $voucherInstance->availability = 'unavailable'; // Or 'claimed_internal'
+                    $voucherInstance->save();
+                    
+                    // The Reward's quantity (acting as a counter for available voucher *types*) should be decremented
+                    // This is distinct from the Voucher instance's availability
+                    if ($this->reward->quantity != -1) {
+                        $this->reward->quantity -= 1; // Decrement by 1 as one voucher type is claimed
+                        if ($this->reward->quantity <= 0) {
+                            $this->reward->status = Reward::STATUS_SOLD_OUT;
+                        }
+                    }
+                    // Note: RewardRedemption record will be created after user save.
+                    // UserVoucher record will be created after RewardRedemption.
+                    $redemptionStatus = RewardRedemption::STATUS_COMPLETED;
 
-                        // If perks were earned
-                        if (!empty($result['perks'])) {
-                            $levelUpMessage .= ". Bonus: " . implode(', ', $result['perks']);
+                } elseif ($this->reward->type === 'monetary') {
+                    $redemptionStatus = RewardRedemption::STATUS_PENDING;
+                     if ($this->reward->quantity != -1) {
+                        $this->reward->quantity -= 1; 
+                        if ($this->reward->quantity <= 0) {
+                            $this->reward->status = Reward::STATUS_SOLD_OUT;
                         }
                     }
                 }
-                // Handle other reward types here as needed
-
+                
                 $user->save();
+                $this->reward->save(); // Save changes to reward quantity/status
 
-                // Decrement reward quantity if not infinite
-                if ($this->reward->quantity != -1) {
-                    $this->reward->quantity -= $quantityToRedeem;
-                    if ($this->reward->quantity <= 0) {
-                        $this->reward->status = 'sold_out';
-                    }
-                    $this->reward->save();
-                }
-
-                // Set status based on reward type
-                $status = ($this->reward->type === 'monetary') 
-                    ? RewardRedemption::STATUS_PENDING 
-                    : RewardRedemption::STATUS_COMPLETED;
-
-                // Create redemption record with determined status and GCash number if applicable
+                // Create redemption record
                 $redemptionData = [
                     'user_id' => $user->id,
                     'reward_id' => $this->reward->id,
                     'points_spent' => $totalCost,
-                    'status' => $status,
+                    'status' => $redemptionStatus,
                 ];
-
-                // Add GCash number if this is a monetary reward
                 if ($this->reward->type === 'monetary') {
                     $redemptionData['gcash_number'] = $this->gcashNumber;
                 }
+                $createdRedemption = RewardRedemption::create($redemptionData);
 
-                RewardRedemption::create($redemptionData);
+                // If it was a voucher, create UserVoucher record
+                if ($this->reward->type === 'voucher' && isset($voucherInstance)) {
+                    UserVoucher::create([
+                        'user_id' => $user->id,
+                        'voucher_id' => $voucherInstance->id,
+                        'reward_redemption_id' => $createdRedemption->id,
+                        'status' => 'available', // Changed from 'active' to 'available'
+                    ]);
+                    $additionalMessage = "Voucher {$voucherInstance->reference_no} has been added to your account.";
+                }
 
-                // Set success message with any additional info
+
                 $successMessage = "Reward redeemed successfully!";
-                
-                // Add status-specific message
-                if ($status === RewardRedemption::STATUS_COMPLETED) {
-                    $successMessage .= " Your reward has been completed automatically.";
-                } else {
+                if ($redemptionStatus === RewardRedemption::STATUS_COMPLETED) {
+                    // $successMessage .= " Your reward has been processed."; // Generic completed
+                } elseif ($redemptionStatus === RewardRedemption::STATUS_PENDING) {
                     $successMessage .= " Your reward redemption is pending approval.";
                 }
                 
@@ -165,28 +200,24 @@ class RewardRedeemModal extends Component
                 
                 session()->flash('redeem_success', $successMessage);
                 
-                // If user leveled up, dispatch event to show the animation
                 if ($leveledUp) {
-                    $this->dispatch('level-up', [
-                        'level' => $newLevel,
-                        'title' => $newTitle
-                    ]);
+                    $this->dispatch('level-up', ['level' => $newLevel, 'title' => $newTitle]);
                 }
             });
 
-            // Close modal first before any other dispatches to ensure it closes
             $this->dispatch('close-modal', name: 'reward-redeem-modal');
-            
-            // Now that the modal is closing, dispatch other events
-            session()->flash('redeem_success', 'Reward redeemed successfully!');
-            $this->dispatch('rewardRedeemed');
-            
-            // Add new dispatch for confetti animation
-            $this->dispatch('reward-purchased');
+            $this->dispatch('rewardRedeemed'); // Refresh RewardIndex
+            $this->dispatch('reward-purchased'); // For confetti or other UI feedback
             
         } catch (\Exception $e) {
+            Log::error('Redemption Error: ' . $e->getMessage() . ' for user ' . Auth::id() . ' reward ' . $this->reward->id);
+            // Ensure redeemQuantity is reset if modal stays open or for next attempt
+            if ($this->reward && $this->reward->type === 'system') {
+                // $this->redeemQuantity = 1; // Reset for system rewards
+            }
             $this->dispatch('redemptionError', 'An error occurred: ' . $e->getMessage());
-            $this->dispatch('close-modal', name: 'reward-redeem-modal');
+            // Optionally keep modal open by not dispatching close-modal here if error is recoverable by user
+            // $this->dispatch('close-modal', name: 'reward-redeem-modal');
         }
     }
 

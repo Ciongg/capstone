@@ -110,6 +110,7 @@ class DatabaseSeeder extends Seeder
             SurveyTopicSeeder::class, // Run this first
             SurveySeeder::class,      // Then run SurveySeeder
             RewardSeeder::class,      // Add the RewardSeeder to be run
+            VoucherSeeder::class, // Add VoucherSeeder
         ]);
     }
 }

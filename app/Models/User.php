@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use App\Services\UserExperienceService;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
@@ -284,5 +286,20 @@ class User extends Authenticatable
         }
         
         return $this->is_active ? 'active' : 'inactive';
+    }
+
+    public function rewardRedemptions(): HasMany
+    {
+        return $this->hasMany(RewardRedemption::class);
+    }
+
+    public function userVouchers(): HasMany
+    {
+        return $this->hasMany(UserVoucher::class);
+    }
+
+    public function vouchers(): BelongsToMany
+    {
+        return $this->belongsToMany(Voucher::class, 'user_vouchers')->withTimestamps()->withPivot('status', 'used_at', 'reward_redemption_id');
     }
 }

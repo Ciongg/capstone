@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class RewardRedemption extends Model
 {
@@ -46,5 +47,13 @@ class RewardRedemption extends Model
     public function reward(): BelongsTo
     {
         return $this->belongsTo(Reward::class);
+    }
+
+    /**
+     * Get the user voucher associated with the redemption
+     */
+    public function userVoucher(): HasOne
+    {
+        return $this->hasOne(UserVoucher::class);
     }
 }
