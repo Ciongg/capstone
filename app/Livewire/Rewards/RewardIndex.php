@@ -16,22 +16,19 @@ class RewardIndex extends Component
     public function getSystemRewardsProperty()
     {
         return Reward::where('type', 'system')
-            ->where('status', 'available')
-            ->get();
+            ->get(); // Show all system rewards regardless of availability
     }
     
     public function getVoucherRewardsProperty()
     {
         return Reward::where('type', 'voucher')
-            ->where('status', 'available')
-            ->get();
+            ->get(); // Show all voucher rewards regardless of availability
     }
 
     public function getMonetaryRewardsProperty()
     {
         return Reward::where('type', 'monetary')
-            ->where('status', 'available')
-            ->get();
+            ->get(); // Show all monetary rewards regardless of availability
     }
 
     // Updated method for fetching selected reward

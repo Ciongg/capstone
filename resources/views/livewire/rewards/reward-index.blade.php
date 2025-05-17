@@ -3,60 +3,7 @@
     @include('livewire.rewards.partials.level-up-listener')
 
     <div class="mb-8">
-        @if(Auth::check())
-            <div class="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-md">
-                <div class="flex flex-wrap gap-2 items-center">
-                    <span class="text-sm font-semibold text-purple-800">Test Controls:</span>
-                    
-                    <!-- Add Points Buttons -->
-                    <button wire:click="addPoints(1)" class="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">
-                        +1
-                    </button>
-                    <button wire:click="addPoints(10)" class="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">
-                        +10
-                    </button>
-                    <button wire:click="addPoints(100)" class="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">
-                        +100
-                    </button>
-                    <button wire:click="addPoints(1000)" class="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">
-                        +1000
-                    </button>
-                    
-                    <!-- Subtract Points Buttons -->
-                    <button wire:click="subtractPoints(1)" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
-                        -1
-                    </button>
-                    <button wire:click="subtractPoints(10)" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
-                        -10
-                    </button>
-                    <button wire:click="subtractPoints(100)" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
-                        -100
-                    </button>
-                    <button wire:click="subtractPoints(1000)" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
-                        -1000
-                    </button>
-                </div>
-                
-                <!-- XP Test Controls -->
-                <div class="flex flex-wrap gap-2 items-center mt-2">
-                    <span class="text-sm font-semibold text-purple-800">XP Controls:</span>
-                    
-                    <button wire:click="levelUp" class="px-3 py-1 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600">
-                        Level Up
-                    </button>
-                    <button wire:click="resetLevel" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
-                        Reset Level
-                    </button>
-                </div>
-                
-                <!-- Success message -->
-                @if(session()->has('message'))
-                    <div class="mt-2 text-sm text-green-700">
-                        {{ session('message') }}
-                    </div>
-                @endif
-            </div>
-        @endif
+       
 
         {{-- Flash Messages for Redemption --}}
         @if(session()->has('redeem_success'))
@@ -73,12 +20,15 @@
 
     <!-- New Layout: User Stats and Points Display -->
     <div class="bg-white p-6"> 
+        {{-- Add the header text here --}}
+        <h1 class="text-4xl font-bold text-black text-center md:text-left mb-2">Redeem Rewards</h1>
+
         <div class="flex flex-col md:flex-row items-center md:items-start justify-between md:space-x-8">
             <!-- Left Side: Large Points Display -->
             <div class="flex flex-col justify-between md:items-start mb-6 md:mb-0 md:w-1/2 lg:w-2/3 min-h-[150px] md:min-h-[200px]">
                 <div> 
                     <div class="flex items-center">
-                        <span class="text-6xl font-bold text-[#FFB349]">{{ $userPoints }}</span>
+                        <span class="text-7xl font-bold text-[#FFB349]">{{ $userPoints }}</span>
                         <svg class="w-16 h-16 text-[#FFB349] ml-3" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M17.0898,8.9999 L17.7848,4.8299 L20.5658,8.9999 L17.0898,8.9999 Z M16.8358,9.9999 L20.4068,9.9999 L13.6208,17.8579 L16.8358,9.9999 Z M7.1638,9.9999 L10.3788,17.8579 L3.5918,9.9999 L7.1638,9.9999 Z M6.9098,8.9999 L3.4338,8.9999 L6.2148,4.8299 L6.9098,8.9999 Z M7.8008,8.2649 L7.0898,3.9999 L10.9998,3.9999 L7.8008,8.2649 Z M12.9998,3.9999 L16.9098,3.9999 L16.1988,8.2649 L12.9998,3.9999 Z M8.4998,8.9999 L11.9998,4.3329 L15.4998,8.9999 L8.4998,8.9999 Z M15.7548,9.9999 L11.9998,19.1799 L8.2448,9.9999 L15.7548,9.9999 Z M21.9158,9.2229 L17.9158,3.2229 C17.9148,3.2209 17.9118,3.2199 17.9108,3.2179 C17.8688,3.1569 17.8138,3.1069 17.7478,3.0699 C17.7288,3.0589 17.7078,3.0559 17.6888,3.0469 C17.6528,3.0329 17.6208,3.0129 17.5818,3.0069 C17.5658,3.0039 17.5498,3.0099 17.5328,3.0079 C17.5218,3.0079 17.5118,2.9999 17.4998,2.9999 L6.4998,2.9999 C6.4878,2.9999 6.4778,3.0079 6.4658,3.0079 C6.4498,3.0099 6.4348,3.0039 6.4178,3.0069 C6.3788,3.0129 6.3468,3.0329 6.3118,3.0469 C6.2918,3.0559 6.2708,3.0589 6.2528,3.0699 C6.1868,3.1069 6.1308,3.1569 6.0898,3.2179 C6.0878,3.2199 6.0858,3.2209 6.0838,3.2229 L2.0838,9.2229 C1.9598,9.4099 1.9748,9.6569 2.1218,9.8269 L11.6218,20.8269 C11.6428,20.8519 11.6718,20.8629 11.6968,20.8829 C11.7188,20.8999 11.7378,20.9189 11.7628,20.9319 C11.9118,21.0139 12.0878,21.0139 12.2368,20.9319 C12.2618,20.9189 12.2808,20.8999 12.3028,20.8829 C12.3278,20.8629 12.3568,20.8519 12.3788,20.8269 L21.8788,9.8269 C22.0258,9.6569 22.0408,9.4099 21.9158,9.2229 L21.9158,9.2229 Z"/>
                         </svg>
@@ -210,4 +160,61 @@
             </div>
         @endif
     </x-modal>
+
+
+
+     @if(Auth::check())
+            <div class="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-md">
+                <div class="flex flex-wrap gap-2 items-center">
+                    <span class="text-sm font-semibold text-purple-800">Test Controls:</span>
+                    
+                    <!-- Add Points Buttons -->
+                    <button wire:click="addPoints(1)" class="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">
+                        +1
+                    </button>
+                    <button wire:click="addPoints(10)" class="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">
+                        +10
+                    </button>
+                    <button wire:click="addPoints(100)" class="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">
+                        +100
+                    </button>
+                    <button wire:click="addPoints(1000)" class="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">
+                        +1000
+                    </button>
+                    
+                    <!-- Subtract Points Buttons -->
+                    <button wire:click="subtractPoints(1)" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
+                        -1
+                    </button>
+                    <button wire:click="subtractPoints(10)" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
+                        -10
+                    </button>
+                    <button wire:click="subtractPoints(100)" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
+                        -100
+                    </button>
+                    <button wire:click="subtractPoints(1000)" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
+                        -1000
+                    </button>
+                </div>
+                
+                <!-- XP Test Controls -->
+                <div class="flex flex-wrap gap-2 items-center mt-2">
+                    <span class="text-sm font-semibold text-purple-800">XP Controls:</span>
+                    
+                    <button wire:click="levelUp" class="px-3 py-1 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600">
+                        Level Up
+                    </button>
+                    <button wire:click="resetLevel" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
+                        Reset Level
+                    </button>
+                </div>
+                
+                <!-- Success message -->
+                @if(session()->has('message'))
+                    <div class="mt-2 text-sm text-green-700">
+                        {{ session('message') }}
+                    </div>
+                @endif
+            </div>
+        @endif
 </div>

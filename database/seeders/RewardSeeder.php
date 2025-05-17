@@ -16,9 +16,9 @@ class RewardSeeder extends Seeder
         $systemRewards = [
             [
                 'name' => 'Survey Boost',
-                'description' => 'Boost your survey to get more visibility in the feed for 3 days',
+                'description' => 'Allocate +5 more points to your survey to increase survey visiblity',
                 'status' => Reward::STATUS_AVAILABLE,
-                'cost' => 300,
+                'cost' => 500,
                 'quantity' => -1, // -1 means infinite
                 'type' => 'system',
                 'image_path' => null, // Changed
@@ -27,73 +27,43 @@ class RewardSeeder extends Seeder
                 'name' => 'Experience Level Increase',
                 'description' => 'Instantly gain 500 XP to level up faster',
                 'status' => Reward::STATUS_AVAILABLE,
-                'cost' => 200,
+                'cost' => 500,
                 'quantity' => -1, // -1 means infinite
                 'type' => 'system',
                 'image_path' => null, // Changed
             ],
-           
         ];
         
-        // Voucher rewards with limited quantity
-        $companies = ['Kape Kuripot', 'Chixsilog', 'Havens Brew', 'Potato Corner', 'Jollibee', 'McDo'];
-        $voucherTypes = [
-            'Buy 1 Take 1',
-            '50% Off Coupon',
-            '₱50 Gift Card',
-            '₱100 Gift Card',
-            '₱200 Gift Card',
-            '₱500 Gift Card',
-            'Free Item'
-        ];
-        
-        $voucherRewards = [];
-        
-        foreach ($companies as $index => $company) {
-            // Associate each company with 1-2 voucher types
-            $voucherType = $voucherTypes[$index % count($voucherTypes)];
-            
-            // Set different points based on the value
-            $pointCost = 0;
-            if (strpos($voucherType, '50 Gift') !== false) {
-                $pointCost = 100;
-            } elseif (strpos($voucherType, '100 Gift') !== false) {
-                $pointCost = 200;
-            } elseif (strpos($voucherType, '200 Gift') !== false) {
-                $pointCost = 300;
-            } elseif (strpos($voucherType, '500 Gift') !== false) {
-                $pointCost = 500;
-            } else {
-                // For non-specific amounts, assign a random point value
-                $pointCost = rand(1, 4) * 100; // 100, 200, 300, or 400
-            }
-            
-            $voucherRewards[] = [
-                'name' => "$company $voucherType",
-                'description' => "Redeem this voucher at any participating $company branch",
+        // Specific voucher rewards with fixed quantity and images
+        $voucherRewards = [
+            [
+                'name' => 'Buy 1 Take 1 Coffee',
+                'description' => 'Redeem this voucher for a Buy 1 Take 1 coffee at any participating Coffee Company branch',
                 'status' => Reward::STATUS_AVAILABLE,
-                'cost' => $pointCost,
-                'quantity' => rand(5, 20), // Limited quantity between 5-20
+                'cost' => 600,
+                'quantity' => 20, // Fixed quantity of 10
                 'type' => 'voucher',
-                'image_path' => null, // Placeholder images would be set in a real app
-            ];
-            
-            // Add a second voucher type for some companies
-            if ($index % 3 == 0) {
-                $secondType = $voucherTypes[($index + 4) % count($voucherTypes)];
-                $secondPointCost = rand(1, 5) * 100;
-                
-                $voucherRewards[] = [
-                    'name' => "$company $secondType",
-                    'description' => "Limited time offer from $company",
-                    'status' => Reward::STATUS_AVAILABLE,
-                    'cost' => $secondPointCost,
-                    'quantity' => rand(5, 20),
-                    'type' => 'voucher',
-                    'image_path' => null,
-                ];
-            }
-        }
+                'image_path' => 'voucher-images/Coffee.jpg', // Image path for Coffee Place
+            ],
+            [
+                'name' => '₱50 Gift Card',
+                'description' => 'Redeem this voucher for a ₱50 gift card at any Milk Tea Company branch',
+                'status' => Reward::STATUS_AVAILABLE,
+                'cost' => 750,
+                'quantity' => 15, // Fixed quantity of 10
+                'type' => 'voucher',
+                'image_path' => 'voucher-images/Milk-tea.jpg', // Image path for Milktea
+            ],
+            [
+                'name' => 'Buy 1 Take 1 Chicken Meal',
+                'description' => 'Redeem this voucher for a Buy 1 Take 1 chicken meal at any Chicken Company branch',
+                'status' => Reward::STATUS_AVAILABLE,
+                'cost' => 800,
+                'quantity' => 10, // Fixed quantity of 10
+                'type' => 'voucher',
+                'image_path' => 'voucher-images/Chicken.jpg', // Image path for Chicken Company
+            ],
+        ];
         
         // Add some monetary rewards
         $monetaryRewards = [
@@ -101,7 +71,7 @@ class RewardSeeder extends Seeder
                 'name' => '₱100 PayMaya Credit',
                 'description' => 'Get ₱100 credited to your PayMaya account',
                 'status' => Reward::STATUS_AVAILABLE,
-                'cost' => 200,
+                'cost' => 2000,
                 'quantity' => 10,
                 'type' => 'monetary',
                 'image_path' => null, // Changed
@@ -110,7 +80,7 @@ class RewardSeeder extends Seeder
                 'name' => '₱200 GCash Transfer',
                 'description' => 'Get ₱200 sent to your GCash account',
                 'status' => Reward::STATUS_AVAILABLE,
-                'cost' => 300,
+                'cost' => 3500,
                 'quantity' => 10,
                 'type' => 'monetary',
                 'image_path' => null, // Changed

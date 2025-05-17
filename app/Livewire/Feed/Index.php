@@ -42,7 +42,7 @@ class Index extends Component
     // For infinite scroll
     public $surveys = [];
     public $page = 1;
-    public $perPage = 6;
+    public $perPage = 6; // Ensure this is set to 6
     public $hasMorePages = false;
     public $loadingMore = false;
     
@@ -332,17 +332,48 @@ class Index extends Component
         }
     }
 
+    // Add this method to handle search updates
+    public function updatedSearch()
+    {
+        $this->isLoading = true;
+        $this->page = 1;
+        $this->loadSurveys();
+        
+        // If search is cleared and no other filters are active, reset everything
+        if (empty($this->search) && 
+            is_null($this->activeFilters['topic']) && 
+            empty($this->activeFilters['tags']) && 
+            empty($this->activeFilters['institutionTags']) &&
+            is_null($this->activeFilters['type']) &&
+            $this->activeFilters['institutionOnly'] === false) {
+            $this->resetFiltersWithSpaExperience();
+        }
+        
+        $this->dispatch('filter-changed');
+        $this->isLoading = false;
+    }
+
     // Clear search
     public function clearSearch()
     {
+        $this->isLoading = true;
         $this->search = '';
         
         // If no other filters remain, reset everything
-        if (is_null($this->activeFilters['topic']) && empty($this->activeFilters['tags'])) {
+        if (is_null($this->activeFilters['topic']) && 
+            empty($this->activeFilters['tags']) &&
+            empty($this->activeFilters['institutionTags']) &&
+            is_null($this->activeFilters['type']) &&
+            $this->activeFilters['institutionOnly'] === false) {
             $this->resetFiltersWithSpaExperience();
+        } else {
+            // Otherwise just reload surveys with remaining filters
+            $this->page = 1;
+            $this->loadSurveys();
+            $this->dispatch('filter-changed');
         }
-
         
+        $this->isLoading = false;
     }
 
     // Clear all filters

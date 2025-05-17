@@ -3,14 +3,26 @@
 <div class="max-w-7xl mx-auto " 
      x-data="{ 
          fullscreenImageSrc: null,
+         isFetchingMore: false, // Local flag to prevent multiple calls
          isScrolledToBottom() {
-             return (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500;
+             // Use document.documentElement.scrollHeight for total page height
+             // and window.pageYOffset for scroll position for better reliability.
+             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+             const windowHeight = window.innerHeight;
+             const fullHeight = document.documentElement.scrollHeight;
+             return (scrollTop + windowHeight) >= fullHeight - 100; // Trigger 100px from bottom
          }
      }"
      x-init="
         window.addEventListener('scroll', () => {
-            if (isScrolledToBottom() && !$wire.loadingMore && $wire.hasMorePages) {
-                $wire.loadMore();
+            // Check local flag, Livewire's loadingMore, and if there are more pages
+            if (isScrolledToBottom() && !isFetchingMore && !$wire.loadingMore && $wire.hasMorePages) {
+                isFetchingMore = true; // Set local flag to true before calling Livewire
+                $wire.loadMore().then(() => {
+                    isFetchingMore = false; // Reset local flag after Livewire action completes
+                }).catch(() => {
+                    isFetchingMore = false; // Also reset on error
+                });
             }
         });
      ">
@@ -66,13 +78,18 @@
                         @endforeach
                     </div>
                     
-                    {{-- Bottom loader for infinite scroll --}}
-                    @if($hasMorePages)
-                        <div class="flex justify-center mt-6 mb-4" wire:loading.delay wire:target="loadMore">
-                            <div class="bg-white px-4 py-3 rounded-lg shadow-sm border border-gray-100 flex items-center space-x-3">
-                                <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                                <p class="text-gray-500 text-sm">Loading more surveys...</p>
-                            </div>
+                    {{-- Bottom loader for infinite scroll - Controlled by Alpine's isFetchingMore flag --}}
+                    <div x-show="isFetchingMore" class="flex justify-center mt-6 mb-4">
+                        <div class="bg-white px-4 py-3 rounded-lg shadow-sm border border-gray-100 flex items-center space-x-3">
+                            <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                            <p class="text-gray-500 text-sm">Loading more surveys...</p>
+                        </div>
+                    </div>
+
+                    {{-- Condition for "End of results" - Show only if not fetching and no more pages --}}
+                    @if(!$hasMorePages && count($surveys) > 0)
+                        <div x-show="!isFetchingMore" class="text-center text-gray-500 py-8">
+                            <p>You've reached the end of the surveys!</p>
                         </div>
                     @endif
                 @else

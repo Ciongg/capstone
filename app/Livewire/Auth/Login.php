@@ -117,13 +117,14 @@ class Login extends Component
             ]);
         }
 
-        // Also check if the user is inactive (not archived but disabled)
+        // Get the authenticated user
         $user = Auth::user();
+        
+        // If the user was inactive, reactivate their account
         if (!$user->is_active) {
-            Auth::logout();
-            throw ValidationException::withMessages([
-                'email' => ['This account has been deactivated. Please contact the Formigo support team for assistance.'],
-            ]);
+            $user->is_active = true;
+            $user->save();
+            session()->flash('account-reactivated', 'Your account has been reactivated!');
         }
 
         session()->regenerate();

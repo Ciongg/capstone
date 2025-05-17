@@ -10,6 +10,18 @@
     
     <!-- Add Confetti.js for level-up animations -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    {{-- Scroll to top on page load/refresh --}}
+    <script>
+        if (history.scrollRestoration) {
+            history.scrollRestoration = 'manual';
+        } else {
+            window.onbeforeunload = function () {
+                window.scrollTo(0, 0);
+            }
+        }
+        window.scrollTo(0,0); // Fallback for some browsers
+    </script>
 </head>
 <body >
 
@@ -116,6 +128,11 @@
     <script>
         document.addEventListener('alpine:init', () => {
             // No longer need the store since everything is in one modal now
+        });
+
+        // Ensure scroll to top on initial load for all scenarios
+        window.addEventListener('load', () => {
+            window.scrollTo(0, 0);
         });
     </script>
 

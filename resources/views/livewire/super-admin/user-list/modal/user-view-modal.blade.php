@@ -122,7 +122,8 @@
                                 </span>
                             </button>
                             
-                            <!-- Archive Button (soft delete) -->
+                            <!-- Archive Button (soft delete) - Only visible for non-institution admins -->
+                            @if(auth()->user()->type !== 'institution_admin')
                             <button 
                                 type="button"
                                 wire:click.prevent="archiveUser"
@@ -141,6 +142,7 @@
                                     Archive User
                                 </span>
                             </button>
+                            @endif
                         @else
                             <!-- Restore Button (for archived users) -->
                             <button 

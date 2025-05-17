@@ -41,6 +41,9 @@
     
     <!-- Reward Info -->
     <div class="p-4 flex-grow">
+        @if($reward->type == 'voucher' && $reward->vouchers->isNotEmpty())
+            <div class="text-sm font-medium text-gray-500 mb-1">{{ $reward->vouchers->first()->store_name }}</div>
+        @endif
         <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ $reward->name }}</h3>
         
         <p class="text-sm text-gray-600 mb-3">{{ $reward->description }}</p>

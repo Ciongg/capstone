@@ -96,7 +96,10 @@ class Reward extends Model
         return $this->hasMany(RewardRedemption::class);
     }
 
-    public function vouchers(): HasMany
+    /**
+     * Get the vouchers associated with this reward.
+     */
+    public function vouchers()
     {
         return $this->hasMany(Voucher::class);
     }
