@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Livewire\SuperAdmin\UserList\Modal;
+namespace App\Livewire\InstitutionAdmin\UserList\Modal;
 
 use App\Models\User;
 use App\Models\Response;
 use App\Models\Survey;
 use App\Models\RewardRedemption;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -14,23 +13,14 @@ class UserViewModal extends Component
 {
     public $user = null;
     public $userId;
+    public $institutionId;
     public $activities = [];
     public $activitiesLoaded = false;
-    public $isInstitutionAdmin = false;
-    public $institutionId = null;
     
     public function mount($userId)
     {
         $this->userId = $userId;
-        
-        // Determine if the current user is an institution admin
-        $currentUser = Auth::user();
-        $this->isInstitutionAdmin = $currentUser->type === 'institution_admin';
-        
-        if ($this->isInstitutionAdmin) {
-            $this->institutionId = $currentUser->institution_id;
-        }
-        
+        $this->institutionId = Auth::user()->institution_id;
         $this->loadUser();
     }
     
@@ -40,16 +30,13 @@ class UserViewModal extends Component
             // Include trashed users so we can view archived users
             $user = User::withTrashed()->find($this->userId);
             
-            // If institution admin, ensure they can only view users from their institution
-            if ($this->isInstitutionAdmin && $this->institutionId) {
-                if (!$user || $user->institution_id !== $this->institutionId) {
-                    // User doesn't exist or doesn't belong to this institution
-                    session()->flash('error_message', 'You do not have permission to view this user.');
-                    return;
-                }
+            // Make sure the user belongs to the current admin's institution
+            if ($user && $user->institution_id === $this->institutionId) {
+                $this->user = $user;
+            } else {
+                // User not found or doesn't belong to this institution
+                $this->user = null;
             }
-            
-            $this->user = $user;
         }
     }
     
@@ -62,12 +49,6 @@ class UserViewModal extends Component
         // Don't allow deactivating your own account
         if ($this->user->id === auth()->id()) {
             session()->flash('modal_message', 'You cannot change your own account status.');
-            return;
-        }
-        
-        // Institution admins can't modify super_admin accounts
-        if ($this->isInstitutionAdmin && $this->user->type === 'super_admin') {
-            session()->flash('modal_message', 'You do not have permission to modify this user.');
             return;
         }
         
@@ -93,12 +74,6 @@ class UserViewModal extends Component
             return;
         }
         
-        // Institution admins can't modify super_admin accounts
-        if ($this->isInstitutionAdmin && $this->user->type === 'super_admin') {
-            session()->flash('modal_message', 'You do not have permission to modify this user.');
-            return;
-        }
-        
         $this->user->delete(); // Soft delete
         $this->user->refresh(); // Refresh the model to get the updated deleted_at timestamp
         
@@ -109,12 +84,6 @@ class UserViewModal extends Component
     public function restoreUser()
     {
         if (!$this->user || !$this->user->trashed()) {
-            return;
-        }
-        
-        // Institution admins can't modify super_admin accounts
-        if ($this->isInstitutionAdmin && $this->user->type === 'super_admin') {
-            session()->flash('modal_message', 'You do not have permission to modify this user.');
             return;
         }
         
@@ -141,7 +110,7 @@ class UserViewModal extends Component
                     'type' => 'survey_response',
                     'action' => 'Answered Survey',
                     'details' => $response->survey ? $response->survey->title : 'Unknown Survey',
-                    'created_at' => $response->created_at, // This is already a Carbon instance
+                    'created_at' => $response->created_at,
                 ];
             });
             
@@ -157,7 +126,7 @@ class UserViewModal extends Component
                     'details' => $redemption->reward ? 
                         "{$redemption->reward->name} ({$redemption->reward->type}) - {$redemption->points_spent} points" : 
                         "Unknown Reward - {$redemption->points_spent} points",
-                    'created_at' => $redemption->created_at, // This is already a Carbon instance
+                    'created_at' => $redemption->created_at,
                     'status' => $redemption->status,
                 ];
             });
@@ -171,7 +140,7 @@ class UserViewModal extends Component
                     'type' => 'survey_created',
                     'action' => 'Created Survey',
                     'details' => "{$survey->title} ({$survey->status})",
-                    'created_at' => $survey->created_at, // This is already a Carbon instance
+                    'created_at' => $survey->created_at,
                 ];
             });
             
@@ -187,6 +156,6 @@ class UserViewModal extends Component
     
     public function render()
     {
-        return view('livewire.super-admin.user-list.modal.user-view-modal');
+        return view('livewire.institution-admin.user-list.modal.user-view-modal');
     }
 }

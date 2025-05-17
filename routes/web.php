@@ -32,6 +32,7 @@ Route::middleware('auth')->group(function () {
     
     Route::get('/surveys/{survey}/preview', [SurveyController::class, 'showAnswerForm'])->name('surveys.preview')->defaults('isPreview', true);
     Route::get('/institution/analytics', [InstitutionAdminController::class, 'analyticsIndex'])->name('institution.analytics');
+    Route::get('/institution/users', [InstitutionAdminController::class, 'usersIndex'])->name('institution.users');
 });
 
 Route::get('/surveys/answer/{survey}', [SurveyController::class, 'showAnswerForm'])->name('surveys.answer');

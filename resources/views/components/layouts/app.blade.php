@@ -51,12 +51,12 @@
                                 x-data
                                 x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
                                 class="{{ request()->is('surveys/create*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline"
-                                >Create Institution Survey</button>
+                                >Create Survey</button>
                                 <a href="/institution/analytics"  class="{{ request()->is('institution/analytics') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Analytics</a>
                                 <a href="/institution/users" wire:navigate class="{{ request()->is('institution/users') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Users</a>
                             @else
                                 {{-- Disabled links when institution is invalid --}}
-                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Create Institution Survey</span>
+                                <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Create Survey</span>
                                 <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Analytics</span>
                                 <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Users</span>
                             @endif

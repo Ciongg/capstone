@@ -2,11 +2,22 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
-                <h2 class="text-2xl font-bold mb-4">User Management</h2>
+                <!-- Show different title based on admin type -->
+                @if($isInstitutionAdmin)
+                    <h2 class="text-2xl font-bold mb-4">{{ $institutionName }} - Users Management</h2>
+                @else
+                    <h2 class="text-2xl font-bold mb-4">User Management</h2>
+                @endif
                 
                 @if(session()->has('message'))
                     <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
                         <p>{{ session('message') }}</p>
+                    </div>
+                @endif
+
+                @if(session()->has('error'))
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+                        <p>{{ session('error') }}</p>
                     </div>
                 @endif
                 
@@ -41,7 +52,7 @@
                             </button>
                         </div>
                         
-                        <!-- Type Filter Buttons (renamed from Role) -->
+                        <!-- Type Filter Buttons - Hide super_admin button for institution admins -->
                         <div class="flex space-x-2">
                             <button wire:click="filterByType('all')" 
                                 class="px-4 py-2 text-sm rounded {{ $typeFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200' }}">
@@ -59,10 +70,14 @@
                                 class="px-4 py-2 text-sm rounded {{ $typeFilter === 'institution_admin' ? 'bg-indigo-600 text-white' : 'bg-gray-200' }}">
                                 Institution Admins
                             </button>
-                            <button wire:click="filterByType('super_admin')" 
-                                class="px-4 py-2 text-sm rounded {{ $typeFilter === 'super_admin' ? 'bg-pink-600 text-white' : 'bg-gray-200' }}">
-                                Super Admins
-                            </button>
+                            
+                            <!-- Only show super_admin filter for super admins -->
+                            @if(!$isInstitutionAdmin)
+                                <button wire:click="filterByType('super_admin')" 
+                                    class="px-4 py-2 text-sm rounded {{ $typeFilter === 'super_admin' ? 'bg-pink-600 text-white' : 'bg-gray-200' }}">
+                                    Super Admins
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
