@@ -46,19 +46,31 @@ class ShowRedeemVoucher extends Component
         }
     }
     
+    /**
+     * Simulate a scan of the QR code (for testing)
+     */
     public function simulateScan()
     {
-        // Test button action to change from active to used
-        if ($this->userVoucher && $this->userVoucher->status === UserVoucher::STATUS_ACTIVE) {
+        try {
+            // Get the voucher
             $this->userVoucher->markAsUsed();
-            $this->dispatch('redeemVoucher'); // Refresh parent voucher list
-            session()->flash('success', 'Voucher has been marked as used successfully.');
-        } else {
-            session()->flash('error', 'Voucher cannot be used at this time.');
+            
+            // IMPORTANT: Also update the parent voucher's availability
+            $voucher = $this->userVoucher->voucher;
+            $voucher->availability = 'used';
+            $voucher->save();
+            
+            session()->flash('success', 'Voucher successfully redeemed!');
+            
+            // Emit an event to refresh the parent component - with explicit naming
+            $this->dispatch('voucherRedeemed', $this->userVoucherId);
+            
+            // Refresh to show updated status
+            $this->loadUserVoucher();
+            
+        } catch (\Exception $e) {
+            session()->flash('error', 'Error redeeming voucher: ' . $e->getMessage());
         }
-        
-        // Reload the voucher data to see the updated status
-        $this->loadUserVoucher();
     }
     
     public function render()
