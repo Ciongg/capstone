@@ -146,7 +146,7 @@
                         </svg>
                     </button>
 
-                    <a href="/profile" wire:navigate class="flex items-center space-x-2 {{ request()->routeIs('profile.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">
+                    <a href="/profile" class="flex items-center space-x-2 {{ request()->routeIs('profile.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">
                         <span class="font-semibold mr-5">{{ Auth::user()->name }}</span>
                         <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" class="w-10 h-10 rounded-full object-cover border border-gray-400">
                     </a>

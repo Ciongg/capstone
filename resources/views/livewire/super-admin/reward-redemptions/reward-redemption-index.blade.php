@@ -41,7 +41,7 @@
                         <div x-show="tab === 'redemptions'" x-cloak>
                             <!-- Status explanation notice -->
                             <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
-                                <p><strong>Note:</strong> System and voucher rewards are automatically marked as completed. Only monetary rewards require admin approval.</p>
+                                <p><strong>Note:</strong> System and voucher rewards are automatically marked as completed.</p>
                             </div>
                             
                             <!-- Status Filter Buttons -->

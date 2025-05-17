@@ -278,6 +278,12 @@ class AnswerSurvey extends Component
 
             DB::transaction(function () {
                 $user = Auth::user();
+                
+                // Check if survey status is 'published' and update to 'ongoing' when first response is submitted
+                if ($this->survey->status === 'published') {
+                    $this->survey->status = 'ongoing';
+                    $this->survey->save();
+                }
 
                 $response = Response::create([
                     'survey_id' => $this->survey->id,

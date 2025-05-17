@@ -1,6 +1,6 @@
 <div class="bg-gray-100 min-h-screen py-8">
     <div class="max-w-7xl mx-auto relative">
-        {{-- Translate button in top right --}}
+     
         
 
         {{-- Back Button (Only in Preview Mode) --}}
@@ -13,8 +13,8 @@
                 @php $questionNumber = 1; @endphp
                 @foreach($survey->pages as $pageIndex => $page)
                 <div @if($pageIndex !== $currentPage) style="display:none" @endif>
-                    {{-- Page Header --}}
-                    @include('livewire.surveys.answer-survey.partials.page-header', ['page' => $page])
+                    {{-- Page Header - pass isPreview flag --}}
+                    @include('livewire.surveys.answer-survey.partials.page-header', ['page' => $page, 'isPreview' => $isPreview ?? false])
                         
                         
                         @foreach($page->questions->sortBy('order') as $question)

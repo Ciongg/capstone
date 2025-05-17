@@ -25,6 +25,7 @@ class AnalyticsIndex extends Component
     public $responseRate;
     public $selectedYear;
     public $availableYears = [];
+    public $totalResponses; // Add this line
 
     public function mount()
     {
@@ -89,6 +90,9 @@ class AnalyticsIndex extends Component
         
         // Get top researchers by number of surveys
         $this->topResearchers = $this->getTopResearchers();
+        
+        // Calculate total responses across all surveys
+        $this->totalResponses = $this->getTotalResponses();
         
         // Calculate average response rate
         $this->responseRate = $this->calculateResponseRate();
@@ -241,6 +245,21 @@ class AnalyticsIndex extends Component
         return $totalTargetRespondents > 0 
             ? round(($totalResponses / $totalTargetRespondents) * 100, 1) 
             : 0;
+    }
+
+    // Add this new method to calculate total responses
+    private function getTotalResponses()
+    {
+        $institutionSurveys = Survey::whereHas('user', function($query) {
+            $query->where('institution_id', $this->institution->id);
+        })->get();
+        
+        $responseCount = 0;
+        foreach ($institutionSurveys as $survey) {
+            $responseCount += $survey->responses()->count();
+        }
+        
+        return $responseCount;
     }
 
     public function render()

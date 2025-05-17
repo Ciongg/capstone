@@ -67,8 +67,8 @@ class SetInstitutionDemographic extends Component
             'message' => 'Demographic category added successfully!'
         ]);
 
-        // Then reset form fields in Livewire
-        $this->newCategoryName = '';
+        // Reset form fields - set to empty values first
+        $this->reset(['newCategoryName']);
         $this->newTagNames = [''];
         
         // Dispatch a custom event for JavaScript to handle the form reset

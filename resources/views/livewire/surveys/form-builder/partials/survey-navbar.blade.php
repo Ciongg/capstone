@@ -7,7 +7,7 @@
             wire:blur="updateSurveyTitle"
             class="text-xl font-bold border-b border-gray-300 focus:border-blue-500 outline-none bg-transparent py-1"
             style="min-width: 200px;"
-            @if($survey->is_locked) readonly @endif
+            @if($survey->is_locked || $survey->status === 'ongoing') readonly @endif
         />
         <span class="text-gray-500 italic text-sm">Survey Title</span>
     </div>
@@ -29,15 +29,27 @@
                 Status: {{ ucfirst($survey->status) }}
             </span>
             {{-- Publish/Unpublish Buttons - disabled when locked --}}
-            @if($survey->status === 'published' || $survey->status === 'ongoing')
-                <button
-                    wire:click="unpublishSurvey"
-                    class="inline-flex items-center h-9 px-4 py-1.5 bg-yellow-500 text-white text-sm font-medium rounded hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-                    @if($survey->is_locked) disabled @endif
+            @if($survey->status === 'published')
+                {{-- Show unpublish button only if survey is not yet ongoing (no responses yet) --}}
+                @if($survey->status !== 'ongoing')
+                    <button
+                        wire:click="unpublishSurvey"
+                        class="inline-flex items-center h-9 px-4 py-1.5 bg-yellow-500 text-white text-sm font-medium rounded hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                        @if($survey->is_locked) disabled @endif
+                    >
+                        Unpublish
+                    </button>
+                @endif
+                <a href="{{ route('surveys.preview', $survey->id) }}" wire:navigate
+                class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center"
                 >
-                    Unpublish
-                </button>
-            @else
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                    Preview
+                </a>
+            @elseif($survey->status === 'pending')
                 <button
                     wire:click="publishSurvey"
                     class="inline-flex items-center h-9 px-4 py-1.5 bg-green-500 text-white text-sm font-medium rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -45,19 +57,28 @@
                 >
                     Publish
                 </button>
+                <a href="{{ route('surveys.preview', $survey->id) }}" wire:navigate
+                class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                    Preview
+                </a>
+            @elseif($survey->status === 'ongoing')
+                {{-- Don't show unpublish button for ongoing surveys --}}
+                <a href="{{ route('surveys.preview', $survey->id) }}" wire:navigate
+                class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                    Preview
+                </a>
             @endif
             
-            {{-- Preview Button - still accessible when locked --}}
-            <a href="{{ route('surveys.preview', $survey->id) }}" wire:navigate
-            class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                </svg>
-                Preview
-            </a>
-
             {{-- View Responses Button - still accessible when locked --}}
             @if($hasResponses)
             <a href="{{ route('surveys.responses', $survey->id) }}"
@@ -71,31 +92,36 @@
             @endif
 
 
-            {{-- Delete All Button - disabled when locked --}}
-           <button
-            wire:click="deleteAll"
-            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center"
-            title="Delete All Questions and Pages"
-            @if($survey->is_locked) disabled @endif
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-            </svg>
-            Delete All
-            </button>
+            {{-- Delete All Button - Only show when NOT ongoing --}}
+            @if($survey->status !== 'ongoing')
+                <button
+                    wire:click="deleteAll"
+                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center"
+                    title="Delete All Questions and Pages"
+                    @if($survey->is_locked) disabled @endif
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                    Delete All
+                </button>
+            @endif
 
-            {{-- Survey Settings Button (Icon) - settings modal might be viewable but not editable when locked --}}
-            <button
-                x-data
-                x-on:click="$dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'})"
-                class="flex items-center justify-center h-9 w-9 px-2 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                title="Survey Settings"
-            >
-                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.646.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 1.255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.333.184-.583.496-.646.87l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.646-.87-.074-.04-.147-.083-.22-.127-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.759 6.759 0 0 1 0-1.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.298-2.247a1.125 1.125 0 0 1 1.37-.491l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.184.582-.496.646-.87l.213-1.281Z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                </svg>
-            </button>
+            {{-- Survey Settings Button - Only show when NOT ongoing --}}
+            @if($survey->status !== 'ongoing')
+                <button
+                    x-data
+                    x-on:click="$dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'})"
+                    class="flex items-center justify-center h-9 w-9 px-2 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    title="Survey Settings"
+                    @if($survey->is_locked) disabled @endif
+                >
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.646.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 1.255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.333.184-.583.496-.646.87l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.646-.87-.074-.04-.147-.083-.22-.127-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.759 6.759 0 0 1 0-1.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.298-2.247a1.125 1.125 0 0 1 1.37-.491l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.184.582-.496.646-.87l.213-1.281Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                </button>
+            @endif
         </div>
 
         {{-- Hamburger Menu Button (visible below large screens) --}}
@@ -141,15 +167,18 @@
                 @endif
 
                 {{-- Publish/Unpublish Buttons - disabled when locked --}}
-                @if($survey->status === 'published' || $survey->status === 'ongoing')
-                    <button
-                        wire:click="unpublishSurvey" @click="open = false"
-                        class="w-full text-left block px-4 py-2 text-sm text-yellow-700 hover:bg-gray-100 hover:text-yellow-900" role="menuitem"
-                        @if($survey->is_locked) disabled @endif
-                    >
-                        Unpublish
-                    </button>
-                @else
+                @if($survey->status === 'published')
+                    {{-- Show unpublish button only if survey is not yet ongoing (no responses yet) --}}
+                    @if($survey->status !== 'ongoing')
+                        <button
+                            wire:click="unpublishSurvey" @click="open = false"
+                            class="w-full text-left block px-4 py-2 text-sm text-yellow-700 hover:bg-gray-100 hover:text-yellow-900" role="menuitem"
+                            @if($survey->is_locked) disabled @endif
+                        >
+                            Unpublish
+                        </button>
+                    @endif
+                @elseif($survey->status === 'pending')
                     <button
                         wire:click="publishSurvey" @click="open = false"
                         class="w-full text-left block px-4 py-2 text-sm text-green-700 hover:bg-gray-100 hover:text-green-900" role="menuitem"
@@ -159,30 +188,35 @@
                     </button>
                 @endif
 
-                {{-- Delete All Button - disabled when locked --}}
-                <button
-                    wire:click="deleteAll" @click="open = false"
-                    class="w-full text-left block px-4 py-2 text-sm text-red-700 hover:bg-gray-100 hover:text-red-900" role="menuitem"
-                    title="Delete All Questions and Pages"
-                    @if($survey->is_locked) disabled @endif
-                >
-                    Delete All
-                </button>
+                {{-- Delete All Button - Only show when NOT ongoing --}}
+                @if($survey->status !== 'ongoing')
+                    <button
+                        wire:click="deleteAll" @click="open = false"
+                        class="w-full text-left block px-4 py-2 text-sm text-red-700 hover:bg-gray-100 hover:text-red-900" role="menuitem"
+                        title="Delete All Questions and Pages"
+                        @if($survey->is_locked) disabled @endif
+                    >
+                        Delete All
+                    </button>
+                @endif
 
-                {{-- Survey Settings Button - MOVED TO END --}}
-                 <button
-                    x-data
-                    x-on:click="$dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'}); open = false;"
-                    class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                    role="menuitem"
-                    title="Survey Settings"
-                >
-                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.646.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 1.255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.333.184-.583.496-.646.87l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.646-.87-.074-.04-.147-.083-.22-.127-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.759 6.759 0 0 1 0-1.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.298-2.247a1.125 1.125 0 0 1 1.37-.491l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.184.582-.496.646-.87l.213-1.281Z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                    </svg>
-                    Settings
-                </button>
+                {{-- Survey Settings Button - Only show when NOT ongoing --}}
+                @if($survey->status !== 'ongoing')
+                    <button
+                        x-data
+                        x-on:click="$dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'}); open = false;"
+                        class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                        role="menuitem"
+                        title="Survey Settings"
+                        @if($survey->is_locked) disabled @endif
+                    >
+                        <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.646.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 1.255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.333.184-.583.496-.646.87l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.646-.87-.074-.04-.147-.083-.22-.127-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.759 6.759 0 0 1 0-1.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.298-2.247a1.125 1.125 0 0 1 1.37-.491l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.184.582-.496.646-.87l.213-1.281Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                        Settings
+                    </button>
+                @endif
             </div>
         </div>
     </div>

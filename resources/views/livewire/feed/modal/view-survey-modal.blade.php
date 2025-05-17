@@ -55,8 +55,11 @@
                 // Get the IDs of the tags associated with the currently logged-in user
                 // Ensure user is logged in and tags relationship is loaded or accessible
                 $userTagIds = auth()->check() ? auth()->user()->tags()->pluck('tags.id')->toArray() : [];
+                // Get institution tag IDs for the user
+                $userInstitutionTagIds = auth()->check() ? auth()->user()->institutionTags()->pluck('institution_tags.id')->toArray() : [];
             @endphp
 
+            {{-- Regular Tags --}}
             @forelse ($survey->tags->take(5) as $tag)
                 @php
                     // Check if the current survey tag ID exists in the user's tag IDs
@@ -71,8 +74,26 @@
                     {{ $tag->name }}
                  </span>
             @empty
-                 <span class="text-xs text-gray-400 italic">No tags specified</span>
+                @if($survey->institutionTags->isEmpty())
+                    <span class="text-xs text-gray-400 italic">No tags specified</span>
+                @endif
             @endforelse
+
+            {{-- Institution Tags - updated to match regular tags design exactly --}}
+            @foreach ($survey->institutionTags as $tag)
+                @php
+                    // Check if the current institution tag ID exists in the user's institution tag IDs
+                    $matchesUserInstitutionTag = in_array($tag->id, $userInstitutionTagIds);
+                @endphp
+                 {{-- Match the style of regular tags exactly --}}
+                 <span @class([
+                    'px-3 py-1 text-xs font-medium rounded-full',
+                    'bg-green-200 text-green-800' => $matchesUserInstitutionTag, // Green if matches
+                    'bg-gray-200 text-gray-700' => !$matchesUserInstitutionTag, // Gray if not
+                 ])>
+                    {{ $tag->name }}
+                 </span>
+            @endforeach
         </div>
 
         <!-- Middle 2: Title & Description -->

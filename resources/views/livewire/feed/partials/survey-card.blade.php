@@ -38,6 +38,12 @@
     {{-- Tags Section --}}
     <div class="w-full px-4 mb-3 flex-shrink-0">
         <div class="flex flex-wrap gap-2 justify-center min-h-[36px] items-center">
+            @php
+                // Get the user's tag IDs to check for matches
+                $userTagIds = auth()->check() ? auth()->user()->tags()->pluck('tags.id')->toArray() : [];
+                $userInstitutionTagIds = auth()->check() ? auth()->user()->institutionTags()->pluck('institution_tags.id')->toArray() : [];
+            @endphp
+            
             @if($survey->is_institution_only)
                 {{-- Show institution tags for institution-only surveys --}}
                 @if($survey->institutionTags->isEmpty())
@@ -45,21 +51,28 @@
                     <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
                     <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
                 @else
-                    @php $tagsToShow = $survey->institutionTags->take(3); @endphp
-                    @foreach($tagsToShow as $tag)
-                        <button
-                            wire:click="filterByTag({{ $tag->id }}, true)"
+                    @php 
+                        // Sort tags - matching tags first
+                        $institutionTags = $survey->institutionTags->sortByDesc(function($tag) use ($userInstitutionTagIds) {
+                            return in_array($tag->id, $userInstitutionTagIds) ? 1 : 0;
+                        })->take(3); 
+                    @endphp
+                    
+                    @foreach($institutionTags as $tag)
+                        @php
+                            $matchesUserTag = in_array($tag->id, $userInstitutionTagIds);
+                        @endphp
+                        <span
                             wire:key="survey-{{ $survey->id }}-inst-tag-{{ $tag->id }}"
-                            wire:loading.attr="disabled"
-                            wire:loading.class="opacity-50"
-                            class="px-3 py-2 text-xs font-semibold rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis transition-all
-                                {{ in_array($tag->id, $activeFilters['institutionTags']) ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200' }}"
+                            class="px-3 py-2 text-xs font-semibold rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis
+                                {{ $matchesUserTag ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-800' }}"
                         >
                             {{ $tag->name }}
-                        </button>
+                        </span>
                     @endforeach
-                    @if($tagsToShow->count() < 3)
-                        @for($i = $tagsToShow->count(); $i < 3; $i++)
+                    
+                    @if($institutionTags->count() < 3)
+                        @for($i = $institutionTags->count(); $i < 3; $i++)
                             <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
                         @endfor
                     @endif
@@ -71,21 +84,28 @@
                     <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
                     <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
                 @else
-                    @php $tagsToShow = $survey->tags->take(3); @endphp
-                    @foreach($tagsToShow as $tag)
-                        <button
-                            wire:click="filterByTag({{ $tag->id }})"
+                    @php 
+                        // Sort tags - matching tags first
+                        $regularTags = $survey->tags->sortByDesc(function($tag) use ($userTagIds) {
+                            return in_array($tag->id, $userTagIds) ? 1 : 0;
+                        })->take(3); 
+                    @endphp
+                    
+                    @foreach($regularTags as $tag)
+                        @php
+                            $matchesUserTag = in_array($tag->id, $userTagIds);
+                        @endphp
+                        <span
                             wire:key="survey-{{ $survey->id }}-tag-{{ $tag->id }}"
-                            wire:loading.attr="disabled"
-                            wire:loading.class="opacity-50"
-                            class="px-3 py-2 text-xs font-semibold rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis transition-all
-                                {{ in_array($tag->id, $activeFilters['tags']) ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200' }}"
+                            class="px-3 py-2 text-xs font-semibold rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis
+                                {{ $matchesUserTag ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-800' }}"
                         >
                             {{ $tag->name }}
-                        </button>
+                        </span>
                     @endforeach
-                    @if($tagsToShow->count() < 3)
-                        @for($i = $tagsToShow->count(); $i < 3; $i++)
+                    
+                    @if($regularTags->count() < 3)
+                        @for($i = $regularTags->count(); $i < 3; $i++)
                             <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
                         @endfor
                     @endif

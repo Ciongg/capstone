@@ -181,22 +181,25 @@
     document.addEventListener('livewire:initialized', () => {
         // Listen for the custom form-reset event
         @this.on('form-reset', () => {
-            // Force reset the category name input
-            document.getElementById('newCategoryName').value = '';
-            
-            // Force reset all tag inputs
-            const tagInputs = document.querySelectorAll('input[wire\\:model^="newTagNames."]');
-            tagInputs.forEach(input => {
-                input.value = '';
-            });
-            
-            // Dispatch input events to ensure Livewire picks up the changes
+            // Use setTimeout to allow Livewire's current DOM update cycle to complete.
+            // This helps ensure our manual changes aren't immediately overwritten.
             setTimeout(() => {
-                document.getElementById('newCategoryName').dispatchEvent(new Event('input'));
+                // Reset the category name input
+                const categoryInput = document.getElementById('newCategoryName');
+                if (categoryInput) {
+                    categoryInput.value = ''; // Manually clear the visual value
+                    // Notify Livewire about the change
+                    categoryInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                
+                // Reset all tag inputs. After reset, newTagNames is [''], so there should be one input.
+                const tagInputs = document.querySelectorAll('input[wire\\:model^="newTagNames."]');
                 tagInputs.forEach(input => {
-                    input.dispatchEvent(new Event('input'));
+                    input.value = ''; // Manually clear the visual value
+                    // Notify Livewire about the change
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
                 });
-            }, 10);
+            }, 50); // A small delay like 50ms is often sufficient.
         });
     });
 </script>

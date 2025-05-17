@@ -105,32 +105,41 @@
         </div>
     @endif
 
-    <!-- Wrapper for all interactive elements - disabled when survey is locked -->
+    <!-- Sticky Survey Navbar - Always accessible -->
+    @include('livewire.surveys.form-builder.partials.survey-navbar')
+
+    <!-- Modal -->
+    <x-modal name="survey-settings-modal-{{ $survey->id }}" title="Survey Settings">
+        {{-- Add a wire:key that changes when the survey is updated --}}
+        <livewire:surveys.form-builder.modal.survey-settings-modal 
+            :survey="$survey" 
+            :key="'settings-modal-' . $survey->id . '-' . $survey->updated_at->timestamp" 
+        />
+    </x-modal>
+
+    <!-- Wrapper for survey content - disabled when survey is locked or ongoing -->
     <div @class([
         'relative', // Always relative
-        'opacity-50 pointer-events-none select-none' => $survey->is_locked, // Disabled when locked
+        'opacity-50 pointer-events-none select-none' => $survey->is_locked || $survey->status === 'ongoing', // Disabled when locked or ongoing
     ])>
         @if($survey->is_locked)
-            <!-- Overlay message explaining the form is locked -->
+            <!-- Overlay message for locked surveys -->
             <div class="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
                 <div class="bg-white/80 p-6 rounded-lg shadow-lg border-2 border-red-300 max-w-lg text-center">
                     <h3 class="text-xl font-bold text-red-600">Survey Locked</h3>
                     <p class="mt-2 text-gray-700">This survey has been locked by an administrator and cannot be edited.</p>
                 </div>
             </div>
+        @elseif($survey->status === 'ongoing')
+            <!-- Overlay message for ongoing surveys -->
+            <div class="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+                <div class="bg-white/80 p-6 rounded-lg shadow-lg border-2 border-amber-300 max-w-lg text-center">
+                    <h3 class="text-xl font-bold text-amber-600">Survey Ongoing</h3>
+                    <p class="mt-2 text-gray-700">This survey has received responses and cannot be edited.</p>
+                    <p class="mt-1 text-sm text-gray-600">View responses using the buttons in the navbar above.</p>
+                </div>
+            </div>
         @endif
-
-        <!-- Sticky Survey Navbar -->
-        @include('livewire.surveys.form-builder.partials.survey-navbar')
-
-        <!-- Modal -->
-        <x-modal name="survey-settings-modal-{{ $survey->id }}" title="Survey Settings">
-            {{-- Add a wire:key that changes when the survey is updated --}}
-            <livewire:surveys.form-builder.modal.survey-settings-modal 
-                :survey="$survey" 
-                :key="'settings-modal-' . $survey->id . '-' . $survey->updated_at->timestamp" 
-            />
-        </x-modal>
 
         <div class="space-y-6">
             <!-- Sticky Page Selector Container -->

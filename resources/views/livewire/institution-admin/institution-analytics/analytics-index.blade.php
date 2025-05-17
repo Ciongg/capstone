@@ -21,9 +21,9 @@
             </div>
             
             <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-2">Average Response Rate</h2>
-                <p class="text-3xl">{{ $responseRate }}%</p>
-                <p class="text-gray-500 text-sm mt-2">Based on target respondents</p>
+                <h2 class="text-lg font-semibold mb-2">Total Responses</h2>
+                <p class="text-3xl">{{ $totalResponses }}</p>
+                <p class="text-gray-500 text-sm mt-2">Collected across all surveys</p>
             </div>
             
             <div class="bg-white rounded-lg shadow p-6">
