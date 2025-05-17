@@ -66,7 +66,15 @@
 
                 {{-- User Info (to the right of profile picture) --}}
                 <div class="md:ml-6 mt-4 md:mt-0 md:pt-5 text-center md:text-left flex-1">
-                    <div class="text-3xl font-bold">{{ $user?->name ?? 'Unknown User' }}</div>
+                    <div class="flex justify-between items-center"> {{-- Flex container for name and logout button --}}
+                        <div class="text-3xl font-bold">{{ $user?->name ?? 'Unknown User' }}</div>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
+                                Logout
+                            </button>
+                        </form>
+                    </div>
                     
                     {{-- Institution, Role, Trust Score in a column --}}
                     <div class="flex flex-col mt-2 text-gray-600">

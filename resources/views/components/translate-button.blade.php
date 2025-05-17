@@ -26,10 +26,14 @@
     >
         <div class="py-1">
             <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">English</a>
-            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">Spanish</a>
-            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">French</a>
-            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">German</a>
-            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">Chinese</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">Filipino</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">Simplified Chinese</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">Traditional Chinese</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">Arabic</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">Japanese</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">Vietnamese</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">Thai</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click.prevent="showLanguages = false">Malay</a>
         </div>
     </div>
 </div>
