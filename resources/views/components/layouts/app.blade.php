@@ -68,7 +68,7 @@
                             <a href="/admin/surveys" wire:navigate class="{{ request()->routeIs('surveys.index') && request()->is('admin/surveys*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Manage Surveys</a>
                             <a href="/admin/reward-redemptions" wire:navigate class="{{ request()->routeIs('reward-redemptions.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Manage Rewards</a>
                             <a href="/admin/users" wire:navigate class="{{ request()->routeIs('users.index') && request()->is('admin/users*') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Manage Users</a>
-                            <a href="/admin/reports" wire:navigate class="{{ request()->is('admin/reports') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Manage Reports</a>
+                            <a href="/admin/reports" wire:navigate class="{{ request()->is('admin/reports') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Manage Support Request</a>
                         @else
                             {{-- Default for other authenticated users (e.g., 'respondent') --}}
                             <a href="/feed" wire:navigate class="{{ request()->routeIs('feed.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Feed</a>
@@ -105,6 +105,11 @@
     <!-- Survey Creation Modal -->
     <x-modal name="select-survey-type" title="Create Survey">
         <livewire:surveys.form-builder.modal.survey-type-modal />
+    </x-modal>
+
+    {{-- Support Request Modal --}}
+    <x-modal name="support-request-modal" title="Support Request">
+        <livewire:support-requests.create-support-request-modal />
     </x-modal>
 
     <!-- Script to handle data passing between modals -->

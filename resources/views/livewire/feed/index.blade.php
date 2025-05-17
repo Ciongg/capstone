@@ -32,6 +32,9 @@
     {{-- Search bar and points display --}}
     @include('livewire.feed.partials.search-bar')
 
+    {{-- Add the support-request modal --}}
+    
+
     {{-- Applied filters display --}}
     @include('livewire.feed.partials.applied-filters')
 

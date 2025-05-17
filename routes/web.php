@@ -45,6 +45,7 @@ Route::get('/surveys/{survey}/responses/individual', [SurveyController::class, '
 Route::get('/admin/reward-redemptions', [SuperAdminController::class, 'rewardIndex'])->name('reward-redemptions.index');
 Route::get('/admin/users', [SuperAdminController::class, 'userIndex'])->name('users.index');
 Route::get('/admin/surveys', [SuperAdminController::class, 'surveysIndex'])->name('surveys.index');
+Route::get('/admin/reports', [SuperAdminController::class, 'supportRequestsIndex'])->name('support-requests.index'); // New route for support requests
 Route::get('/admin/users/{user}/profile', [SuperAdminController::class, 'userProfile'])->name('users.profile')->withTrashed();
 Route::put('/admin/users/{user}/toggle-status', [SuperAdminController::class, 'toggleUserStatus'])->name('users.toggle-status');
 Route::delete('/admin/users/{user}/archive', [SuperAdminController::class, 'archiveUser'])->name('users.archive');

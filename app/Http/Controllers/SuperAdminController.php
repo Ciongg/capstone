@@ -102,4 +102,14 @@ class SuperAdminController extends Controller
     {
         return view('super-admin.show-user-surveys');
     }
+
+    /**
+     * Display the support requests index page.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function supportRequestsIndex()
+    {
+        return view('super-admin.support-requests.index');
+    }
 }
