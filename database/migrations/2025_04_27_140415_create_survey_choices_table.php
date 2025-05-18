@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('survey_question_id')->constrained()->onDelete('cascade');
             $table->string('choice_text');
-            $table->boolean('is_other')->default(false)->after('order'); // Add the column
+            $table->boolean('is_other')->default(false); 
             $table->integer('order')->default(1);
             $table->timestamps();
         });

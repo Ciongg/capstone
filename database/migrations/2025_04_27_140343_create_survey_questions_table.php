@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('survey_id')->constrained()->onDelete('cascade');
             $table->foreignId('survey_page_id')->constrained()->onDelete('cascade');
-            $table->string('limit_condition')->nullable()->after('survey_page_id'); // Add: 'at_most', 'equal_to', or null
-            $table->integer('max_answers')->nullable()->after('limit_condition');
+            $table->string('limit_condition')->nullable(); // Add: 'at_most', 'equal_to', or null
+            $table->integer('max_answers')->nullable();
             $table->text('question_text');
             $table->enum('question_type', [
                 'essay', 'multiple_choice', 'page', 'date', 

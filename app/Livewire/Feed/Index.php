@@ -12,6 +12,14 @@ use Illuminate\Support\Facades\Log;
 
 class Index extends Component
 {
+
+
+
+
+
+
+    //code for filtering openable filtering system 
+
     // Basic search property remains the same
     public $search = '';
     
@@ -274,6 +282,57 @@ class Index extends Component
             }
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // Quick tag filter from survey cards - Modified to handle institution tags
     public function filterByTag($tagId, $isInstitutionTag = false)

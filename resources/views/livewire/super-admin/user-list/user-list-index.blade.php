@@ -60,7 +60,7 @@
                             </button>
                             <button wire:click="filterByType('respondent')" 
                                 class="px-4 py-2 text-sm rounded {{ $typeFilter === 'respondent' ? 'bg-purple-600 text-white' : 'bg-gray-200' }}">
-                                Users
+                                Respondents
                             </button>
                             <button wire:click="filterByType('researcher')" 
                                 class="px-4 py-2 text-sm rounded {{ $typeFilter === 'researcher' ? 'bg-yellow-600 text-white' : 'bg-gray-200' }}">

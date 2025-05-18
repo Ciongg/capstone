@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('institution_tag_id')->constrained()->onDelete('cascade');
-            $table->string('tag_name'); // Denormalized for quick access
+            $table->string('tag_name'); // for quick access
             $table->timestamps();
         });
     }

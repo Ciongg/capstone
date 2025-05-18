@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('tags', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tag_category_id')->constrained()->onDelete('cascade');
-            $table->string('name'); // e.g., "18–24 years old"
+            $table->string('name'); 
             $table->timestamps();
         });
     }

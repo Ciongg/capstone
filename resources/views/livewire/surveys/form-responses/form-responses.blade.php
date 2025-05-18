@@ -1,4 +1,4 @@
-{{-- filepath: resources/views/livewire/surveys/form-responses/form-responses.blade.php --}}
+
 <div class="bg-gray-100 min-h-screen py-8">
     <div class="max-w-7xl mx-auto space-y-10 px-4">
 

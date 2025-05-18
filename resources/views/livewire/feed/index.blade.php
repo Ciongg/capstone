@@ -1,5 +1,4 @@
-{{-- filepath: c:\Users\sharp\OneDrive\Desktop\Formigo\formigo\resources\views\livewire\feed\index.blade.php --}}
-{{-- Keep Alpine for non-filter UI like fullscreenImageSrc, notifications, top bar, filters, etc. --}}
+
 <div class="max-w-7xl mx-auto " 
      x-data="{ 
          fullscreenImageSrc: null,

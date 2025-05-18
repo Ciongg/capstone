@@ -9,47 +9,55 @@ class ViewSurveyModal extends Component
 {
     public $survey;
 
+  
+
     public function mount($survey)
     {
         $this->survey = $survey;
-        
-        // Handle locked status for modal if not already set
-        if (!isset($survey->is_demographic_locked) || !isset($survey->is_institution_locked)) {
-            $user = Auth::user();
-            $userInstitutionId = $user ? $user->institution_id : null;
-            
-            // Check for institution lock
-            if ($this->survey->is_institution_only) {
-                $surveyCreatorInstitutionId = $this->survey->user->institution_id;
-                $this->survey->is_institution_locked = ($userInstitutionId !== $surveyCreatorInstitutionId);
+
+        // Skip if already locked
+        if (isset($survey->is_demographic_locked) && isset($survey->is_institution_locked)) {
+            return;
+        }
+
+        $user = Auth::user();
+        $userInstitutionId = $user?->institution_id;
+
+        // 🔒 Institution Lock
+        if ($survey->is_institution_only) {
+            $creatorInstitutionId = $survey->user->institution_id;
+            $survey->is_institution_locked = ($userInstitutionId !== $creatorInstitutionId);
+        } else {
+            $survey->is_institution_locked = false;
+        }
+
+        // 🔒 Demographic Lock (only for advanced surveys)
+        if ($survey->type === 'advanced') {
+            $userGeneralTags = $user?->tags()->pluck('tags.id')->toArray() ?? [];
+            $userInstitutionTags = $user?->institutionTags()->pluck('institution_tags.id')->toArray() ?? [];
+
+            $surveyGeneralTags = $survey->tags->pluck('id')->toArray();
+            $surveyInstitutionTags = $survey->institutionTags->pluck('id')->toArray();
+
+            $requiresNoTags = empty($surveyGeneralTags) && empty($surveyInstitutionTags);
+
+            if ($requiresNoTags) {
+                $survey->is_demographic_locked = false;
             } else {
-                $this->survey->is_institution_locked = false;
+                $missingGeneralTags = array_diff($surveyGeneralTags, $userGeneralTags);
+                //health, education, finance surveytags
+                //health, education, technology usertags
+                //return the values from the first array taht are not in the second arry
+                // returns finance
+                $missingInstitutionTags = array_diff($surveyInstitutionTags, $userInstitutionTags);
+
+                $hasGeneralTagMatch = empty($surveyGeneralTags) || empty($missingGeneralTags);
+                $hasInstitutionTagMatch = empty($surveyInstitutionTags) || empty($missingInstitutionTags);
+
+                $survey->is_demographic_locked = !($hasGeneralTagMatch && $hasInstitutionTagMatch);
             }
-            
-            // For advanced surveys, check demographic locks
-            if ($this->survey->type === 'advanced') {
-                $userGeneralTags = $user ? $user->tags()->pluck('tags.id')->toArray() : [];
-                $userInstitutionTags = $user ? $user->institutionTags()->pluck('institution_tags.id')->toArray() : [];
-                
-                $surveyTags = $this->survey->tags->pluck('id')->toArray();
-                $surveyInstTags = $this->survey->institutionTags->pluck('id')->toArray();
-                
-                // If advanced survey has no tags, it's not locked
-                if (empty($surveyTags) && empty($surveyInstTags)) {
-                    $this->survey->is_demographic_locked = false;
-                } else {
-                    // Check for unmatched tags
-                    $unmatchedGeneralTags = array_diff($surveyTags, $userGeneralTags);
-                    $unmatchedInstTags = array_diff($surveyInstTags, $userInstitutionTags);
-                    
-                    $generalTagsMatch = empty($surveyTags) || empty($unmatchedGeneralTags);
-                    $institutionTagsMatch = empty($surveyInstTags) || empty($unmatchedInstTags);
-                    
-                    $this->survey->is_demographic_locked = !($generalTagsMatch && $institutionTagsMatch);
-                }
-            } else {
-                $this->survey->is_demographic_locked = false;
-            }
+        } else {
+            $survey->is_demographic_locked = false;
         }
     }
 

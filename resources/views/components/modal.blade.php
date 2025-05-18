@@ -41,7 +41,6 @@
             {{ $slot }}
         </div>
 
-        {{-- Optional: Add a close button inside the panel for accessibility/usability --}}
-        {{-- Close button at the bottom removed --}}
+      
     </div>
 </div>

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('survey_tag', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tag_id')->constrained()->onDelete('cascade');
-            $table->foreignId('survey_id')->constrained()->onDelete('cascade'); // <-- this line
+            $table->foreignId('survey_id')->constrained()->onDelete('cascade'); 
             $table->string('tag_name');
             $table->timestamps();
         });

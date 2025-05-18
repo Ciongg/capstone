@@ -1,4 +1,4 @@
-{{-- filepath: resources/views/livewire/auth/login.blade.php --}}
+
 <div>
     <div class="min-h-screen flex flex-col items-center justify-center p-6">
         <div class="bg-white shadow-md rounded-lg p-8 w-full max-w-md">

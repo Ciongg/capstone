@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('tag_categories', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // e.g., Age Group, Gender
+            $table->string('name'); 
             $table->timestamps();
         });
     }
