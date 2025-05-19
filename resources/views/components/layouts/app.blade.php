@@ -36,9 +36,9 @@
                 <div class="flex items-center space-x-5 text-base">
                     @guest
                         <a href="/" wire:navigate class="{{ request()->is('/') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Home</a>
-                        {{-- Assuming 'About' also links to home or a specific '/about' page. If it's '/', it will share active state with Home. --}}
-                        <a href="/" wire:navigate class="{{ request()->is('about') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">About</a>
-                        <a href="/rewards" wire:navigate class="{{ request()->routeIs('rewards.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Rewards</a>
+                       
+                        <a href="/about" wire:navigate class="{{ request()->is('about') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">About</a>
+                        <a href="/rewards-info" wire:navigate class="{{ request()->is('rewards-info') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Rewards</a>
                     @endguest
                         
                     @auth
@@ -152,8 +152,8 @@
                     </a>
                     {{-- Logout button removed from here --}}
                 @else
-                    <a href="{{ route('login') }}" wire:navigate class="{{ request()->routeIs('login') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Login</a>
                     <a href="{{ route('register') }}" wire:navigate class="{{ request()->routeIs('register') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Register</a>
+                    <a href="{{ route('login') }}" wire:navigate class="inline-block bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-6 py-2 rounded-lg">Login</a>
                 @endauth
             </div>
         </div>

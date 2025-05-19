@@ -14,6 +14,14 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/about', function () {
+    return view('about');
+});
+
+Route::get('/rewards-info', function () {
+    return view('rewards-info');
+});
+
 // Authentication Routes
 Route::get('/login', [SessionController::class, 'create'])->name('login'); // Points to controller
 Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');

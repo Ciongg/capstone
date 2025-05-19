@@ -1,25 +1,25 @@
-<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Include level-up event listener -->
     @include('livewire.rewards.partials.level-up-listener')
 
-    <div class="mb-8">
-       
-
-        {{-- Flash Messages for Redemption --}}
-        @if(session()->has('redeem_success'))
-            <div class="mt-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-md">
-                {{ session('redeem_success') }}
-            </div>
-        @endif
-        @if(session()->has('redeem_error'))
-            <div class="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
-                {{ session('redeem_error') }}
-            </div>
-        @endif
-    </div>
-
+    
     <!-- New Layout: User Stats and Points Display -->
-    <div class="bg-white p-6"> 
+    <div class="bg-white p-2"> 
+            <div class="mb-8">
+            
+        
+                {{-- Flash Messages for Redemption --}}
+                @if(session()->has('redeem_success'))
+                    <div class="mt-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-md">
+                        {{ session('redeem_success') }}
+                    </div>
+                @endif
+                @if(session()->has('redeem_error'))
+                    <div class="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
+                        {{ session('redeem_error') }}
+                    </div>
+                @endif
+            </div>
         {{-- Add the header text here --}}
         <h1 class="text-4xl font-bold text-black text-center md:text-left mb-2">Redeem Rewards</h1>
 
@@ -78,7 +78,7 @@
     </div>
 
     <!-- Divider -->
-    <div class="border-t-2 py-8 border-gray-300"></div>
+    <div class="border-t-2 py-2 border-gray-300"></div>
 
     <!-- Tabs Navigation -->
     <div class="mb-6">

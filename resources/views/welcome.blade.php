@@ -1,33 +1,44 @@
 @extends('components.layouts.app')
 
 @section('content')
-<main class="container mx-auto py-12 px-4">
+<main class="container mx-auto py-12 px-8">
     <div class="flex flex-col md:flex-row items-center mb-16">
         <!-- Left Section: Text, Button, Stars -->
         <div class="md:w-1/2 text-left mb-8 md:mb-0 md:pr-8">
             <h1 class="text-4xl lg:text-5xl text-gray-800 mb-6">Powering Research<br>Rewarding Participants</h1>
-            <a href="{{ route('register') }}" class="mt-4 inline-block bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-semibold px-8 py-3 rounded-lg text-lg">
+            <a href="{{ route('register') }}" class="mt-4 mb-8 inline-block bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-8 py-2 rounded-lg text-lg">
                 Register
             </a>
-            <div class="mt-6 flex items-center">
-                {{-- 5 Star Icons --}}
-                @for ($i = 0; $i < 5; $i++)
-                    <svg class="w-5 h-5 text-yellow-400 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                @endfor
-                <span class="ml-2 text-gray-600 text-sm">100+ Reviews</span>
+            <div class="flex mt-6">
+                <!-- Profile Pictures of Reviewers - Now First -->
+                <div class="flex -space-x-3 mb-2 mr-3">
+                    <img src="{{ asset('storage/images/person1.jpg') }}" alt="Reviewer 1" class="w-8 h-8 rounded-full border-2 border-white object-cover">
+                    <img src="{{ asset('storage/images/person2.jfif') }}" alt="Reviewer 2" class="w-8 h-8 rounded-full border-2 border-white object-cover">
+                    <img src="{{ asset('storage/images/person4.jpg') }}" alt="Reviewer 3" class="w-8 h-8 rounded-full border-2 border-white object-cover">
+                </div>
+                
+                <!-- Stars in a single row -->
+                <div class="flex flex-col items-start mt-1">
+                    <div class="flex">
+                        @for ($i = 0; $i < 5; $i++)
+                            <svg class="w-5 h-5 text-yellow-400 fill-current inline-block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                        @endfor
+                    </div>
+                    <span class="text-gray-600 text-sm mt-1">100+ reviews</span>
+                </div>
             </div>
         </div>
 
-        <!-- Right Section: Overlapping Images -->
-        <div class="md:w-1/2 relative flex justify-center md:justify-end items-center h-64 md:h-auto">
-            <img src="{{ asset('storage/images/land2.png') }}" alt="Landing Image 2" class="relative w-3/4 sm:w-2/3 md:w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[50px] translate-y-[50px]">
-            <img src="{{ asset('storage/images/land1.png') }}" alt="Landing Image 1" class="absolute w-3/4 sm:w-2/3 md:w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[-50px] translate-y-[-50px]">
+        <!-- Right Section: Overlapping Images - Increased size -->
+        <div class="md:w-1/2 relative flex justify-center md:justify-center items-center h-64 md:h-auto">
+            <img src="{{ asset('storage/images/rewards.png') }}" alt="Landing Image 2" class="relative w-3/4 sm:w-2/3 md:w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[40px] translate-y-[70px]">
+            <img src="{{ asset('storage/images/feed-full.png') }}" alt="Landing Image 1" class="absolute w-3/4 sm:w-2/3 md:w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[-40px] translate-y-[-10px]">
         </div>
     </div>
 
     <section class="mt-16 py-12 px-4">
-        <div class="bg-gray-200 py-6 px-4 rounded-lg mb-8"> {{-- Applied gray background only to this container --}}
-            <h2 class="text-2xl font-semibold text-center text-gray-800">Getting Started is Easy</h2>
+        <div class="bg-gray-100 py-12 rounded-lg mb-10"> {{-- Increased padding and margin --}}
+            <h2 class="text-5xl text-center text-gray-800">Getting Started is Easy</h2> {{-- Increased from text-2xl to text-3xl --}}
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-gray-700">
             <div class="text-center">
