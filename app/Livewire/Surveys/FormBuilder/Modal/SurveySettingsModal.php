@@ -82,7 +82,7 @@ class SurveySettingsModal extends Component
     // Get points based on survey type
     public function getPointsForType($type)
     {
-        return $type === 'advanced' ? 30 : 10;
+        return $type === 'advanced' ? 20 : 10;
     }
 
     // When type is updated, update points automatically

@@ -224,12 +224,12 @@ class SurveySeeder extends Seeder
         $imageFiles = Storage::disk('public')->files('surveys');
         
         // Create 10 random surveys
-        for ($i = 0; $i < 30; $i++) {
+        for ($i = 0; $i < 200; $i++) {
             $surveyStatus = 'published';
             $surveyType = $faker->randomElement(['basic', 'advanced']);
             
             // Set fixed points based on survey type
-            $points = ($surveyType === 'basic') ? 10 : 30;
+            $points = ($surveyType === 'basic') ? 10 : 20;
             
             // Select a random researcher user
             if ($researcherUsers->isEmpty()) {

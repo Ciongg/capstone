@@ -18,14 +18,14 @@
         <h3 class="font-medium text-gray-700 mb-3">Filter by Survey Type</h3>
         
         <div class="mb-4">
-            <h4 class="font-semibold text-gray-600 mb-2">Survey Complexity</h4> {{-- Size changed, mb-2 for space below heading --}}
+            <h4 class="font-semibold text-gray-600 mb-2">Survey Complexity</h4>
             <div class="flex space-x-3">
                 <button 
                     wire:click="toggleTempSurveyType('basic')" 
                     type="button"
                     class="px-4 py-2 rounded-md text-sm transition-colors duration-150
                            {{ $tempSurveyType === 'basic' 
-                               ? 'bg-[#03b8ff] text-white font-semibold shadow-md'  // Color updated
+                               ? 'bg-[#03b8ff] text-white font-semibold shadow-md'  
                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
                 >
                     Basic
@@ -35,7 +35,7 @@
                     type="button"
                     class="px-4 py-2 rounded-md text-sm transition-colors duration-150
                            {{ $tempSurveyType === 'advanced' 
-                               ? 'bg-[#03b8ff] text-white font-semibold shadow-md' // Color updated
+                               ? 'bg-[#03b8ff] text-white font-semibold shadow-md' 
                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
                 >
                     Advanced
@@ -45,7 +45,7 @@
                     type="button"
                     class="px-4 py-2 rounded-md text-sm transition-colors duration-150
                            {{ $tempSurveyType === null 
-                               ? 'bg-[#03b8ff] text-white font-semibold shadow-md' // Color updated
+                               ? 'bg-[#03b8ff] text-white font-semibold shadow-md' 
                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
                 >
                     All Types
@@ -53,8 +53,8 @@
             </div>
         </div>
         
-        <div class="mt-6"> {{-- Added mt-6 for spacing --}}
-            <h4 class="font-semibold text-gray-600 mb-2">Survey Access</h4> {{-- Size changed, mb-2 for space below heading --}}
+        <div class="mt-6"> 
+            <h4 class="font-semibold text-gray-600 mb-2">Survey Access</h4> 
             <div class="flex items-center">
                 <label for="institution-only" class="flex items-center cursor-pointer">
                     <div class="relative">
@@ -62,12 +62,12 @@
                             type="checkbox" 
                             id="institution-only" 
                             wire:model.live="tempInstitutionOnly"
-                            wire:change="$set('pendingTagChanges', true)"
+                            wire:change="$set('hasUnsavedFilterChanges', true)"
                             class="sr-only"
                         >
                         <div class="w-10 h-5 bg-gray-300 rounded-full shadow-inner"></div>
                         <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-0 transition" 
-                             :class="{ 'transform translate-x-5 bg-[#03b8ff]': $wire.tempInstitutionOnly }"></div> {{-- Color updated --}}
+                             :class="{ 'transform translate-x-5 bg-[#03b8ff]': $wire.tempInstitutionOnly }"></div> 
                     </div>
                     <div class="ml-3 text-sm font-medium text-gray-700">
                         Institution Only Surveys
@@ -201,8 +201,8 @@
         <button 
             wire:click="applyPanelTagFilters"
             class="px-4 py-2 bg-[#03b8ff] text-white text-sm rounded-md hover:bg-[#0295d1] shadow-sm
-                  {{ $pendingTagChanges ? '' : 'opacity-50 cursor-not-allowed' }}"
-            {{ $pendingTagChanges ? '' : 'disabled' }}
+                  {{ $hasUnsavedFilterChanges ? '' : 'opacity-50 cursor-not-allowed' }}"
+            {{ $hasUnsavedFilterChanges ? '' : 'disabled' }}
         >
             Apply Filters
         </button>

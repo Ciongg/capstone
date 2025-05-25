@@ -7,18 +7,15 @@ use App\Models\Survey;
 use App\Models\SurveyTopic;
 use App\Models\TagCategory;
 use App\Models\Tag;
+use App\Models\InstitutionTagCategory;
+use App\Models\InstitutionTag;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class Index extends Component
 {
 
-
-
-
-
-
-    //code for filtering openable filtering system 
+    //filtering openable filtering system 
 
     // Basic search property remains the same
     public $search = '';
@@ -38,11 +35,13 @@ class Index extends Component
     public $tempSelectedInstitutionTagIds = []; // Add this new property for institution tags
     
     // Add temporary properties for survey type and institution filters
-    public $tempSurveyType = null;
-    public $tempInstitutionOnly = false;
+    public $tempSurveyType = null; //advanced basic
+    public $tempInstitutionOnly = false; //institution only filter
     
-    public $pendingTagChanges = false;
-    public $isLoading = false;
+    // Renamed for clarity - describes what this variable actually means
+    public $hasUnsavedFilterChanges = false;
+    
+   
     
     // For the survey detail modal
     public $modalSurveyId = null;
@@ -58,6 +57,17 @@ class Index extends Component
     {
         $this->loadSurveys();
     }
+    
+    // Consistent method to update the "changes pending" flag
+    private function updatePendingChangesFlag()
+    {
+        // Check if temp selections differ from active filters
+        $this->hasUnsavedFilterChanges = 
+            $this->tempSelectedTagIds != $this->activeFilters['tags'] ||
+            $this->tempSelectedInstitutionTagIds != $this->activeFilters['institutionTags'] ||
+            $this->tempSurveyType !== $this->activeFilters['type'] ||
+            $this->tempInstitutionOnly !== $this->activeFilters['institutionOnly'];
+    }
 
     // Toggle filter panel visibility and initialize temp selection
     public function toggleFilterPanel()
@@ -71,32 +81,8 @@ class Index extends Component
             // Initialize temp survey type and institution filter values
             $this->tempSurveyType = $this->activeFilters['type'];
             $this->tempInstitutionOnly = $this->activeFilters['institutionOnly'];
-            $this->pendingTagChanges = false;
+            $this->hasUnsavedFilterChanges = false; // No changes yet when we first open
         }
-    }
-
-
-
-
-
-
-
-    // Check if there are pending changes to any filters
-    public function hasPendingChanges()
-    {
-        // Check if tags have changed
-        $tagsChanged = $this->tempSelectedTagIds != $this->activeFilters['tags'];
-        
-        // Check if institution tags have changed
-        $institutionTagsChanged = $this->tempSelectedInstitutionTagIds != $this->activeFilters['institutionTags'];
-        
-        // Check if survey type has changed
-        $typeChanged = $this->tempSurveyType !== $this->activeFilters['type'];
-        
-        // Check if institution only setting has changed
-        $institutionChanged = $this->tempInstitutionOnly !== $this->activeFilters['institutionOnly'];
-        
-        return $tagsChanged || $typeChanged || $institutionChanged || $institutionTagsChanged;
     }
 
     // Handle temporary survey type filter selection within panel
@@ -104,20 +90,17 @@ class Index extends Component
     {
         // Toggle the type filter (set to null if already active)
         $this->tempSurveyType = ($this->tempSurveyType === $type) ? null : $type;
-        // Set the pending changes flag
-        $this->pendingTagChanges = $this->hasPendingChanges();
+        // Update pending changes flag consistently
+        $this->updatePendingChangesFlag();
     }
     
     // Clear temporary survey type filter within panel
     public function clearTempSurveyType()
     {
         $this->tempSurveyType = null;
-        // Set the pending changes flag
-        $this->pendingTagChanges = $this->hasPendingChanges();
+        // Update pending changes flag consistently
+        $this->updatePendingChangesFlag();
     }
-
-
-
 
 
 
@@ -125,56 +108,17 @@ class Index extends Component
     // Handle topic filter selection the rounded buttons on top of the survey feed.
     public function toggleTopicFilter($topicId)
     {
-        $this->isLoading = true;
-        
         // Store previous state to check if we're removing the filter
         $wasActive = ($this->activeFilters['topic'] == $topicId);
         
         // Toggle the topic filter
-        $this->activeFilters['topic'] = ($wasActive) ? null : $topicId;
-        
-
-        
-        // If we just removed this filter and there are no other filters, reset everything
-        if ($wasActive && 
-            empty($this->search) && 
-            empty($this->activeFilters['tags']) && 
-            empty($this->activeFilters['institutionTags']) && 
-            is_null($this->activeFilters['type']) &&
-            $this->activeFilters['institutionOnly'] === false) {
-            $this->resetFiltersWithSpaExperience();
-            return;
-        }
+        $this->activeFilters['topic'] = $wasActive ? null : $topicId;
         
         // Always reload surveys when toggling topic filter
         $this->page = 1;
         $this->loadSurveys();
     }
     
-    // Clear topic filter ran in applied filters.blade.php and also when all topics filter is clicked in topic-filters.
-    public function clearTopicFilter()
-    {
-        $this->isLoading = true;
-        $this->activeFilters['topic'] = null;
-        
-      
-        
-        // If no other filters remain, reset everything
-        if (empty($this->search) && 
-            empty($this->activeFilters['tags']) && 
-            empty($this->activeFilters['institutionTags']) && 
-            is_null($this->activeFilters['type']) &&
-            $this->activeFilters['institutionOnly'] === false) {
-            $this->resetFiltersWithSpaExperience();
-            
-        } else {
-            // Otherwise just reload the surveys with remaining filters
-            $this->page = 1;
-            $this->loadSurveys();
-            
-            $this->dispatch('filter-changed');
-        }
-    }
 
     // Handle tag selection in filter panel for general tags
     public function togglePanelTagFilter($tagId)
@@ -192,7 +136,8 @@ class Index extends Component
             $this->tempSelectedTagIds[] = $tagId;
         }
         
-        $this->pendingTagChanges = true;
+        // Update pending changes flag consistently
+        $this->updatePendingChangesFlag();
     }
     
     // Handle tag selection in filter panel for institution tags
@@ -211,14 +156,13 @@ class Index extends Component
             $this->tempSelectedInstitutionTagIds[] = $tagId;
         }
         
-        $this->pendingTagChanges = true;
+        // Update pending changes flag consistently
+        $this->updatePendingChangesFlag();
     }
     
-    // Apply tag filters from panel ran from the button of apply filters.
+    // Apply tag filters from panel
     public function applyPanelTagFilters()
     {
-        $this->isLoading = true;
-        
         // Save selected tags to the unified filter
         $this->activeFilters['tags'] = $this->tempSelectedTagIds;
         $this->activeFilters['institutionTags'] = $this->tempSelectedInstitutionTagIds;
@@ -229,19 +173,13 @@ class Index extends Component
         
         // Close the panel
         $this->showFilterPanel = false;
-        $this->pendingTagChanges = false;
+        $this->hasUnsavedFilterChanges = false; // Clear pending changes after applying
         
         // Reset page and reload surveys
         $this->page = 1;
         $this->loadSurveys();
-        
-        $this->isLoading = false;
-        
-        // Force a full component refresh
-        $this->dispatch('filter-changed');
+ 
     }
-
-  
 
     // Clear all tags from panel
     public function clearPanelTagFilter()
@@ -249,21 +187,19 @@ class Index extends Component
         if ($this->showFilterPanel) {
             // Just clear the temp selection if panel is open
             $this->tempSelectedTagIds = [];
-            $this->pendingTagChanges = true;
+            $this->updatePendingChangesFlag();
             $this->showFilterPanel = true;
         } else {
             // Otherwise clear the actual tag filters
-            $this->isLoading = true;
+     
             $this->activeFilters['tags'] = [];
             
             // If no other filters remain, reset everything
             if (empty($this->search) && is_null($this->activeFilters['topic'])) {
-                $this->resetFiltersWithSpaExperience();
+                $this->resetFilters();
             }
         }
     }
-
-  
 
     // Clear all institution tags from panel
     public function clearPanelInstitutionTagFilter()
@@ -271,140 +207,118 @@ class Index extends Component
         if ($this->showFilterPanel) {
             // Just clear the temp selection if panel is open
             $this->tempSelectedInstitutionTagIds = [];
-            $this->pendingTagChanges = true;
+            $this->updatePendingChangesFlag();
         } else {
             // Otherwise clear the actual tag filters
-            $this->isLoading = true;
+   
             $this->activeFilters['institutionTags'] = [];
             
             // If no other filters remain, reset everything
             if (empty($this->search) && is_null($this->activeFilters['topic']) && empty($this->activeFilters['tags'])) {
-                $this->resetFiltersWithSpaExperience();
+                $this->resetFilters();
             }
         }
     }
 
 
 
-
-    // Remove a specific tag filter - Modified to handle institution tags
-    public function removeTagFilter($tagId, $isInstitutionTag = false)
+    // Helper method to check if all filters are inactive
+    private function noFiltersActive()
     {
-        $this->isLoading = true;
-        
-        $filterKey = $isInstitutionTag ? 'institutionTags' : 'tags';
-        
-        // Remove this tag from filters
-        $this->activeFilters[$filterKey] = array_values(array_filter(
-            $this->activeFilters[$filterKey],
-            fn($id) => $id != $tagId
-        ));
-        
-        // Only reset everything if ALL filters are empty (not just this specific tag type)
-        if (empty($this->search) && 
-            is_null($this->activeFilters['topic']) && 
-            empty($this->activeFilters['tags']) && 
-            empty($this->activeFilters['institutionTags']) &&
-            is_null($this->activeFilters['type']) &&
-            $this->activeFilters['institutionOnly'] === false) {
-            $this->resetFiltersWithSpaExperience();
+        return empty($this->search) 
+            && is_null($this->activeFilters['topic']) 
+            && empty($this->activeFilters['tags'])
+            && empty($this->activeFilters['institutionTags'])
+            && is_null($this->activeFilters['type'])
+            && $this->activeFilters['institutionOnly'] === false;
+    }
+    
+    // Helper method to handle filter clearing and reloading logic
+    private function handleFilterChange()
+    {
+        if ($this->noFiltersActive()) {
+            $this->resetFilters();
         } else {
-            // Otherwise, just reload the surveys with the remaining filters
             $this->page = 1;
             $this->loadSurveys();
-            $this->dispatch('filter-changed');
         }
+    }
+
+    // Remove a specific tag filter - used in applied filters.blade.php
+    public function removeTagFilter($tagId, $isInstitutionTag = false)
+    {
+        // Determine the correct filter key
+        $filterKey = $isInstitutionTag ? 'institutionTags' : 'tags';
+
+        // Remove the tag from the selected filter type
+        $this->activeFilters[$filterKey] = array_filter(
+            $this->activeFilters[$filterKey] ?? [],
+            fn($id) => $id != $tagId //returns true if id is not equal to tagId getting rid of the selected tag to remove.
+        );
+
+        $this->handleFilterChange();
     }
 
     // Add this method to handle search updates
     public function updatedSearch()
     {
-        $this->isLoading = true;
-        $this->page = 1;
-        $this->loadSurveys();
-        
-        // If search is cleared and no other filters are active, reset everything
-        if (empty($this->search) && 
-            is_null($this->activeFilters['topic']) && 
-            empty($this->activeFilters['tags']) && 
-            empty($this->activeFilters['institutionTags']) &&
-            is_null($this->activeFilters['type']) &&
-            $this->activeFilters['institutionOnly'] === false) {
-            $this->resetFiltersWithSpaExperience();
-        }
-        
-        $this->dispatch('filter-changed');
-        $this->isLoading = false;
+        $this->handleFilterChange();
     }
 
     // Clear search in applied filters.blade.php
     public function clearSearch()
     {
-        $this->isLoading = true;
         $this->search = '';
-        
-        // If no other filters remain, reset everything
-        if (is_null($this->activeFilters['topic']) && 
-            empty($this->activeFilters['tags']) &&
-            empty($this->activeFilters['institutionTags']) &&
-            is_null($this->activeFilters['type']) &&
-            $this->activeFilters['institutionOnly'] === false) {
-            $this->resetFiltersWithSpaExperience();
-        } else {
-            // Otherwise just reload surveys with remaining filters
-            $this->page = 1;
-            $this->loadSurveys();
-            $this->dispatch('filter-changed');
-        }
-        
-        $this->isLoading = false;
+        $this->handleFilterChange();
     }
 
-    // Clear all filters
-    public function clearAllFilters()
-    {
-        $this->resetFiltersWithSpaExperience();
-    }
-
-    // Handle survey type filter selection
-    public function toggleSurveyTypeFilter($type)
-    {
-        $this->isLoading = true;
-        
-        // Toggle the type filter (set to null if already active)
-        $this->activeFilters['type'] = ($this->activeFilters['type'] === $type) ? null : $type;
-        
-        // Force a full component refresh
-        $this->dispatch('filter-changed');
-        
-        // Ensure we reset the page if using pagination
-        if (method_exists($this, 'resetPage')) {
-            $this->resetPage();
-        }
-    }
-    
     // Clear survey type filter
     public function clearSurveyTypeFilter()
     {
-        $this->isLoading = true;
         $this->activeFilters['type'] = null;
-        // If no other filters remain, reset everything
-        if (empty($this->search) && 
-            is_null($this->activeFilters['topic']) && 
-            empty($this->activeFilters['tags']) && 
-            empty($this->activeFilters['institutionTags']) &&
-            $this->activeFilters['institutionOnly'] === false) {
-            $this->resetFiltersWithSpaExperience();
-        } else {
-            // Otherwise just reload the surveys with remaining filters
-            $this->page = 1;
-            $this->loadSurveys();
-            
-            // Add a "loading" effect to simulate data being refreshed
-            
-            $this->dispatch('filter-changed');
-        }
+        $this->handleFilterChange();
     }
+    
+    // Clear topic filter 
+    public function clearTopicFilter()
+    {
+        $this->activeFilters['topic'] = null;
+        $this->handleFilterChange();
+    }
+
+
+
+    // Modified reset filter to preserve panel state when clearing filters
+    public function resetFilters()
+    {
+        // Store current panel state - we want to preserve it
+        $currentPanelState = $this->showFilterPanel;
+        
+        // Reset all filter values
+        $this->search = '';
+        $this->activeFilters = [
+            'topic' => null,
+            'tags' => [],
+            'institutionTags' => [],
+            'type' => null,
+            'institutionOnly' => false
+        ];
+        $this->tempSelectedTagIds = [];
+        $this->tempSelectedInstitutionTagIds = [];
+        $this->tempSurveyType = null;
+        $this->tempInstitutionOnly = false;
+        
+        // Reset page and reload surveys
+        $this->page = 1;
+        $this->loadSurveys();
+        
+        // Restore panel state - don't close if it was open
+        $this->showFilterPanel = $currentPanelState;
+        
+
+    }
+
+
 
 
 
@@ -428,12 +342,14 @@ class Index extends Component
     // Load surveys based on filters - Modified to handle institution tags
     protected function loadSurveys($append = false)
     {
+        
         // Get authenticated user
         $user = Auth::user();
 
         // These relationships are defined in the User model but IDE may flag them incorrectly
         $userGeneralTags = $user ? $user->tags()->pluck('tags.id')->toArray() : [];
         $userInstitutionTags = $user ? $user->institutionTags()->pluck('institution_tags.id')->toArray() : [];
+
         $userInstitutionId = $user ? $user->institution_id : null;
         
         // STEP 1: First get basic surveys with standard filters
@@ -479,45 +395,39 @@ class Index extends Component
         
         // STEP 4: Mark institution-only surveys as locked if user doesn't match institution
         $combinedSurveys = $basicSurveys->concat($advancedSurveys);
-        
-        // Check for institution-only surveys that should be locked
-        $combinedSurveys->each(function ($survey) use ($user, $userInstitutionId) {
-            if ($survey->is_institution_only && $user) {
-                $surveyCreatorInstitutionId = $survey->user->institution_id;
-                $survey->is_institution_locked = ($userInstitutionId !== $surveyCreatorInstitutionId);
-            } else {
-                $survey->is_institution_locked = $survey->is_institution_only;
-            }
-        });
+        $combinedSurveys = $this->markLockedInstitutionSurveys($combinedSurveys, $user, $userInstitutionId);
         
         // STEP 5: Apply ordering/pagination
         $combinedSurveys = $combinedSurveys->unique('id');
         
         // Apply global sorting
-        $combinedSurveys = $combinedSurveys->sortByDesc('points_allocated')
-            ->sortBy(function($survey) {
-                // Advanced surveys first, then basic
-                return $survey->type === 'advanced' ? 0 : 1;
-            })
-            ->sortBy(function($survey) {
-                // Surveys with end dates first, then null dates
-                return $survey->end_date === null ? 1 : 0;
-            })
-            ->sortBy('end_date')
-            ->values();
+       $combinedSurveys = $combinedSurveys
+        ->unique('id')
+        ->sortBy(function ($survey) {
+            return [
+                // NEGATE points to simulate descending sort
+                -$survey->points_allocated,
+
+                // Use real end_date, or far future if null
+                $survey->end_date ?? now()->addYears(100),
+            ];
+        })
+        ->values(); // Re-index the collection
+
         
         // Log counts for debugging
-        Log::info('Survey counts in feed:', [
-            'basic_count' => $basicSurveys->count(),
-            'advanced_count' => $advancedSurveys->count(),
-            'total_combined' => $combinedSurveys->count()
-        ]);
+        // Log::info('Survey counts in feed:', [
+        //     'basic_count' => $basicSurveys->count(),
+        //     'advanced_count' => $advancedSurveys->count(),
+        //     'total_combined' => $combinedSurveys->count()
+        // ]);
         
         // Handle pagination
         $total = $combinedSurveys->count();
         $this->hasMorePages = $total > ($this->page * $this->perPage);
         
         $paginatedSurveys = $combinedSurveys->slice(($this->page - 1) * $this->perPage, $this->perPage + 1);
+        
         if ($this->hasMorePages && $paginatedSurveys->count() > $this->perPage) {
             $paginatedSurveys = $paginatedSurveys->take($this->perPage);
         }
@@ -528,37 +438,11 @@ class Index extends Component
         } else {
             $this->surveys = $paginatedSurveys;
         }
-    }
 
-    // Helper method to mark advanced surveys as locked based on user demographics
-    private function markLockedAdvancedSurveys($advancedSurveys, $userGeneralTags, $userInstitutionTags)
-    {
-        return $advancedSurveys->map(function ($survey) use ($userGeneralTags, $userInstitutionTags) {
-            $surveyTags = $survey->tags->pluck('id')->toArray();
-            $surveyInstTags = $survey->institutionTags->pluck('id')->toArray();
-            
-            // If advanced survey has no tags at all, it's not locked
-            if (empty($surveyTags) && empty($surveyInstTags)) {
-                $survey->is_demographic_locked = false;
-                return $survey;
-            }
-            
-            // STRICT MATCHING: ALL survey tags must be in user's demographics
-            // Check if ANY survey tags exist that are NOT in user tags
-            $unmatchedGeneralTags = array_diff($surveyTags, $userGeneralTags);
-            $unmatchedInstTags = array_diff($surveyInstTags, $userInstitutionTags);
-            
-            // If both arrays are empty, it means all tags are matched
-            $generalTagsMatch = empty($surveyTags) || empty($unmatchedGeneralTags);
-            $institutionTagsMatch = empty($surveyInstTags) || empty($unmatchedInstTags);
-            
-            // Survey is locked if any tags don't match
-            $survey->is_demographic_locked = !($generalTagsMatch && $institutionTagsMatch);
-            
-            return $survey;
-        });
-    }
+        $this->dispatch('filter-changed');
 
+    }
+   
     // Helper method to apply common filters to any survey query
     private function applyCommonFilters($query)
     {
@@ -598,35 +482,49 @@ class Index extends Component
         }
     }
 
-    // Modified reset filter to preserve panel state when clearing filters
-    protected function resetFiltersWithSpaExperience()
+     // Helper method to mark advanced surveys as locked based on user demographics
+    private function markLockedAdvancedSurveys($advancedSurveys, $userGeneralTags, $userInstitutionTags)
     {
-        // Store current panel state - we want to preserve it
-        $currentPanelState = $this->showFilterPanel;
-        
-        // Reset all filter values
-        $this->search = '';
-        $this->activeFilters = [
-            'topic' => null,
-            'tags' => [],
-            'institutionTags' => [],
-            'type' => null,
-            'institutionOnly' => false
-        ];
-        $this->tempSelectedTagIds = [];
-        $this->tempSelectedInstitutionTagIds = [];
-        $this->tempSurveyType = null;
-        $this->tempInstitutionOnly = false;
-        
-        // Reset page and reload surveys
-        $this->page = 1;
-        $this->loadSurveys();
-        
-        // Restore panel state - don't close if it was open
-        $this->showFilterPanel = $currentPanelState;
-        
-
+        return $advancedSurveys->map(function ($survey) use ($userGeneralTags, $userInstitutionTags) {
+            $surveyTags = $survey->tags->pluck('id')->toArray();
+            $surveyInstTags = $survey->institutionTags->pluck('id')->toArray();
+            
+            // If advanced survey has no tags at all, it's not locked
+            if (empty($surveyTags) && empty($surveyInstTags)) {
+                $survey->is_demographic_locked = false;
+                return $survey;
+            }
+            
+            // STRICT MATCHING: ALL survey tags must be in user's demographics
+            // Check if ANY survey tags exist that are NOT in user tags
+            $unmatchedGeneralTags = array_diff($surveyTags, $userGeneralTags);
+            $unmatchedInstTags = array_diff($surveyInstTags, $userInstitutionTags);
+            
+            // If both arrays are empty, it means all tags are matched
+            $generalTagsMatch = empty($surveyTags) || empty($unmatchedGeneralTags);
+            $institutionTagsMatch = empty($surveyInstTags) || empty($unmatchedInstTags);
+            
+            // Survey is locked if any tags don't match
+            $survey->is_demographic_locked = !($generalTagsMatch && $institutionTagsMatch);
+            
+            return $survey;
+        });
     }
+
+    // Helper method to mark institution-only surveys as locked
+    private function markLockedInstitutionSurveys($surveys, $user, $userInstitutionId)
+    {
+        return $surveys->each(function ($survey) use ($user, $userInstitutionId) {
+            if ($survey->is_institution_only && $user) {
+                $surveyCreatorInstitutionId = $survey->user->institution_id;
+                $survey->is_institution_locked = ($userInstitutionId !== $surveyCreatorInstitutionId);
+            } else {
+                $survey->is_institution_locked = $survey->is_institution_only;
+            }
+        });
+    }
+
+    
     
     // Listen for filter change events
     protected function getListeners()
@@ -642,6 +540,7 @@ class Index extends Component
             'userPoints' => Auth::user()?->points ?? 0,
             'topics' => SurveyTopic::orderBy('name')->get(),
             'tagCategories' => TagCategory::with('tags')->orderBy('name')->get(),
+            'institutionTagCategories' => InstitutionTagCategory::with('tags')->orderBy('name')->get(),
         ]);
     }
 }

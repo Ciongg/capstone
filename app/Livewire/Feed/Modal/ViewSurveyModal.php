@@ -4,62 +4,61 @@ namespace App\Livewire\Feed\Modal;
 
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Survey;
 
 class ViewSurveyModal extends Component
 {
+    
     public $survey;
-
-  
-
-    public function mount($survey)
+    public $surveyId;
+    
+   public function mount($surveyId)
     {
-        $this->survey = $survey;
+        $this->surveyId = $surveyId;
+        $this->survey = Survey::findOrFail($surveyId);
 
         // Skip if already locked
-        if (isset($survey->is_demographic_locked) && isset($survey->is_institution_locked)) {
+        if (isset($this->survey->is_demographic_locked) && isset($this->survey->is_institution_locked)) {
             return;
         }
 
         $user = Auth::user();
         $userInstitutionId = $user?->institution_id;
 
-        // 🔒 Institution Lock
-        if ($survey->is_institution_only) {
-            $creatorInstitutionId = $survey->user->institution_id;
-            $survey->is_institution_locked = ($userInstitutionId !== $creatorInstitutionId);
+        // Institution Lock
+        if ($this->survey->is_institution_only) {
+            $creatorInstitutionId = $this->survey->user->institution_id;
+            $this->survey->is_institution_locked = ($userInstitutionId !== $creatorInstitutionId);
         } else {
-            $survey->is_institution_locked = false;
+            $this->survey->is_institution_locked = false;
         }
 
-        // 🔒 Demographic Lock (only for advanced surveys)
-        if ($survey->type === 'advanced') {
+        // Demographic Lock (only for advanced surveys)
+        if ($this->survey->type === 'advanced') {
             $userGeneralTags = $user?->tags()->pluck('tags.id')->toArray() ?? [];
             $userInstitutionTags = $user?->institutionTags()->pluck('institution_tags.id')->toArray() ?? [];
 
-            $surveyGeneralTags = $survey->tags->pluck('id')->toArray();
-            $surveyInstitutionTags = $survey->institutionTags->pluck('id')->toArray();
+            $surveyGeneralTags = $this->survey->tags->pluck('id')->toArray();
+            $surveyInstitutionTags = $this->survey->institutionTags->pluck('id')->toArray();
 
             $requiresNoTags = empty($surveyGeneralTags) && empty($surveyInstitutionTags);
 
             if ($requiresNoTags) {
-                $survey->is_demographic_locked = false;
+                $this->survey->is_demographic_locked = false;
             } else {
                 $missingGeneralTags = array_diff($surveyGeneralTags, $userGeneralTags);
-                //health, education, finance surveytags
-                //health, education, technology usertags
-                //return the values from the first array taht are not in the second arry
-                // returns finance
                 $missingInstitutionTags = array_diff($surveyInstitutionTags, $userInstitutionTags);
 
                 $hasGeneralTagMatch = empty($surveyGeneralTags) || empty($missingGeneralTags);
                 $hasInstitutionTagMatch = empty($surveyInstitutionTags) || empty($missingInstitutionTags);
 
-                $survey->is_demographic_locked = !($hasGeneralTagMatch && $hasInstitutionTagMatch);
+                $this->survey->is_demographic_locked = !($hasGeneralTagMatch && $hasInstitutionTagMatch);
             }
         } else {
-            $survey->is_demographic_locked = false;
+            $this->survey->is_demographic_locked = false;
         }
     }
+
 
     public function render()
     {

@@ -67,9 +67,9 @@
             <button
                 wire:click="toggleTopicFilter({{ $topic->id }})"
                 wire:key="topic-{{ $topic->id }}"
-                class="whitespace-nowrap px-4 py-2 rounded-full border text-sm font-medium flex-shrink-0 transition-colors
+                class="whitespace-nowrap px-4 py-2 shadow-md rounded-full border text-sm font-medium flex-shrink-0 transition-colors
                       {{ $activeFilters['topic'] == $topic->id 
-                         ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-transparent shadow-md' 
+                         ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-transparent' 
                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}"
             >
                 {{ $topic->name }}

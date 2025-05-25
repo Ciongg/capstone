@@ -16,8 +16,10 @@ class FormBuilder extends Component
     public $questionTypes = ['page', 'multiple_choice', 'radio', 'likert', 'essay', 'short_text', 'rating', 'date' ];
     public $questions = [];
     public $choices = [];
+
     public $activePageId = null; // Track the active page
     public $selectedQuestionId = null;
+    
     public $surveyTitle;
     public $hasResponses = false; 
     public $ratingStars = [];

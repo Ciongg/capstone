@@ -5,7 +5,7 @@
     <div class="flex flex-col md:flex-row items-center mb-16">
         <!-- Left Section: Text, Button, Stars -->
         <div class="md:w-1/2 text-left mb-8 md:mb-0 md:pr-8">
-            <h1 class="text-4xl lg:text-5xl text-gray-800 mb-6">Powering Research<br>Rewarding Participants</h1>
+            <h1 class="text-4xl lg:text-5xl text-gray-800 mb-6 leading-16">Powering Research<br>Rewarding Participants</h1>
             <a href="{{ route('register') }}" class="mt-4 mb-8 inline-block bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-8 py-2 rounded-lg text-lg">
                 Register
             </a>
@@ -31,8 +31,8 @@
 
         <!-- Right Section: Overlapping Images - Increased size -->
         <div class="md:w-1/2 relative flex justify-center md:justify-center items-center h-64 md:h-auto">
-            <img src="{{ asset('storage/images/rewards.png') }}" alt="Landing Image 2" class="relative w-3/4 sm:w-2/3 md:w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[40px] translate-y-[70px]">
-            <img src="{{ asset('storage/images/feed-full.png') }}" alt="Landing Image 1" class="absolute w-3/4 sm:w-2/3 md:w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[-40px] translate-y-[-10px]">
+            <img src="{{ asset('storage/images/feed-full.png') }}" alt="Landing Image 1" class="absolute w-3/4 sm:w-2/3 md:w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[-100px] translate-y-[-20px]">
+            <img src="{{ asset('storage/images/rewards.png') }}" alt="Landing Image 2" class="relative w-3/4 sm:w-2/3 md:w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[40px] translate-y-[90px]">
         </div>
     </div>
 

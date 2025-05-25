@@ -2,31 +2,28 @@
     <!-- Include level-up event listener -->
     @include('livewire.rewards.partials.level-up-listener')
 
+    <!-- Flash Messages for Redemption -->
+    <div class="mb-4">
+        @if(session()->has('redeem_success'))
+            <div class="mt-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-md">
+                {{ session('redeem_success') }}
+            </div>
+        @endif
+        @if(session()->has('redeem_error'))
+            <div class="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
+                {{ session('redeem_error') }}
+            </div>
+        @endif
+    </div>
     
     <!-- New Layout: User Stats and Points Display -->
     <div class="bg-white p-2"> 
-            <div class="mb-8">
-            
-        
-                {{-- Flash Messages for Redemption --}}
-                @if(session()->has('redeem_success'))
-                    <div class="mt-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-md">
-                        {{ session('redeem_success') }}
-                    </div>
-                @endif
-                @if(session()->has('redeem_error'))
-                    <div class="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
-                        {{ session('redeem_error') }}
-                    </div>
-                @endif
-            </div>
-        {{-- Add the header text here --}}
-        <h1 class="text-4xl font-bold text-black text-center md:text-left mb-2">Redeem Rewards</h1>
-
-        <div class="flex flex-col md:flex-row items-center md:items-start justify-between md:space-x-8">
-            <!-- Left Side: Large Points Display -->
-            <div class="flex flex-col justify-between md:items-start mb-6 md:mb-0 md:w-1/2 lg:w-2/3 min-h-[150px] md:min-h-[200px]">
-                <div> 
+        <div class="flex flex-col md:flex-row items-start justify-between md:space-x-8">
+            <!-- Left Side: Header and Points Display -->
+            <div class="md:w-1/2 lg:w-2/3">
+                <h1 class="text-4xl font-bold text-black text-center md:text-left mb-4">Redeem Rewards</h1>
+                
+                <div class="flex flex-col justify-between md:items-start mb-6"> 
                     <div class="flex items-center">
                         <span class="text-7xl font-bold text-[#FFB349]">{{ $userPoints }}</span>
                         <svg class="w-16 h-16 text-[#FFB349] ml-3" viewBox="0 0 24 24" fill="currentColor">
@@ -36,13 +33,10 @@
                     <p class="text-xl text-gray-600 mt-2 text-center md:text-left">Available Points</p> 
                     <p class="text-gray-600 mt-4 text-center md:text-left">Earn more points by completing surveys!</p> 
                 </div>
-                
-                <!-- "Earn more points" text - aligned to bottom -->
-                
             </div>
             
-            <!-- Right Side: User Profile Info - Centered -->
-            <div class="flex flex-col items-center md:w-1/2 lg:w-1/3"> 
+            <!-- Right Side: User Profile Info - Aligned with header -->
+            <div class="flex flex-col items-center md:items-end md:w-1/2 lg:w-1/3">
                 <a href="{{ route('profile.index') }}" class="group flex flex-col items-center"> 
                     <!-- User Profile Picture -->
                     <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 group-hover:border-blue-300 transition-all">

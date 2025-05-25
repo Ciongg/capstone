@@ -5,10 +5,11 @@
         <div class="flex items-center mb-2">
             <img src="{{ $survey->user->profile_photo_url }}" alt="{{ $survey->user->name ?? 'User' }}" class="w-10 h-10 rounded-full object-cover mr-3">
             <div class="flex flex-col">
+                
                 <span class="text-base font-semibold text-gray-800 truncate">{{ $survey->user->name ?? 'User' }}</span>
-                @if(isset($survey->user->institution) && $survey->user->institution)
-                    <span class="text-xs text-gray-500 truncate">{{ $survey->user->institution->name }}</span>
-                @endif
+           
+                <span class="text-xs text-gray-500 truncate">{{ $survey->user->institution?->name }}</span>
+         
             </div>
             <div class="flex-1"></div>
             <div class="flex items-center bg-gradient-to-r from-red-600 via-orange-400 to-yellow-300 px-3 py-1 rounded-full">
@@ -19,14 +20,20 @@
             </div>
         </div>
         <div class="w-full">
-            <span class="text-sm font-semibold text-left truncate block">{{ $survey->title }}</span>
+           <span class="text-sm font-semibold text-left truncate block" title="{{ $survey->title ?: 'Untitled Survey' }}">
+                {{ $survey->title ?: 'Untitled Survey' }}
+            </span>
+
+
         </div>
     </div>
     
     {{-- Image --}}
     <div class="w-full flex-grow mt-1 flex items-center justify-center mb-2 relative px-4 min-h-0">
         @if($survey->image_path)
+
             @php $imageUrl = asset('storage/' . $survey->image_path); @endphp
+
             <button @click="fullscreenImageSrc = '{{ $imageUrl }}'" class="cursor-pointer w-full h-full flex items-center justify-center">
                 <img src="{{ $imageUrl }}" alt="Survey image for {{ $survey->title }}" class="rounded-lg object-contain max-w-full max-h-[340px]" />
             </button>
@@ -42,79 +49,51 @@
                 // Get the user's tag IDs to check for matches
                 $userTagIds = auth()->check() ? auth()->user()->tags()->pluck('tags.id')->toArray() : [];
                 $userInstitutionTagIds = auth()->check() ? auth()->user()->institutionTags()->pluck('institution_tags.id')->toArray() : [];
+                
+                // Determine which tags to use based on survey type
+                $isInstitutionSurvey = $survey->is_institution_only;
+                $tagCollection = $isInstitutionSurvey ? $survey->institutionTags : $survey->tags;
+                $userTagCollection = $isInstitutionSurvey ? $userInstitutionTagIds : $userTagIds;
+                $tagPrefix = $isInstitutionSurvey ? 'inst-tag' : 'tag';
+                
+                // Sort tags - matching tags first
+                $displayTags = $tagCollection->isEmpty() ? collect([]) : $tagCollection->sortByDesc(function($tag) use ($userTagCollection) {
+                    return in_array($tag->id, $userTagCollection) ? 1 : 0;
+                })->take(3);
             @endphp
             
-            @if($survey->is_institution_only)
-                {{-- Show institution tags for institution-only surveys --}}
-                @if($survey->institutionTags->isEmpty())
-                    <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
-                    <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
-                    <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
-                @else
-                    @php 
-                        // Sort tags - matching tags first
-                        $institutionTags = $survey->institutionTags->sortByDesc(function($tag) use ($userInstitutionTagIds) {
-                            return in_array($tag->id, $userInstitutionTagIds) ? 1 : 0;
-                        })->take(3); 
-                    @endphp
-                    
-                    @foreach($institutionTags as $tag)
-                        @php
-                            $matchesUserTag = in_array($tag->id, $userInstitutionTagIds);
-                        @endphp
-                        <span
-                            wire:key="survey-{{ $survey->id }}-inst-tag-{{ $tag->id }}"
-                            class="px-3 py-2 text-xs font-semibold rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis
-                                {{ $matchesUserTag ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-800' }}"
-                        >
-                            {{ $tag->name }}
-                        </span>
-                    @endforeach
-                    
-                    @if($institutionTags->count() < 3)
-                        @for($i = $institutionTags->count(); $i < 3; $i++)
-                            <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
-                        @endfor
-                    @endif
-                @endif
+            @if($displayTags->isEmpty())
+                {{-- Show placeholders if no tags --}}
+               {{-- <span class="italic font-sm text-gray-300"> no target tags</span> --}}
+                <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
             @else
-                {{-- Show regular tags for standard surveys --}}
-                @if($survey->tags->isEmpty())
-                    <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
-                    <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
-                    <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
-                @else
-                    @php 
-                        // Sort tags - matching tags first
-                        $regularTags = $survey->tags->sortByDesc(function($tag) use ($userTagIds) {
-                            return in_array($tag->id, $userTagIds) ? 1 : 0;
-                        })->take(3); 
+                {{-- Display tags --}}
+                @foreach($displayTags as $tag)
+                    @php
+                        $matchesUserTag = in_array($tag->id, $userTagCollection);
                     @endphp
-                    
-                    @foreach($regularTags as $tag)
-                        @php
-                            $matchesUserTag = in_array($tag->id, $userTagIds);
-                        @endphp
-                        <span
-                            wire:key="survey-{{ $survey->id }}-tag-{{ $tag->id }}"
-                            class="px-3 py-2 text-xs font-semibold rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis
-                                {{ $matchesUserTag ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-800' }}"
-                        >
-                            {{ $tag->name }}
-                        </span>
-                    @endforeach
-                    
-                    @if($regularTags->count() < 3)
-                        @for($i = $regularTags->count(); $i < 3; $i++)
-                            <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
-                        @endfor
-                    @endif
-                @endif
+                    <span
+                        wire:key="survey-{{ $survey->id }}-{{ $tagPrefix }}-{{ $tag->id }}"
+                        class="px-3 py-2 text-xs font-semibold rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis
+                            {{ $matchesUserTag ? 'bg-green-300 text-green-800' : 'bg-gray-100 text-gray-800' }}"
+                    >
+                        {{ $tag->name }}
+                    </span>
+                @endforeach
+                
+                {{-- Add placeholders if needed if 3 is not reached --}}
+                {{-- @if($displayTags->count() < 3)
+                    @for($i = $displayTags->count(); $i < 3; $i++)
+                        <span class="block w-24 h-[36px] bg-gray-100 rounded-full shadow-md">&nbsp;</span>
+                    @endfor
+                @endif --}}
             @endif
         </div>
     </div>
 
-    {{-- Survey Info Section --}}
+    {{-- Survey Info Section Survey Topic Repsondents Days--}}
     <div class="w-full px-4 mb-3 flex-shrink-0">
         <div class="flex flex-wrap gap-2 justify-between items-center">
             {{-- Survey Topic (Moved here from bottom) --}}
@@ -134,7 +113,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                <span class="text-xs text-gray-700">{{ $survey->responses()->count() }}/{{ $survey->target_respondents ?? '∞' }}</span>
+                <span class="text-xs text-gray-700">{{ $survey->responses()->count() }}/{{ $survey->target_respondents ?: '∞' }}</span>
             </div>
 
             {{-- Days Until Closing --}}
@@ -197,4 +176,6 @@
             </span>
         </div>
     </div>
+
+    
 </div>

@@ -1,8 +1,8 @@
 {{-- Survey Detail Modal --}}
-<x-modal name="surveyDetailModal" title="Survey Details" @close="$wire.closeSurveyModal()">
+<x-modal name="surveyDetailModal" title="Survey Details">
     {{-- Content INSIDE the modal is conditional based on Livewire's $modalSurveyId --}}
     @if($modalSurveyId)
-        <livewire:feed.modal.view-survey-modal :survey="\App\Models\Survey::find($modalSurveyId)" :wire:key="'modal-view-' . $modalSurveyId . '-' . now()->timestamp" />
+        <livewire:feed.modal.view-survey-modal :surveyId="$modalSurveyId" :wire:key="'modal-view-' . $modalSurveyId . '-' . now()->timestamp" />
     @else
         {{-- Placeholder for when modalSurveyId is null or content is loading --}}
         <div class="p-6 animate-pulse">

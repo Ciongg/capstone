@@ -19,7 +19,7 @@
         
         {{-- Right filter/settings icon or loading spinner --}}
         <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-            {{-- Show loading spinner when isLoading is true --}}
+
             <div wire:loading wire:target="search" class="text-blue-500">
                 <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

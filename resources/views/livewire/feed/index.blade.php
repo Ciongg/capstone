@@ -26,7 +26,7 @@
         });
      ">
    
-        {{-- Add any global CSS styles needed --}}
+    {{--hides the scrollwheel in the topics bar--}}
     <style>
         .scrollbar-hide::-webkit-scrollbar {
             display: none;
@@ -42,10 +42,7 @@
 
     {{-- Search bar and points display --}}
     @include('livewire.feed.partials.search-bar')
-
-    {{-- Add the support-request modal --}}
     
-
     {{-- Applied filters display --}}
     @include('livewire.feed.partials.applied-filters')
 
@@ -60,7 +57,7 @@
         {{-- Loading indicator with centered positioning --}}
         <div class="relative min-h-[200px]"> 
             {{-- Loading indicator - add clearSurveyTypeFilter to the wire:target --}}
-            <div wire:loading wire:target="toggleTopicFilter, clearTopicFilter, applyPanelTagFilters, removeTagFilter, clearAllFilters, clearSurveyTypeFilter, toggleSurveyTypeFilter" 
+            <div wire:loading wire:target="toggleTopicFilter, clearTopicFilter, applyPanelTagFilters, removeTagFilter, resetFilters, clearSurveyTypeFilter, toggleSurveyTypeFilter" 
                  class="absolute inset-0 flex justify-center items-center">
                 <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200 flex flex-col items-center space-y-3">
                     <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -69,7 +66,7 @@
             </div>
 
             {{-- Survey grid - also update here to match the targets above --}}
-            <div wire:loading.class="opacity-0" wire:target="toggleTopicFilter, clearTopicFilter, applyPanelTagFilters, removeTagFilter,  clearAllFilters, clearSurveyTypeFilter, toggleSurveyTypeFilter">
+            <div wire:loading.class="opacity-0" wire:target="toggleTopicFilter, clearTopicFilter, applyPanelTagFilters, removeTagFilter,  resetFilters, clearSurveyTypeFilter, toggleSurveyTypeFilter">
                 @if(count($surveys) > 0)
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
                         @foreach($surveys as $survey)
@@ -119,7 +116,7 @@
         <img :src="fullscreenImageSrc" 
              alt="Fullscreen Survey Image" 
              class="max-w-full max-h-full object-contain"
-             @click.stop> {{-- Prevent closing when clicking the image itself --}}
+             > {{-- Prevent closing when clicking the image itself --}}
                   
         {{-- Larger, easier-to-tap close button for mobile - made identical to user-survey-view-modal --}}
         <button @click="fullscreenImageSrc = null" 
@@ -129,16 +126,4 @@
     </div>
 </div>
 
-<script>
-    document.addEventListener('livewire:initialized', function () {
-        Livewire.on('filter-changed', function () {
-            // Scroll back to top when filters are changed
-            window.scrollTo({top: 0, behavior: 'smooth'});
-            
-            // Force browser to recalculate layout after filter changes
-            setTimeout(() => {
-                window.dispatchEvent(new Event('resize'));
-            }, 200);
-        });
-    });
-</script>
+

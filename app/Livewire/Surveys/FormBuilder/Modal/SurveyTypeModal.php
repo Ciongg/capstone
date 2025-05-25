@@ -40,7 +40,7 @@ class SurveyTypeModal extends Component
         }
 
         // Determine points based on survey type
-        $pointsAllocated = ($this->surveyType === 'advanced') ? 30 : 10;
+        $pointsAllocated = ($this->surveyType === 'advanced') ? 20 : 10;
 
         $surveyModel = Survey::create([
             'user_id' => Auth::id(),
