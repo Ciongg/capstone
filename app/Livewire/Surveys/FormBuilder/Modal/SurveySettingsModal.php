@@ -12,6 +12,7 @@ use App\Models\InstitutionTagCategory;
 use App\Models\InstitutionTag;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class SurveySettingsModal extends Component
 {
@@ -47,8 +48,8 @@ class SurveySettingsModal extends Component
         $this->description = $survey->description;
         $this->type = $survey->type;
         $this->target_respondents = $survey->target_respondents;
-        $this->start_date = $survey->start_date;
-        $this->end_date = $survey->end_date;
+        $this->start_date = $survey->start_date ? Carbon::parse($survey->start_date)->format('Y-m-d\TH:i') : null;
+        $this->end_date = $survey->end_date ? Carbon::parse($survey->end_date)->format('Y-m-d\TH:i') : null;
         $this->isInstitutionOnly = (bool)$survey->is_institution_only; // Explicitly cast to boolean
         $this->survey_topic_id = $survey->survey_topic_id;
         $this->topics = SurveyTopic::all();
@@ -93,8 +94,7 @@ class SurveySettingsModal extends Component
 
     public function saveSurveyInformation()
     {
-        // You might want to add validation here
-        // $this->validate([...]);
+
 
         if ($this->survey) {
             // Handle banner image saving here
@@ -123,9 +123,9 @@ class SurveySettingsModal extends Component
             $this->survey = $this->survey->fresh(); 
 
             // Dispatch events
-            $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Survey information updated!')->to(FormBuilder::class);
-            $this->dispatch('surveySettingsUpdated', surveyId: $surveyId)->to(FormBuilder::class);
-            $this->dispatch('surveyTitleUpdated', title: $this->title); // If still needed globally
+            $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Survey information Updated!')->to(FormBuilder::class);
+
+            $this->dispatch('surveyTitleUpdated', title: $this->title)->to(FormBuilder::class); // If still needed globally
             $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
         }
     }

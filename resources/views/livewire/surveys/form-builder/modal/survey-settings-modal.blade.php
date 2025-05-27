@@ -172,11 +172,13 @@
             </div>
             <div>
                 <label class="block font-semibold mb-1">Start Date</label>
-                <input type="date" wire:model.defer="start_date" class="w-full border rounded px-3 py-2" />
+                <input type="datetime-local" wire:model.defer="start_date" class="w-full border rounded px-3 py-2" />
+                @error('start_date') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
             <div>
                 <label class="block font-semibold mb-1">End Date</label>
-                <input type="date" wire:model.defer="end_date" class="w-full border rounded px-3 py-2" />
+                <input type="datetime-local" wire:model.defer="end_date" class="w-full border rounded px-3 py-2" />
+                @error('end_date') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
             
             {{-- Save Button for Information --}}

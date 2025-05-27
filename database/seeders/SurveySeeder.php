@@ -224,7 +224,7 @@ class SurveySeeder extends Seeder
         $imageFiles = Storage::disk('public')->files('surveys');
         
         // Create 10 random surveys
-        for ($i = 0; $i < 200; $i++) {
+        for ($i = 0; $i < 1; $i++) {
             $surveyStatus = 'published';
             $surveyType = $faker->randomElement(['basic', 'advanced']);
             

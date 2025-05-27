@@ -104,7 +104,8 @@
             <span class="block sm:inline">{{ session('error') }}</span>
         </div>
     @endif
-
+    
+    
     <!-- Sticky Survey Navbar - Always accessible -->
     @include('livewire.surveys.form-builder.partials.survey-navbar')
 
@@ -141,94 +142,18 @@
             </div>
         @endif
 
-        <div class="space-y-6">
-            <!-- Sticky Page Selector Container -->
-            <div class="sticky top-0 z-30 bg-white shadow px-6 py-3 mb-4 rounded">
-                <!-- Page Selector -->
-                @if ($pages->isEmpty())
-                    <div class="text-center">
-                        <button
-                            wire:click="addPage"
-                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                        >
-                            + Add Page
-                        </button>
-                    </div>
-                @else
-                    <div class="flex items-center space-x-1 overflow-x-auto py-1">
-                        @foreach ($pages as $page)
-                            <div wire:key="sticky-page-{{ $page->id }}" class="flex items-center group flex-shrink-0">
-                                {{-- Page Button --}}
-                                <button
-                                    @click="
-                                        const newActivePageId = {{ $page->id }};
-                                        if (activePageId !== newActivePageId) { // Check if it's actually changing
-                                            selectedQuestionId = null; // Deselect question when changing page
-                                            activePageId = newActivePageId; // Set Alpine ID first
-                                            $wire.setActivePage(newActivePageId); // Then call Livewire
-                                        }
-                                        // Scroll is handled by $watch('activePageId', ...)
-                                    "
-                                    type="button"
-                                    :class="{
-                                        'px-3 py-2 rounded cursor-pointer transition duration-150 ease-in-out whitespace-nowrap': true,
-                                        'rounded-l': activePageId !== {{ $page->id }},
-                                        'rounded': activePageId === {{ $page->id }},
-                                        'bg-blue-500 text-white hover:bg-blue-600': activePageId === {{ $page->id }},
-                                        'bg-gray-200 text-gray-700 hover:bg-gray-300': activePageId !== {{ $page->id }}
-                                    }"
-                                    title="{{ $page->title ?: 'Page ' . $page->page_number }}"
-                                >
-                                    {{ Str::limit($page->title ?: 'Page ' . $page->page_number, 12) }}
-                                </button>
-                                {{-- Reorder Buttons (Only show if page is active) --}}
-                                <div
-                                    x-show="activePageId === {{ $page->id }}"
-                                    x-transition:enter="transition ease-out duration-100"
-                                    x-transition:enter-start="opacity-0 scale-95"
-                                    x-transition:enter-end="opacity-100 scale-100"
-                                    x-transition:leave="transition ease-in duration-75"
-                                    x-transition:leave-start="opacity-100 scale-100"
-                                    x-transition:leave-end="opacity-0 scale-95"
-                                    class="flex flex-col ml-1 flex-shrink-0"
-                                    x-cloak
-                                >
-                                    <button
-                                        wire:click.stop="movePageUp({{ $page->id }})"
-                                        type="button"
-                                        class="px-1 py-0 text-xs rounded-tr {{ $loop->first ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800' }}"
-                                        {{ $loop->first ? 'disabled' : '' }}
-                                        aria-label="Move page up"
-                                    >
-                                        ▲
-                                    </button>
-                                    <button
-                                        wire:click.stop="movePageDown({{ $page->id }})"
-                                        type="button"
-                                        class="px-1 py-0 text-xs rounded-br {{ $loop->last ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800' }}"
-                                        {{ $loop->last ? 'disabled' : '' }}
-                                        aria-label="Move page down"
-                                    >
-                                        ▼
-                                    </button>
-                                </div>
-                            </div>
-                        @endforeach
-                        {{-- Add Page Button --}}
-                        <button
-                            wire:click="addPage"
-                            class="ml-4 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex-shrink-0"
-                        >
-                            + Add Page
-                        </button>
-                    </div>
-                @endif
-            </div>
 
-            <!-- Pages and Questions -->
+
+
+            <!-- Sticky Page Selector -->
+            @include('livewire.surveys.form-builder.partials.page-navigation')
+
+
+    
+            <!-- Pages and Questions the form itself-->
             <div>
                 @foreach ($pages as $page)
-                    <div id="page-container-{{ $page->id }}" class="bg-white shadow-md rounded-lg p-6 mb-6" wire:key="page-{{ $page->id }}">
+                    <div id="page-container-{{ $page->id }}" class="bg-white shadow-md rounded-lg p-6 mb-6" wire:key="page-{{ $page->id }} ">
                         @include('livewire.surveys.form-builder.partials.page-header', ['page' => $page])
 
                         @php
@@ -245,7 +170,7 @@
                                 {{-- Clickable Overlay --}}
                                 <div
                                     x-show="selectedQuestionId !== {{ $question->id }}"
-                                    @click="selectedQuestionId = {{ $question->id }}; activePageId = {{ $page->id }}; $wire.selectQuestion({{ $question->id }})"
+                                    x-on:click="selectedQuestionId = {{ $question->id }}; activePageId = {{ $page->id }}; $wire.selectQuestion({{ $question->id }})"
                                     class="absolute inset-0 bg-transparent hover:bg-blue-500/5 z-10 rounded-lg transition-all duration-200 cursor-pointer"
                                 ></div>
 

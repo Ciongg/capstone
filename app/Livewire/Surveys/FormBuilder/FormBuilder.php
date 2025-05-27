@@ -25,12 +25,10 @@ class FormBuilder extends Component
     public $ratingStars = [];
     public $likertColumns = [];
     public $likertRows = [];
-    public $flashMessageTrigger = 0; // Dummy property to trigger re-renders for flash messages
 
     // Add the listener property
     protected $listeners = [
         'surveyTitleUpdated' => 'updateTitleFromEvent',
-        'surveySettingsUpdated' => 'refreshSurveyData',
         'settingsOperationCompleted' => 'handleSettingsOperationCompleted', // New listener
     ];
 
@@ -56,32 +54,38 @@ class FormBuilder extends Component
             ->orderBy('order') // Ensure pages are ordered
             ->get();
 
+            
+
         $this->questions = [];
         $this->choices = [];
 
         foreach ($this->pages as $page) {
             foreach ($page->questions as $question) {
+                
                 $this->questions[$question->id] = $question->toArray();
-                if ($question->question_type === 'rating') {
-                    $this->ratingStars[$question->id] = $question->stars ?? 5;
-                }
-                if ($question->question_type === 'likert') {
-                    $this->likertColumns[$question->id] = is_array($question->likert_columns)
-                        ? $question->likert_columns
-                        : (json_decode($question->likert_columns, true) ?: []);
-                    $this->likertRows[$question->id] = is_array($question->likert_rows)
-                        ? $question->likert_rows
-                        : (json_decode($question->likert_rows, true) ?: []);
-                }
-                if ($question->question_type === 'multiple_choice') {
-                    $this->questions[$question->id]['limit_answers'] = (bool)($question->limit_answers ?? false);
-                    $this->questions[$question->id]['limit_condition'] = $question->limit_condition;
-                    $this->questions[$question->id]['max_answers'] = $question->max_answers;
-                }
-                foreach ($question->choices as $choice) {
-                    // Include is_other in the choices array
-                    $this->choices[$choice->id] = $choice->toArray();
-                }
+                    if ($question->question_type === 'rating') {
+                        $this->ratingStars[$question->id] = $question->stars ?? 5;
+                    }
+
+                    if ($question->question_type === 'likert') {
+                        $this->likertColumns[$question->id] = is_array($question->likert_columns)
+                            ? $question->likert_columns
+                            : (json_decode($question->likert_columns, true) ?: []);
+                        $this->likertRows[$question->id] = is_array($question->likert_rows)
+                            ? $question->likert_rows
+                            : (json_decode($question->likert_rows, true) ?: []);
+                    }
+
+                    if ($question->question_type === 'multiple_choice') {
+                        $this->questions[$question->id]['limit_answers'] = (bool)($question->limit_answers ?? false);
+                        $this->questions[$question->id]['limit_condition'] = $question->limit_condition;
+                        $this->questions[$question->id]['max_answers'] = $question->max_answers;
+                    }
+
+                        foreach ($question->choices as $choice) {
+                            // Include is_other in the choices array
+                            $this->choices[$choice->id] = $choice->toArray();
+                        }
             }
         }
     }
@@ -106,6 +110,13 @@ class FormBuilder extends Component
         $question = SurveyQuestion::findOrFail($questionId);
         $this->activePageId = $question->survey_page_id;
     }
+
+
+
+
+    
+
+    
     
     public function updateRatingStars($questionId)
     {
@@ -128,14 +139,10 @@ class FormBuilder extends Component
             'subtitle' => '',
         ]);
 
-        // Set the newly added page as the active page immediately
-        $this->activePageId = $newPage->id;
-        $this->selectedQuestionId = null; // Deselect any question when adding a page
-
         // Reload the pages AFTER setting the ID
         $this->loadPages();
 
-        // Dispatch event AFTER loadPages
+        //handles teh scrolling ot the page
         $this->dispatch('pageAdded', pageId: $newPage->id);
     }
 
@@ -146,16 +153,7 @@ class FormBuilder extends Component
             return;
         }
 
-        if (!$this->activePageId) {
-            // Ensure an active page exists or create one
-            $firstPage = $this->survey->pages()->orderBy('order')->first();
-            if (!$firstPage) {
-                $this->addPage();
-                $firstPage = $this->survey->pages()->orderBy('order')->first();
-            }
-            $this->activePageId = $firstPage->id;
-        }
-
+     
         $page = SurveyPage::findOrFail($this->activePageId);
         $newOrder = 1; // Default order
 
@@ -168,16 +166,11 @@ class FormBuilder extends Component
         } else {
             // --- Question is selected: Insert after selected question ---
             $selectedQuestion = SurveyQuestion::find($this->selectedQuestionId);
-            // Ensure selected question is on the active page, fallback to beginning if not
-            if ($selectedQuestion && $selectedQuestion->survey_page_id == $this->activePageId) {
-                $newOrder = $selectedQuestion->order + 1;
-                // Increment the order of subsequent questions on this page
-                $page->questions()->where('order', '>=', $newOrder)->increment('order');
-            } else {
-                // Fallback: If selected question isn't on this page, add to the beginning
-                $newOrder = 1;
-                $page->questions()->increment('order');
-            }
+
+            $newOrder = $selectedQuestion->order + 1;
+            // Increment the order of subsequent questions on this page
+            $page->questions()->where('order', '>=', $newOrder)->increment('order');
+            
         }
 
         // Create the new question with the calculated order and default text
@@ -212,7 +205,7 @@ class FormBuilder extends Component
             $question->save();
         }
         // Add default choices for multiple choice
-        if ($type === 'multiple_choice') {
+        if ($type === 'multiple_choice' || $type === 'radio') {
             SurveyChoice::create([
                 'survey_question_id' => $question->id,
                 'choice_text' => 'Option 1',
@@ -225,18 +218,6 @@ class FormBuilder extends Component
             ]);
         }
 
-        if ($type === 'radio') {
-            SurveyChoice::create([
-                'survey_question_id' => $question->id,
-                'choice_text' => 'Option 1',
-                'order' => 1,
-            ]);
-            SurveyChoice::create([
-                'survey_question_id' => $question->id,
-                'choice_text' => 'Option 2',
-                'order' => 2,
-            ]);
-        }
 
         $this->loadPages(); // Reload data BEFORE setting the selected ID
 
@@ -248,6 +229,9 @@ class FormBuilder extends Component
         $this->dispatch('questionAdded', questionId: $question->id, pageId: $page->id);
     }
 
+
+
+
     public function addChoice($questionId)
     {
         $question = SurveyQuestion::findOrFail($questionId);
@@ -258,11 +242,6 @@ class FormBuilder extends Component
         $existingChoicesCount = $question->choices()->count();
         $order = $existingChoicesCount + 1 - $orderOffset;
         $choiceText = 'Option ' . $order;
-
-        // If 'Other' exists, increment its order
-        if ($otherOption) {
-            $otherOption->increment('order');
-        }
 
         $choice = SurveyChoice::create([
             'survey_question_id' => $questionId,
@@ -293,12 +272,11 @@ class FormBuilder extends Component
             ]);
 
             $this->loadPages(); // Reload to reflect changes
-        } else {
-            // Optional: Add feedback if 'Other' already exists
-            session()->flash('error', 'An "Other" option already exists for this question.');
         }
     }
 
+
+    //update question text, required, and limit condition (if applicable)
     public function updateQuestion($questionId)
     {
         $question = SurveyQuestion::findOrFail($questionId);
@@ -325,8 +303,8 @@ class FormBuilder extends Component
                 if (is_numeric($maxInput) && $maxInput >= 1) {
                     $maxAnswers = (int)$maxInput;
                 } else {
-                    // If condition is set but max_answers is invalid, potentially reset condition or throw validation error
-                    // For now, let's reset the condition to avoid saving invalid state
+                    // If condition is set but max_answers is invalid, throw validation error
+                    // reset the condition to avoid saving invalid state
                     // $limitCondition = null;
                     // Or better: Add validation rule
                     $this->addError('questions.' . $questionId . '.max_answers', 'Number is required when limit is set.');
@@ -354,6 +332,7 @@ class FormBuilder extends Component
         ]);
 
         $this->loadPages();
+
     }
 
     public function updatePage($pageId, $field, $value)
@@ -387,18 +366,20 @@ class FormBuilder extends Component
                 $subsequentQuestion->decrement('order');
             });
 
-        // Reload only the affected page's questions
-        $this->pages = $this->survey->pages()
-            ->with(['questions' => function ($query) use ($pageId) {
-                $query->where('survey_page_id', $pageId)->orderBy('order');
-            }])
-            ->orderBy('order')
-            ->get();
+        // // Reload only the affected page's questions
+        // $this->pages = $this->survey->pages()
+        //     ->with(['questions' => function ($query) use ($pageId) {
+        //         $query->where('survey_page_id', $pageId)->orderBy('order');
+        //     }])
+        //     ->orderBy('order')
+        //     ->get();
 
-        // Reset the selected question if it was the one being deleted
-        if ($this->selectedQuestionId === $questionId) {
-            $this->selectedQuestionId = null;
-        }
+
+        $this->activePageId = null;
+        $this->selectedQuestionId = null;
+        
+        $this->dispatch('pageSelected', pageId: null);
+        // $this->loadPages();
     }
 
     public function removeChoice($choiceId)
@@ -415,25 +396,15 @@ class FormBuilder extends Component
         unset($this->choices[$choiceId]);
 
         // Get all subsequent choices for this question, ordered by 'order'
-        $subsequentChoices = SurveyChoice::where('survey_question_id', $questionId)
+        SurveyChoice::where('survey_question_id', $questionId)
             ->where('order', '>', $deletedOrder)
             ->orderBy('order')
-            ->get();
+            ->get()
+            ->each(function ($subsequentQuestion) {
+                $subsequentQuestion->decrement('order');
+            });
 
-        foreach ($subsequentChoices as $subChoice) {
-            // Decrement the order
-            $newOrder = $subChoice->order - 1;
-            $subChoice->order = $newOrder;
-
-            // If the choice_text matches "Option X" AND it's not the 'Other' option, update it
-            if (!$subChoice->is_other && preg_match('/^Option \d+$/', $subChoice->choice_text)) {
-                $subChoice->choice_text = 'Option ' . $newOrder;
-            }
-
-            $subChoice->save();
-        }
-
-        $this->loadPages();
+        // $this->loadPages();
     }
 
     public function removePage($pageId)
@@ -442,7 +413,7 @@ class FormBuilder extends Component
             $page = SurveyPage::where('survey_id', $this->survey->id)->findOrFail($pageId);
             $deletedOrder = $page->order;
 
-            $page->questions()->each(function ($question) {
+            $page->questions()->lazy()->each(function ($question) {
                 $question->choices()->delete(); // Remove associated choices
                 $question->delete(); // Remove questions
             });
@@ -454,7 +425,10 @@ class FormBuilder extends Component
                 ->decrement('order');
 
             // Optionally update page_number if it's used for display
-            $remainingPages = $this->survey->pages()->orderBy('order')->get();
+            $remainingPages = SurveyPage::where('survey_id', $this->survey->id)
+            ->orderBy('order')
+            ->get();
+
             foreach ($remainingPages as $index => $remainingPage) {
                 $remainingPage->update(['page_number' => $index + 1]);
             }
@@ -620,18 +594,6 @@ class FormBuilder extends Component
         $this->loadPages();
     }
 
-    public function getPageForQuestion($questionId)
-    {
-        if (!$questionId) return null;
-        
-        foreach ($this->questions as $qId => $question) {
-            if ($qId == $questionId) {
-                return $question['survey_page_id'];
-            }
-        }
-        
-        return null;
-    }
 
     // --- Reordering Methods ---
 
@@ -727,22 +689,10 @@ class FormBuilder extends Component
     public function handleSettingsOperationCompleted(string $status, string $message)
     {
         session()->flash($status, $message);
-        $this->flashMessageTrigger++; // Increment to ensure Livewire sees a change and re-renders
     }
 
     public function render()
     {
-        return view('livewire.surveys.form-builder.form-builder', [
-            'questions' => $this->questions,
-            'choices' => $this->choices,
-            'pages' => $this->pages,
-            'activePageId' => $this->activePageId,
-            'selectedQuestionId' => $this->selectedQuestionId,
-            'surveyTitle' => $this->surveyTitle,
-            'hasResponses' => $this->hasResponses,
-            'ratingStars' => $this->ratingStars,
-            'likertColumns' => $this->likertColumns,
-            'likertRows' => $this->likertRows,
-        ]);
+        return view('livewire.surveys.form-builder.form-builder');
     }
 }

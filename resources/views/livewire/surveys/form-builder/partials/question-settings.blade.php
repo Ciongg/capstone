@@ -48,7 +48,7 @@
                     <label for="limit-condition-{{ $question->id }}" class="text-sm text-gray-600">Limit:</label>
                     <select
                         id="limit-condition-{{ $question->id }}"
-                        wire:model.live="questions.{{ $question->id }}.limit_condition"
+                        wire:model="questions.{{ $question->id }}.limit_condition"
                         wire:change="updateQuestion({{ $question->id }})"
                         class="border rounded px-2 py-0.5 text-sm"
                     >
@@ -62,7 +62,7 @@
                         <input
                             type="number"
                             min="1"
-                            wire:model.live="questions.{{ $question->id }}.max_answers"
+                            wire:model="questions.{{ $question->id }}.max_answers"
                             wire:change="updateQuestion({{ $question->id }})"
                             class="w-16 border rounded px-2 py-0.5 text-sm ml-1"
                             placeholder="Num"
