@@ -19,7 +19,7 @@
             {{-- Delete Button (Hide when question not selected) --}}
             <button
                 x-show="selectedQuestionId === {{ $question->id }}" x-cloak
-                wire:click="removeChoice({{ $choice->id }})"
+                wire:click="removeItem('choice', {{ $choice->id }})"
                 wire:confirm="Are you sure you want to remove this choice?"
                 type="button"
                 class="text-red-500 hover:text-red-700"
@@ -66,7 +66,7 @@
             {{-- Delete Button for 'Other' (Hide when question not selected) --}}
             <button
                 x-show="selectedQuestionId === {{ $question->id }}" x-cloak
-                wire:click="removeChoice({{ $otherChoice->id }})"
+                wire:click="removeItem('choice', {{ $otherChoice->id }})"
                 wire:confirm="Are you sure you want to remove the &quot;Other&quot; option?"
                 type="button"
                 class="text-red-500 hover:text-red-700"
@@ -83,9 +83,9 @@
 
     {{-- Add Choice / Add Other Buttons (Only show when question is selected) --}}
     <div x-show="selectedQuestionId === {{ $question->id }}" x-cloak class="pt-2 flex space-x-2">
-        <button wire:click="addChoice({{ $question->id }})" class="text-blue-500 hover:text-blue-700 text-sm">+ Add Choice</button>
+        <button wire:click="addItem('choice', {{ $question->id }})" class="text-blue-500 hover:text-blue-700 text-sm">+ Add Choice</button>
         @if(!$otherChoice)
-            <button wire:click="addOtherOption({{ $question->id }})" class="text-blue-500 hover:text-blue-700 text-sm">+ Add "Other"</button>
+            <button wire:click="addItem('otherOption', {{ $question->id }})" class="text-blue-500 hover:text-blue-700 text-sm">+ Add "Other"</button>
         @endif
     </div>
 </div>

@@ -40,7 +40,7 @@ class FormBuilder extends Component
         $this->surveyTitle = $survey->title; // Make sure it's initialized
         $this->activePageId = null;
         $this->selectedQuestionId = null;
-    }
+    } 
 
     public function loadPages()
     {
@@ -92,13 +92,18 @@ class FormBuilder extends Component
 
 
 
+
+
+
+
+    
     public function setActivePage($pageId)
     {
-        // Update state on the server
+
         $this->activePageId = $pageId;
         $this->selectedQuestionId = null; // Deselect any selected question
 
-        // Dispatch event to signal Alpine to update its state explicitly
+
         $this->dispatch('pageSelected', pageId: $pageId);
     }
 
@@ -114,10 +119,11 @@ class FormBuilder extends Component
 
 
 
-    
 
-    
-    
+
+
+
+
     public function updateRatingStars($questionId)
     {
         $question = SurveyQuestion::findOrFail($questionId);
@@ -126,163 +132,20 @@ class FormBuilder extends Component
         $this->loadPages();
     }
 
-    public function addPage()
+    public function updatePage($pageId, $field, $value)
     {
-        // Get the highest order and increment it for the new page
-        $lastOrder = $this->survey->pages()->max('order') ?? 0;
-
-        // Create a new page
-        $newPage = $this->survey->pages()->create([
-            'page_number' => $lastOrder + 1, // Keep page_number for display if needed, but order by 'order'
-            'order' => $lastOrder + 1,       // Set the order
-            'title' => 'Untitled Page',
-            'subtitle' => '',
-        ]);
-
-        // Reload the pages AFTER setting the ID
-        $this->loadPages();
-
-        //handles teh scrolling ot the page
-        $this->dispatch('pageAdded', pageId: $newPage->id);
-    }
-
-    public function addQuestion($type)
-    {
-        if ($type === 'page') {
-            $this->addPage();
-            return;
-        }
-
-     
-        $page = SurveyPage::findOrFail($this->activePageId);
-        $newOrder = 1; // Default order
-
-        // Determine the order based on selection context
-        if ($this->selectedQuestionId === null) {
-            // --- Page is selected: Add to the very beginning ---
-            $newOrder = 1; // New question will be order 1
-            // Increment the order of ALL existing questions on this page
-            $page->questions()->increment('order');
-        } else {
-            // --- Question is selected: Insert after selected question ---
-            $selectedQuestion = SurveyQuestion::find($this->selectedQuestionId);
-
-            $newOrder = $selectedQuestion->order + 1;
-            // Increment the order of subsequent questions on this page
-            $page->questions()->where('order', '>=', $newOrder)->increment('order');
-            
-        }
-
-        // Create the new question with the calculated order and default text
-        $questionData = [
-            'survey_id' => $this->survey->id,
-            'survey_page_id' => $page->id,
-            'question_text' => 'Enter Question Title',
-            'question_type' => $type,
-            'order' => $newOrder,
-            'required' => false,
-        ];
-
-        // Initialize limit condition for multiple choice
-        if ($type === 'multiple_choice') {
-            $questionData['limit_condition'] = null; // Default to no limit
-            $questionData['max_answers'] = null;
-        }
-
-        $question = $page->questions()->create($questionData);
-
-        // Handle specific question type initializations (rating, likert)
-        if ($type === 'rating') {
-            $this->ratingStars[$question->id] = 5;
-        }
-        if ($type === 'likert') {
-            $defaultColumns = ['Agree', 'Neutral', 'Disagree'];
-            $defaultRows = ['Statement 1', 'Statement 2', 'Statement 3'];
-            $this->likertColumns[$question->id] = $defaultColumns;
-            $this->likertRows[$question->id] = $defaultRows;
-            $question->likert_columns = $defaultColumns;
-            $question->likert_rows = $defaultRows;
-            $question->save();
-        }
-        // Add default choices for multiple choice
-        if ($type === 'multiple_choice' || $type === 'radio') {
-            SurveyChoice::create([
-                'survey_question_id' => $question->id,
-                'choice_text' => 'Option 1',
-                'order' => 1,
-            ]);
-            SurveyChoice::create([
-                'survey_question_id' => $question->id,
-                'choice_text' => 'Option 2',
-                'order' => 2,
-            ]);
-        }
-
-
-        $this->loadPages(); // Reload data BEFORE setting the selected ID
-
-        // Set the new question as selected AFTER reloading data
-        $this->selectedQuestionId = $question->id;
-        $this->activePageId = $page->id; // Ensure active page is correct
-
-        // Dispatch event for Alpine focus/scroll
-        $this->dispatch('questionAdded', questionId: $question->id, pageId: $page->id);
+            $page = SurveyPage::findOrFail($pageId);
+            $page->update([$field => $value]);
+    
+            $this->loadPages();
     }
 
 
-
-
-    public function addChoice($questionId)
-    {
-        $question = SurveyQuestion::findOrFail($questionId);
-        // Ensure 'Other' option stays last if it exists
-        $otherOption = $question->choices()->where('is_other', true)->first();
-        $orderOffset = $otherOption ? 1 : 0; // If 'Other' exists, new choices go before it
-
-        $existingChoicesCount = $question->choices()->count();
-        $order = $existingChoicesCount + 1 - $orderOffset;
-        $choiceText = 'Option ' . $order;
-
-        $choice = SurveyChoice::create([
-            'survey_question_id' => $questionId,
-            'choice_text' => $choiceText,
-            'order' => $order,
-            'is_other' => false, // Explicitly false
-        ]);
-
-        // No need to update local state here, loadPages will handle it
-        $this->loadPages();
-    }
-
-    public function addOtherOption($questionId)
-    {
-        $question = SurveyQuestion::findOrFail($questionId);
-
-        // Check if 'Other' option already exists
-        $existingOther = $question->choices()->where('is_other', true)->exists();
-
-        if (!$existingOther) {
-            $order = $question->choices()->count() + 1; // Add as the last option
-
-            SurveyChoice::create([
-                'survey_question_id' => $questionId,
-                'choice_text' => 'Other', // Default text
-                'order' => $order,
-                'is_other' => true, // Mark as 'Other'
-            ]);
-
-            $this->loadPages(); // Reload to reflect changes
-        }
-    }
-
-
-    //update question text, required, and limit condition (if applicable)
     public function updateQuestion($questionId)
     {
         $question = SurveyQuestion::findOrFail($questionId);
         $questionData = $this->questions[$questionId] ?? [];
 
-        // Prepare data for update
         $updateData = [
             'question_text' => $questionData['question_text'] ?? '',
             'required' => $questionData['required'] ?? false,
@@ -308,7 +171,7 @@ class FormBuilder extends Component
                     // $limitCondition = null;
                     // Or better: Add validation rule
                     $this->addError('questions.' . $questionId . '.max_answers', 'Number is required when limit is set.');
-                    return; // Stop update if max_answers is invalid
+                    return; 
                 }
             }
 
@@ -316,13 +179,10 @@ class FormBuilder extends Component
             $updateData['max_answers'] = $maxAnswers;
         }
 
-        // Update the question fields
-        $question->update($updateData);
 
-        // No need to call loadPages() here if using wire:model.live,
-        // but call it if using defer or if other parts rely on the reloaded state immediately.
-        // $this->loadPages();
+        $question->update($updateData);
     }
+
 
     public function updateChoice($choiceId)
     {
@@ -334,112 +194,65 @@ class FormBuilder extends Component
         $this->loadPages();
 
     }
+ 
+     public function updateLikertColumn($questionId, $colIndex)
+     {
+         $this->saveLikert($questionId);
+     }
 
-    public function updatePage($pageId, $field, $value)
-    {
-        $page = SurveyPage::findOrFail($pageId);
-        $page->update([$field => $value]);
-
-        $this->loadPages();
-    }
-
-    public function removeQuestion($questionId)
-    {
-        $question = SurveyQuestion::findOrFail($questionId);
-        $pageId = $question->survey_page_id; // Get the page ID for the question
-
-        // Delete associated choices
-        $question->choices()->delete();
-
-        // Delete the question
-        $question->delete();
-
-        // Remove the question from the local state
-        unset($this->questions[$questionId]);
-
-        // Update the order of subsequent questions on the same page
-        SurveyQuestion::where('survey_page_id', $pageId)
-            ->where('order', '>', $question->order)
-            ->orderBy('order')
-            ->get()
-            ->each(function ($subsequentQuestion) {
-                $subsequentQuestion->decrement('order');
-            });
-
-        // // Reload only the affected page's questions
-        // $this->pages = $this->survey->pages()
-        //     ->with(['questions' => function ($query) use ($pageId) {
-        //         $query->where('survey_page_id', $pageId)->orderBy('order');
-        //     }])
-        //     ->orderBy('order')
-        //     ->get();
+     public function updateLikertRow($questionId, $rowIndex)
+     {
+         $this->saveLikert($questionId);
+     }
+ 
+     protected function saveLikert($questionId)
+     {
+         $question = SurveyQuestion::find($questionId);
+         $question->likert_columns = $this->likertColumns[$questionId] ?? [];
+         $question->likert_rows = $this->likertRows[$questionId] ?? [];
+         $question->save();
+         $this->loadPages();
+     }
 
 
-        $this->activePageId = null;
-        $this->selectedQuestionId = null;
-        
-        $this->dispatch('pageSelected', pageId: null);
-        // $this->loadPages();
-    }
 
-    public function removeChoice($choiceId)
-    {
-        $choice = SurveyChoice::findOrFail($choiceId);
-        $questionId = $choice->survey_question_id;
-        $deletedOrder = $choice->order;
-        $isOther = $choice->is_other; // Check if it was the 'Other' option
 
-        // Delete the choice
-        $choice->delete();
 
-        // Remove from local state (though loadPages will overwrite)
-        unset($this->choices[$choiceId]);
-
-        // Get all subsequent choices for this question, ordered by 'order'
-        SurveyChoice::where('survey_question_id', $questionId)
-            ->where('order', '>', $deletedOrder)
-            ->orderBy('order')
-            ->get()
-            ->each(function ($subsequentQuestion) {
-                $subsequentQuestion->decrement('order');
-            });
-
-        // $this->loadPages();
-    }
-
-    public function removePage($pageId)
-    {
-        DB::transaction(function () use ($pageId) {
-            $page = SurveyPage::where('survey_id', $this->survey->id)->findOrFail($pageId);
-            $deletedOrder = $page->order;
-
-            $page->questions()->lazy()->each(function ($question) {
-                $question->choices()->delete(); // Remove associated choices
-                $question->delete(); // Remove questions
-            });
-            $page->delete();
-
-            // Update the order of subsequent pages
-            SurveyPage::where('survey_id', $this->survey->id)
-                ->where('order', '>', $deletedOrder)
-                ->decrement('order');
-
-            // Optionally update page_number if it's used for display
-            $remainingPages = SurveyPage::where('survey_id', $this->survey->id)
-            ->orderBy('order')
-            ->get();
-
-            foreach ($remainingPages as $index => $remainingPage) {
-                $remainingPage->update(['page_number' => $index + 1]);
+    
+        public function updateSurveyTitle()
+        {
+            // Removed the lock check
+            if ($this->survey) { 
+                $this->survey->title = $this->surveyTitle;
+                $this->survey->save();
+                // Dispatch the event here too!
+                $this->dispatch('surveyTitleUpdated', title: $this->surveyTitle); 
             }
+        }
+    
+        // Method to handle the event
+        public function updateTitleFromEvent($title)
+        {
+            $this->surveyTitle = $title;
+        }
 
-            if ($this->activePageId === $pageId) {
-                $this->activePageId = $remainingPages->first()->id ?? null;
-            }
-        });
 
-        $this->loadPages();
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public function deleteAll()
     {
@@ -460,22 +273,7 @@ class FormBuilder extends Component
         $this->selectedQuestionId = null;
     }
 
-    public function updateSurveyTitle()
-    {
-        // Removed the lock check
-        if ($this->survey) { 
-            $this->survey->title = $this->surveyTitle;
-            $this->survey->save();
-            // Dispatch the event here too!
-            $this->dispatch('surveyTitleUpdated', title: $this->surveyTitle); 
-        }
-    }
 
-    // Method to handle the event
-    public function updateTitleFromEvent($title)
-    {
-        $this->surveyTitle = $title;
-    }
 
     public function publishSurvey()
     {
@@ -488,7 +286,7 @@ class FormBuilder extends Component
             $this->survey->status = 'published';
         }
         $this->survey->save();
-        // Reload pages to potentially update UI elements dependent on status
+       
         $this->loadPages(); 
     }
 
@@ -497,102 +295,11 @@ class FormBuilder extends Component
         // Unpublishing always sets it back to pending
         $this->survey->status = 'pending';
         $this->survey->save();
-        // Reload pages to potentially update UI elements dependent on status
+      
         $this->loadPages(); 
     }
 
-    public function addLikertColumn($questionId)
-    {
-        $question = SurveyQuestion::find($questionId);
-        $columns = is_array($question->likert_columns) ? $question->likert_columns : (json_decode($question->likert_columns, true) ?: []);
-        $nextNumber = count($columns) + 1;
-        $columns[] = 'Option ' . $nextNumber;
-        $question->likert_columns = json_encode($columns);
-        $question->save();
-        $this->loadPages();
-    }
-
-    public function removeLikertColumn($questionId, $colIndex)
-    {
-        // Remove the column
-        $columns = $this->likertColumns[$questionId] ?? [];
-        unset($columns[$colIndex]);
-        $columns = array_values($columns);
-
-        // Renumber only columns with default name
-        $optionNumber = 1;
-        foreach ($columns as $i => &$col) {
-            if (preg_match('/^Option \d+$/', $col)) {
-                $col = 'Option ' . $optionNumber;
-            }
-            $optionNumber++;
-        }
-
-        $this->likertColumns[$questionId] = $columns;
-
-        // Save to DB
-        $question = SurveyQuestion::find($questionId);
-        $question->likert_columns = json_encode($columns);
-        $question->save();
-
-        $this->loadPages();
-    }
-
-    public function updateLikertColumn($questionId, $colIndex)
-    {
-        $this->saveLikert($questionId);
-    }
-
-    public function addLikertRow($questionId)
-    {
-        $question = SurveyQuestion::find($questionId);
-        $rows = is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []);
-        $nextNumber = count($rows) + 1;
-        $rows[] = 'Statement ' . $nextNumber;
-        $question->likert_rows = json_encode($rows);
-        $question->save();
-        $this->loadPages();
-    }
-
-    public function removeLikertRow($questionId, $rowIndex)
-    {
-        // Remove the row
-        $rows = $this->likertRows[$questionId] ?? [];
-        unset($rows[$rowIndex]);
-        $rows = array_values($rows);
-
-        // Renumber only rows with default name
-        $statementNumber = 1;
-        foreach ($rows as $i => &$row) {
-            if (preg_match('/^Statement \d+$/', $row)) {
-                $row = 'Statement ' . $statementNumber;
-            }
-            $statementNumber++;
-        }
-
-        $this->likertRows[$questionId] = $rows;
-
-        // Save to DB
-        $question = SurveyQuestion::find($questionId);
-        $question->likert_rows = json_encode($rows);
-        $question->save();
-
-        $this->loadPages();
-    }
-
-    public function updateLikertRow($questionId, $rowIndex)
-    {
-        $this->saveLikert($questionId);
-    }
-
-    protected function saveLikert($questionId)
-    {
-        $question = SurveyQuestion::find($questionId);
-        $question->likert_columns = $this->likertColumns[$questionId] ?? [];
-        $question->likert_rows = $this->likertRows[$questionId] ?? [];
-        $question->save();
-        $this->loadPages();
-    }
+  
 
 
     // --- Reordering Methods ---
@@ -690,6 +397,326 @@ class FormBuilder extends Component
     {
         session()->flash($status, $message);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public function addItem($type, $parentId = null, $options = [])
+    {
+        switch($type) {
+            case 'page':
+                // Get the highest order and increment it for the new page
+                $lastOrder = $this->survey->pages()->max('order') ?? 0;
+                
+                $newItem = $this->survey->pages()->create([
+                    'page_number' => $lastOrder + 1,
+                    'order' => $lastOrder + 1,
+                    'title' => $options['title'] ?? 'Untitled Page',
+                    'subtitle' => $options['subtitle'] ?? '',
+                ]);
+                
+                $this->dispatch('pageAdded', pageId: $newItem->id);
+                break;
+                
+            case 'question':
+                if (!$parentId) return; // Need a page ID
+                
+                $page = SurveyPage::findOrFail($parentId);
+                $questionType = $options['question_type'] ?? 'multiple_choice';
+                $selectedQuestionId = $this->selectedQuestionId;
+                
+                // Determine order - same logic as before
+                if ($selectedQuestionId === null) {
+                    $newOrder = 1;
+                    $page->questions()->increment('order');
+                } else {
+                    $selectedQuestion = SurveyQuestion::find($selectedQuestionId);
+                    $newOrder = $selectedQuestion->order + 1;
+                    $page->questions()->where('order', '>=', $newOrder)->increment('order');
+                }
+                
+                // Create question with the specific type
+                $questionData = [
+                    'survey_id' => $this->survey->id,
+                    'survey_page_id' => $page->id,
+                    'question_text' => $options['text'] ?? 'Enter Question Title',
+                    'question_type' => $questionType,
+                    'order' => $newOrder,
+                    'required' => false,
+                ];
+                
+                $newItem = $page->questions()->create($questionData);
+                
+                // Handle type-specific initialization
+                $this->initializeQuestionType($newItem, $questionType);
+                
+                $this->selectedQuestionId = $newItem->id;
+                $this->activePageId = $page->id;
+                
+                $this->dispatch('questionAdded', questionId: $newItem->id, pageId: $page->id);
+                break;
+                
+            case 'choice':
+                if (!$parentId) return; // Need a question ID
+                
+                $question = SurveyQuestion::findOrFail($parentId);
+                $otherOption = $question->choices()->where('is_other', true)->first();
+                $orderOffset = $otherOption ? 1 : 0;
+                
+                $existingChoicesCount = $question->choices()->count();
+                $order = $existingChoicesCount + 1 - $orderOffset;
+                
+                $newItem = SurveyChoice::create([
+                    'survey_question_id' => $parentId,
+                    'choice_text' => $options['text'] ?? 'Option ' . $order,
+                    'order' => $order,
+                    'is_other' => $options['is_other'] ?? false,
+                ]);
+                break;
+
+            case 'otherOption':
+            // New case for adding "Other" option
+            if (!$parentId) return; // Need a question ID
+            
+            $question = SurveyQuestion::findOrFail($parentId);
+            
+            // Check if 'Other' option already exists
+            $existingOther = $question->choices()->where('is_other', true)->exists();
+            
+            if (!$existingOther) {
+                $order = $question->choices()->count() + 1; // Add as the last option
+                
+                $newItem = SurveyChoice::create([
+                    'survey_question_id' => $parentId,
+                    'choice_text' => $options['text'] ?? 'Other', // Default text
+                    'order' => $order,
+                    'is_other' => true, // Mark as 'Other'
+                ]);
+            }
+            break;
+
+                
+            case 'likertColumn':
+                if (!$parentId) return; // Need a question ID
+                
+                $question = SurveyQuestion::find($parentId);
+                $columns = is_array($question->likert_columns) ? 
+                    $question->likert_columns : 
+                    (json_decode($question->likert_columns, true) ?: []);
+                    
+                $nextNumber = count($columns) + 1;
+                $columns[] = $options['text'] ?? 'Option ' . $nextNumber;
+                
+                $question->likert_columns = json_encode($columns);
+                $question->save();
+                
+                $newItem = $question;
+                break;
+                
+            case 'likertRow':
+                 if (!$parentId) return; // Need a question ID
+
+                  $question = SurveyQuestion::find($parentId);
+                    $rows = is_array($question->likert_rows) ?
+                     $question->likert_rows :
+                      (json_decode($question->likert_rows, true) ?: []);
+
+                    $nextNumber = count($rows) + 1;
+                    $rows[] = 'Statement ' . $nextNumber;
+
+                    $question->likert_rows = json_encode($rows);
+                    $question->save();
+
+                    $newItem = $question;
+                break;
+        }
+        
+        $this->loadPages();
+        return $newItem ?? null;
+    }
+
+    // Helper method for question type initialization
+    protected function initializeQuestionType($question, $type)
+    {
+        if ($type === 'rating') {
+            $this->ratingStars[$question->id] = 5;
+        }
+        else if ($type === 'likert') {
+            $defaultColumns = ['Agree', 'Neutral', 'Disagree'];
+            $defaultRows = ['Statement 1', 'Statement 2', 'Statement 3'];
+            $this->likertColumns[$question->id] = $defaultColumns;
+            $this->likertRows[$question->id] = $defaultRows;
+            $question->likert_columns = $defaultColumns;
+            $question->likert_rows = $defaultRows;
+            $question->save();
+        }
+        else if ($type === 'multiple_choice' || $type === 'radio') {
+            // Add default choices
+            SurveyChoice::create([
+                'survey_question_id' => $question->id,
+                'choice_text' => 'Option 1',
+                'order' => 1,
+            ]);
+            SurveyChoice::create([
+                'survey_question_id' => $question->id,
+                'choice_text' => 'Option 2',
+                'order' => 2,
+            ]);
+        }
+    }
+
+
+
+
+
+
+
+
+
+    public function removeItem($type, $itemId)
+    {
+    switch($type) {
+        case 'page':
+            $page = SurveyPage::findOrFail($itemId);
+            $deletedOrder = $page->order;
+            
+            // Delete associated questions & choices
+            foreach ($page->questions as $question) {
+                $question->choices()->delete();
+                $question->delete();
+            }
+            $page->delete();
+            
+            // Update order of subsequent pages
+            SurveyPage::where('survey_id', $this->survey->id)
+                ->where('order', '>', $deletedOrder)
+                ->decrement('order');
+                
+            // Update active page if needed
+            $firstPage = $this->survey->pages()->orderBy('order')->first();
+            if ($this->activePageId === $itemId) {
+                $this->activePageId = $firstPage ? $firstPage->id : null;
+                $this->selectedQuestionId = null;
+                $this->dispatch('pageSelected', pageId: $this->activePageId);
+            }
+            break;
+            
+        case 'question':
+            $question = SurveyQuestion::findOrFail($itemId);
+            $pageId = $question->survey_page_id;
+            $deletedOrder = $question->order;
+            
+            // Delete choices and question
+            $question->choices()->delete();
+            $question->delete();
+            
+            // Update order of subsequent questions
+            SurveyQuestion::where('survey_page_id', $pageId)
+                ->where('order', '>', $deletedOrder)
+                ->decrement('order');
+                
+            // Reset selection if this question was selected
+            if ($this->selectedQuestionId === $itemId) {
+                $this->selectedQuestionId = null;
+                $this->activePageId = $pageId;
+                $this->dispatch('pageSelected', pageId: $pageId);
+            }
+            break;
+            
+        case 'choice':
+            $choice = SurveyChoice::findOrFail($itemId);
+            $questionId = $choice->survey_question_id;
+            $deletedOrder = $choice->order;
+            
+            $choice->delete();
+            
+            // Reorder remaining choices
+            SurveyChoice::where('survey_question_id', $questionId)
+                ->where('order', '>', $deletedOrder)
+                ->decrement('order');
+            break;
+            
+        case 'likertColumn':
+        // Parse itemId to extract questionId and colIndex
+        list($questionId, $colIndex) = explode('-', $itemId);
+        
+        // Remove the column
+        $columns = $this->likertColumns[$questionId] ?? [];
+        unset($columns[(int)$colIndex]);
+        $columns = array_values($columns);
+
+        // Renumber only columns with default name
+        $optionNumber = 1;
+        foreach ($columns as $i => &$col) {
+            if (preg_match('/^Option \d+$/', $col)) {
+                $col = 'Option ' . $optionNumber;
+                $optionNumber++;
+            }
+        }
+
+        $this->likertColumns[$questionId] = $columns;
+
+        // Save to DB
+        $question = SurveyQuestion::find($questionId);
+        if ($question) {
+            $question->likert_columns = json_encode($columns);
+            $question->save();
+        }
+        break;
+        
+        case 'likertRow':
+        // Parse itemId to extract questionId and rowIndex
+        list($questionId, $rowIndex) = explode('-', $itemId);
+        
+        // Remove the row
+        $rows = $this->likertRows[$questionId] ?? [];
+        unset($rows[(int)$rowIndex]);
+        $rows = array_values($rows);
+
+        // Renumber only rows with default name
+        $statementNumber = 1;
+        foreach ($rows as $i => &$row) {
+            if (preg_match('/^Statement \d+$/', $row)) {
+                $row = 'Statement ' . $statementNumber;
+                $statementNumber++;
+            }
+        }
+
+        $this->likertRows[$questionId] = $rows;
+
+        // Save to DB
+        $question = SurveyQuestion::find($questionId);
+        if ($question) {
+            $question->likert_rows = json_encode($rows);
+            $question->save();
+        }
+        break;
+        }
+        
+        $this->loadPages();
+    }
+
 
     public function render()
     {

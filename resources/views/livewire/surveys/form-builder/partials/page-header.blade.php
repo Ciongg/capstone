@@ -89,7 +89,8 @@
                 'context' => 'page',
                 'id' => $page->id,
                 'confirmMessage' => 'Are you sure you want to delete this page and all its questions?',
-                'action' => 'removePage'
+                'action' => 'removeItem',
+                'type' => 'page'  // Add this line to specify the type
             ])
         </div>
     </div> {{-- End Page Actions Container --}}

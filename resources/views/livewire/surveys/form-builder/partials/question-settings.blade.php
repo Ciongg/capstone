@@ -80,7 +80,9 @@
                 'context' => 'question',
                 'id' => $question->id,
                 'confirmMessage' => 'Are you sure you want to remove this question?',
-                'action' => 'removeQuestion'
+                'action' => 'removeItem',
+                'type' => 'question'  // Add this line to specify the type
+
             ])
         </div>
     </div>

@@ -1,6 +1,6 @@
 <button
     onclick="confirm('{{ $confirmMessage }}') || event.stopImmediatePropagation()"
-    wire:click.stop="{{ $action }}({{ $id }})"
+    wire:click.stop="@if(isset($type)){{ $action }}('{{ $type }}', {{ $id }})@else{{ $action }}({{ $id }})@endif"
     class="p-1.5 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
     title="{{ $context === 'page' ? 'Delete Page' : 'Remove Question' }}"
 >

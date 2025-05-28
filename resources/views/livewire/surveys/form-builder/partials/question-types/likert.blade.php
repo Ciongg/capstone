@@ -30,7 +30,7 @@
                                 <button
                                     x-show="focused"
                                     x-transition
-                                    wire:click="removeLikertColumn({{ $question->id }}, {{ $colIndex }})"
+                                    wire:click="removeItem('likertColumn', '{{ $question->id }}-{{ $colIndex }}')"
                                     type="button"
                                     class="text-red-500 text-base absolute right-0 top-1/2 -translate-y-1/2"
                                     style="vertical-align: middle;"
@@ -40,7 +40,7 @@
                     @endforeach
                     <th class="bg-white px-4 py-2">
                         @if($selectedQuestionId === $question->id)
-                            <button wire:click="addLikertColumn({{ $question->id }})"
+                            <button wire:click="addItem( 'likertColumn', {{ $question->id }})"
                                 type="button"
                                 class="text-blue-600 text-2xl font-bold hover:text-blue-800"
                                 title="Add Option"
@@ -77,7 +77,7 @@
                                     <button
                                         x-show="focused"
                                         x-transition
-                                        wire:click="removeLikertRow({{ $question->id }}, {{ $rowIndex }})"
+                                        wire:click="removeItem('likertRow', '{{ $question->id }}-{{ $rowIndex }}')"
                                         type="button"
                                         class="text-red-500 text-base"
                                         style="vertical-align: middle;"
@@ -97,7 +97,7 @@
         </table>
         @if($selectedQuestionId === $question->id)
             <div class="flex justify-start mt-3">
-                <button class="text-green-600 hover:text-green-800 font-bold" wire:click="addLikertRow({{ $question->id }})"
+                <button class="text-green-600 hover:text-green-800 font-bold" wire:click="addItem('likertRow', {{ $question->id }})"
                     type="button"
                     title="Add Statement"
                 ><span class="text-2xl ">+</span> statement</button>
