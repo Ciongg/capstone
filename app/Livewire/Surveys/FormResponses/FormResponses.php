@@ -14,18 +14,6 @@ class FormResponses extends Component
         $this->survey = Survey::with('pages.questions.answers')->findOrFail($surveyId);
     }
 
-    public function deleteAllResponses()
-    {
-        if ($this->survey) {
-            $this->survey->responses()->each(function ($response) {
-                $response->answers()->delete();
-                $response->delete();
-            });
-            // Reload survey with fresh relations
-            $this->survey = Survey::with('pages.questions.answers')->find($this->survey->id);
-        }
-    }
-
     public function render()
     {
         return view('livewire.surveys.form-responses.form-responses', [

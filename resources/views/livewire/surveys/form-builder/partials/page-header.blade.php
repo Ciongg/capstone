@@ -9,7 +9,7 @@
         {{-- Use local Alpine variables --}}
         x-show="activePageId !== {{ $page->id }} || selectedQuestionId !== null" {{-- Show if page not active OR a question is selected --}}
         {{-- Update Alpine state directly AND call Livewire --}}
-        @click="
+        x-on:click="
             selectedQuestionId = null;
             activePageId = {{ $page->id }};
             $wire.setActivePage({{ $page->id }});

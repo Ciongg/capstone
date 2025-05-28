@@ -244,15 +244,7 @@
             initializeCharts();
         });
         
-        // Re-initialize charts after any Livewire updates
-        document.addEventListener('livewire:load', function() {
-            Livewire.hook('message.processed', () => {
-                // Wait a moment to ensure the DOM is updated
-                setTimeout(() => {
-                    initializeCharts();
-                }, 100);
-            });
-        });
+      
     </script>
     @endif
 </div>

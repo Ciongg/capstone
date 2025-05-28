@@ -4,5 +4,5 @@
     readonly
     tabindex="-1"
     placeholder="Short text response (single line, no wrap)"
-    @click="selectedQuestionId = {{ $question->id }}; activePageId = {{ $question->survey_page_id }}; $wire.selectQuestion({{ $question->id }})"
+    x-on:click="selectedQuestionId = {{ $question->id }}; activePageId = {{ $question->survey_page_id }}; $wire.selectQuestion({{ $question->id }})"
 >

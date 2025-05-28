@@ -13,6 +13,7 @@
                         <th class="bg-white px-4 py-2 relative" style="vertical-align: bottom;">
                             <div x-data="{ focused: false }" class="flex justify-center items-center gap-0 relative">
                                 <textarea
+                                    id="likert-col-{{ $question->id }}-{{ $colIndex }}"
                                     wire:model.defer="likertColumns.{{ $question->id }}.{{ $colIndex }}"
                                     wire:blur="updateLikertColumn({{ $question->id }}, {{ $colIndex }})"
                                     class="text-center px-2 py-1 rounded border border-transparent focus:border-blue-400 focus:ring-0 focus:outline-none transition resize-none bg-white mx-auto"
@@ -22,10 +23,21 @@
                                     @if($selectedQuestionId !== $question->id) readonly @endif
                                     @focus="focused = true"
                                     @blur="focused = false"
-                                    x-ref="textarea"
-                                    @input="$refs.textarea.style.height = 'auto'; $refs.textarea.style.height = $refs.textarea.scrollHeight + 'px';"
-                                    x-init="$nextTick(() => { $refs.textarea.style.height = 'auto'; $refs.textarea.style.height = $refs.textarea.scrollHeight + 'px'; })"
-                                    x-effect="$refs.textarea && ($refs.textarea.style.height = 'auto', $refs.textarea.style.height = $refs.textarea.scrollHeight + 'px')"
+                                    x-data="{
+                                        init() {
+                                            $nextTick(() => this.adjustHeight());
+                                        },
+                                        adjustHeight() {
+                                            const id = $el.id;
+                                            $el.style.height = 'auto';
+                                            const newHeight = `${$el.scrollHeight}px`;
+                                            $el.style.height = newHeight;
+                                            Alpine.store('textareaHeights').set(id, newHeight);
+                                        }
+                                    }"
+                                    @input="adjustHeight()"
+                                    data-autoresize
+                                    :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('likert-col-{{ $question->id }}-{{ $colIndex }}') : 'auto' }"
                                 ></textarea>
                                 <button
                                     x-show="focused"
@@ -59,6 +71,7 @@
                                 class="flex items-center gap-1"
                             >
                                 <textarea
+                                    id="likert-row-{{ $question->id }}-{{ $rowIndex }}"
                                     wire:model.defer="likertRows.{{ $question->id }}.{{ $rowIndex }}"
                                     wire:blur="updateLikertRow({{ $question->id }}, {{ $rowIndex }})"
                                     class="w-full px-2 py-1 rounded border border-transparent focus:border-blue-400 focus:ring-0 focus:outline-none transition resize-none bg-white"
@@ -68,10 +81,21 @@
                                     @if($selectedQuestionId !== $question->id) readonly @endif
                                     @focus="focused = true"
                                     @blur="focused = false"
-                                    x-ref="textarea"
-                                    @input="$refs.textarea.style.height = 'auto'; $refs.textarea.style.height = $refs.textarea.scrollHeight + 'px';"
-                                    x-init="$nextTick(() => { $refs.textarea.style.height = 'auto'; $refs.textarea.style.height = $refs.textarea.scrollHeight + 'px'; })"
+                                    x-data="{
+                                        init() {
+                                            $nextTick(() => this.adjustHeight());
+                                        },
+                                        adjustHeight() {
+                                            const id = $el.id;
+                                            $el.style.height = 'auto';
+                                            const newHeight = `${$el.scrollHeight}px`;
+                                            $el.style.height = newHeight;
+                                            Alpine.store('textareaHeights').set(id, newHeight);
+                                        }
+                                    }"
+                                    @input="adjustHeight()"
                                     data-autoresize
+                                    :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('likert-row-{{ $question->id }}-{{ $rowIndex }}') : 'auto' }"
                                 ></textarea>
                                 <span style="width: 2em; display: inline-block;">
                                     <button

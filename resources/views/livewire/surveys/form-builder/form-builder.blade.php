@@ -1,6 +1,3 @@
-@php
-    use Illuminate\Support\Str; // Import Str helper
-@endphp
 <div
     class="bg-gray-100 min-h-screen p-16"
     x-data="{ selectedQuestionId: @entangle('selectedQuestionId').live, activePageId: @entangle('activePageId').live }"
@@ -21,21 +18,21 @@
             }
         });
 
-        $watch('activePageId', (value, oldValue) => {
-            if (value !== null && selectedQuestionId === null && value !== oldValue) {
-                $nextTick(() => {
-                    const pageElement = document.getElementById('page-container-' + value);
-                    if (pageElement) {
-                        const elementRect = pageElement.getBoundingClientRect();
-                        const absoluteElementTop = elementRect.top + window.scrollY;
-                        const middle = absoluteElementTop - (window.innerHeight / 3);
-                        window.scrollTo({ top: Math.max(0, middle), behavior: 'smooth' });
-                    } else {
-                        console.warn('Element not found for scrolling: page-container-' + value);
-                    }
-                });
-            }
-        });
+      $watch('activePageId', (value, oldValue) => {
+       if (value !== null && selectedQuestionId === null && value !== oldValue) {
+            $nextTick(() => {
+                const pageElement = document.getElementById('page-container-' + value);
+                if (pageElement) {
+                    const elementRect = pageElement.getBoundingClientRect();
+                    const absoluteElementTop = elementRect.top + window.scrollY;
+                    const middle = absoluteElementTop - (window.innerHeight / 3);
+                    window.scrollTo({ top: Math.max(0, middle), behavior: 'smooth' });
+                } else {
+                    console.warn('Element not found for scrolling: page-container-' + value);
+                }
+            });
+        }
+    });
 
         document.addEventListener('livewire:initialized', () => {
             @this.on('questionAdded', ({ questionId, pageId }) => {
@@ -49,26 +46,11 @@
                 selectedQuestionId = null;
                 console.log('Alpine received pageAdded:', pageId);
 
-                setTimeout(() => {
-                    const pageElement = document.getElementById('page-container-' + pageId);
-                    if (pageElement) {
-                        const elementRect = pageElement.getBoundingClientRect();
-                        const absoluteElementTop = elementRect.top + window.scrollY;
-                        const targetScrollY = absoluteElementTop - 80;
-
-                        window.scrollTo({ top: Math.max(0, targetScrollY), behavior: 'smooth' });
-
-                        pageElement.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2', 'transition-all', 'duration-1000');
-                        setTimeout(() => {
-                            pageElement.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
-                        }, 1500);
-                    } else {
-                        console.warn('Element not found for scrolling after page add: page-container-' + pageId);
-                    }
-                }, 150);
+             
             });
 
             @this.on('pageSelected', ({ pageId }) => {
+
                 selectedQuestionId = null;
                 activePageId = pageId;
                 console.log('Alpine received pageSelected:', pageId);

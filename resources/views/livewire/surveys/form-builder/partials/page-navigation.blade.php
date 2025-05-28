@@ -29,14 +29,7 @@
                             <div wire:key="sticky-page-{{ $page->id }}" class="flex items-center group flex-shrink-0">
                                 {{-- Page Button --}}
                                 <button
-                                    x-on:click="
-                                        const newActivePageId = {{ $page->id }};
-                                        if (activePageId !== newActivePageId) {
-                                            selectedQuestionId = null; 
-                                            activePageId = newActivePageId; 
-                                            $wire.setActivePage(newActivePageId); 
-                                        }
-                                    "
+                                   x-on:click="selectedQuestionId = null; activePageId = {{ $page->id }}; $wire.setActivePage({{ $page->id }});"
                                     type="button"
                                     :class="{
                                         'px-3 py-2 rounded cursor-pointer transition duration-150 ease-in-out whitespace-nowrap': true,
