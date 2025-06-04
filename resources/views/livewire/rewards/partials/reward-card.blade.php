@@ -67,7 +67,7 @@
     <div class="p-4 border-t border-gray-200 bg-gray-50">
         <button 
             x-data
-            @click="
+            x-on:click="
                 $wire.set('selectedRewardId', null).then(() => {
                     $wire.set('selectedRewardId', {{ $reward->id }});
                     $nextTick(() => $dispatch('open-modal', { name: 'reward-redeem-modal' }));

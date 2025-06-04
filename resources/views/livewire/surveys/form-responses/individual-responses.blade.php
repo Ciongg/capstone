@@ -1,10 +1,12 @@
+{{-- filepath: c:\Users\sharp\OneDrive\Desktop\Formigo\formigo\resources\views\livewire\surveys\form-responses\individual-responses.blade.php --}}
+{{-- Main container with gray background --}}
 <div class="bg-gray-100 min-h-screen py-8">
     <div class="max-w-7xl mx-auto space-y-10 px-4">
-
+        {{-- Only show content when a response is available --}}
         @if($currentRespondent)
-            {{-- Top Navigation & Respondent Info --}}
+            {{-- Top card with respondent navigation and summary information --}}
             <div class="bg-white shadow-xl rounded-2xl p-10 mb-8 relative">
-                {{-- Back button in top left --}}
+                {{-- Back button to return to all responses view --}}
                 <a href="{{ route('surveys.responses', $survey->id) }}"
                    class="absolute top-4 left-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg shadow hover:bg-gray-200 flex items-center"
                 >
@@ -14,9 +16,7 @@
                     Back
                 </a>
                 
-             
-                
-                {{-- Report button in top right --}}
+                {{-- Report button to flag problematic responses --}}
                 <button
                     x-data
                     x-on:click="$dispatch('open-modal', {name : 'view-report-response-modal'})"
@@ -31,7 +31,9 @@
                     </svg>
                 </button>
                 
+                {{-- Navigation controls between responses --}}
                 <div class="flex items-center justify-center mb-8">
+                    {{-- Previous response button --}}
                     <button
                         class="p-3 rounded-full bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
                         wire:click="$set('current', {{ $current - 1 }})"
@@ -42,9 +44,13 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
+                    
+                    {{-- Current respondent counter --}}
                     <div class="mx-8 font-bold text-2xl text-center min-w-[220px]">
                         Respondent {{ $current + 1 }} of {{ $survey->responses->count() }}
                     </div>
+                    
+                    {{-- Next response button --}}
                     <button
                         class="p-3 rounded-full bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
                         wire:click="$set('current', {{ $current + 1 }})"
@@ -56,6 +62,22 @@
                         </svg>
                     </button>
                 </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+                
+                {{-- Respondent statistics grid --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {{-- Demographic Matched Box --}}
                     <div class="bg-gray-100 font-bold rounded-lg shadow p-6 relative">
@@ -63,9 +85,10 @@
                         @if($respondentUser)
                             <div class="flex items-center">
                                 <div class="flex flex-wrap gap-2 flex-1">
+                                    {{-- Show matched demographic tags based on status --}}
                                     @if($matchedSurveyTagsInfo['status'] === 'has_matches')
                                         @foreach ($matchedSurveyTagsInfo as $tagInfo)
-                                            @if(is_array($tagInfo) && $tagInfo['matched'])
+                                            @if(is_array($tagInfo) && isset($tagInfo['matched']) && $tagInfo['matched'])
                                                 <span class="px-3 py-1 text-sm font-medium rounded-full whitespace-nowrap bg-green-200 text-green-800 shadow-md">
                                                     {{ $tagInfo['name'] }}
                                                 </span>
@@ -78,7 +101,8 @@
                                     @endif
                                 </div>
                             </div>
-                            {{-- View All button at the bottom right --}}
+                            
+                            {{-- View all demographics modal trigger --}}
                             <div class="absolute right-4 bottom-2">
                                 <button
                                     x-data
@@ -89,7 +113,8 @@
                                     View All
                                 </button>
                             </div>
-                            {{-- Modal --}}
+                            
+                            {{-- Demographics modal component --}}
                             <x-modal name="view-all-demographic-modal" title="All Demographics">
                                 <livewire:surveys.form-responses.modal.view-all-demographic-modal :survey="$survey" :user="$respondentUser" />
                             </x-modal>
@@ -104,6 +129,7 @@
                     <div class="bg-gray-100 rounded-lg font-bold shadow p-6">
                         <span class="text-lg font-semibold text-gray-500 mb-3 block text-left">Trust Score</span>
                         @if($respondentUser)
+                            {{-- Color coding based on trust score value --}}
                             @php
                                 $scoreColorClass = match (true) {
                                     $trustScore === 100 => 'text-[#03b8ff]',
@@ -134,14 +160,15 @@
                         <span class="text-lg font-semibold text-gray-500 mb-3 block text-left">Time Completed</span>
                         @if($timeCompleted)
                             <div class="flex items-center justify-between">
-                                <span class="text-5xl font-bold" style="color: #03b8ff;">4:34</span>
+                                {{-- Display the actual time from the $timeCompleted variable instead of hardcoded "4:34" --}}
+                                <span class="text-5xl font-bold" style="color: #03b8ff;">{{ $timeCompleted }}</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-14 h-14 text-gray-500">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                 </svg>
                             </div>
                         @else
                             <div class="flex items-center justify-between">
-                                <span class="text-3xl font-bold" style="color: #03b8ff;">49s</span>
+                                <span class="text-3xl font-bold" style="color: #03b8ff;">--</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-14 h-14 text-gray-500">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                 </svg>
@@ -154,14 +181,28 @@
                 <x-modal name="view-report-response-modal" title="Report Response">
                     <livewire:surveys.form-responses.modal.view-report-response-modal :response="$currentRespondent" :survey="$survey" />
                 </x-modal>
-
             </div>
-
-           
             
-            {{-- Survey Pages, Questions, and Answers --}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            {{-- Survey pages with questions and answers --}}
             @foreach($pagesWithProcessedAnswers as $page)
                 <div class="bg-white shadow-xl rounded-2xl p-10 space-y-12 mb-10">
+                    {{-- Page header with title and subtitle --}}
                     <div class="mb-4">
                         <span class="text-2xl font-bold">{{ $page['title'] }}</span>
                         @if($page['subtitle'])
@@ -169,22 +210,30 @@
                         @endif
                         <hr class="my-3 border-gray-300">
                     </div>
+                    
+                    {{-- Questions and answers list --}}
                     <div class="space-y-8">
                         @foreach($page['questions'] as $question)
                             <div>
+                                {{-- Question text with numbering --}}
                                 <div class="font-semibold text-xl mb-2 pl-2">
                                     {{ $question['order'] ?? $loop->iteration }}. {{ $question['question_text'] }}
                                 </div>
 
+                                {{-- Display answer based on question type --}}
                                 @if(in_array($question['question_type'], ['multiple_choice', 'radio']))
+                                    {{-- Choice-based question (Multiple choice or Radio) --}}
                                     <div class="space-y-3 pl-8">
                                         @foreach($question['choices'] as $choice)
                                             <div class="flex items-center space-x-3">
+                                                {{-- Selected/unselected circle indicator --}}
                                                 @if($choice['is_selected'])
                                                     <span class="inline-block w-7 h-7 bg-gray-500 rounded-full border-2 border-gray-500"></span>
                                                 @else
                                                     <span class="inline-block w-7 h-7 bg-white rounded-full border-2 border-gray-400"></span>
                                                 @endif
+                                                
+                                                {{-- Choice text, bold if selected --}}
                                                 <span class="{{ $choice['is_selected'] ? 'font-semibold text-gray-700' : 'text-gray-400' }} text-lg">
                                                     {{ $choice['choice_text'] }}
                                                 </span>
@@ -192,8 +241,10 @@
                                         @endforeach
                                     </div>
                                 @elseif($question['question_type'] === 'likert')
+                                    {{-- Likert scale question --}}
                                     <div class="overflow-x-auto mt-2 ml-8">
                                         <table class="min-w-full text-center border border-gray-300">
+                                            {{-- Column headers --}}
                                             <thead class="border-b border-gray-300">
                                                 <tr>
                                                     <th class="bg-gray-50 w-52 border-r border-gray-300"></th>
@@ -202,8 +253,10 @@
                                                     @endforeach
                                                 </tr>
                                             </thead>
+                                            {{-- Rows with selections --}}
                                             <tbody>
                                                 @foreach($question['likert_rows'] as $rowIndex => $row)
+                                                    {{-- loop is a variable found in for each loops checks the current index of the loop--}}
                                                     @php
                                                         $rowBg = $loop->even ? 'bg-gray-50' : 'bg-white';
                                                         $selectedColumnIndex = $question['likert_answer_data'][$rowIndex] ?? null;
@@ -212,6 +265,7 @@
                                                         <td class="px-4 py-2 text-left text-base border-r border-gray-300">{{ $row }}</td>
                                                         @foreach($question['likert_columns'] as $colIndex => $column)
                                                             <td class="px-4 py-2 border-r border-gray-300 last:border-r-0">
+                                                                {{-- Selected/unselected indicator --}}
                                                                 @if($selectedColumnIndex !== null && $colIndex == $selectedColumnIndex)
                                                                     <span class="inline-block w-5 h-5 bg-gray-500 rounded-full"></span>
                                                                 @else
@@ -224,9 +278,11 @@
                                             </tbody>
                                         </table>
                                     </div>
-                                @else {{-- Handle other types like essay, short_text, date, rating --}}
+                                @else
+                                    {{-- Other question types (essay, short_text, date, rating) --}}
                                     <div class="bg-gray-100 border rounded px-4 py-3 text-lg text-gray-800 ml-8">
                                         @if($question['question_type'] === 'rating')
+                                            {{-- Star rating display --}}
                                             <div class="flex items-center">
                                                 @for ($i = 1; $i <= $question['stars']; $i++)
                                                     <svg class="w-6 h-6 {{ $i <= (int)$question['single_answer'] ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
@@ -236,6 +292,7 @@
                                                 <span class="ml-2 text-gray-600">({{ $question['single_answer'] }})</span>
                                             </div>
                                         @else
+                                            {{-- Text-based answer (essay, short_text, date) --}}
                                             {{ $question['single_answer'] }}
                                         @endif
                                     </div>
@@ -246,6 +303,7 @@
                 </div>
             @endforeach
         @else
+            {{-- Display when no response is available --}}
             <div class="text-gray-500 text-xl text-center py-10">
                 @if($survey->responses->isEmpty())
                     No responses yet for this survey.

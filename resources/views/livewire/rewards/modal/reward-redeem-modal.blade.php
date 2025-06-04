@@ -54,7 +54,7 @@
                         id="quantity" 
                         wire:model.live="redeemQuantity" 
                         min="1"
-                        max="{{ $reward->quantity != -1 ? $reward->quantity : '' }}"
+                        max="{{ $reward->quantity <= -1 ? $reward->quantity : '5' }}"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
                         {{ $reward->quantity == 0 && $reward->quantity != -1 ? 'disabled' : '' }}
                     >

@@ -36,8 +36,6 @@ Route::get('/vouchers', [RewardController::class, 'vouchersIndex'])->name('vouch
 
 Route::middleware('auth')->group(function () {
     Route::get('/surveys/create/{survey?}', [SurveyController::class, 'create'])->name('surveys.create'); // For opening/editing existing
-    // Route::get('/my-surveys', [SurveyController::class, 'showSurveys'])->name('my-surveys.index');
-    
     Route::get('/surveys/{survey}/preview', [SurveyController::class, 'showAnswerForm'])->name('surveys.preview')->defaults('isPreview', true);
     Route::get('/institution/analytics', [InstitutionAdminController::class, 'analyticsIndex'])->name('institution.analytics');
     Route::get('/institution/users', [InstitutionAdminController::class, 'usersIndex'])->name('institution.users');

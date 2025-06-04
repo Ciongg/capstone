@@ -1,4 +1,3 @@
-
 <div class="bg-gray-100 min-h-screen py-8">
     <div class="max-w-7xl mx-auto space-y-10 px-4">
 
@@ -53,28 +52,22 @@
             @foreach($survey->pages as $page)
                 {{-- Ensure questions are sorted by their order within the page --}}
                 @foreach($page->questions->sortBy('order') as $question) 
-                    @php $modalName = 'view-all-responses-modal' . $question->id; @endphp
-
+                    {{-- FOR MULTIPLE CHOICE AND RADIO --}}
                     @if(in_array($question->question_type, ['multiple_choice', 'radio']))
-                        <div class="bg-white shadow rounded-2xl p-8 mb-8 flex flex-col md:flex-row md:items-center md:justify-between relative">
-                            {{-- "More Details" button on top right --}}
-                            <div class="absolute top-4 right-4">
-                                <button
-                                    x-data
-                                    x-on:click="$dispatch('open-modal', {name : '{{ $modalName }}'})"
-                                    class="text-blue-600 underline font-semibold hover:text-blue-800 text-sm"
-                                    type="button"
-                                >
-                                    More Details
-                                </button>
-                            </div>
 
-                            {{-- Legend --}}
+                        {{-- container of question for multiple choice and radio aka single option--}}
+                        <div class="bg-white shadow rounded-2xl p-8 mb-8 flex flex-col md:flex-row md:items-center md:justify-between relative">
+                            {{-- Include the "More Details" button and modal partial --}}
+                            @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question])
+
                             <div class="md:w-1/2 mb-6 md:mb-0">
+
                                 {{-- Display question number and text --}}
                                 <div class="font-semibold mb-2 text-lg">{{ $questionCounter }}. {{ $question->question_text }}</div>
+                                
+                                {{-- Legend --}}
                                 <ul>
-                                    @foreach($question->choices->sortBy('order') as $i => $choice) {{-- Also sort choices if needed --}}
+                                    @foreach($question->choices->sortBy('order') as $i => $choice)
                                         <li class="flex items-center mb-2">
                                             <span class="inline-block w-4 h-4 rounded-full mr-2" style="background: {{ $colors[$i % count($colors)] }}"></span>
                                             <span>{{ $choice->choice_text }}</span>
@@ -86,81 +79,60 @@
                             <div class="md:w-1/2 flex justify-center">
                                 <canvas id="chart-question-{{ $question->id }}" width="200" height="200"></canvas>
                             </div>
-
-                            {{-- Modal for all responses to this question --}}
-                            <x-modal name="{{ $modalName }}" title="All Responses">
-                                <livewire:surveys.form-responses.modal.view-all-responses-modal :question="$question" />
-                            </x-modal>
                         </div>
                         @push('scripts')
                         <script>
                             let chartInstance{{ $question->id }};
 
                             function renderChart{{ $question->id }}() {
+                                //gets 2d drawing context from canvas element to draw chart
                                 const ctx = document.getElementById('chart-question-{{ $question->id }}').getContext('2d');
+                                //destroys previous chart instance if it exists
                                 if (chartInstance{{ $question->id }}) {
                                     chartInstance{{ $question->id }}.destroy();
                                 }
 
-                                // --- Corrected Data Calculation ---
+                                //  pulls choices and answers from the question laravel collection into JS using JSON
                                 const choices = @json($question->choices->sortBy('order')->values());
                                 const answers = @json($question->answers);
                                 
-                                // Initialize counts for each choice
+                                // Initialize counts for each choice for pie chart data to be all zeroes
                                 let data = Array(choices.length).fill(0);
                                 
                                 // Process each answer
-                                answers.forEach(answer => {
-                                    try {
-                                        // Parse the JSON string to get choice IDs array
-                                        const choiceIds = JSON.parse(answer.answer);
-                                        
-                                        // For multiple choice, answer is an array of choice IDs
-                                        if (Array.isArray(choiceIds)) {
-                                            choiceIds.forEach(choiceId => {
-                                                // Find the index of this choice ID in our choices array
-                                                const choiceIndex = choices.findIndex(c => c.id === parseInt(choiceId));
-                                                if (choiceIndex !== -1) {
+                               answers.forEach(answer => {
+                                try {
+                                    // Parse the JSON string to get answered choices
+                                    const choiceIds = JSON.parse(answer.answer);
+                                    
+                                    // Convert to array if it's not already one (for radio buttons)
+                                    const choiceIdArray = Array.isArray(choiceIds) ? choiceIds : [choiceIds];
+                                    
+                                    // Process each choice ID
+                                    choiceIdArray.forEach(choiceId => {
+                                        if (choiceId !== null && !isNaN(parseInt(choiceId))) {
+                                            const choiceIndex = choices.findIndex(c => c.id === parseInt(choiceId));
+                                            if (choiceIndex !== -1) {
                                                     data[choiceIndex]++;
                                                 }
-                                            });
-                                        } 
-                                        // For radio buttons, answer is a single choice ID
-                                        else if (!isNaN(parseInt(choiceIds))) {
-                                            const choiceIndex = choices.findIndex(c => c.id === parseInt(choiceIds));
-                                            if (choiceIndex !== -1) {
-                                                data[choiceIndex]++;
                                             }
-                                        }
+                                        });
                                     } catch (e) {
                                         console.error('Error parsing answer:', answer.answer, e);
                                     }
                                 });
-
+                                //maps through the choices to use as labels grabbing their text choice_text
                                 let labels = choices.map(choice => choice.choice_text);
+
+                                // cycle loop through colors array to assign colors to each slice of pie chart
+                                // Use modulo to cycle through colors based on index
+                                // 0 % 3 = 0, 1 % 3 = 1, 2 % 3 = 2, 3 % 3 = 0, etc.
                                 let backgroundColor = [
                                     @foreach($question->choices->sortBy('order') as $i => $choice)
                                         "{{ $colors[$i % count($colors)] }}",
                                     @endforeach
                                 ];
-
-                                // If only one non-zero value, add a transparent dummy slice
-                                let nonZero = data.filter(v => v > 0).length;
-                                if (nonZero === 1 && data.length > 1) {
-                                    const zeroIndex = data.findIndex(v => v === 0);
-                                    if (zeroIndex !== -1) {
-                                        data[zeroIndex] = 0.00001;
-                                    } else {
-                                        data.push(0.00001);
-                                        labels.push('dummy');
-                                        backgroundColor.push('rgba(0,0,0,0)');
-                                    }
-                                } else if (data.length === 1 && data[0] > 0) {
-                                    data.push(0.00001);
-                                    labels.push('dummy');
-                                    backgroundColor.push('rgba(0,0,0,0)');
-                                }
-
+                                
                                 chartInstance{{ $question->id }} = new Chart(ctx, {
                                     type: 'pie',
                                     data: {
@@ -185,8 +157,14 @@
                             });
                         </script>
                         @endpush
+
+
+
+                    {{-- FOR LIKERTS --}}
                     @elseif($question->question_type === 'likert')
                     @php
+                        // Reindex likert columns: use as-is if already an array, otherwise decode the JSON string.
+                        // If decoding fails or returns null/false, fallback to an empty array using the ?: operator.
                         $likertColumns = array_values(is_array($question->likert_columns) ? $question->likert_columns : (json_decode($question->likert_columns, true) ?: []));
                         $likertRows = array_values(is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []));
                         
@@ -215,20 +193,11 @@
                     @endphp
 
                         <div class="bg-white shadow rounded-lg p-6 mb-6 relative">
-                            {{-- "More Details" button on top right --}}
-                            <div class="absolute top-4 right-4">
-                                <button
-                                    x-data
-                                    x-on:click="$dispatch('open-modal', {name : '{{ $modalName }}'})"
-                                    class="text-blue-600 underline font-semibold hover:text-blue-800 text-sm"
-                                    type="button"
-                                >
-                                    More Details
-                                </button>
-                            </div>
+                            {{-- Include the "More Details" button and modal partial --}}
+                            @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question])
 
                             {{-- Display question number and text --}}
-                            <div class="font-semibold mb-2 text-lg">{{ $questionCounter }}. {{ $question->question_text }}</div>
+                            <div class="font-semibold mb-2 text-lg w-[1000px]">{{ $questionCounter }}. {{ $question->question_text }}</div>
                             <div class="overflow-x-auto">
                                 <table class="table-auto w-full border-collapse border border-gray-300 mb-4">
                                     <thead>
@@ -255,16 +224,13 @@
                             <div class="flex justify-center mt-6">
                                 <canvas id="likert-chart-{{ $question->id }}" height="{{ 150 * count($likertRows) }}"></canvas>
                             </div>
-
-                            {{-- Modal for all responses to this question --}}
-                            <x-modal name="{{ $modalName }}" title="All Responses">
-                                <livewire:surveys.form-responses.modal.view-all-responses-modal :question="$question" />
-                            </x-modal>
                         </div>
                         @push('scripts')
                         <script>
                             document.addEventListener('DOMContentLoaded', function () {
                                 const ctx = document.getElementById('likert-chart-{{ $question->id }}').getContext('2d');
+
+                                //json directive to pass PHP variables to JavaScript
                                 const rows = @json($likertRows);
                                 const columns = @json($likertColumns);
                                 const counts = @json($likertCounts); // Pass the correctly calculated counts
@@ -313,36 +279,33 @@
                             });
                         </script>
                         @endpush
-                    @else {{-- Handle other types like essay, short_text, date, rating --}}
+
+
+                    {{-- Handle other types like essay, short_text, date, rating --}}
+                    @else
                         <div class="bg-white shadow rounded-lg p-6 mb-6 relative">
-                            {{-- "More Details" button on top right --}}
-                            <div class="absolute top-4 right-4">
-                                <button
-                                    x-data
-                                    x-on:click="$dispatch('open-modal', {name : '{{ $modalName }}'})"
-                                    class="text-blue-600 underline font-semibold hover:text-blue-800 text-sm"
-                                    type="button"
-                                >
-                                    More Details
-                                </button>
-                            </div>
+                            {{-- Include the "More Details" button and modal partial --}}
+                            @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question])
 
                             {{-- Display question number and text --}}
-                            <div class="font-semibold mb-4 text-lg">{{ $questionCounter }}. {{ $question->question_text }}</div>
+                            <div class="font-semibold mb-4 text-lg w-[1000px]">{{ $questionCounter }}. {{ $question->question_text }}</div>
 
+                            {{-- FOR RATING--}}
                             @if($question->question_type === 'rating')
+
                                 @php
                                     $starCount = $question->stars ?? 5;
                                     $totalAnswers = $question->answers->count();
                                     $averageRating = $totalAnswers > 0 ? $question->answers->avg('answer') : 0;
-                                    // Use array_values to ensure 0-based indexing for Chart.js (like likert fix)
                                     $ratingCountsRaw = [];
                                     for ($i = 1; $i <= $starCount; $i++) {
                                         $ratingCountsRaw[] = $question->answers->where('answer', $i)->count();
                                     }
                                     $ratingCounts = array_values($ratingCountsRaw);
                                 @endphp
+
                                 <div class="flex flex-col md:flex-row gap-8">
+
                                     {{-- Left Side: Average Rating --}}
                                     <div class="md:w-1/3 flex flex-col items-center justify-center border-r border-gray-200 pr-8">
                                         <div class="text-4xl font-bold mb-2">{{ number_format($averageRating, 1) }}</div>
@@ -361,14 +324,16 @@
                                     <div class="md:w-2/3 relative" style="min-height: 150px;"> 
                                         <canvas id="rating-chart-{{ $question->id }}"></canvas>
                                     </div>
+
                                 </div>
+
                                 @push('scripts')
+
                                 <script>
                                     document.addEventListener('DOMContentLoaded', function () {
                                         const ctx = document.getElementById('rating-chart-{{ $question->id }}');
                                         if (!ctx) return;
 
-                                        // Use array_values to ensure 0-based indexing (like likert)
                                         const labels = [
                                             @for($i = 1; $i <= $starCount; $i++)
                                                 "{{ $i }} Star{{ $i > 1 ? 's' : '' }}",
@@ -416,6 +381,8 @@
                                 <div class="space-y-2">
                                     @php
                                         $answers = $question->answers->sortBy('created_at')->values();
+
+                                        //display limmit for answers shown
                                         $displayLimit = 5;
                                         $answerCount = $answers->count();
                                     @endphp
@@ -431,13 +398,9 @@
                                     @endforelse
                                 </div>
                             @endif
-
-                            {{-- Modal for all responses to this question --}}
-                            <x-modal name="{{ $modalName }}" title="All Responses">
-                                <livewire:surveys.form-responses.modal.view-all-responses-modal :question="$question" />
-                            </x-modal>
                         </div>
                     @endif
+
                     @php $questionCounter++; @endphp {{-- Increment counter after each question block --}}
                 @endforeach
             @endforeach
