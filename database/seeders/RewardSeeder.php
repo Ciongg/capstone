@@ -65,30 +65,30 @@ class RewardSeeder extends Seeder
             ],
         ];
         
-        // Add some monetary rewards
-        $monetaryRewards = [
-            [
-                'name' => '₱100 PayMaya Credit',
-                'description' => 'Get ₱100 credited to your PayMaya account',
-                'status' => Reward::STATUS_AVAILABLE,
-                'cost' => 2000,
-                'quantity' => 10,
-                'type' => 'monetary',
-                'image_path' => null, // Changed
-            ],
-            [
-                'name' => '₱200 GCash Transfer',
-                'description' => 'Get ₱200 sent to your GCash account',
-                'status' => Reward::STATUS_AVAILABLE,
-                'cost' => 3500,
-                'quantity' => 10,
-                'type' => 'monetary',
-                'image_path' => null, // Changed
-            ],
-        ];
+        // // Add some monetary rewards
+        // $monetaryRewards = [
+        //     [
+        //         'name' => '₱100 PayMaya Credit',
+        //         'description' => 'Get ₱100 credited to your PayMaya account',
+        //         'status' => Reward::STATUS_AVAILABLE,
+        //         'cost' => 2000,
+        //         'quantity' => 10,
+        //         'type' => 'monetary',
+        //         'image_path' => null, // Changed
+        //     ],
+        //     [
+        //         'name' => '₱200 GCash Transfer',
+        //         'description' => 'Get ₱200 sent to your GCash account',
+        //         'status' => Reward::STATUS_AVAILABLE,
+        //         'cost' => 3500,
+        //         'quantity' => 10,
+        //         'type' => 'monetary',
+        //         'image_path' => null, // Changed
+        //     ],
+        // ];
         
         // Insert all rewards into the database
-        foreach (array_merge($systemRewards, $voucherRewards, $monetaryRewards) as $reward) {
+        foreach (array_merge($systemRewards, $voucherRewards) as $reward) {
             Reward::create($reward);
         }
     }

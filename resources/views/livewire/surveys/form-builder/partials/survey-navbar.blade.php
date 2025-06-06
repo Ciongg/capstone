@@ -204,7 +204,7 @@
                 @if($survey->status !== 'ongoing')
                     <button
                         x-data
-                        x-on:click="$dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'}); open = false;"
+                        x-on:click="$dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'})"
                         class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                         role="menuitem"
                         title="Survey Settings"

@@ -10,11 +10,6 @@ class Reward extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
         'name',
         'status',
@@ -49,30 +44,7 @@ class Reward extends Model
         return $this->status === self::STATUS_AVAILABLE && $this->quantity > 0;
     }
 
-    /**
-     * Get the formatted cost with points symbol
-     *
-     * @return string
-     */
-    public function getFormattedCostAttribute(): string
-    {
-        return $this->cost . ' pts';
-    }
 
-    /**
-     * Get full image URL
-     *
-     * @return string|null
-     */
-    /* // Commented out for now
-    public function getImageUrlAttribute(): ?string
-    {
-        if ($this->image_path) {
-            return asset('storage/' . $this->image_path);
-        }
-        return null;
-    }
-    */
 
     /**
      * Decrement quantity when redeemed

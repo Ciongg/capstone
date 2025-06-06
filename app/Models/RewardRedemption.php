@@ -23,7 +23,7 @@ class RewardRedemption extends Model
         'gcash_number',
         'reward_type',
         'status',
-        
+        'quantity'
     ];
 
     /**

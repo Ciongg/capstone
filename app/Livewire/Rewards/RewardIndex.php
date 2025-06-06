@@ -12,6 +12,15 @@ class RewardIndex extends Component
     public $activeTab = 'system';
     public $selectedRewardId = null;
 
+    protected function getListeners()
+    {
+        return [
+            'redemptionError' => 'handleRedemptionError',
+            'rewardRedeemed' => '$refresh',
+            'redeem_success' => 'handleRedemptionSuccess',
+        ];
+    }
+
     // Get rewards from database
     public function getSystemRewardsProperty()
     {
@@ -25,12 +34,7 @@ class RewardIndex extends Component
             ->get(); // Show all voucher rewards regardless of availability
     }
 
-    public function getMonetaryRewardsProperty()
-    {
-        return Reward::where('type', 'monetary')
-            ->get(); // Show all monetary rewards regardless of availability
-    }
-
+  
     // Updated method for fetching selected reward
     public function getSelectedRewardProperty()
     {
@@ -47,6 +51,39 @@ class RewardIndex extends Component
         $this->activeTab = $tab;
     }
 
+    public function handleRedemptionError($message)
+    {
+        session()->flash('redeem_error', $message);
+    }
+
+      public function handleRedemptionSuccess($message)
+    {
+        session()->flash('redeem_success', $message);
+    }
+    
+    public function render()
+    {
+        $user = Auth::user();
+        
+        // Calculate user level and XP progress
+        $userLevel = $user ? $user->getLevel() : 1;
+        $levelProgress = $user ? $user->getLevelProgressPercentage() : 0;
+        $xpForNextLevel = $user ? $user->getXpRequiredForNextLevel() : 100;
+        
+        return view('livewire.rewards.reward-index', [
+            'user' => $user,
+            'userPoints' => $user?->points ?? 0,
+            'userExperience' => $user?->experience_points ?? 0,
+            'userTrustScore' => $user?->trust_score ?? 0,
+            'userLevel' => $userLevel,
+            'levelProgress' => $levelProgress,
+            'xpForNextLevel' => $xpForNextLevel,
+            'systemRewards' => $this->systemRewards,
+            'voucherRewards' => $this->voucherRewards,
+            // 'monetaryRewards' => $this->monetaryRewards,
+            'selectedReward' => $this->selectedReward
+        ]);
+    }
     /**
      * Add points to the current user (for testing purposes)
      */
@@ -82,9 +119,6 @@ class RewardIndex extends Component
         session()->flash('message', "-{$amount} points subtracted!");
     }
 
-
-
-    
     /**
      * Level up the user immediately (for testing purposes)
      */
@@ -140,52 +174,4 @@ class RewardIndex extends Component
         session()->flash('message', "Reset to level 1 with title: {$user->title}!");
     }
     
-    protected function getListeners()
-    {
-        return [
-            'open-modal' => 'openRedeemModal',
-            'redemptionError' => 'handleRedemptionError',
-            'rewardRedeemed' => '$refresh' 
-        ];
-    }
-
-    public function openRedeemModal($data = null)
-    {
-        if ($data && isset($data['name']) && $data['name'] === 'reward-redeem-modal') {
-            // We don't need to set the ID here as it's already set via Alpine
-            // Just a fallback if rewardId is explicitly provided
-            if (isset($data['rewardId'])) {
-                $this->selectedRewardId = $data['rewardId'];
-            }
-        }
-    }
-
-    public function handleRedemptionError($message)
-    {
-        session()->flash('redeem_error', $message);
-    }
-
-    public function render()
-    {
-        $user = Auth::user();
-        
-        // Calculate user level and XP progress
-        $userLevel = $user ? $user->getLevel() : 1;
-        $levelProgress = $user ? $user->getLevelProgressPercentage() : 0;
-        $xpForNextLevel = $user ? $user->getXpRequiredForNextLevel() : 100;
-        
-        return view('livewire.rewards.reward-index', [
-            'user' => $user,
-            'userPoints' => $user?->points ?? 0,
-            'userExperience' => $user?->experience_points ?? 0,
-            'userTrustScore' => $user?->trust_score ?? 0,
-            'userLevel' => $userLevel,
-            'levelProgress' => $levelProgress,
-            'xpForNextLevel' => $xpForNextLevel,
-            'systemRewards' => $this->systemRewards,
-            'voucherRewards' => $this->voucherRewards,
-            'monetaryRewards' => $this->monetaryRewards,
-            'selectedReward' => $this->selectedReward
-        ]);
-    }
 }

@@ -73,10 +73,10 @@
                     $nextTick(() => $dispatch('open-modal', { name: 'reward-redeem-modal' }));
                 })
             "
+            
             class="w-full bg-[#03b8ff] hover:bg-[#0295d1] text-white font-medium py-2 px-4 rounded transition duration-200 
                   {{ Auth::user() && Auth::user()->points >= $reward->cost && ($reward->quantity == -1 || $reward->quantity > 0) ? '' : 'opacity-50 cursor-not-allowed' }}"
-            {{ Auth::user() && Auth::user()->points >= $reward->cost && ($reward->quantity == -1 || $reward->quantity > 0) ? '' : 'disabled' }}
-        >
+            {{ Auth::user() && Auth::user()->points >= $reward->cost && ($reward->quantity == -1 || $reward->quantity > 0) ? '' : 'disabled' }}">
             @if(Auth::user() && Auth::user()->points >= $reward->cost)
                 @if($reward->quantity == 0 && $reward->quantity != -1)
                     Sold Out

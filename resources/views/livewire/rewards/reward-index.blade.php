@@ -2,20 +2,7 @@
     <!-- Include level-up event listener -->
     @include('livewire.rewards.partials.level-up-listener')
 
-    <!-- Flash Messages for Redemption -->
-    <div class="mb-4">
-        @if(session()->has('redeem_success'))
-            <div class="mt-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-md">
-                {{ session('redeem_success') }}
-            </div>
-        @endif
-        @if(session()->has('redeem_error'))
-            <div class="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
-                {{ session('redeem_error') }}
-            </div>
-        @endif
-    </div>
-    
+
     <!-- New Layout: User Stats and Points Display -->
     <div class="bg-white p-2"> 
         <div class="flex flex-col md:flex-row items-start justify-between md:space-x-8">
@@ -93,15 +80,24 @@
                     Gift Vouchers
                 </button>
                 
-                {{-- <button 
-                    wire:click="setActiveTab('monetary')" 
-                    class="py-4 px-6 border-b-2 font-medium text-sm focus:outline-none
-                          {{ $activeTab === 'monetary' ? 'border-[#03b8ff] text-[#03b8ff]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
-                >
-                    Monetary Rewards
-                </button> --}}
+             
             </div>
         </div>
+
+            <!-- Flash Messages for Redemption -->
+        <div class="mb-4">
+            @if(session()->has('redeem_success'))
+                <div class="mt-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-md">
+                    {{ session('redeem_success') }}
+                </div>
+            @endif
+            @if(session()->has('redeem_error'))
+                <div class="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
+                    {{ session('redeem_error') }}
+                </div>
+            @endif
+        </div>
+    
 
         <!-- System Rewards Tab -->
         <div class="{{ $activeTab === 'system' ? '' : 'hidden' }} mt-6">
@@ -129,18 +125,7 @@
             </div>
         </div>
 
-        <!-- Monetary Rewards Tab -->
-        <div class="{{ $activeTab === 'monetary' ? '' : 'hidden' }} mt-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                @forelse($monetaryRewards as $reward)
-                    @include('livewire.rewards.partials.reward-card', ['reward' => $reward])
-                @empty
-                    <div class="col-span-full text-center py-8">
-                        <p class="text-gray-500">No monetary rewards available at this time.</p>
-                    </div>
-                @endforelse
-            </div>
-        </div>
+       
     </div>
 
     <!-- Reward Redemption Modal -->

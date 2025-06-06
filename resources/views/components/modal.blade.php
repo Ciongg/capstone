@@ -4,9 +4,11 @@
     x-data="{ show: false, name: '{{$name}}' }"
     x-show="show"
     x-on:open-modal.window="if ($event.detail.name === name) show = true"
+
     {{-- Listen for both specific and generic close events --}}
     x-on:close-modal-{{ Str::slug($name) }}.window="show = false; $dispatch('close');"
     x-on:close-modal.window="if ($event.detail.name === name) { show = false; $dispatch('close'); }"
+    
     {{-- Handle internal close actions --}}
     x-on:keydown.escape.window="if (show) { show = false; $dispatch('close'); }"
     style="display: none"
@@ -27,7 +29,7 @@
             {{-- Close button moved to top right --}}
             <button
                 type="button"
-                @click="show = false; $dispatch('close');"
+                x-on:click="show = false; $dispatch('close');"
                 class="text-gray-400 hover:text-gray-600 transition"
                 title="Close modal"
             >

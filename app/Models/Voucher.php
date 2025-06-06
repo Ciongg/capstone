@@ -32,6 +32,8 @@ class Voucher extends Model
         return $this->belongsTo(Reward::class);
     }
 
+    
+
     public function userVouchers(): HasMany
     {
         return $this->hasMany(UserVoucher::class);

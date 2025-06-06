@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('gcash_number')->nullable();
             $table->integer('points_spent');
             $table->enum('status', ['pending', 'completed', 'rejected'])->default('pending');
+            $table->unsignedInteger('quantity')->default(1);
             $table->timestamps();
         });
     }

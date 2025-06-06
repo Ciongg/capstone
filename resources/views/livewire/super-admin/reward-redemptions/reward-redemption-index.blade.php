@@ -15,14 +15,14 @@
                     <nav class="flex -mb-px">
                         <!-- Swapped the order of these buttons -->
                         <button 
-                            @click="tab = 'vouchers'" 
+                            x-on:click="tab = 'vouchers'" 
                             :class="{ 'border-blue-500 text-blue-600': tab === 'vouchers', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'vouchers' }" 
                             class="w-1/2 py-3 px-1 text-center border-b-2 font-medium text-sm"
                         >
                             Voucher Inventory
                         </button>
                         <button 
-                            @click="tab = 'redemptions'" 
+                            x-on:click="tab = 'redemptions'" 
                             :class="{ 'border-blue-500 text-blue-600': tab === 'redemptions', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'redemptions' }" 
                             class="w-1/2 py-3 px-1 text-center border-b-2 font-medium text-sm"
                         >
@@ -71,6 +71,7 @@
                                             <th class="py-3 px-6 text-left">ID</th>
                                             <th class="py-3 px-6 text-left">User</th>
                                             <th class="py-3 px-6 text-left">Reward</th>
+                                            <th class="py-3 px-6 text-left">Quantity</th>
                                             <th class="py-3 px-6 text-left">Points Spent</th>
                                             <th class="py-3 px-6 text-left">Type</th>
                                             <th class="py-3 px-6 text-left">Status</th>
@@ -84,6 +85,7 @@
                                                 <td class="py-3 px-6">{{ $redemption->id }}</td>
                                                 <td class="py-3 px-6">{{ $redemption->user->name }}</td>
                                                 <td class="py-3 px-6">{{ $redemption->reward->name }}</td>
+                                                <td class="py-3 px-6">{{ $redemption->quantity }}</td>
                                                 <td class="py-3 px-6">{{ $redemption->points_spent }}</td>
                                                 <td class="py-3 px-6">{{ $redemption->reward->type }}</td>
                                                 <td class="py-3 px-6">
@@ -98,7 +100,7 @@
                                                 <td class="py-3 px-6">
                                                     <button 
                                                         x-data
-                                                        @click="
+                                                        x-on:click="
                                                             $wire.set('selectedRedemptionId', null).then(() => {
                                                                 $wire.set('selectedRedemptionId', {{ $redemption->id }});
                                                                 $nextTick(() => $dispatch('open-modal', { name: 'reward-redemption-modal' }));
@@ -112,7 +114,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="8" class="py-3 px-6 text-center">No reward redemptions found</td>
+                                                <td colspan="9" class="py-3 px-6 text-center">No reward redemptions found</td>
                                             </tr>
                                         @endforelse
                                     </tbody>

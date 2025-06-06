@@ -150,7 +150,7 @@
                        
                 type="button"
 
-                @click="
+                x-on:click="
                     $wire.set('modalSurveyId', null).then(() => {
                         $wire.set('modalSurveyId', {{ $survey->id }});
                         $nextTick(() => $dispatch('open-modal', { name: 'surveyDetailModal' }));
