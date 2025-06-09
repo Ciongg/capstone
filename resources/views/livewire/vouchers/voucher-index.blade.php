@@ -6,14 +6,14 @@
         <div class="border-b border-gray-200 mb-6">
             <div class="flex -mb-px">
                 <button 
-                    @click="tab = 'available'" 
+                    x-on:click="tab = 'available'" 
                     :class="tab === 'available' ? 'border-[#03b8ff] text-[#03b8ff]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                     class="py-4 px-6 border-b-2 font-medium text-sm focus:outline-none"
                 >
                     Available Vouchers
                 </button>
                 <button 
-                    @click="tab = 'used'" 
+                    x-on:click="tab = 'used'" 
                     :class="tab === 'used' ? 'border-[#03b8ff] text-[#03b8ff]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                     class="py-4 px-6 border-b-2 font-medium text-sm focus:outline-none"
                 >
@@ -27,7 +27,7 @@
             @if(count($userVouchers) > 0)
                 <div class="space-y-4">
                     @foreach($userVouchers as $userVoucher)
-                        <div class="bg-white shadow rounded-lg overflow-hidden flex items-center @if($userVoucher->status === 'active') border-l-4 border-blue-500 @endif"> {{-- Added items-center --}}
+                        <div class="bg-white shadow rounded-lg overflow-hidden flex items-center @if($userVoucher->status === 'active') border-l-8 border-blue-500 @endif"> {{-- Added items-center --}}
                             <!-- Voucher image (square) -->
                             <div class="w-32 h-32 flex-shrink-0">
                                 @if($userVoucher->voucher->image_path)
@@ -102,6 +102,21 @@
                 </div>
             @endif
         </div>
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         
         <!-- Used Vouchers Tab Content -->
         <div x-show="tab === 'used'" x-cloak>

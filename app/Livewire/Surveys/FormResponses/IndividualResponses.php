@@ -152,19 +152,34 @@ class IndividualResponses extends Component
                 // Process based on question type
                 if (in_array($question->question_type, ['multiple_choice', 'radio'])) {
                     // For choice-based questions, mark selected options
+                    $otherChoiceId = null;
+                    $otherSelected = false;
+                    
                     foreach ($question->choices as $choice) {
                         $isSelected = false; //sets current choice as false or not selected
                         if ($decodedAnswer !== null) {
                             // Multiple choice stores answer as array of IDs
-                            // the decoded answer must be an array and the choce id must be in that array if it is mark that choice as selected
+                            // the decoded answer must be an array and the choice id must be in that array if it is mark that choice as selected
                             if ($question->question_type === 'multiple_choice' && is_array($decodedAnswer) && in_array($choice->id, $decodedAnswer)) {
                                 $isSelected = true;
+                                
+                                // Track if an "other" option is selected
+                                if ($choice->is_other) {
+                                    $otherSelected = true;
+                                    $otherChoiceId = $choice->id;
+                                }
                             } 
                             // Radio stores answer as single ID
                             // the decoded answer must not be an array and the decoded answer
                             // decoded answer for radio buttons is usually just equal to "3" or "4" or the index of their choice so it works well with choice->id
                             elseif ($question->question_type === 'radio' && !is_array($decodedAnswer) && (int)$decodedAnswer === $choice->id) {
                                 $isSelected = true;
+                                
+                                // Track if an "other" option is selected
+                                if ($choice->is_other) {
+                                    $otherSelected = true;
+                                    $otherChoiceId = $choice->id;
+                                }
                             }
                         }
                         
@@ -173,7 +188,53 @@ class IndividualResponses extends Component
                             'id' => $choice->id,
                             'choice_text' => $choice->choice_text,
                             'is_selected' => $isSelected,
+                            'is_other' => $choice->is_other ? 1 : 0,  // Add the is_other field
                         ];
+                    }
+                    
+                    // Add the "other_text" value if an "other" option was selected
+                    if ($otherSelected) {
+                        // First check: get other_text directly from the answer record column
+                        if ($questionAnswer && !empty($questionAnswer->other_text)) {
+                            $questionData['other_text'] = $questionAnswer->other_text;
+                        } 
+                        // Second check: look for a separate "other_text" type answer
+                        else {
+                            $otherTextAnswer = $this->currentRespondent->answers
+                                ->where('survey_question_id', $question->id)
+                                ->whereNotNull('other_text')
+                                ->first();
+                                
+                            if ($otherTextAnswer && !empty($otherTextAnswer->other_text)) {
+                                $questionData['other_text'] = $otherTextAnswer->other_text;
+                            }
+                            // Third check: try to get it from metadata
+                            elseif ($questionAnswer && isset($questionAnswer->metadata)) {
+                                $metadata = json_decode($questionAnswer->metadata, true);
+                                $questionData['other_text'] = $metadata['other_text'] ?? null;
+                            }
+                        }
+                        
+                        // If still no other_text found, check the specific answer for radio/choice
+                        if (empty($questionData['other_text']) && $questionAnswer) {
+                            // For multiple choice, try to find the specific answer with the other choice ID
+                            if ($question->question_type === 'multiple_choice') {
+                                // Check each answer that matches the question ID
+                                foreach ($this->currentRespondent->answers as $answer) {
+                                    if ($answer->survey_question_id === $question->id && !empty($answer->other_text)) {
+                                        $questionData['other_text'] = $answer->other_text;
+                                        break;
+                                    }
+                                }
+                            }
+                            // For radio buttons, the answer is directly on the record
+                            elseif ($question->question_type === 'radio' && $otherChoiceId) {
+                                // The other_text should be on the main answer record
+                                $questionData['other_text'] = $questionAnswer->other_text;
+                            }
+                        }
+                    } else {
+                        $questionData['other_text'] = null;
                     }
                 } elseif ($question->question_type === 'likert') {
                     // For Likert scales, decode JSON structure and mark selected cells

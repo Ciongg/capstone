@@ -35,7 +35,7 @@
                         <p class="text-lg font-semibold text-gray-800">{{ $user?->name }}</p>
                         
                         <!-- User Title -->
-                        <p class="text-sm font-medium text-blue-600 mb-1">{{ $user?->title ?: 'Newbie' }}</p>
+                        <p class="text-sm font-medium text-blue-600 mb-1">{{ ucfirst($user?->rank ?: 'silver') }}</p>
                         
                         <!-- XP Progress Bar -->
                         <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1 dark:bg-gray-700">
@@ -187,6 +187,16 @@
                     <button wire:click="resetLevel" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
                         Reset Level
                     </button>
+
+                    <!-- New XP Buttons -->
+                    <button wire:click="addXp(1)" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 text-xs rounded-md">
+                        +1 XP
+                    </button>
+                    
+                    <button wire:click="addXp(10)" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 text-xs rounded-md">
+                        +10 XP
+                    </button>
+
                 </div>
                 
                 <!-- Success message -->

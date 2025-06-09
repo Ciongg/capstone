@@ -25,13 +25,14 @@ class RewardSeeder extends Seeder
             ],
             [
                 'name' => 'Experience Level Increase',
-                'description' => 'Instantly gain 500 XP to level up faster',
+                'description' => 'Instantly gain 10 XP to level up faster',
                 'status' => Reward::STATUS_AVAILABLE,
-                'cost' => 500,
+                'cost' => 10,
                 'quantity' => -1, // -1 means infinite
                 'type' => 'system',
                 'image_path' => null, // Changed
             ],
+            
         ];
         
         // Specific voucher rewards with fixed quantity and images

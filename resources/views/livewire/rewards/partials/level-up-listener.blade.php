@@ -3,34 +3,14 @@
     document.addEventListener('livewire:initialized', () => {
         Livewire.on('level-up', (event) => {
             // In Livewire 3, named parameters are usually in event.detail
-            // If event itself is the object (older Livewire or specific dispatch)
             let level = event[0].level;
-            let title = event[0].title;
+            let rank = event[0].new_rank || event[0].rank; // Get rank instead of title
 
-            // More robust check for Livewire 3 event data structure
-            // let level, title;
-
-            // if (event && typeof event.level !== 'undefined' && typeof event.title !== 'undefined') {
-            //     // Case 1: event directly contains level and title (e.g. event[0] from older dispatch)
-            //     level = event.level;
-            //     title = event.title;
-            // } else if (event && event[0] && typeof event[0].level !== 'undefined' && typeof event[0].title !== 'undefined') {
-            //     // Case 2: event is an array, and the first element is the object with level and title
-            //     level = event[0].level;
-            //     title = event[0].title;
-            // }
-            // It's important to ensure that the 'level' and 'title' are directly accessible from the event object
-            // or from event[0] if Livewire wraps the dispatched array.
-            // For named parameters like $this->dispatch('level-up', level: $level, title: $title)
-            // they would be event.level and event.title directly on the event object passed to the listener.
-
-            if (typeof level !== 'undefined' && typeof title !== 'undefined') {
-                console.log('Listener received level-up:', level, title);
-                window.showLevelUpAnimation(level, title);
+            if (typeof level !== 'undefined' && typeof rank !== 'undefined') {
+                console.log('Listener received level-up:', level, rank);
+                window.showLevelUpAnimation(level, rank);
             } else {
                 console.error('Level-up event data is missing or malformed. Event data:', event);
-                // Fallback or default behavior if data is not as expected
-                // window.showLevelUpAnimation('N/A', 'Error'); 
             }
         });
 

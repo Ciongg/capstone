@@ -29,18 +29,16 @@
                                 {{-- Include the appropriate question type partial --}}
                                 @include('livewire.surveys.answer-survey.partials.question-types.' . $question->question_type, ['question' => $question])
                                 
-                                {{-- Add error display for question types that don't handle it internally --}}
-                                @if(!in_array($question->question_type, ['multiple_choice', 'radio', 'likert']))
-                                    @include('livewire.surveys.answer-survey.partials.question-error', ['question' => $question])
-                                @endif
+
                             </div>
                         @endforeach
 
                         {{-- Navigation buttons --}}
                         @include('livewire.surveys.answer-survey.partials.navigation-buttons', [
-                            'isFirstPage' => $loop->first,
-                            'isLastPage' => $loop->last, 
-                            'currentPage' => $pageIndex
+                            //$loop is based on the foreach loop, it provides information about the current iteration
+                            'isFirstPage' => $loop->first, //sends true if this is the first page
+                            'isLastPage' => $loop->last,  //sends true if this is the last page
+                            'currentPage' => $pageIndex //sends the current page index
                         ])
                     </div>
                 @endforeach

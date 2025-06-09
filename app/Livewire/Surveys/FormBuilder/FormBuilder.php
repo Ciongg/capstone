@@ -479,13 +479,32 @@ class FormBuilder extends Component
                 
             case 'choice':
                 if (!$parentId) return; // Need a question ID
+            
+            $question = SurveyQuestion::findOrFail($parentId);
+            
+            // Check if "Other" choice exists
+            $otherChoice = $question->choices()->where('is_other', true)->first();
+            
+            // Get max order
+            $maxOrder = $question->choices()->max('order') ?? 0;
+            
+            if ($otherChoice) {
+                // If "Other" exists, insert new choice before it
+                $order = $otherChoice->order; // Take Other's current position
                 
-                $question = SurveyQuestion::findOrFail($parentId);
-                $otherOption = $question->choices()->where('is_other', true)->first();
-                $orderOffset = $otherOption ? 1 : 0;
+                // Increment Other and any choices with same or higher order
+                $question->choices()->where('order', '>=', $order)->increment('order');
                 
-                $existingChoicesCount = $question->choices()->count();
-                $order = $existingChoicesCount + 1 - $orderOffset;
+                // Create new choice at the position before Other
+                $newItem = SurveyChoice::create([
+                    'survey_question_id' => $parentId,
+                    'choice_text' => $options['text'] ?? 'Option ' . $order,
+                    'order' => $order,
+                    'is_other' => $options['is_other'] ?? false,
+                ]);
+            } else {
+                // If no Other exists, just add with next order number
+                $order = $maxOrder + 1;
                 
                 $newItem = SurveyChoice::create([
                     'survey_question_id' => $parentId,
@@ -493,7 +512,8 @@ class FormBuilder extends Component
                     'order' => $order,
                     'is_other' => $options['is_other'] ?? false,
                 ]);
-                break;
+            }
+            break;
 
             case 'otherOption':
             // New case for adding "Other" option
@@ -505,11 +525,13 @@ class FormBuilder extends Component
             $existingOther = $question->choices()->where('is_other', true)->exists();
             
             if (!$existingOther) {
-                $order = $question->choices()->count() + 1; // Add as the last option
+                // Always use max order + 1 to ensure it's at the end
+                $maxOrder = $question->choices()->max('order') ?? 0;
+                $order = $maxOrder + 1;
                 
                 $newItem = SurveyChoice::create([
                     'survey_question_id' => $parentId,
-                    'choice_text' => $options['text'] ?? 'Other', // Default text
+                    'choice_text' => $options['text'] ?? 'Other',
                     'order' => $order,
                     'is_other' => true, // Mark as 'Other'
                 ]);

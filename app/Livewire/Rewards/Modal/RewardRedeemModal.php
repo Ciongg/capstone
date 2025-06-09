@@ -88,16 +88,13 @@ class RewardRedeemModal extends Component
 
                     // Handle system reward (e.g., Experience Level Increase)
                     if ($this->reward->name === 'Experience Level Increase') {
-                        $xpToAdd = 500 * $quantityToRedeem;
+                        $xpToAdd = 10 * $quantityToRedeem;
                         $result = $user->addExperiencePoints($xpToAdd);
                         if ($result['leveled_up']) {
                             $leveledUp = true;
                             $newLevel = $result['current_level'];
-                            $newTitle = $user->title;
-                            $levelUpMessage = " You reached level {$result['current_level']} and earned the title: {$user->title}";
-                            if (!empty($result['perks'])) {
-                                $levelUpMessage .= ". Bonus: " . implode(', ', $result['perks']);
-                            }
+                            $newRank = $user->rank;
+                           
                         }
                     }
                     
@@ -166,7 +163,7 @@ class RewardRedeemModal extends Component
                 if ($leveledUp) {
                     $this->dispatch('level-up', [
                         'level' => $newLevel,
-                        'title' => $newTitle
+                        'rank' => $newRank
                     ]);
                 }
             });

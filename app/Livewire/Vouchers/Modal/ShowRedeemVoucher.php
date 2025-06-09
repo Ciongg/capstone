@@ -14,20 +14,15 @@ class ShowRedeemVoucher extends Component
     public function mount($userVoucherId)
     {
         $this->userVoucherId = $userVoucherId;
-        $this->loadUserVoucher();
+
+        $this->userVoucher = UserVoucher::with(['voucher', 'rewardRedemption.reward']) // Changed from redemption to rewardRedemption
+            ->where('id', $this->userVoucherId)
+            ->first();
 
         if ($this->userVoucher && $this->userVoucher->status === UserVoucher::STATUS_ACTIVE) {
             $this->showQrCodeView = true;
         }
     }
-    
-    public function loadUserVoucher()
-    {
-        $this->userVoucher = UserVoucher::with(['voucher', 'rewardRedemption.reward']) // Changed from redemption to rewardRedemption
-            ->where('id', $this->userVoucherId)
-            ->first();
-    }
-    
     public function redeemVoucher()
     {
         // Change status from available to active
@@ -38,14 +33,13 @@ class ShowRedeemVoucher extends Component
         } elseif ($this->userVoucher && $this->userVoucher->status === UserVoucher::STATUS_ACTIVE) {
             // Allow viewing QR even if already active
             $this->showQrCodeView = true;
-            // Optionally dispatch refresh here too if needed, though status isn't changing
-            // $this->dispatch('redeemVoucher'); 
+
         } else {
             // Handle error case
             session()->flash('error', 'Voucher not found or already used.');
         }
     }
-    
+     
     /**
      * Simulate a scan of the QR code (for testing)
      */

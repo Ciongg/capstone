@@ -187,106 +187,48 @@ class User extends Authenticatable
         return Str::endsWith($emailDomain, '.edu') || Str::endsWith($emailDomain, '.edu.ph');
     }
     
-    /**
-     * Update the user's title based on their current level
-     * 
-     * @return void
-     */
-    public function updateTitle()
-    {
-        $level = $this->getLevel();
-        $this->title = \App\Services\UserExperienceService::getTitleForLevel($level);
-        $this->save();
-    }
 
-    /**
-     * Add experience points to the user and handle level-up logic
-     * 
-     * @param int $xp
-     * @return array
-     */
-    public function addExperiencePoints($xp)
-    {
-        $previousLevel = $this->getLevel();
-        $this->experience_points += $xp;
-        
-        $currentLevel = $this->getLevel();
-        $leveled_up = $currentLevel > $previousLevel;
-        
-        // Update account_level in database
-        $this->account_level = $currentLevel;
-        
-        // Update title if leveled up
-        if ($leveled_up) {
-            $this->title = \App\Services\UserExperienceService::getTitleForLevel($currentLevel);
-            
-            // Apply any level perks
-            $perks = \App\Services\UserExperienceService::applyLevelPerks($this, $previousLevel, $currentLevel);
-        } else {
-            $perks = [];
-        }
-        
-        $this->save();
-        
-        return [
-            'previous_level' => $previousLevel,
-            'current_level' => $currentLevel,
-            'leveled_up' => $leveled_up,
-            'perks' => $perks
-        ];
-    }
-    
-    /**
-     * Get current level based on XP.
-     *
-     * @return int
-     */
-    public function getLevel(): int
-    {
-        return UserExperienceService::calculateLevel($this->experience_points);
-    }
-    
-    /**
-     * Get progress to next level (percentage).
-     *
-     * @return float
-     */
-    public function getLevelProgressPercentage(): float
-    {
-        $currentLevel = $this->getLevel();
-        $currentLevelXp = UserExperienceService::xpRequiredForLevel($currentLevel);
-        $nextLevelXp = UserExperienceService::xpRequiredForLevel($currentLevel + 1);
-        
-        $xpForThisLevel = $this->experience_points - $currentLevelXp;
-        $xpRequiredForNextLevel = $nextLevelXp - $currentLevelXp;
-        
-        return min(100, round(($xpForThisLevel / $xpRequiredForNextLevel) * 100, 1));
-    }
-    
-    /**
-     * Get XP required for next level.
-     *
-     * @return int
-     */
-    public function getXpRequiredForNextLevel(): int
-    {
-        $currentLevel = $this->getLevel();
-        return UserExperienceService::xpRequiredForLevel($currentLevel + 1);
-    }
+// Keep these methods as convenient proxies to the service
+/**
+ * Add experience points to the user and handle level-up logic
+ * 
+ * @param int $xp
+ * @return array
+ */
+public function addExperiencePoints($xp)
+{
+    return UserExperienceService::addUserExperiencePoints($this, $xp);
+}
 
-    /**
-     * Get the user's status label
-     * 
-     * @return string
-     */
-    public function getStatusLabelAttribute()
-    {
-        if ($this->trashed()) {
-            return 'archived';
-        }
-        
-        return $this->is_active ? 'active' : 'inactive';
-    }
+/**
+ * Get current level based on XP.
+ *
+ * @return int
+ */
+public function getLevel(): int
+{
+    return UserExperienceService::getUserLevel($this);
+}
+
+/**
+ * Get progress to next level (percentage).
+ *
+ * @return float
+ */
+public function getLevelProgressPercentage(): float
+{
+    return UserExperienceService::getUserLevelProgressPercentage($this);
+}
+
+/**
+ * Get XP required for next level.
+ *
+ * @return int
+ */
+public function getXpRequiredForNextLevel(): int
+{
+    return UserExperienceService::getXpRequiredForUserNextLevel($this);
+}
 
     public function rewardRedemptions(): HasMany
     {

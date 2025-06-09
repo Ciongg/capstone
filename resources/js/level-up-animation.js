@@ -24,8 +24,8 @@ function fireConfetti() {
 
 window.levelUpAnimationTimeoutId = null;
 
-window.showLevelUpAnimation = function(level, title) {
-    console.log("Level up animation triggered:", level, title);
+window.showLevelUpAnimation = function(level, rank) {
+    console.log("Level up animation triggered:", level, rank);
 
     if (window.levelUpAnimationTimeoutId) {
         clearTimeout(window.levelUpAnimationTimeoutId);
@@ -43,6 +43,9 @@ window.showLevelUpAnimation = function(level, title) {
     container.className = 'fixed inset-0 flex items-center justify-center z-[9999]';
     container.id = 'level-up-container';
     
+    // Format the rank to be capitalized
+    const formattedRank = rank.charAt(0).toUpperCase() + rank.slice(1);
+    
     // Create the content - simplified white design, backdrop background will be set in CSS
     container.innerHTML = `
         <div class="absolute inset-0" id="level-up-backdrop" onclick="closeAnimation()"></div> 
@@ -51,7 +54,8 @@ window.showLevelUpAnimation = function(level, title) {
             <div class="text-4xl mb-4 animate-text-breath">
                 You Leveled Up!
             </div>
-            <div class="text-7xl font-bold text-[#03b8ff] mb-10 animate-text-breath">Level ${level}</div> 
+            <div class="text-7xl font-bold text-[#03b8ff] mb-10 animate-text-breath">Level ${level}</div>
+            <div class="text-3xl text-purple-600 mb-6 animate-text-breath">Rank: ${formattedRank}</div>
             <div class="flex justify-center gap-4 mt-8"> 
                 <button class="cursor-pointer bg-[#03b8ff] hover:bg-[#86ddff] text-white font-semibold py-3 px-10 rounded-lg transition text-xl" onclick="closeAnimation()"> 
                     AWESOME!

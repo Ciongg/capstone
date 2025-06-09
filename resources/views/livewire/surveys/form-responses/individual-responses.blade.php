@@ -239,6 +239,33 @@
                                                 </span>
                                             </div>
                                         @endforeach
+                                        
+                                        {{-- Display "Other" text if an "Other" choice is selected --}}
+                                        @php
+                                            $otherChoice = collect($question['choices'])->first(function($choice) {
+                                                return $choice['is_selected'] && $choice['is_other'] == 1;
+                                            });
+                                        @endphp
+                                        
+                                        {{-- Show "Other" text when available --}}
+                                        @if($otherChoice && isset($question['other_text']) && $question['other_text'])
+                                            <div class="flex items-center space-x-3 mt-1">
+                                                
+                                                <span class="text-lg font-semibold text-gray-700">
+                                                   <span class="text-gray-500"> Other Response: </span>  {{ $question['other_text'] }}
+                                                </span>
+                                            </div>
+                                        @endif
+
+                                        {{-- Debug message when "Other" is selected but no text provided --}}
+                                        @if($otherChoice && empty($question['other_text']))
+                                            <div class="flex items-center space-x-3 mt-1">
+                                                <span class="inline-block w-7 h-7 opacity-0"></span>
+                                                <span class="text-lg text-yellow-600 italic">
+                                                    (No text provided for "Other" option)
+                                                </span>
+                                            </div>
+                                        @endif
                                     </div>
                                 @elseif($question['question_type'] === 'likert')
                                     {{-- Likert scale question --}}
