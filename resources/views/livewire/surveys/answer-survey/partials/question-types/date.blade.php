@@ -1,14 +1,14 @@
 <div x-data="{
-    hasValue: {{ isset($answers[$question->id]) && $answers[$question->id] ? 'true' : 'false' }},
+    hasValue: false,
     
     init() {
-        this.$watch('$wire.answers.{{ $question->id }}', value => {
+        this.$watch('$wire.answers[{{ $question->id }}]', value => {
             this.hasValue = value !== null && value !== '';
         });
     },
     
     clearDate() {
-        // Clear the Livewire model
+        // Clear the Livewire model - FIX: Use dot notation as a string
         $wire.set('answers.{{ $question->id }}', null);
         
         // Also directly clear the input field value in the DOM

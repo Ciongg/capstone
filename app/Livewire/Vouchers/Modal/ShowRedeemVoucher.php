@@ -59,8 +59,7 @@ class ShowRedeemVoucher extends Component
             // Emit an event to refresh the parent component - with explicit naming
             $this->dispatch('voucherRedeemed', $this->userVoucherId);
             
-            // Refresh to show updated status
-            $this->loadUserVoucher();
+
             
         } catch (\Exception $e) {
             session()->flash('error', 'Error redeeming voucher: ' . $e->getMessage());

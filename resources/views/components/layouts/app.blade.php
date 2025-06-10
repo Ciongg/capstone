@@ -10,6 +10,7 @@
     
     <!-- Add Confetti.js for level-up animations -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     {{-- Scroll to top on page load/refresh --}}
     <script>

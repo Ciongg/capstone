@@ -10,34 +10,40 @@
                     </div>
                 @endif
                 
-                <!-- Tab Navigation - Changed default tab to 'vouchers' -->
-                <div class="border-b border-gray-200 mb-6" x-data="{ tab: 'vouchers' }">
+                <!-- Tab Navigation - Added Manage Rewards tab -->
+                <div class="border-b border-gray-200 mb-6" x-data="{ tab: 'redemptions' }">
                     <nav class="flex -mb-px">
-                        <!-- Swapped the order of these buttons -->
+                        <button 
+                            x-on:click="tab = 'manage'" 
+                            :class="{ 'border-blue-500 text-blue-600': tab === 'manage', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'manage' }" 
+                            class="w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm"
+                        >
+                            Manage Rewards
+                        </button>
                         <button 
                             x-on:click="tab = 'vouchers'" 
                             :class="{ 'border-blue-500 text-blue-600': tab === 'vouchers', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'vouchers' }" 
-                            class="w-1/2 py-3 px-1 text-center border-b-2 font-medium text-sm"
+                            class="w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm"
                         >
                             Voucher Inventory
                         </button>
                         <button 
                             x-on:click="tab = 'redemptions'" 
                             :class="{ 'border-blue-500 text-blue-600': tab === 'redemptions', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'redemptions' }" 
-                            class="w-1/2 py-3 px-1 text-center border-b-2 font-medium text-sm"
+                            class="w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm"
                         >
                             Reward Redemptions
                         </button>
                     </nav>
                     
-                    <!-- Tab Content - Swapped the order of the content sections -->
+                    <!-- Tab Content - Added Manage Rewards content -->
                     <div class="pt-4">
-                        <!-- Vouchers Tab - Now comes first -->
+                        <!-- Vouchers Tab -->
                         <div x-show="tab === 'vouchers'" x-cloak>
                             @livewire('super-admin.vouchers.voucher-inventory-index')
                         </div>
                         
-                        <!-- Redemptions Tab - Now comes second -->
+                        <!-- Redemptions Tab -->
                         <div x-show="tab === 'redemptions'" x-cloak>
                             <!-- Status explanation notice -->
                             <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
@@ -124,6 +130,11 @@
                             <div class="mt-4">
                                 {{ $redemptions->links() }}
                             </div>
+                        </div>
+                        
+                        <!-- Manage Rewards Tab -->
+                        <div x-show="tab === 'manage'" x-cloak>
+                            @livewire('super-admin.vouchers.voucher-manager')
                         </div>
                     </div>
                 </div>

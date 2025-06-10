@@ -38,17 +38,7 @@
             </button>
         </div>
         
-        <!-- Create Voucher Button (moved from bottom) -->
-        <button 
-            x-data
-            @click="$dispatch('open-modal', { name: 'create-voucher-modal' })"
-            class="px-6 py-2 bg-[#03b8ff] hover:bg-[#0299d5] text-white font-bold rounded-lg shadow-md transition-all duration-200 flex items-center"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-            </svg>
-            Create Voucher
-        </button>
+       
     </div>
     
     <div class="overflow-x-auto">
@@ -92,7 +82,7 @@
                         <td class="py-3 px-6">
                             <button 
                                 x-data
-                                @click="
+                                x-on:click="
                                     $wire.set('selectedVoucherId', null).then(() => {
                                         $wire.set('selectedVoucherId', {{ $voucher->id }});
                                         $nextTick(() => $dispatch('open-modal', { name: 'voucher-view-modal' }));
@@ -137,19 +127,5 @@
         </div>
     </x-modal>
 
-    <!-- Modal for creating new voucher -->
-    <x-modal name="create-voucher-modal" title="Create New Voucher" focusable>
-        <div class="p-6 relative min-h-[400px] flex flex-col">
-            <div wire:loading class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
-                <div class="flex flex-col items-center justify-center h-full">
-                    <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p class="text-sm text-gray-600">Loading form...</p>
-                </div>
-            </div>
-            
-            <div wire:loading.remove class="flex-1">
-                @livewire('super-admin.vouchers.modal.create-voucher-modal')
-            </div>
-        </div>
-    </x-modal>
+   
 </div>

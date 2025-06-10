@@ -17,7 +17,7 @@ class Reward extends Model
         'quantity',
         'type',
         'description',
-        // 'image_path', // Commented out for now
+        'image_path', // Uncommented to allow updating image
     ];
 
     /**

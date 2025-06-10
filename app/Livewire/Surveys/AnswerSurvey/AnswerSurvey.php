@@ -429,8 +429,14 @@ class AnswerSurvey extends Component
             // In normal mode, save the responses
             $this->saveResponses();
             
-            session()->flash('success', 'Survey submitted successfully!');
-            return redirect()->route('feed.index');
+            // Show SweetAlert2 success message with redirect
+            // The actual alert is triggered via a dispatched browser event
+            $this->dispatch('surveySubmitted', [
+                'title' => 'Survey Completed!',
+                'message' => 'Thank you for completing the survey.',
+                'points' => $this->survey->points_allocated,
+                'surveyName' => $this->survey->title
+            ]);
         }
     }
     

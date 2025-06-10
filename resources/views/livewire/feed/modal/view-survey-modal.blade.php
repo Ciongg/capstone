@@ -129,7 +129,7 @@
             @else
                 <!-- Unlocked survey -->
                 <a href="{{ route('surveys.answer', $survey->id) }}"
-                   wire:navigate
+                  
                    class="px-6 py-2 bg-[#03b8ff] text-white font-bold rounded-lg hover:bg-[#0295d1] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
                     Answer Survey
                 </a>
