@@ -58,7 +58,7 @@
                                 </button>
                                 <button wire:click="filterByStatus('pending')" 
                                     class="px-4 py-2 text-sm rounded {{ $statusFilter === 'pending' ? 'bg-yellow-600 text-white' : 'bg-gray-200' }}">
-                                    Pending ({{ $pendingCount }})
+                                    Pending
                                 </button>
                                 <button wire:click="filterByStatus('completed')" 
                                     class="px-4 py-2 text-sm rounded {{ $statusFilter === 'completed' ? 'bg-green-600 text-white' : 'bg-gray-200' }}">

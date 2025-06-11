@@ -90,7 +90,7 @@
                     </div>
                     <div>
                         <h3 class="text-lg font-semibold text-gray-800">Exclusive Rewards</h3>
-                        <p class="text-gray-600">Higher levels unlock premium voucher rewards from top brands and higher value monetary rewards.</p>
+                        <p class="text-gray-600">Higher levels unlock premium voucher rewards from top brands and higher value rewards.</p>
                     </div>
                 </div>
             </div>

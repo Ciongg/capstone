@@ -138,13 +138,12 @@
             rewardChart = new Chart(rewardCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['System', 'Voucher', 'Monetary'],
+                    labels: ['System', 'Voucher'],
                     datasets: [{
                         label: 'Redemptions',
                         data: [
                             {{ $rewardStats['system'] }}, 
                             {{ $rewardStats['voucher'] }}, 
-                            {{ $rewardStats['monetary'] }}
                         ],
                         backgroundColor: [
                             'rgba(54, 162, 235, 0.7)',

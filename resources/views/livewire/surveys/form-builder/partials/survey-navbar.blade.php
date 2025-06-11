@@ -33,10 +33,14 @@
                 {{-- Show unpublish button only if survey is not yet ongoing (no responses yet) --}}
                 @if($survey->status !== 'ongoing')
                     <button
-                        wire:click="unpublishSurvey"
+                        type="button"
+                        x-on:click="confirmUnpublish()"
                         class="inline-flex items-center h-9 px-4 py-1.5 bg-yellow-500 text-white text-sm font-medium rounded hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
                         @if($survey->is_locked) disabled @endif
                     >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                        </svg>
                         Unpublish
                     </button>
                 @endif
@@ -51,10 +55,14 @@
                 </a>
             @elseif($survey->status === 'pending')
                 <button
-                    wire:click="publishSurvey"
+                    type="button"
+                    x-on:click="confirmPublish()"
                     class="inline-flex items-center h-9 px-4 py-1.5 bg-green-500 text-white text-sm font-medium rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                     @if($survey->is_locked) disabled @endif
                 >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.893 13.393l-1.135-1.135a2.252 2.252 0 01-.421-.585l-1.08-2.16a.414.414 0 00-.663-.107.827.827 0 01-.812.21l-1.273-.363a.89.89 0 00-.738 1.595l.587.39c.59.395.674 1.23.172 1.732l-.2.2c-.212.212-.33.498-.33.796v.41c0 .409-.11.809-.32 1.158l-1.315 2.191a2.11 2.11 0 01-1.81 1.025 1.055 1.055 0 01-1.055-1.055v-1.172c0-.92-.56-1.747-1.414-2.089l-.655-.261a2.25 2.25 0 01-1.383-2.46l.007-.042a2.25 2.25 0 01.29-.787l.09-.15a2.25 2.25 0 012.37-1.048l1.178.236a1.125 1.125 0 001.302-.795l.208-.73a1.125 1.125 0 00-.578-1.315l-.665-.332-.091.091a2.25 2.25 0 01-1.591.659h-.18c-.249 0-.487.1-.662.274a.931.931 0 01-1.458-1.137l1.411-2.353a2.25 2.25 0 00.286-.76m11.928 9.869A9 9 0 008.965 3.525m11.928 9.868A9 9 0 118.965 3.525" />
+                    </svg>
                     Publish
                 </button>
                 <a href="{{ route('surveys.preview', $survey->id) }}" wire:navigate
@@ -95,15 +103,16 @@
             {{-- Delete All Button - Only show when NOT ongoing --}}
             @if($survey->status !== 'ongoing')
                 <button
-                    wire:click="deleteAll"
+                    type="button"
+                    x-on:click="confirmReset()"
                     class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center"
-                    title="Delete All Questions and Pages"
+                    title="Delete all questions and pages"
                     @if($survey->is_locked) disabled @endif
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                     </svg>
-                    Delete All
+                    Reset
                 </button>
             @endif
 
@@ -125,7 +134,7 @@
         </div>
 
         {{-- Hamburger Menu Button (visible below large screens) --}}
-        <button @click="open = !open" class="lg:hidden p-2 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400">
+        <button x-on:click="open = !open" class="lg:hidden p-2 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
             </svg>
@@ -134,7 +143,7 @@
         {{-- Dropdown Menu (visible below large screens when open) --}}
         <div
             x-show="open"
-            @click.away="open = false"
+            x-on:click.away="open = false"
             x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0 scale-95"
             x-transition:enter-end="opacity-100 scale-100"
@@ -171,32 +180,44 @@
                     {{-- Show unpublish button only if survey is not yet ongoing (no responses yet) --}}
                     @if($survey->status !== 'ongoing')
                         <button
-                            wire:click="unpublishSurvey" @click="open = false"
-                            class="w-full text-left block px-4 py-2 text-sm text-yellow-700 hover:bg-gray-100 hover:text-yellow-900" role="menuitem"
+                            type="button"
+                            x-on:click="open = false; confirmUnpublish()"
+                            class="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-700 hover:bg-gray-100 hover:text-yellow-900" role="menuitem"
                             @if($survey->is_locked) disabled @endif
                         >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                            </svg>
                             Unpublish
                         </button>
                     @endif
                 @elseif($survey->status === 'pending')
                     <button
-                        wire:click="publishSurvey" @click="open = false"
-                        class="w-full text-left block px-4 py-2 text-sm text-green-700 hover:bg-gray-100 hover:text-green-900" role="menuitem"
+                        type="button"
+                        x-on:click="open = false; confirmPublish()"
+                        class="w-full text-left flex items-center px-4 py-2 text-sm text-green-700 hover:bg-gray-100 hover:text-green-900" role="menuitem"
                         @if($survey->is_locked) disabled @endif
                     >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.893 13.393l-1.135-1.135a2.252 2.252 0 01-.421-.585l-1.08-2.16a.414.414 0 00-.663-.107.827.827 0 01-.812.21l-1.273-.363a.89.89 0 00-.738 1.595l.587.39c.59.395.674 1.23.172 1.732l-.2.2c-.212.212-.33.498-.33.796v.41c0 .409-.11.809-.32 1.158l-1.315 2.191a2.11 2.11 0 01-1.81 1.025 1.055 1.055 0 01-1.055-1.055v-1.172c0-.92-.56-1.747-1.414-2.089l-.655-.261a2.25 2.25 0 01-1.383-2.46l.007-.042a2.25 2.25 0 01.29-.787l.09-.15a2.25 2.25 0 012.37-1.048l1.178.236a1.125 1.125 0 001.302-.795l.208-.73a1.125 1.125 0 00-.578-1.315l-.665-.332-.091.091a2.25 2.25 0 01-1.591.659h-.18c-.249 0-.487.1-.662.274a.931.931 0 01-1.458-1.137l1.411-2.353a2.25 2.25 0 00.286-.76m11.928 9.869A9 9 0 008.965 3.525m11.928 9.868A9 9 0 118.965 3.525" />
+                        </svg>
                         Publish
                     </button>
                 @endif
 
-                {{-- Delete All Button - Only show when NOT ongoing --}}
+                {{-- Delete All Button in dropdown - Only show when NOT ongoing --}}
                 @if($survey->status !== 'ongoing')
                     <button
-                        wire:click="deleteAll" @click="open = false"
-                        class="w-full text-left block px-4 py-2 text-sm text-red-700 hover:bg-gray-100 hover:text-red-900" role="menuitem"
+                        type="button"
+                        x-on:click="open = false; confirmReset()"
+                        class="w-full text-left flex items-center px-4 py-2 text-sm text-red-700 hover:bg-gray-100 hover:text-red-900" role="menuitem"
                         title="Delete All Questions and Pages"
                         @if($survey->is_locked) disabled @endif
                     >
-                        Delete All
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                        </svg>
+                        Reset
                     </button>
                 @endif
 
@@ -206,7 +227,6 @@
                         x-data
                         x-on:click="$dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'})"
                         class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                        role="menuitem"
                         title="Survey Settings"
                         @if($survey->is_locked) disabled @endif
                     >
@@ -221,3 +241,64 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function confirmPublish() {
+        Swal.fire({
+            title: 'Publish Survey?',
+            html: '<div class="p-2">Are you sure you want to publish this survey? Once published, it will be available for responses.</div>',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, publish it',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+            focusConfirm: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.find('{{ $_instance->getId() }}').publishSurvey();
+            }
+        });
+    }
+    
+    function confirmUnpublish() {
+        Swal.fire({
+            title: 'Unpublish Survey?',
+            html: '<div class="p-2">Are you sure you want to unpublish this survey? It will no longer be available for responses.</div>',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, unpublish it',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#eab308',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+            focusConfirm: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.find('{{ $_instance->getId() }}').unpublishSurvey();
+            }
+        });
+    }
+    
+    function confirmReset() {
+        Swal.fire({
+            title: 'Reset Survey?',
+            html: '<div class="p-2">Are you sure you want to reset this survey? This will delete all pages and questions associated with it.</div>',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, reset it',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+            focusConfirm: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.find('{{ $_instance->getId() }}').deleteAll();
+            }
+        });
+    }
+</script>
+@endpush

@@ -170,7 +170,6 @@ class RewardRedeemModal extends Component
 
             // Close modal and dispatch completion events
             $this->dispatch('close-modal', name: 'reward-redeem-modal');
-            $this->dispatch('rewardRedeemed');
             $this->dispatch('reward-purchased');
             
         } catch (\Exception $e) {

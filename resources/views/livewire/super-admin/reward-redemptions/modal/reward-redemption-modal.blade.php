@@ -29,11 +29,6 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                             </svg>
-                        @elseif($rewardType == 'monetary')
-                            {{-- Monetary Reward Icon --}}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
                         @else
                             {{-- Default Fallback Icon --}}
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -60,13 +55,6 @@
                         <span class="font-bold">Points Spent:</span> {{ $redemption->points_spent }}
                     </div>
                     
-                    <!-- GCash Number (Only shown for monetary rewards) -->
-                    @if($redemption->reward->type === 'monetary')
-                        <div>
-                            <span class="font-bold">GCash Number:</span> 
-                            <span class="font-mono">{{ $redemption->gcash_number ?: 'Not provided' }}</span>
-                        </div>
-                    @endif
                     
                     <div>
                         <span class="font-bold">Type:</span> {{ ucfirst($redemption->reward->type) }}
@@ -85,56 +73,33 @@
                     </div>
                 </div>
 
-                <!-- Status Update Buttons (only for monetary rewards) -->
+                <!-- Status Update Buttons -->
                 <div class="mt-6">
-                    <div class="text-sm mb-2 {{ $redemption->reward->type === 'monetary' ? 'text-green-600' : 'text-gray-500' }}">
-                        @if($redemption->reward->type === 'monetary')
-                            You can change the status of this monetary reward:
-                        @else
-                            Status changes are only available for monetary rewards.
-                        @endif
-                    </div>
-
                     <div class="flex space-x-3">
                         <button 
                             wire:click="updateStatus('completed')"
-                            wire:loading.attr="disabled" 
-                            class="px-3 py-1 rounded {{ 
-                                $redemption->reward->type === 'monetary' 
-                                    ? 'bg-green-500 hover:bg-green-600 text-white' 
-                                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                            }}"
-                            {{ $redemption->reward->type !== 'monetary' ? 'disabled' : '' }}
+                            
+                            class="px-3 py-1 rounded bg-green-500 hover:bg-green-600 text-white"
                         >
-                            <span wire:loading wire:target="updateStatus('completed')">Processing...</span>
+                            <span wire:loading.inline wire:target="updateStatus('completed')">Processing...</span>
                             <span wire:loading.remove wire:target="updateStatus('completed')">Completed</span>
                         </button>
                         
                         <button 
                             wire:click="updateStatus('pending')"
-                            wire:loading.attr="disabled"
-                            class="px-3 py-1 rounded {{ 
-                                $redemption->reward->type === 'monetary'
-                                    ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                            }}"
-                            {{ $redemption->reward->type !== 'monetary' ? 'disabled' : '' }}
+                            
+                            class="px-3 py-1 rounded bg-yellow-500 hover:bg-yellow-600 text-white"
                         >
-                            <span wire:loading wire:target="updateStatus('pending')">Processing...</span>
+                            <span wire:loading.inline wire:target="updateStatus('pending')">Processing...</span>
                             <span wire:loading.remove wire:target="updateStatus('pending')">Pending</span>
                         </button>
                         
                         <button 
                             wire:click="updateStatus('rejected')"
-                            wire:loading.attr="disabled"
-                            class="px-3 py-1 rounded {{ 
-                                $redemption->reward->type === 'monetary'
-                                    ? 'bg-red-500 hover:bg-red-600 text-white'
-                                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                            }}"
-                            {{ $redemption->reward->type !== 'monetary' ? 'disabled' : '' }}
+                            
+                            class="px-3 py-1 rounded bg-red-500 hover:bg-red-600 text-white"
                         >
-                            <span wire:loading wire:target="updateStatus('rejected')">Processing...</span>
+                            <span wire:loading.inline wire:target="updateStatus('rejected')">Processing...</span>
                             <span wire:loading.remove wire:target="updateStatus('rejected')">Reject</span>
                         </button>
                     </div>

@@ -16,10 +16,14 @@
 
         <!-- Bottom: Survey Image -->
         <div class="flex-1 flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden shadow-sm min-h-0">
-            @php
-                $imageUrl = $survey->image_path ? asset('storage/' . $survey->image_path) : 'https://placehold.co/400x300?text=Survey+Image';
-            @endphp
-            <img src="{{ $imageUrl }}" alt="Survey Image" class="object-contain max-w-full max-h-full">
+            @if($survey->image_path)
+                @php $imageUrl = asset('storage/' . $survey->image_path); @endphp
+                <img src="{{ $imageUrl }}" alt="Survey Image" class="object-contain max-w-full max-h-full">
+            @else
+                <div class="w-full h-full flex items-center justify-center">
+                    <span class="text-gray-500 text-sm">no image</span>
+                </div>
+            @endif
         </div>
     </div>
 

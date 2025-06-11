@@ -16,7 +16,6 @@ class RewardIndex extends Component
     {
         return [
             'redemptionError' => 'handleRedemptionError',
-            'rewardRedeemed' => '$refresh',
             'redeem_success' => 'handleRedemptionSuccess',
         ];
     }
@@ -103,6 +102,7 @@ public function isRewardDisabled($reward): bool
 
       public function handleRedemptionSuccess($message)
     {
+        
         session()->flash('redeem_success', $message);
     }
     
@@ -125,7 +125,6 @@ public function isRewardDisabled($reward): bool
             'xpForNextLevel' => $xpForNextLevel,
             'systemRewards' => $this->systemRewards,
             'voucherRewards' => $this->voucherRewards,
-            // 'monetaryRewards' => $this->monetaryRewards,
             'selectedReward' => $this->selectedReward
         ]);
     }

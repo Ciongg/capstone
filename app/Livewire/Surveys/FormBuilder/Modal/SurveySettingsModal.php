@@ -59,13 +59,20 @@ class SurveySettingsModal extends Component
 
         $this->tagCategories = TagCategory::with('tags')->get();
 
-        $this->selectedSurveyTags = []; // Always initialize as array
+        // Initialize arrays for tags
+        $this->selectedSurveyTags = [];
+        $this->selectedInstitutionTags = [];
 
         // Load current survey tags
         if ($this->survey) {
             foreach ($this->tagCategories as $category) {
-                $tag = $this->survey->tags()->where('tag_category_id', $category->id)->first();
-                $this->selectedSurveyTags[$category->id] = $tag ? $tag->id : '';
+                // Get all tags for this category
+                $tags = $this->survey->tags()->where('tag_category_id', $category->id)->get();
+                if ($tags->count() > 0) {
+                    $this->selectedSurveyTags[$category->id] = $tags->pluck('id')->toArray();
+                } else {
+                    $this->selectedSurveyTags[$category->id] = [];
+                }
             }
         }
 
@@ -132,31 +139,30 @@ class SurveySettingsModal extends Component
 
     public function saveSurveyTags()
     {
-        $tagIds = array_filter($this->selectedSurveyTags);
-
-        if ($this->survey) {
-            $syncData = [];
-            foreach ($tagIds as $categoryId => $tagId) {
-                $tag = \App\Models\Tag::find($tagId);
-                if ($tag) {
-                    // Make sure the pivot data includes timestamps by not specifying them
-                    // Laravel will automatically set created_at and updated_at if withTimestamps() is used in the relationship
-                    $syncData[$tagId] = ['tag_name' => $tag->name];
+        $syncData = [];
+        
+        foreach ($this->selectedSurveyTags as $categoryId => $tagIds) {
+            if (!empty($tagIds)) {
+                foreach ($tagIds as $tagId) {
+                    $tag = \App\Models\Tag::find($tagId);
+                    if ($tag) {
+                        $syncData[$tagId] = ['tag_name' => $tag->name];
+                    }
                 }
             }
-            
-            // Ensure timestamps are respected when syncing
-            $this->survey->tags()->sync($syncData);
-            $this->survey->institutionTags()->sync([]); // Clear all institution tags
-            
-            // Reset the selected institution tags array
-            $this->selectedInstitutionTags = [];
-            
-            // Dispatch events
-            $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Survey demographic tags updated! Institution demographics have been cleared.');
-    
-            $this->dispatch('close-modal', name: 'survey-settings-modal-' . $this->survey->id);
         }
+        
+        // Sync the tags
+        $this->survey->tags()->sync($syncData);
+        $this->survey->institutionTags()->sync([]); // Clear all institution tags
+        
+        // Reset the selected institution tags array
+        $this->selectedInstitutionTags = [];
+        
+        // Dispatch events
+        $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Survey demographic tags updated! Institution demographics have been cleared.');
+    
+        $this->dispatch('close-modal', name: 'survey-settings-modal-' . $this->survey->id);
     }
 
     private function loadInstitutionTagCategories()
@@ -173,13 +179,16 @@ class SurveySettingsModal extends Component
     private function loadSelectedInstitutionTags()
     {
         if ($this->survey && $this->survey->id) {
-            // Get institution tags already associated with this survey
-            $institutionTags = $this->survey->institutionTags()->get();
-            
-            // Group by category
-            foreach ($institutionTags as $tag) {
-                if ($tag->institution_tag_category_id) {
-                    $this->selectedInstitutionTags[$tag->institution_tag_category_id] = $tag->id;
+            foreach ($this->institutionTagCategories as $category) {
+                // Get all institution tags for this category
+                $tags = $this->survey->institutionTags()
+                    ->where('institution_tag_category_id', $category->id)
+                    ->get();
+                    
+                if ($tags->count() > 0) {
+                    $this->selectedInstitutionTags[$category->id] = $tags->pluck('id')->toArray();
+                } else {
+                    $this->selectedInstitutionTags[$category->id] = [];
                 }
             }
         }
@@ -187,30 +196,31 @@ class SurveySettingsModal extends Component
 
     public function saveInstitutionTags()
     {
-        $institutionTagIds = array_filter($this->selectedInstitutionTags);
-
-        if ($this->survey) {
-            $syncData = [];
-            foreach ($institutionTagIds as $categoryId => $tagId) {
-                $tag = InstitutionTag::find($tagId);
-                if ($tag) {
-                    $syncData[$tagId] = ['tag_name' => $tag->name];
+        $syncData = [];
+        
+        foreach ($this->selectedInstitutionTags as $categoryId => $tagIds) {
+            if (!empty($tagIds)) {
+                foreach ($tagIds as $tagId) {
+                    $tag = InstitutionTag::find($tagId);
+                    if ($tag) {
+                        $syncData[$tagId] = ['tag_name' => $tag->name];
+                    }
                 }
             }
-            
-            // Sync institution tags and clear any general survey tags
-            $this->survey->institutionTags()->sync($syncData);
-            $this->survey->tags()->sync([]); // Clear all general survey tags
-            
-            // Reset the selected survey tags array
-            $this->selectedSurveyTags = [];
-            
-            $surveyId = $this->survey->id;
-            
-            // Dispatch events
-            $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Institution demographics updated! General survey demographics have been cleared.');
-            $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
         }
+        
+        // Sync the tags
+        $this->survey->institutionTags()->sync($syncData);
+        $this->survey->tags()->sync([]); // Clear all general survey tags
+        
+        // Reset the selected survey tags array
+        $this->selectedSurveyTags = [];
+        
+        $surveyId = $this->survey->id;
+        
+        // Dispatch events
+        $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Institution demographics updated! General survey demographics have been cleared.');
+        $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
     }
 
     // Add this method to handle updating tabs when the institution-only checkbox changes

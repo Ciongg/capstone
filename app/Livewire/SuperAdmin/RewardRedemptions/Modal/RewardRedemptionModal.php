@@ -29,12 +29,6 @@ class RewardRedemptionModal extends Component
             return;
         }
         
-        // Only allow status changes for monetary rewards
-        if ($this->redemption->reward->type !== 'monetary') {
-            session()->flash('modal_message', 'Only monetary rewards can have their status changed manually.');
-            return;
-        }
-        
         $this->redemption->status = $status;
         $this->redemption->save();
         

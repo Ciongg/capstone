@@ -3,7 +3,8 @@
     {{-- Alpine.js Data Initialization --}}
     <!-- Sticky Page Selector Container -->
     <div class="sticky top-0 z-30 bg-white shadow px-6 py-3 mb-4 rounded">
-                <div class="flex flex-col gap-2">
+                {{-- Debug info for checking selected questio nand page --}}
+                {{-- <div class="flex flex-col gap-2">
                     <div>
                         Selected Question: {{$selectedQuestionId}}
                         
@@ -12,7 +13,7 @@
                         Selected Page: {{$activePageId}}
             
                     </div>
-                </div>
+                </div> --}}
                 <!-- Page Selector -->
                 @if ($pages->isEmpty())
                     <div class="text-center">

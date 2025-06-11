@@ -161,7 +161,7 @@
     </nav>
 
     <!-- Survey Creation Modal -->
-    <x-modal name="select-survey-type" title="Create Survey">
+    <x-modal name="select-survey-type" title="Create Survey" x-on:open="$nextTick(() => $dispatch('survey-modal-opened'))">
         <livewire:surveys.form-builder.modal.survey-type-modal />
     </x-modal>
 
@@ -172,10 +172,7 @@
 
     <!-- Script to handle data passing between modals -->
     <script>
-        document.addEventListener('alpine:init', () => {
-            // No longer need the store since everything is in one modal now
-        });
-
+       
         // Ensure scroll to top on initial load for all scenarios
         window.addEventListener('load', () => {
             window.scrollTo(0, 0);

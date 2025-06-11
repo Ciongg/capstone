@@ -36,10 +36,7 @@ class RewardRedemptionIndex extends Component
             
         return view('livewire.super-admin.reward-redemptions.reward-redemption-index', [
             'redemptions' => $redemptions,
-            // Add count of pending monetary rewards for admin awareness
-            'pendingCount' => RewardRedemption::whereHas('reward', function($q) {
-                $q->where('type', 'monetary');
-            })->where('status', RewardRedemption::STATUS_PENDING)->count()
+    
         ]);
     }
 

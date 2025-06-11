@@ -85,9 +85,29 @@
             </div>
 
             <!-- Section 3: Confirm Button -->
-            <div class="w-full flex justify-center">
+            <div class="w-full flex justify-center" x-data="{ 
+                confirmPurchase() {
+                    Swal.fire({
+                        title: 'Confirm Purchase',
+                        html: '<div>Are you sure you want to spend <b>{{ $this->getTotalCost() }}</b> points on this reward?</div>',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, purchase it',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonColor: '#10b981',
+                        cancelButtonColor: '#6b7280',
+                        reverseButtons: true,
+                        focusConfirm: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            @this.confirmRedemption();
+                        }
+                    });
+                }
+            }">
                 <button 
-                    wire:click="confirmRedemption"
+                    type="button"
+                    x-on:click="confirmPurchase()"
                     class="w-full max-w-xs bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
                     {{ $this->isButtonDisabled() ? 'disabled' : '' }}
                 >
@@ -95,13 +115,12 @@
                     <span wire:loading.remove wire:target="confirmRedemption">Confirm</span>
                 </button>
             </div>
-            
+
             <!-- Section 4: Error Message -->
             <div class="text-center w-full">
                 @if($this->getErrorMessage())
                     <p class="text-xs text-red-500 mt-2">{{ $this->getErrorMessage() }}</p>
                 @endif
-                
             </div>
         </div>
     @else

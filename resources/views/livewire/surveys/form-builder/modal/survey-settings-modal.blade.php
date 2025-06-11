@@ -191,19 +191,29 @@
 
     <!-- Survey Demographics Tab -->
     <div x-show="tab === 'demographics'" x-cloak>
-        <form wire:submit.prevent="saveSurveyTags" class="space-y-4">
+        <form wire:submit.prevent="saveSurveyTags" class="space-y-6">
             @foreach($tagCategories as $category)
-                <div wire:key="survey-tag-category-{{ $category->id }}">
-                    <label class="block font-semibold mb-1">{{ $category->name }}</label>
-                    <select wire:model.live="selectedSurveyTags.{{ $category->id }}" class="w-full border rounded px-3 py-2">
-                        <option value="">Select {{ $category->name }}</option>
+                <div wire:key="survey-tag-category-{{ $category->id }}" class="border rounded-lg p-4 bg-gray-50">
+                    <label class="block font-semibold mb-3 text-lg">{{ $category->name }}</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         @foreach($category->tags as $tag)
-                            <option value="{{ $tag->id }}">{{ $tag->name }}</option>
+                            <div class="flex items-center">
+                                <input 
+                                    type="checkbox" 
+                                    id="survey-tag-{{ $tag->id }}" 
+                                    value="{{ $tag->id }}" 
+                                    wire:model.live="selectedSurveyTags.{{ $category->id }}" 
+                                    class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                >
+                                <label for="survey-tag-{{ $tag->id }}" class="ml-2 text-sm font-medium text-gray-700">
+                                    {{ $tag->name }}
+                                </label>
+                            </div>
                         @endforeach
-                    </select>
+                    </div>
                 </div>
             @endforeach
-            <button type="submit" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            <button type="submit" class="mt-6 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-medium">
                 <span wire:loading.remove wire:target="saveSurveyTags">Save Demographics</span>
                 <span wire:loading wire:target="saveSurveyTags">Saving...</span>
             </button>
@@ -217,7 +227,7 @@
             <p class="text-sm text-gray-500">Select the institutional demographic tags to target specific groups within your institution.</p>
         </div>
         
-        <form wire:submit.prevent="saveInstitutionTags" class="space-y-4">
+        <form wire:submit.prevent="saveInstitutionTags" class="space-y-6">
             @if(empty($institutionTagCategories) || count($institutionTagCategories) == 0)
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
                     <div class="flex">
@@ -237,7 +247,6 @@
                                     </span>
                                 </p>
                             @else 
-                                {{-- Fallback for other user types if necessary, or remove if not needed --}}
                                 <p class="text-sm text-yellow-700">
                                     Institutional demographics are not yet available.
                                 </p>
@@ -247,18 +256,28 @@
                 </div>
             @else
                 @foreach($institutionTagCategories as $category)
-                    <div wire:key="institution-tag-category-{{ $category->id }}">
-                        <label class="block font-semibold mb-1">{{ $category->name }}</label>
-                        <select wire:model.live="selectedInstitutionTags.{{ $category->id }}" class="w-full border rounded px-3 py-2">
-                            <option value="">Select {{ $category->name }}</option>
+                    <div wire:key="institution-tag-category-{{ $category->id }}" class="border rounded-lg p-4 bg-gray-50">
+                        <label class="block font-semibold mb-3 text-lg">{{ $category->name }}</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                             @foreach($category->tags as $tag)
-                                <option value="{{ $tag->id }}">{{ $tag->name }}</option>
+                                <div class="flex items-center">
+                                    <input 
+                                        type="checkbox" 
+                                        id="institution-tag-{{ $tag->id }}" 
+                                        value="{{ $tag->id }}" 
+                                        wire:model.live="selectedInstitutionTags.{{ $category->id }}" 
+                                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                    >
+                                    <label for="institution-tag-{{ $tag->id }}" class="ml-2 text-sm font-medium text-gray-700">
+                                        {{ $tag->name }}
+                                    </label>
+                                </div>
                             @endforeach
-                        </select>
+                        </div>
                     </div>
                 @endforeach
                 
-                <button type="submit" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                <button type="submit" class="mt-6 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-medium">
                     <span wire:loading.remove wire:target="saveInstitutionTags">Save Institution Demographics</span>
                     <span wire:loading wire:target="saveInstitutionTags">Saving...</span>
                 </button>

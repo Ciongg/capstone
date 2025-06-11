@@ -32,7 +32,6 @@ class Reward extends Model
      */
     const TYPE_VOUCHER = 'Voucher';
     const TYPE_SYSTEM = 'System';
-    const TYPE_MONETARY = 'Monetary';
 
     /**
      * Check if the reward is available for redemption

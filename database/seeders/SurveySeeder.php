@@ -224,7 +224,7 @@ class SurveySeeder extends Seeder
         $imageFiles = Storage::disk('public')->files('surveys');
         
         // Create 10 random surveys
-        for ($i = 0; $i < 1; $i++) {
+        for ($i = 0; $i < 30; $i++) {
             $surveyStatus = 'published';
             $surveyType = $faker->randomElement(['basic', 'advanced']);
             
@@ -246,7 +246,6 @@ class SurveySeeder extends Seeder
                 'status' => $surveyStatus,
                 'type' => $surveyType,
                 'survey_topic_id' => $surveyTopics->random()->id,
-                'points' => $points,
                 'target_respondents' => $faker->numberBetween(30, 100),
                 'start_date' => $faker->dateTimeBetween('-1 month', '+1 week'),
                 'end_date' => $faker->dateTimeBetween('+1 week', '+3 months'),
@@ -367,6 +366,6 @@ class SurveySeeder extends Seeder
             }
         }
         
-        $this->command->info('Created 10 surveys with structured academic content!');
+        $this->command->info('Created x surveys with structured academic content!');
     }
 }

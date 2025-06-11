@@ -160,7 +160,7 @@ class AnalyticsIndex extends Component
         return [
             'system' => $rewardsByType['system'] ?? 0,
             'voucher' => $rewardsByType['voucher'] ?? 0,
-            // 'monetary' => $rewardsByType['monetary'] ?? 0
+           
         ];
     }
     

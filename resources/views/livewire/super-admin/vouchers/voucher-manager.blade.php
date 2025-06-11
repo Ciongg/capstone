@@ -47,7 +47,7 @@
         </button>
     </div>
     
-    <!-- Tab Navigation for Reward Types - Removed Monetary tab -->
+    <!-- Tab Navigation for Reward Types -->
     <div class="mb-4">
         <div class="flex space-x-2 flex-wrap">
             <button wire:click="filterByType('all')" 
