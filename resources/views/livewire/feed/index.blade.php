@@ -1,5 +1,4 @@
-
-<div class="max-w-7xl mx-auto " 
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" 
      x-data="{ 
          fullscreenImageSrc: null,
          isFetchingMore: false, // Local flag to prevent multiple calls
@@ -49,11 +48,13 @@
     {{-- Filter panel --}}
     @include('livewire.feed.partials.filter-panel')
 
-    {{-- Topic filters --}}
-    @include('livewire.feed.partials.topic-filters')
+    {{-- Topic filters - reduce top spacing --}}
+    <div class="mt-1">
+        @include('livewire.feed.partials.topic-filters')
+    </div>
 
     {{-- Loading indicator and surveys section --}}
-    <div class="mt-4">
+    <div class="mt-3">
         {{-- Loading indicator with centered positioning --}}
         <div class="relative min-h-[200px]"> 
             {{-- Loading indicator - add clearSurveyTypeFilter to the wire:target --}}
@@ -68,7 +69,7 @@
             {{-- Survey grid - also update here to match the targets above --}}
             <div wire:loading.class="opacity-0" wire:target="toggleTopicFilter, clearTopicFilter, applyPanelTagFilters, removeTagFilter,  resetFilters, clearSurveyTypeFilter, toggleSurveyTypeFilter">
                 @if(count($surveys) > 0)
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
                         @foreach($surveys as $survey)
                             @include('livewire.feed.partials.survey-card', ['survey' => $survey])
                         @endforeach

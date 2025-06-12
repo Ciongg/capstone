@@ -22,7 +22,7 @@
             this.startAutoplay();
         }
     }"
-    class="w-full md:w-1/2 bg-white relative h-[600px]"
+    class="w-full h-full bg-white relative"
     x-init="init()"
     wire:ignore
 >
@@ -117,22 +117,22 @@
     <div class="absolute bottom-8 left-0 right-0 flex justify-center space-x-2">
         <button 
             @click="setActiveSlide(1)" 
-            class="w-3 h-3 rounded-full transition-colors duration-200" 
+            class="w-4 h-4 rounded-full transition-colors duration-200" 
             :class="activeSlide === 1 ? 'bg-blue-500' : 'bg-gray-300'"
         ></button>
         <button 
             @click="setActiveSlide(2)" 
-            class="w-3 h-3 rounded-full transition-colors duration-200" 
+            class="w-4 h-4 rounded-full transition-colors duration-200" 
             :class="activeSlide === 2 ? 'bg-blue-500' : 'bg-gray-300'"
         ></button>
         <button 
             @click="setActiveSlide(3)" 
-            class="w-3 h-3 rounded-full transition-colors duration-200" 
+            class="w-4 h-4 rounded-full transition-colors duration-200" 
             :class="activeSlide === 3 ? 'bg-blue-500' : 'bg-gray-300'"
         ></button>
         <button 
             @click="setActiveSlide(4)" 
-            class="w-3 h-3 rounded-full transition-colors duration-200" 
+            class="w-4 h-4 rounded-full transition-colors duration-200" 
             :class="activeSlide === 4 ? 'bg-blue-500' : 'bg-gray-300'"
         ></button>
     </div>

@@ -1,15 +1,21 @@
 @extends('components.layouts.app')
 
 @section('content')
-<main class="container mx-auto py-12 px-8">
+<main class="container mx-auto py-12 px-4 sm:px-8">
     <div class="flex flex-col md:flex-row items-center mb-16">
-        <!-- Left Section: Text, Button, Stars -->
-        <div class="md:w-1/2 text-left mb-8 md:mb-0 md:pr-8">
-            <h1 class="text-4xl lg:text-5xl text-gray-800 mb-6 leading-16">Powering Research<br>Rewarding Participants</h1>
-            <a href="{{ route('register') }}" class="mt-4 mb-8 inline-block bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-8 py-2 rounded-lg text-lg">
-                Register
-            </a>
-            <div class="flex mt-6">
+        <!-- Left Section: Text, Button, Stars - Explicitly centered on mobile -->
+        <div class="md:w-1/2 text-center md:text-left mb-8 md:mb-0 md:pr-8">
+            <h1 class="text-4xl lg:text-5xl text-gray-800 mb-6 leading-tight">Powering Research<br>Rewarding Participants</h1>
+            
+            <!-- Center button on mobile, left-aligned on desktop -->
+            <div class="flex justify-center md:justify-start">
+                <a href="{{ route('login') }}" class="mt-4 mb-8 inline-block bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-8 py-2 rounded-lg text-lg">
+                    Login
+                </a>
+            </div>
+            
+            <!-- Center reviews section on mobile -->
+            <div class="flex justify-center md:justify-start mt-6">
                 <!-- Profile Pictures of Reviewers - Now First -->
                 <div class="flex -space-x-3 mb-2 mr-3">
                     <img src="{{ asset('storage/images/person1.jpg') }}" alt="Reviewer 1" class="w-8 h-8 rounded-full border-2 border-white object-cover">
@@ -29,17 +35,28 @@
             </div>
         </div>
 
-        <!-- Right Section: Overlapping Images - Increased size -->
-        <div class="md:w-1/2 relative flex justify-center md:justify-center items-center h-64 md:h-auto">
-            <img src="{{ asset('storage/images/feed-full.png') }}" alt="Landing Image 1" class="absolute w-3/4 sm:w-2/3 md:w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[-100px] translate-y-[-20px]">
-            <img src="{{ asset('storage/images/rewards.png') }}" alt="Landing Image 2" class="relative w-3/4 sm:w-2/3 md:w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[40px] translate-y-[90px]">
+        <!-- Right Section: Images -->
+        <div class="md:w-1/2">
+            <!-- Small screens (under 768px): Single image -->
+            <div class="md:hidden flex justify-center">
+                <img src="{{ asset('storage/images/feed-full.png') }}" alt="Landing Image 1" class="w-3/4 rounded-lg shadow-xl">
+            </div>
+            
+            <!-- Larger screens (768px+): Overlapping images -->
+            <div class="hidden md:block relative flex justify-center md:justify-center items-center h-64 md:h-auto px-4">
+                <img src="{{ asset('storage/images/feed-full.png') }}" alt="Landing Image 1" class="absolute w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[20px] translate-y-[-20px]">
+                <img src="{{ asset('storage/images/rewards.png') }}" alt="Landing Image 2" class="relative w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[120px] translate-y-[90px]">
+            </div>
         </div>
     </div>
 
-    <section class="mt-16 py-12 px-4">
-        <div class="bg-gray-100 py-12 rounded-lg mb-10"> {{-- Increased padding and margin --}}
-            <h2 class="text-5xl text-center text-gray-800">Getting Started is Easy</h2> {{-- Increased from text-2xl to text-3xl --}}
+    <!-- Getting Started Section - Already centered in mobile -->
+    <section class="mt-16 py-8 sm:py-12 px-4">
+        <div class="bg-gray-100 py-8 sm:py-12 rounded-lg mb-8 sm:mb-10 text-center">
+            <h2 class="text-4xl sm:text-5xl text-center text-gray-800">Getting Started is Easy</h2>
         </div>
+        
+        <!-- Card grid - Already using text-center -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-gray-700">
             <div class="text-center">
                 {{-- Login SVG Icon --}}

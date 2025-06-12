@@ -1,6 +1,6 @@
 <div
     {{-- Add relative positioning --}}
-    class="mb-4 p-4 rounded-lg transition hover:shadow-md cursor-pointer relative"
+    class="mb-4 p-2 sm:p-4 rounded-lg transition hover:shadow-md cursor-pointer relative"
     {{-- Use local Alpine variables --}}
     :class="{ 'border-2 border-blue-500': activePageId === {{ $page->id }} && selectedQuestionId === null }"
 >
@@ -38,7 +38,7 @@
         @input="adjustHeight()"
         wire:blur="updatePage({{ $page->id }}, 'title', $event.target.value)"
         placeholder="Enter page title"
-        class="w-full text-2xl font-bold p-2 border border-gray-300 rounded mb-2 resize-none overflow-hidden"
+        class="w-full text-xl sm:text-2xl font-bold p-2 border border-gray-300 rounded mb-2 resize-none overflow-hidden"
         rows="1"
         data-autoresize
         :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('page-title-{{ $page->id }}') : 'auto' }"
@@ -65,7 +65,7 @@
         @input="adjustHeight()"
         wire:blur="updatePage({{ $page->id }}, 'subtitle', $event.target.value)"
         placeholder="Enter page subtitle"
-        class="w-full text-lg text-gray-600 p-2 border border-gray-300 rounded resize-none overflow-hidden"
+        class="w-full text-base sm:text-lg text-gray-600 p-2 border border-gray-300 rounded resize-none overflow-hidden"
         rows="1"
         data-autoresize
         :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('page-subtitle-{{ $page->id }}') : 'auto' }"

@@ -1,14 +1,18 @@
 <div>
-    <div class="mt-8 min-h-screen flex items-center justify-center">
+    <div class="min-h-screen flex items-center justify-center">
         <!-- Main container with centered shadow and rounded corners -->
         <div class="bg-white shadow-[0_0_25px_rgba(0,0,0,0.15)] rounded-3xl flex flex-col md:flex-row w-full max-w-6xl overflow-hidden">
-            <!-- Left container: Image Carousel -->
-            @include('components.carousel')
+            <!-- Left container: Image Carousel - Hidden on small screens, full width on md+ -->
+            <div class="hidden md:block md:w-1/2 md:flex md:justify-center md:items-center">
+                <div class="w-full h-full">
+                    @include('components.carousel')
+                </div>
+            </div>
             
-            <!-- Right container: White outer container -->
-            <div class="w-full md:w-1/2 bg-white p-8 flex items-center justify-center">
+            <!-- Right container: White outer container - Full width on small screens -->
+            <div class="w-full md:w-1/2 bg-white p-4 sm:p-8 flex items-center justify-center">
                 <!-- Blue inner container with inset shadow - adjusted padding -->
-                <div class="w-full bg-[#D4F3FF] p-10 rounded-2xl shadow-inner py-12">
+                <div class="w-full bg-[#D4F3FF] p-6 sm:p-10 rounded-2xl shadow-inner py-8 sm:py-12">
                     <header class="mb-10 text-center">
                         <h1 class="text-3xl font-bold text-[#03b8ff] mb-3">Welcome Back!</h1>
                         <p class="text-gray-800 text-lg">Enter your login credentials</p>

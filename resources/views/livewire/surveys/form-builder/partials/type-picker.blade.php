@@ -36,10 +36,10 @@
     <button
         x-show="!{{ $showTypePickerVar }}"
         @click="{{ $showTypePickerVar }} = true"
-        class="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 border border-dashed border-gray-400 flex items-center justify-center"
+        class="w-full px-3 sm:px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 border border-dashed border-gray-400 flex items-center justify-center text-sm sm:text-base"
         type="button"
     >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
         Add Question Below
@@ -54,14 +54,14 @@
         x-transition:leave="transition ease-in duration-75"
         x-transition:leave-start="opacity-100 scale-100"
         x-transition:leave-end="opacity-0 scale-95"
-        class="grid grid-cols-4 gap-2 mt-2 sm:grid-cols-4 xs:grid-cols-2 border p-2 rounded bg-white shadow"
+        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 sm:gap-2 mt-2 border p-2 rounded bg-white shadow overflow-x-auto"
         x-cloak
     >
         @foreach ($questionTypes as $type)
             <button
                 @click="{{ $showTypePickerVar }} = false"
                 wire:click="{!! $type === 'page' ? $pageClickAction : str_replace('TYPE', $type, $wireClickAction) !!}"
-                class="flex flex-col items-center justify-center p-2 rounded text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition duration-150 ease-in-out"
+                class="flex flex-col items-center justify-center p-1 sm:p-2 rounded text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition duration-150 ease-in-out min-w-[70px]"
                 type="button"
                 title="{{ $type === 'radio' ? 'Single Choice' : ucwords(str_replace('_', ' ', $type)) }}"
             >

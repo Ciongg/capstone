@@ -1,4 +1,8 @@
-<div>
+<div
+    @if($userVoucher && $userVoucher->status === 'active')
+        wire:poll.2000ms="checkVoucherStatus"
+    @endif
+>
     @if($userVoucher)
         @if(!$showQrCodeView)
             {{-- Confirmation View --}}
@@ -80,15 +84,6 @@
                 </div>
             </div>
         @else
-
-
-
-
-
-
-
-
-
             {{-- QR Code View --}}
             <div class="flex flex-col items-center space-y-4 p-4">
                 {{-- Image, Store Name, Promo Name --}}
@@ -118,7 +113,9 @@
                 @if($userVoucher->status === 'active')
                     {{-- QR Code (Only show if voucher is active) --}}
                     <div class="my-4">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode($userVoucher->voucher->reference_no) }}" alt="QR Code for {{ $userVoucher->voucher->reference_no }}" class="border rounded-md">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode(route('voucher.verify', $userVoucher->voucher->reference_no)) }}" 
+                            alt="QR Code for {{ $userVoucher->voucher->reference_no }}" 
+                            class="border rounded-md">
                     </div>
 
                     {{-- Reference ID --}}
@@ -132,32 +129,53 @@
                     </p>
                     <p class="text-xs text-gray-500 mt-2">Present this QR code to the store for redemption.</p>
                     
-                    {{-- Test Button for Scanning --}}
-                    <div class="mt-6">
+                    {{-- Button to test scanning (opens in new tab) --}}
+                    {{-- <div class="mt-4">
+                        <a href="{{ route('voucher.verify', $userVoucher->voucher->reference_no) }}" 
+                           target="_blank"
+                           class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                            Simulate Scan (Opens in new tab)
+                        </a>
+                    </div> --}}
+                    
+                    {{-- Test Button for Backend Processing --}}
+                    {{-- <div class="mt-3">
                         <button 
-                            wire:click="simulateScan"
+                            wire:click="OnScan"
                             class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         >
-                            <span wire:loading wire:target="simulateScan" class="mr-2">
+                            <span wire:loading wire:target="OnScan" class="mr-2">
                                 <svg class="animate-spin -ml-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
                             </span>
-                            <span wire:loading.remove wire:target="simulateScan">Simulate Scan (Test)</span>
-                            <span wire:loading wire:target="simulateScan">Processing...</span>
+                            <span wire:loading.remove wire:target="OnScan">Mark As Redeemed</span>
+                            <span wire:loading wire:target="OnScan">Processing...</span>
                         </button>
-                    </div>
+                    </div> --}}
                 @elseif($userVoucher->status === 'used')
-                    {{-- Show Used State --}}
-                    <div class="bg-gray-100 p-8 rounded-lg border border-gray-300 text-center">
+                    {{-- Show Used State - Enhanced for post-scan display --}}
+                    <div class="bg-green-50 p-8 rounded-lg border border-green-200 text-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
-                        <p class="mt-4 text-xl font-bold text-gray-700">Voucher Redeemed</p>
-                        <p class="text-sm text-gray-500 mt-2">This voucher has been used on {{$userVoucher->used_at->format('M d, Y \a\t h:i A')}}</p>
+                        <p class="mt-4 text-xl font-bold text-gray-700">Voucher Successfully Redeemed!</p>
+                        <p class="text-sm text-gray-600 mt-2">This voucher has been verified and marked as used.</p>
+                        <p class="text-sm text-gray-500 mt-2">Used on {{$userVoucher->used_at->format('M d, Y \a\t h:i A')}}</p>
                         
-                        <p class="mt-6 text-sm text-gray-600">Reference: {{ $userVoucher->voucher->reference_no }}</p>
+                        <div class="mt-6 p-4 bg-white rounded-lg border border-gray-200">
+                            <p class="text-sm font-medium text-gray-700">Voucher Details:</p>
+                            <p class="text-xs text-gray-600 mt-1">Reference: {{ $userVoucher->voucher->reference_no }}</p>
+                            <p class="text-xs text-gray-600">Store: {{ $userVoucher->voucher->store_name }}</p>
+                            <p class="text-xs text-gray-600">Promo: {{ $userVoucher->voucher->promo }}</p>
+                        </div>
+                        
+                        @if(session()->has('success'))
+                            <div class="mt-4 text-green-700 text-sm font-medium">
+                                {{ session('success') }}
+                            </div>
+                        @endif
                     </div>
                 @else
                     {{-- Show Expired/Unavailable State --}}
@@ -169,12 +187,6 @@
                         <p class="text-sm text-gray-500 mt-2">This voucher is no longer available for redemption.</p>
                         
                         <p class="mt-6 text-sm text-gray-600">Reference: {{ $userVoucher->voucher->reference_no }}</p>
-                    </div>
-                @endif
-                
-                @if(session()->has('success'))
-                    <div class="mt-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded w-full">
-                        {{ session('success') }}
                     </div>
                 @endif
                 

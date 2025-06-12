@@ -1,8 +1,8 @@
 {{-- Applied Filters Display --}}
 @if(!empty($search) || !is_null($activeFilters['topic']) || !empty($activeFilters['tags']) || !empty($activeFilters['institutionTags']) || !is_null($activeFilters['type']))
-    <div class="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-md">
+    <div class="mb-4 p-2 sm:p-3 bg-blue-50 border border-blue-100 rounded-md">
         <div class="flex flex-wrap gap-2 items-center">
-            <span class="text-sm font-medium text-blue-700">Filtered by:</span>
+            <span class="text-xs sm:text-sm font-medium text-blue-700">Filtered by:</span>
             
             {{--Search Filter--}}
             @if(!empty($search))
@@ -94,7 +94,7 @@
                 @endforeach
             @endforeach
             
-            <button wire:click="resetFilters" class="ml-auto text-blue-600 hover:text-blue-800 text-sm font-semibold">
+            <button wire:click="resetFilters" class="ml-auto text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-semibold">
                 Clear all filters
             </button>
         </div>

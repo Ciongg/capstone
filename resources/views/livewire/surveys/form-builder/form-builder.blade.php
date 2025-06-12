@@ -1,5 +1,5 @@
 <div
-    class="bg-gray-100 min-h-screen p-16"
+    class="bg-gray-100 min-h-screen p-4 sm:p-6 md:p-8 lg:p-16"
     x-data="{ selectedQuestionId: @entangle('selectedQuestionId').live, activePageId: @entangle('activePageId').live }"
     x-init="
         $watch('selectedQuestionId', (value) => {
@@ -124,98 +124,91 @@
             </div>
         @endif
 
+        <!-- Sticky Page Selector -->
+        @include('livewire.surveys.form-builder.partials.page-navigation')
 
+        <!-- Pages and Questions the form itself-->
+        <div class="min-w-[300px]">
+            @foreach ($pages as $page)
+                <div id="page-container-{{ $page->id }}" class="bg-white shadow-md rounded-lg p-3 sm:p-6 mb-6 overflow-x-auto" wire:key="page-{{ $page->id }} ">
+                    @include('livewire.surveys.form-builder.partials.page-header', ['page' => $page])
 
-
-            <!-- Sticky Page Selector -->
-            @include('livewire.surveys.form-builder.partials.page-navigation')
-
-
-    
-            <!-- Pages and Questions the form itself-->
-            <div>
-                @foreach ($pages as $page)
-                    <div id="page-container-{{ $page->id }}" class="bg-white shadow-md rounded-lg p-6 mb-6" wire:key="page-{{ $page->id }} ">
-                        @include('livewire.surveys.form-builder.partials.page-header', ['page' => $page])
-
-                        @php
-                            // Ensure questions are sorted by order for accurate indexing
-                            $sortedQuestions = $page->questions->sortBy('order')->values();
-                        @endphp
-                        @foreach ($sortedQuestions as $qIndex => $question)
+                    @php
+                        // Ensure questions are sorted by order for accurate indexing
+                        $sortedQuestions = $page->questions->sortBy('order')->values();
+                    @endphp
+                    @foreach ($sortedQuestions as $qIndex => $question)
+                        <div
+                            id="question-{{ $question->id }}"
+                            wire:key="question-{{ $page->id }}-{{ $question->id }}"
+                            :class="{ 'border-2 border-blue-500': selectedQuestionId === {{ $question->id }} }"
+                            class="p-3 sm:p-4 bg-gray-50 rounded-lg shadow-sm mb-4 transition hover:shadow-md relative group"
+                        >
+                            {{-- Clickable Overlay --}}
                             <div
-                                id="question-{{ $question->id }}"
-                                wire:key="question-{{ $page->id }}-{{ $question->id }}"
-                                :class="{ 'border-2 border-blue-500': selectedQuestionId === {{ $question->id }} }"
-                                class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4 transition hover:shadow-md relative group"
-                            >
-                                {{-- Clickable Overlay --}}
-                                <div
-                                    x-show="selectedQuestionId !== {{ $question->id }}"
-                                    x-on:click="selectedQuestionId = {{ $question->id }}; activePageId = {{ $page->id }}; $wire.selectQuestion({{ $question->id }})"
-                                    class="absolute inset-0 bg-transparent hover:bg-blue-500/5 z-10 rounded-lg transition-all duration-200 cursor-pointer"
-                                ></div>
+                                x-show="selectedQuestionId !== {{ $question->id }}"
+                                x-on:click="selectedQuestionId = {{ $question->id }}; activePageId = {{ $page->id }}; $wire.selectQuestion({{ $question->id }})"
+                                class="absolute inset-0 bg-transparent hover:bg-blue-500/5 z-10 rounded-lg transition-all duration-200 cursor-pointer"
+                            ></div>
 
-                                {{-- Question Content --}}
-                                <div class="flex justify-between items-start">
-                                    <div class="flex items-start space-x-2 w-full pr-16">
-                                        <span class="text-gray-500 font-bold self-start pt-2">Q{{ $question->order }}.</span>
-                                        <textarea
-                                            id="question-text-{{ $question->id }}"
-                                            x-data="{
-                                                init() {
-                                                    $nextTick(() => this.adjustHeight());
-                                                },
-                                                adjustHeight() {
-                                                    const id = $el.id; // Get the ID
-                                                    $el.style.height = 'auto';
-                                                    const newHeight = `${$el.scrollHeight}px`;
-                                                    $el.style.height = newHeight;
-                                                    // Ensure it sets the store value
-                                                    Alpine.store('textareaHeights').set(id, newHeight);
-                                                }
-                                            }"
-                                            @input="adjustHeight()"
-                                            wire:model.defer="questions.{{ $question->id }}.question_text"
-                                            wire:blur="updateQuestion({{ $question->id }})"
-                                            placeholder="Enter question text"
-                                            onfocus="this.select()"
-                                            class="w-full p-2 border border-gray-300 rounded resize-none overflow-hidden"
-                                            rows="1"
-                                            data-autoresize
-                                            :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('question-text-{{ $question->id }}') : 'auto' }"
-                                        ></textarea>
-                                    </div>
-                                    <span class="ml-4 whitespace-nowrap text-sm text-gray-500 self-start pt-2">
-                                        {{ $question->question_type === 'radio' ? 'Single Choice' : ucwords(str_replace('_', ' ', $question->question_type)) }}
-                                    </span>
+                            {{-- Question Content --}}
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-start space-x-2 w-full pr-4 sm:pr-16">
+                                    <span class="text-gray-500 font-bold self-start pt-2">Q{{ $question->order }}.</span>
+                                    <textarea
+                                        id="question-text-{{ $question->id }}"
+                                        x-data="{
+                                            init() {
+                                                $nextTick(() => this.adjustHeight());
+                                            },
+                                            adjustHeight() {
+                                                const id = $el.id; // Get the ID
+                                                $el.style.height = 'auto';
+                                                const newHeight = `${$el.scrollHeight}px`;
+                                                $el.style.height = newHeight;
+                                                // Ensure it sets the store value
+                                                Alpine.store('textareaHeights').set(id, newHeight);
+                                            }
+                                        }"
+                                        @input="adjustHeight()"
+                                        wire:model.defer="questions.{{ $question->id }}.question_text"
+                                        wire:blur="updateQuestion({{ $question->id }})"
+                                        placeholder="Enter question text"
+                                        onfocus="this.select()"
+                                        class="w-full p-2 border border-gray-300 rounded resize-none overflow-hidden"
+                                        rows="1"
+                                        data-autoresize
+                                        :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('question-text-{{ $question->id }}') : 'auto' }"
+                                    ></textarea>
                                 </div>
+                                <span class="ml-4 whitespace-nowrap text-sm text-gray-500 self-start pt-2 hidden sm:block">
+                                    {{ $question->question_type === 'radio' ? 'Single Choice' : ucwords(str_replace('_', ' ', $question->question_type)) }}
+                                </span>
+                            </div>
 
-                                {{-- Include Question Type Specific Fields --}}
-                                @include('livewire.surveys.form-builder.partials.question-types.'.$question->question_type, ['question' => $question])
+                            {{-- Include Question Type Specific Fields --}}
+                            @include('livewire.surveys.form-builder.partials.question-types.'.$question->question_type, ['question' => $question])
 
-                                {{-- Include Type Picker and Delete Button (when selected) --}}
-                                <div x-show="selectedQuestionId === {{ $question->id }}" x-cloak class="mt-4 space-y-4">
-                                    @include('livewire.surveys.form-builder.partials.type-picker', [
-                                        'context' => 'question',
-                                        'id' => $question->id,
-                                        'order' => $question->order,
-                                        'questionTypes' => $questionTypes
-                                    ])
-                                </div>
-
-                                {{-- Include Question Settings --}}
-                                @include('livewire.surveys.form-builder.partials.question-settings', [
-                                    'question' => $question,
-                                    'qIndex' => $qIndex,
-                                    'totalQuestions' => $sortedQuestions->count()
+                            {{-- Include Type Picker and Delete Button (when selected) --}}
+                            <div x-show="selectedQuestionId === {{ $question->id }}" x-cloak class="mt-4 space-y-4">
+                                @include('livewire.surveys.form-builder.partials.type-picker', [
+                                    'context' => 'question',
+                                    'id' => $question->id,
+                                    'order' => $question->order,
+                                    'questionTypes' => $questionTypes
                                 ])
                             </div>
-                        @endforeach
-                     
-                    </div>
-                @endforeach
-            </div>
+
+                            {{-- Include Question Settings --}}
+                            @include('livewire.surveys.form-builder.partials.question-settings', [
+                                'question' => $question,
+                                'qIndex' => $qIndex,
+                                'totalQuestions' => $sortedQuestions->count()
+                            ])
+                        </div>
+                    @endforeach
+                </div>
+            @endforeach
         </div>
     </div> <!-- End of wrapper for interactive elements -->
 </div>

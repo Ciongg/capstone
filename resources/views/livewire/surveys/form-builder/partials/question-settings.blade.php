@@ -1,8 +1,8 @@
 <div x-show="selectedQuestionId === {{ $question->id }}" x-cloak class="mt-4">
     {{-- Reorder, Required, Limit, and Delete Row --}}
-    <div class="flex justify-between items-center">
+    <div class="flex flex-wrap gap-y-3 justify-between items-center">
         {{-- Left Group: Reorder, Required, Limit --}}
-        <div class="flex items-center space-x-4"> {{-- Increased spacing between groups --}}
+        <div class="flex flex-wrap items-center gap-3 sm:space-x-4"> {{-- Using gap for better stacking on mobile --}}
 
             {{-- Reorder Buttons --}}
             <div class="flex items-center space-x-1">
@@ -44,7 +44,7 @@
 
             {{-- Multiple Choice: Limit Condition Dropdown --}}
             @if($question->question_type === 'multiple_choice')
-                <div class="flex items-center space-x-1">
+                <div class="flex items-center flex-wrap gap-1">
                     <label for="limit-condition-{{ $question->id }}" class="text-sm text-gray-600">Limit:</label>
                     <select
                         id="limit-condition-{{ $question->id }}"
@@ -81,8 +81,7 @@
                 'id' => $question->id,
                 'confirmMessage' => 'Are you sure you want to remove this question?',
                 'action' => 'removeItem',
-                'type' => 'question'  // Add this line to specify the type
-
+                'type' => 'question'
             ])
         </div>
     </div>

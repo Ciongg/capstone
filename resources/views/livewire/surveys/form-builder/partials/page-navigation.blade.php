@@ -1,19 +1,8 @@
-<div class="space-y-6">
+<div class="space-y-6 min-w-[300px]">
     
     {{-- Alpine.js Data Initialization --}}
     <!-- Sticky Page Selector Container -->
-    <div class="sticky top-0 z-30 bg-white shadow px-6 py-3 mb-4 rounded">
-                {{-- Debug info for checking selected questio nand page --}}
-                {{-- <div class="flex flex-col gap-2">
-                    <div>
-                        Selected Question: {{$selectedQuestionId}}
-                        
-                    </div>
-                    <div>
-                        Selected Page: {{$activePageId}}
-            
-                    </div>
-                </div> --}}
+    <div class="sticky top-0 z-30 bg-white shadow px-3 sm:px-6 py-3 mb-4 rounded overflow-hidden min-w-[300px]">
                 <!-- Page Selector -->
                 @if ($pages->isEmpty())
                     <div class="text-center">
@@ -25,7 +14,7 @@
                         </button>
                     </div>
                 @else
-                    <div class="flex items-center space-x-1 overflow-x-auto py-1">
+                    <div class="flex items-center space-x-1 overflow-x-auto py-1 scrollbar-hide">
                         @foreach ($pages as $page)
                             <div wire:key="sticky-page-{{ $page->id }}" class="flex items-center group flex-shrink-0">
                                 {{-- Page Button --}}
@@ -33,13 +22,13 @@
                                    x-on:click="selectedQuestionId = null; activePageId = {{ $page->id }}; $wire.setActivePage({{ $page->id }});"
                                     type="button"
                                     :class="{
-                                        'px-3 py-2 rounded cursor-pointer transition duration-150 ease-in-out whitespace-nowrap': true,
+                                        'px-2 sm:px-3 py-1 sm:py-2 rounded cursor-pointer transition duration-150 ease-in-out whitespace-nowrap text-sm': true,
                                         'bg-blue-500 text-white hover:bg-blue-600': activePageId === {{ $page->id }},
                                         'bg-gray-200 text-gray-700 hover:bg-gray-300': activePageId !== {{ $page->id }}
                                     }"
                                     title="{{ $page->title ?: 'Page ' . $page->page_number }}"
                                 >
-                                    {{ Str::limit($page->title ?: 'Page ' . $page->page_number, 16) }}
+                                    {{ Str::limit($page->title ?: 'Page ' . $page->page_number, 12) }}
                                 </button>
 
                                 
@@ -79,7 +68,7 @@
                         {{-- Add Page Button --}}
                         <button
                             wire:click="addItem('page')"
-                            class="ml-4 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex-shrink-0"
+                            class="ml-2 sm:ml-4 px-2 sm:px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex-shrink-0"
                         >
                             + Add Page
                         </button>

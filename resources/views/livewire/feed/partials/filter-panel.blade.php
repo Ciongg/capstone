@@ -1,7 +1,7 @@
 {{-- Filter Panel - Controlled by Livewire --}}
 @if($showFilterPanel)
 <div 
-    class="mb-6 p-4 bg-white rounded-lg shadow-md border border-gray-100"
+    class="mb-6 p-3 sm:p-4 bg-white rounded-lg shadow-md border border-gray-100"
     wire:transition.origin.top.left
     x-data="{ 
         activeTagTab: 'general',
@@ -14,12 +14,12 @@
 >
 
 {{-- Survey Type Filters --}}
-    <div class="mt-6 border-t border-gray-200 pt-4">
+    <div class="mt-4 sm:mt-6 border-t border-gray-200 pt-4">
         <h3 class="font-medium text-gray-700 mb-3">Filter by Survey Type</h3>
         
         <div class="mb-4">
             <h4 class="font-semibold text-gray-600 mb-2">Survey Complexity</h4>
-            <div class="flex space-x-3">
+            <div class="flex flex-wrap gap-2 sm:space-x-3">
                 <button 
                     wire:click="toggleTempSurveyType('basic')" 
                     type="button"

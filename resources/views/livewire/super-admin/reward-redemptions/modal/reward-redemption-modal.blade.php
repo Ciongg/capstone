@@ -78,7 +78,7 @@
                     <div class="flex space-x-3">
                         <button 
                             wire:click="updateStatus('completed')"
-                            
+                            wire:loading.attr="disabled"
                             class="px-3 py-1 rounded bg-green-500 hover:bg-green-600 text-white"
                         >
                             <span wire:loading.inline wire:target="updateStatus('completed')">Processing...</span>
@@ -87,7 +87,7 @@
                         
                         <button 
                             wire:click="updateStatus('pending')"
-                            
+                            wire:loading.attr="disabled"
                             class="px-3 py-1 rounded bg-yellow-500 hover:bg-yellow-600 text-white"
                         >
                             <span wire:loading.inline wire:target="updateStatus('pending')">Processing...</span>
@@ -96,7 +96,7 @@
                         
                         <button 
                             wire:click="updateStatus('rejected')"
-                            
+                            wire:loading.attr="disabled"
                             class="px-3 py-1 rounded bg-red-500 hover:bg-red-600 text-white"
                         >
                             <span wire:loading.inline wire:target="updateStatus('rejected')">Processing...</span>

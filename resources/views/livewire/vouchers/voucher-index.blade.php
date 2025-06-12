@@ -27,9 +27,9 @@
             @if(count($userVouchers) > 0)
                 <div class="space-y-4">
                     @foreach($userVouchers as $userVoucher)
-                        <div class="bg-white shadow rounded-lg overflow-hidden flex items-center @if($userVoucher->status === 'active') border-l-8 border-blue-500 @endif"> {{-- Added items-center --}}
-                            <!-- Voucher image (square) -->
-                            <div class="w-32 h-32 flex-shrink-0">
+                        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col sm:flex-row sm:items-center @if($userVoucher->status === 'active') border-l-8 border-blue-500 @endif">
+                            <!-- Voucher image (fixed width on all screens) -->
+                            <div class="w-full sm:w-32 h-32 flex-shrink-0 overflow-hidden">
                                 @if($userVoucher->voucher->image_path)
                                     <img src="{{ asset('storage/' . $userVoucher->voucher->image_path) }}" alt="{{ $userVoucher->voucher->promo }}" class="w-full h-full object-cover">
                                 @else
@@ -46,24 +46,24 @@
                                 @endif
                             </div>
                             
-                            <!-- Voucher details -->
-                            <div class="p-4 flex-grow"> {{-- Removed flex flex-col justify-between --}}
+                            <!-- Voucher details with min-width to prevent shrinking -->
+                            <div class="p-4 flex-grow min-w-0">
                                 <div>
-                                    <h3 class="text-lg font-medium text-gray-900">{{ $userVoucher->voucher->store_name }}</h3>
+                                    <h3 class="text-lg font-medium text-gray-900 truncate">{{ $userVoucher->voucher->store_name }}</h3>
                                     <p class="mt-1 text-sm text-gray-500">{{ $userVoucher->voucher->promo }}</p>
-                                    <div class="mt-2 flex flex-wrap gap-2">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            Reference: {{ $userVoucher->voucher->reference_no }}
+                                    <div class="mt-2 flex flex-wrap gap-1">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mb-1 mr-1">
+                                            Ref: {{ $userVoucher->voucher->reference_no }}
                                         </span>
                                         
                                         @if($userVoucher->voucher->expiry_date)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $userVoucher->voucher->expiry_date->isPast() ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mb-1 mr-1 {{ $userVoucher->voucher->expiry_date->isPast() ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
                                                 Expires: {{ $userVoucher->voucher->expiry_date->format('M d, Y') }}
                                             </span>
                                         @endif
                                         
                                         <!-- Status Badge -->
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mb-1 mr-1
                                             {{ $userVoucher->status === 'available' ? 'bg-green-100 text-green-800' : 
                                                ($userVoucher->status === 'active' ? 'bg-blue-100 text-blue-800' : 
                                                ($userVoucher->status === 'used' ? 'bg-gray-100 text-gray-800' : 
@@ -73,16 +73,34 @@
                                         </span>
                                     </div>
                                 </div>
+
+                                <!-- Redeem Button (mobile only) -->
+                                <div class="mt-3 sm:hidden">
+                                    <button 
+                                        wire:click="openRedeemModal({{ $userVoucher->id }})"
+                                        class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#03b8ff] hover:bg-[#0295d1]"
+                                        {{ !in_array($userVoucher->status, ['available', 'active']) ? 'disabled' : '' }}
+                                    >
+                                        <span wire:loading wire:target="openRedeemModal({{ $userVoucher->id }})" class="mr-2">
+                                            <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </span>
+                                        {{ $userVoucher->status === 'active' ? 'Show QR Code' : 'Redeem' }}
+                                    </button>
+                                </div>
                             </div>
-                             <!-- Redeem Button -->
-                            <div class="p-4 flex-shrink-0 w-48 flex justify-center items-center"> {{-- Modified: w-40 to w-48 --}}
+                            
+                            <!-- Redeem Button (desktop only) with fixed width -->
+                            <div class="hidden sm:flex p-4 w-40 lg:w-48 flex-shrink-0 justify-center items-center">
                                 <button 
                                     wire:click="openRedeemModal({{ $userVoucher->id }})"
-                                    class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#03b8ff] hover:bg-[#0295d1] w-full max-w-xs" {{-- Added justify-center, w-full, max-w-xs for button responsiveness within its container --}}
+                                    class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#03b8ff] hover:bg-[#0295d1]"
                                     {{ !in_array($userVoucher->status, ['available', 'active']) ? 'disabled' : '' }}
                                 >
                                     <span wire:loading wire:target="openRedeemModal({{ $userVoucher->id }})" class="mr-2">
-                                        <svg class="animate-spin -ml-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
@@ -103,29 +121,14 @@
             @endif
         </div>
         
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
         <!-- Used Vouchers Tab Content -->
         <div x-show="tab === 'used'" x-cloak>
             @if(count($userVouchersHistory) > 0)
                 <div class="space-y-4">
                     @foreach($userVouchersHistory as $userVoucher)
-                        <div class="bg-white shadow rounded-lg overflow-hidden flex"> {{-- Changed: Added flex --}}
-                            <!-- Voucher image (square) -->
-                            <div class="w-32 h-32 flex-shrink-0"> {{-- Changed: Matched size with available tab --}}
+                        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col sm:flex-row">
+                            <!-- Voucher image - same fix as above -->
+                            <div class="w-full sm:w-32 h-32 flex-shrink-0 overflow-hidden">
                                 @if($userVoucher->voucher->image_path)
                                     <img src="{{ asset('storage/' . $userVoucher->voucher->image_path) }}" alt="{{ $userVoucher->voucher->promo }}" class="w-full h-full object-cover">
                                 @else
@@ -142,35 +145,34 @@
                                 @endif
                             </div>
                             
-                            <!-- Voucher details -->
-                            <div class="p-4 flex-grow flex flex-col justify-between"> {{-- Changed: Matched structure with available tab --}}
+                            <!-- Voucher details with min-width to prevent shrinking -->
+                            <div class="p-4 flex-grow min-w-0 flex flex-col justify-between">
                                 <div>
-                                    <div class="flex justify-between items-start">
+                                    <div class="flex flex-wrap justify-between items-start gap-2">
                                         <h3 class="text-lg font-medium text-gray-900">{{ $userVoucher->voucher->store_name }}</h3>
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ml-2 flex-shrink-0
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
                                             {{ $userVoucher->status === 'used' ? 'bg-gray-100 text-gray-800' : 
                                             ($userVoucher->status === 'expired' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') }}">
                                             {{ ucfirst($userVoucher->status) }}
                                         </span>
                                     </div>
                                     <p class="mt-1 text-sm text-gray-500">{{ $userVoucher->voucher->promo }}</p>
-                                    <div class="mt-2 flex flex-wrap gap-2">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            Reference: {{ $userVoucher->voucher->reference_no }}
+                                    <div class="mt-2 flex flex-wrap gap-1">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mb-1 mr-1">
+                                            Ref: {{ $userVoucher->voucher->reference_no }}
                                         </span>
                                         @if($userVoucher->used_at)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mb-1 mr-1">
                                                 Used: {{ $userVoucher->used_at->format('M d, Y') }}
                                             </span>
                                         @endif
                                         @if($userVoucher->voucher->expiry_date)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $userVoucher->voucher->expiry_date->isPast() && $userVoucher->status !== 'used' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mb-1 mr-1 {{ $userVoucher->voucher->expiry_date->isPast() && $userVoucher->status !== 'used' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
                                                 {{ $userVoucher->status === 'expired' || ($userVoucher->voucher->expiry_date->isPast() && $userVoucher->status !== 'used') ? 'Expired: ' : 'Expires: ' }} {{ $userVoucher->voucher->expiry_date->format('M d, Y') }}
                                             </span>
                                         @endif
                                     </div>
                                 </div>
-                                {{-- No action button for used/expired vouchers, so this section can be empty or have other info if needed --}}
                                 <div class="mt-4">
                                     {{-- Placeholder for potential future actions or info for used vouchers --}}
                                 </div>

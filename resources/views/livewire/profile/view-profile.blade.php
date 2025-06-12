@@ -32,7 +32,7 @@
         </div>
 
         {{-- Profile Info Section --}}
-        <div class="px-6 pt-0 pb-6"> {{-- Increased bottom padding --}}
+        <div class="px-4 sm:px-6 pt-0 pb-6"> {{-- Reduced horizontal padding on mobile --}}
             <div class="flex flex-col md:flex-row">
                 {{-- Profile Picture (overlapping the banner) --}}
                 <div class="relative -mt-20 mb-4 md:mb-0 flex justify-center md:justify-start">
@@ -65,15 +65,39 @@
                 </div>
 
                 {{-- User Info (to the right of profile picture) --}}
-                <div class="md:ml-6 mt-4 md:mt-0 md:pt-5 text-center md:text-left flex-1">
-                    <div class="flex justify-between items-center"> {{-- Flex container for name and logout button --}}
-                        <div class="text-3xl font-bold">{{ $user?->name ?? 'Unknown User' }}</div>
-                        <div class="flex items-center space-x-3"> {{-- Container for buttons --}}
+                <div class="md:ml-6 mt-4 md:mt-0 md:pt-5 flex-1">
+                    {{-- Wrapper for name/details and buttons - vertical on mobile, horizontal on large screens --}}
+                    <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start">
+                        {{-- Left column with name and details - always stacked --}}
+                        <div class="text-center md:text-left">
+                            {{-- User name display --}}
+                            <div class="mb-3">
+                                <div class="text-3xl font-bold">{{ $user?->name ?? 'Unknown User' }}</div>
+                            </div>
+                            
+                            {{-- Institution, Role, Trust Score in a column --}}
+                            <div class="flex flex-col mb-6 lg:mb-0 text-gray-600">
+                                @if($user->institution)
+                                    <div class="text-sm">{{ $user->institution?->name }}</div>
+                                @endif
+                                <div class="text-sm capitalize">{{ $user?->type ?? 'User' }}</div>
+                                {{-- Trust Score Display --}}
+                                <div class="flex items-center justify-center md:justify-start text-sm mt-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span class="text-gray-600">Trust Score: <span class="text-green-600 font-bold">{{ $user?->trust_score ?? 0 }}/100</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Action buttons - right side on large screens, stacked below on small screens --}}
+                        <div class="flex flex-col md:flex-row gap-3 items-center md:items-start">
                             {{-- Help Request Button --}}
                             <button
                                 x-data
                                 x-on:click="$dispatch('open-modal', {name: 'support-request-modal'})"
-                                class="flex items-center space-x-2 py-2 px-4 text-white bg-[#03b8ff] hover:bg-[#0299d5] rounded-lg shadow-md transition-colors"
+                                class="flex items-center justify-center space-x-2 py-2 px-4 text-white bg-[#03b8ff] hover:bg-[#0299d5] rounded-lg shadow-md transition-colors w-full md:w-40"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 0 1-1.44-4.282m3.102.069a18.03 18.03 0 0 1-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 0 1 8.835 2.535M10.34 6.66a23.847 23.847 0 0 0 8.835-2.535m0 0A23.74 23.74 0 0 0 18.795 3m.38 1.125a23.91 23.91 0 0 1 1.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 0 0 1.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 0 1 0 3.46" />
@@ -82,27 +106,15 @@
                             </button>
                             
                             {{-- Logout Button --}}
-                            <form method="POST" action="{{ route('logout') }}">
+                            <form method="POST" action="{{ route('logout') }}" class="w-full md:w-auto">
                                 @csrf
-                                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
-                                    Logout
+                                <button type="submit" class="flex items-center justify-center space-x-2 py-2 px-4 text-white bg-red-500 hover:bg-red-600 rounded-lg shadow-md transition-colors w-full md:w-40">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                                    </svg>
+                                    <span class="font-semibold">Logout</span>
                                 </button>
                             </form>
-                        </div>
-                    </div>
-                    
-                    {{-- Institution, Role, Trust Score in a column --}}
-                    <div class="flex flex-col mt-2 text-gray-600">
-                        @if($user->institution)
-                            <div class="text-sm">{{ $user->institution?->name }}</div>
-                        @endif
-                        <div class="text-sm capitalize">{{ $user?->type ?? 'User' }}</div>
-                        {{-- Updated Trust Score Display --}}
-                        <div class="flex items-center text-sm mt-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span class="text-gray-600">Trust Score: <span class="text-green-600 font-bold">{{ $user?->trust_score ?? 0 }}/100</span></span>
                         </div>
                     </div>
                 </div>
@@ -112,11 +124,11 @@
 
     {{-- Dynamic Content Container with Tabs --}}
     <div class="bg-white rounded-xl shadow-lg mt-4 w-full">
-        {{-- Navigation Tabs --}}
-        <div class="px-6 border-b border-gray-200"> {{-- Added bottom border --}}
-            <div class="flex justify-center md:space-x-12 py-3"> {{-- Centered tabs --}}
+        {{-- Navigation Tabs - Modified for consistent centering --}}
+        <div class="px-3 sm:px-6 border-b border-gray-200">
+            <div class="flex justify-center overflow-x-auto space-x-6 md:space-x-12 py-3 scrollbar-hide">
                 <button
-                    class="px-4 py-2 font-medium transition relative"
+                    class="px-3 sm:px-4 py-2 font-medium transition relative flex-shrink-0"
                     :class="tab === 'about' ? 'text-blue-600 font-semibold' : 'text-gray-600 hover:text-blue-500'"
                     @click="tab = 'about'"
                 >
@@ -124,7 +136,7 @@
                     <div :class="tab === 'about' ? 'absolute bottom-0 left-0 w-full h-0.5 bg-blue-600' : ''" class="transform -translate-y-2"></div>
                 </button>
                 <button
-                    class="px-4 py-2 font-medium transition relative"
+                    class="px-3 sm:px-4 py-2 font-medium transition relative"
                     :class="tab === 'surveys' ? 'text-blue-600 font-semibold' : 'text-gray-600 hover:text-blue-500'"
                     @click="tab = 'surveys'"
                 >
@@ -132,7 +144,7 @@
                     <div :class="tab === 'surveys' ? 'absolute bottom-0 left-0 w-full h-0.5 bg-blue-600' : ''" class="transform -translate-y-2"></div>
                 </button>
                 <button
-                    class="px-4 py-2 font-medium transition relative"
+                    class="px-3 sm:px-4 py-2 font-medium transition relative"
                     :class="tab === 'history' ? 'text-blue-600 font-semibold' : 'text-gray-600 hover:text-blue-500'"
                     @click="tab = 'history'"
                 >
@@ -143,7 +155,7 @@
                 {{-- Only show Institution Demographics tab for Institution Admins --}}
                 @if($user->type === 'institution_admin')
                 <button
-                    class="px-4 py-2 font-medium transition relative"
+                    class="px-3 sm:px-4 py-2 font-medium transition relative"
                     :class="tab === 'institution_demographics' ? 'text-blue-600 font-semibold' : 'text-gray-600 hover:text-blue-500'"
                     @click="tab = 'institution_demographics'"
                 >

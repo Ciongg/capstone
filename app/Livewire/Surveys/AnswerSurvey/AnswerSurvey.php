@@ -393,8 +393,12 @@ class AnswerSurvey extends Component
     {
         // Handle navigation to next page
         if ($this->navAction === 'next') {
-            // Validate only the current page
-            $this->validate($this->getValidationRules(), $this->getValidationMessages());
+            // Check if current page has questions before validating
+            if ($this->survey->pages->has($this->currentPage) && 
+                $this->survey->pages[$this->currentPage]->questions->count() > 0) {
+                // Validate only the current page
+                $this->validate($this->getValidationRules(), $this->getValidationMessages());
+            }
 
             // If there are more pages, advance to the next one
             if ($this->currentPage < $this->survey->pages->count() - 1) {

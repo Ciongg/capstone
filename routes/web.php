@@ -9,7 +9,7 @@ use App\Http\Controllers\RegisteredUserController; // Ensure this is imported
 use App\Http\Controllers\RewardController; // Ensure this is imported
 use App\Http\Controllers\SuperAdminController; // Ensure this is imported
 use App\Http\Controllers\InstitutionAdminController; // Ensure this is imported
-
+use App\Http\Controllers\VoucherController; // Ensure this is imported
 Route::get('/', function () {
     return view('welcome');
 });
@@ -56,3 +56,7 @@ Route::get('/admin/users/{user}/profile', [SuperAdminController::class, 'userPro
 Route::put('/admin/users/{user}/toggle-status', [SuperAdminController::class, 'toggleUserStatus'])->name('users.toggle-status');
 Route::delete('/admin/users/{user}/archive', [SuperAdminController::class, 'archiveUser'])->name('users.archive');
 Route::put('/admin/users/{user}/restore', [SuperAdminController::class, 'restoreUser'])->name('users.restore')->withTrashed();
+
+// Public voucher verification route - using controller approach
+Route::get('/voucher/verify/{reference_no}', [VoucherController::class, 'verify'])
+    ->name('voucher.verify');
