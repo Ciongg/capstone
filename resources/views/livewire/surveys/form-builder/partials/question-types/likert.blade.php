@@ -4,7 +4,8 @@
 @endphp
 
 <div class="mb-4">
-    <div class="overflow-x-auto">
+    <!-- Desktop View - Table Layout -->
+    <div class="overflow-x-auto hidden md:block">
         <table class="mt-2 min-w-full text-center border border-gray-200">
             <thead>
                 <tr>
@@ -16,28 +17,12 @@
                                     id="likert-col-{{ $question->id }}-{{ $colIndex }}"
                                     wire:model.defer="likertColumns.{{ $question->id }}.{{ $colIndex }}"
                                     wire:blur="updateLikertColumn({{ $question->id }}, {{ $colIndex }})"
-                                    class="text-center px-2 py-1 rounded border border-transparent focus:border-blue-400 focus:ring-0 focus:outline-none transition resize-none bg-white mx-auto"
+                                    class="text-center px-2 py-1 rounded border border-gray-200 focus:border-blue-400 focus:ring-0 focus:outline-none transition resize-none bg-white mx-auto"
                                     placeholder="Option"
-                                    rows="1"
-                                    style="min-width:6em; max-width:10em; width:8em; min-height:2.2em; max-height:10em; overflow-y:auto;"
+                                    style="min-width:6em; max-width:10em; width:8em; min-height:2.2em; max-height:10em; overflow-y:auto; field-sizing: content;"
                                     @if($selectedQuestionId !== $question->id) readonly @endif
                                     @focus="focused = true"
                                     @blur="focused = false"
-                                    x-data="{
-                                        init() {
-                                            $nextTick(() => this.adjustHeight());
-                                        },
-                                        adjustHeight() {
-                                            const id = $el.id;
-                                            $el.style.height = 'auto';
-                                            const newHeight = `${$el.scrollHeight}px`;
-                                            $el.style.height = newHeight;
-                                            Alpine.store('textareaHeights').set(id, newHeight);
-                                        }
-                                    }"
-                                    @input="adjustHeight()"
-                                    data-autoresize
-                                    :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('likert-col-{{ $question->id }}-{{ $colIndex }}') : 'auto' }"
                                 ></textarea>
                                 <button
                                     x-show="focused"
@@ -74,28 +59,12 @@
                                     id="likert-row-{{ $question->id }}-{{ $rowIndex }}"
                                     wire:model.defer="likertRows.{{ $question->id }}.{{ $rowIndex }}"
                                     wire:blur="updateLikertRow({{ $question->id }}, {{ $rowIndex }})"
-                                    class="w-full px-2 py-1 rounded border border-transparent focus:border-blue-400 focus:ring-0 focus:outline-none transition resize-none bg-white"
+                                    class="w-full px-2 py-1 rounded border border-gray-200 focus:border-blue-400 focus:ring-0 focus:outline-none transition resize-none bg-white"
                                     placeholder="Statement"
-                                    rows="2"
-                                    style="min-height:3.5em; max-height:10em; overflow-y:auto;"
+                                    style="min-height:3.5em; max-height:15em; overflow-y:auto; field-sizing: content;"
                                     @if($selectedQuestionId !== $question->id) readonly @endif
                                     @focus="focused = true"
                                     @blur="focused = false"
-                                    x-data="{
-                                        init() {
-                                            $nextTick(() => this.adjustHeight());
-                                        },
-                                        adjustHeight() {
-                                            const id = $el.id;
-                                            $el.style.height = 'auto';
-                                            const newHeight = `${$el.scrollHeight}px`;
-                                            $el.style.height = newHeight;
-                                            Alpine.store('textareaHeights').set(id, newHeight);
-                                        }
-                                    }"
-                                    @input="adjustHeight()"
-                                    data-autoresize
-                                    :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('likert-row-{{ $question->id }}-{{ $rowIndex }}') : 'auto' }"
                                 ></textarea>
                                 <span style="width: 2em; display: inline-block;">
                                     <button
@@ -119,8 +88,92 @@
                 @endforeach
             </tbody>
         </table>
+    </div>
+
+    <!-- Mobile View - Stacked Layout -->
+    <div class="md:hidden space-y-6">
+        <!-- Column Headers for Mobile (Options) -->
         @if($selectedQuestionId === $question->id)
-            <div class="flex justify-start mt-3">
+            <div class="mb-4 border border-gray-200 rounded-lg p-4 bg-white">
+                <h4 class="text-sm font-medium text-gray-700 mb-2">Options:</h4>
+                <div class="space-y-2">
+                    @foreach($likertColumns as $colIndex => $column)
+                        <div x-data="{ focused: false }" class="flex items-center gap-2">
+                            <textarea
+                                id="likert-col-mobile-{{ $question->id }}-{{ $colIndex }}"
+                                wire:model.defer="likertColumns.{{ $question->id }}.{{ $colIndex }}"
+                                wire:blur="updateLikertColumn({{ $question->id }}, {{ $colIndex }})"
+                                class="flex-1 px-2 py-1 rounded border border-gray-200 focus:border-blue-400 focus:ring-0 focus:outline-none transition resize-none bg-white"
+                                placeholder="Option"
+                                style="min-height:2.2em; max-height:6em; overflow-y:auto; field-sizing: content;"
+                                @if($selectedQuestionId !== $question->id) readonly @endif
+                                @focus="focused = true"
+                                @blur="focused = false"
+                            ></textarea>
+                            <button
+                                x-show="focused"
+                                x-transition
+                                wire:click="removeItem('likertColumn', '{{ $question->id }}-{{ $colIndex }}')"
+                                type="button"
+                                class="text-red-500 text-base px-2"
+                            >&#10005;</button>
+                        </div>
+                    @endforeach
+                    <button wire:click="addItem('likertColumn', {{ $question->id }})"
+                        type="button"
+                        class="text-blue-600 text-sm font-medium hover:text-blue-800 mt-2"
+                        title="Add Option"
+                    >+ Add Option</button>
+                </div>
+            </div>
+        @endif
+
+        <!-- Statements with Options for Mobile -->
+        @foreach($likertRows as $rowIndex => $row)
+            <div class="border border-gray-200 rounded-lg p-4 bg-white">
+                <!-- Statement -->
+                <div class="mb-3">
+                    @if($selectedQuestionId === $question->id)
+                        <div x-data="{ focused: false }" class="flex items-start gap-2">
+                            <textarea
+                                id="likert-row-mobile-{{ $question->id }}-{{ $rowIndex }}"
+                                wire:model.defer="likertRows.{{ $question->id }}.{{ $rowIndex }}"
+                                wire:blur="updateLikertRow({{ $question->id }}, {{ $rowIndex }})"
+                                class="flex-1 px-2 py-1 rounded border border-gray-200 focus:border-blue-400 focus:ring-0 focus:outline-none transition resize-none bg-white font-medium"
+                                placeholder="Statement"
+                                style="min-height:3.5em; max-height:15em; overflow-y:auto; field-sizing: content;"
+                                @focus="focused = true"
+                                @blur="focused = false"
+                            ></textarea>
+                            <button
+                                x-show="focused"
+                                x-transition
+                                wire:click="removeItem('likertRow', '{{ $question->id }}-{{ $rowIndex }}')"
+                                type="button"
+                                class="text-red-500 text-base px-2 mt-1"
+                            >&#10005;</button>
+                        </div>
+                    @else
+                        <div class="font-medium text-gray-800">{{ $row }}</div>
+                    @endif
+                </div>
+
+                <!-- Options for this statement -->
+                <div class="grid grid-cols-1 gap-2">
+                    @foreach($likertColumns as $colIndex => $column)
+                        <label class="flex items-start p-2 rounded hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" disabled class="accent-blue-500 w-4 h-4 mr-3 flex-shrink-0 mt-1" />
+                            <span class="text-sm text-gray-700 break-words whitespace-normal" style="word-break: break-word; overflow-wrap: break-word;">
+                                {{ $column }}
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+        @endforeach
+
+        @if($selectedQuestionId === $question->id)
+            <div class="flex justify-start">
                 <button class="text-green-600 hover:text-green-800 font-bold" wire:click="addItem('likertRow', {{ $question->id }})"
                     type="button"
                     title="Add Statement"
@@ -128,4 +181,14 @@
             </div>
         @endif
     </div>
+
+    <!-- Add Statement Button for Desktop -->
+    @if($selectedQuestionId === $question->id)
+        <div class="hidden md:flex justify-start mt-3">
+            <button class="text-green-600 hover:text-green-800 font-bold" wire:click="addItem('likertRow', {{ $question->id }})"
+                type="button"
+                title="Add Statement"
+            ><span class="text-2xl ">+</span> statement</button>
+        </div>
+    @endif
 </div>

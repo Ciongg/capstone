@@ -21,54 +21,22 @@
     {{-- Page Title Textarea --}}
     <textarea
         id="page-title-{{ $page->id }}"
-        x-data="{
-            init() {
-                // Set initial height on initialization
-                $nextTick(() => this.adjustHeight());
-            },
-            adjustHeight() {
-                const id = $el.id;
-                $el.style.height = 'auto';
-                const newHeight = `${$el.scrollHeight}px`;
-                $el.style.height = newHeight;
-                // Store height in Alpine store
-                Alpine.store('textareaHeights').set(id, newHeight);
-            }
-        }"
-        @input="adjustHeight()"
         wire:blur="updatePage({{ $page->id }}, 'title', $event.target.value)"
         placeholder="Enter page title"
         class="w-full text-xl sm:text-2xl font-bold p-2 border border-gray-300 rounded mb-2 resize-none overflow-hidden"
         rows="1"
-        data-autoresize
-        :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('page-title-{{ $page->id }}') : 'auto' }"
+        style="field-sizing: content; min-height: 3em; max-height: 12em;"
         @if(isset($survey) && $survey->is_locked) readonly @endif
     >{{ $page->title }}</textarea>
 
     {{-- Page Subtitle Textarea --}}
     <textarea
         id="page-subtitle-{{ $page->id }}"
-        x-data="{
-            init() {
-                // Set initial height on initialization
-                $nextTick(() => this.adjustHeight());
-            },
-            adjustHeight() {
-                const id = $el.id;
-                $el.style.height = 'auto';
-                const newHeight = `${$el.scrollHeight}px`;
-                $el.style.height = newHeight;
-                // Store height in Alpine store
-                Alpine.store('textareaHeights').set(id, newHeight);
-            }
-        }"
-        @input="adjustHeight()"
         wire:blur="updatePage({{ $page->id }}, 'subtitle', $event.target.value)"
         placeholder="Enter page subtitle"
         class="w-full text-base sm:text-lg text-gray-600 p-2 border border-gray-300 rounded resize-none overflow-hidden"
         rows="1"
-        data-autoresize
-        :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('page-subtitle-{{ $page->id }}') : 'auto' }"
+        style="field-sizing: content; min-height: 3em; max-height: 12em;"
         @if(isset($survey) && $survey->is_locked) readonly @endif
     >{{ $page->subtitle }}</textarea>
         

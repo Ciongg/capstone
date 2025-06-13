@@ -11,15 +11,19 @@
     
     {{-- Handle internal close actions --}}
     x-on:keydown.escape.window="if (show) { show = false; $dispatch('close'); }"
+    
+    {{-- Scroll lock functionality --}}
+    x-init="$watch('show', value => value ? document.body.classList.add('overflow-hidden') : document.body.classList.remove('overflow-hidden'))"
     style="display: none"
     x-transition
-    class="fixed z-50 inset-0">
+    class="fixed z-50 inset-0"
+    tabindex="-1">
 
     {{-- Backdrop --}}
     <div x-on:click="show = false; $dispatch('close');" class="fixed inset-0 bg-gray-900 opacity-20"></div>
 
     {{-- Modal Panel --}}
-    <div class="bg-white rounded-lg m-auto fixed inset-0 max-w-3xl max-h-[650px] p-2 flex flex-col">
+    <div class="bg-white rounded-lg m-auto fixed inset-0 max-w-3xl max-h-[650px] p-2 flex flex-col focus:outline-none">
         <div class="flex justify-between items-center p-4 border-b"> {{-- Container for title and close button --}}
             @if(isset($title))
                 <h1 class="text-2xl font-bold">{{$title}}</h1>
@@ -39,10 +43,8 @@
             </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4"> {{-- Added padding to slot --}}
+        <div class="flex-1 overflow-y-auto p-4 focus:outline-none" tabindex="0"> {{-- Added tabindex for focus --}}
             {{ $slot }}
         </div>
-
-      
     </div>
 </div>

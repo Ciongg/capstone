@@ -1,6 +1,6 @@
 <div
     @if($userVoucher && $userVoucher->status === 'active')
-        wire:poll.2000ms="checkVoucherStatus"
+        wire:poll.5000ms="checkVoucherStatus"
     @endif
 >
     @if($userVoucher)

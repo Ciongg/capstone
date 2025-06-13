@@ -36,7 +36,7 @@
                     <button
                         type="button"
                         x-on:click="confirmUnpublish()"
-                        class="inline-flex items-center h-9 px-4 py-1.5 bg-yellow-500 text-white text-sm font-medium rounded hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                        class="inline-flex items-center h-9 px-4 py-1.5 bg-yellow-100 text-yellow-700 text-sm font-medium rounded hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
                         @if($survey->is_locked) disabled @endif
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
@@ -46,7 +46,7 @@
                     </button>
                 @endif
                 <a href="{{ route('surveys.preview', $survey->id) }}" wire:navigate
-                class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center"
+                class="px-4 py-2 bg-blue-100 text-gray-700 rounded hover:bg-blue-200 flex items-center"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
@@ -58,7 +58,7 @@
                 <button
                     type="button"
                     x-on:click="confirmPublish()"
-                    class="inline-flex items-center h-9 px-4 py-1.5 bg-green-500 text-white text-sm font-medium rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    class="inline-flex items-center h-9 px-4 py-1.5 bg-green-100 text-green-700 text-sm font-medium rounded hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                     @if($survey->is_locked) disabled @endif
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
@@ -67,7 +67,7 @@
                     Publish
                 </button>
                 <a href="{{ route('surveys.preview', $survey->id) }}" wire:navigate
-                class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center"
+                class="px-4 py-2 bg-blue-100 text-gray-700 rounded hover:bg-blue-200 flex items-center"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
@@ -78,7 +78,7 @@
             @elseif($survey->status === 'ongoing')
                 {{-- Don't show unpublish button for ongoing surveys --}}
                 <a href="{{ route('surveys.preview', $survey->id) }}" wire:navigate
-                class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center"
+                class="px-4 py-2 bg-blue-100 text-gray-700 rounded hover:bg-blue-200 flex items-center"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
@@ -91,7 +91,7 @@
             {{-- View Responses Button - still accessible when locked --}}
             @if($hasResponses)
             <a href="{{ route('surveys.responses', $survey->id) }}"
-               class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
+               class="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 flex items-center"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
@@ -106,7 +106,7 @@
                 <button
                     type="button"
                     x-on:click="confirmReset()"
-                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center"
+                    class="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center"
                     title="Delete all questions and pages"
                     @if($survey->is_locked) disabled @endif
                 >
@@ -122,14 +122,15 @@
                 <button
                     x-data
                     x-on:click="$dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'})"
-                    class="flex items-center justify-center h-9 w-9 px-2 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    class="flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     title="Survey Settings"
                     @if($survey->is_locked) disabled @endif
                 >
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.646.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 1.255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.333.184-.583.496-.646.87l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.646-.87-.074-.04-.147-.083-.22-.127-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.759 6.759 0 0 1 0-1.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.298-2.247a1.125 1.125 0 0 1 1.37-.491l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.184.582-.496.646-.87l.213-1.281Z" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                     </svg>
+                    Settings
                 </button>
             @endif
         </div>
@@ -183,7 +184,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     {{-- Preview Button --}}
                     <a href="{{ route('surveys.preview', $survey->id) }}" wire:navigate
-                       class="flex flex-col items-center justify-center p-3 text-center bg-gray-50 rounded-lg hover:bg-gray-100">
+                       class="flex flex-col items-center justify-center p-3 text-center bg-blue-100 rounded-lg hover:bg-blue-200">
                        <svg class="w-6 h-6 mb-2 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
@@ -194,7 +195,7 @@
                     {{-- View Responses Button --}}
                     @if($hasResponses)
                         <a href="{{ route('surveys.responses', $survey->id) }}"
-                           class="flex flex-col items-center justify-center p-3 text-center bg-blue-50 rounded-lg hover:bg-blue-100">
+                           class="flex flex-col items-center justify-center p-3 text-center bg-blue-100 rounded-lg hover:bg-blue-200">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mb-2 text-blue-600">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
                             </svg>
@@ -209,7 +210,7 @@
                             <button
                                 type="button"
                                 x-on:click="open = false; confirmUnpublish()"
-                                class="flex flex-col items-center justify-center p-3 text-center bg-yellow-50 rounded-lg hover:bg-yellow-100"
+                                class="flex flex-col items-center justify-center p-3 text-center bg-yellow-100 rounded-lg hover:bg-yellow-200"
                                 @if($survey->is_locked) disabled @endif
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mb-2 text-yellow-600">
@@ -222,7 +223,7 @@
                         <button
                             type="button"
                             x-on:click="open = false; confirmPublish()"
-                            class="flex flex-col items-center justify-center p-3 text-center bg-green-50 rounded-lg hover:bg-green-100"
+                            class="flex flex-col items-center justify-center p-3 text-center bg-green-100 rounded-lg hover:bg-green-200"
                             @if($survey->is_locked) disabled @endif
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mb-2 text-green-600">
@@ -237,7 +238,7 @@
                         <button
                             type="button"
                             x-on:click="open = false; confirmReset()"
-                            class="flex flex-col items-center justify-center p-3 text-center bg-red-50 rounded-lg hover:bg-red-100"
+                            class="flex flex-col items-center justify-center p-3 text-center bg-red-100 rounded-lg hover:bg-red-200"
                             @if($survey->is_locked) disabled @endif
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mb-2 text-red-600">
@@ -252,7 +253,7 @@
                         <button
                             x-data
                             x-on:click="open = false; $dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'})"
-                            class="flex flex-col items-center justify-center p-3 text-center bg-gray-50 rounded-lg hover:bg-gray-100"
+                            class="flex flex-col items-center justify-center p-3 text-center bg-gray-100 rounded-lg hover:bg-gray-200"
                             @if($survey->is_locked) disabled @endif
                         >
                             <svg class="w-6 h-6 mb-2 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">

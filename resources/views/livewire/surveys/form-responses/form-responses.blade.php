@@ -1,9 +1,9 @@
-<div class="bg-gray-100 min-h-screen py-8">
-    <div class="max-w-7xl mx-auto space-y-10 px-4">
+<div class="bg-gray-100 min-h-screen py-4 sm:py-8">
+    <div class="max-w-7xl mx-auto space-y-6 sm:space-y-10 px-2 sm:px-4">
 
         <div class="flex flex-col md:flex-row md:items-center gap-4 mb-6">
             <a href="{{ route('surveys.create', $survey->id) }}"
-               class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg shadow hover:bg-gray-200 flex items-center"
+               class="px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg shadow hover:bg-gray-200 flex items-center justify-center text-sm sm:text-base"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -15,7 +15,7 @@
             
             {{-- View Individual Responses Button --}}
             <a href="{{ route('surveys.responses.individual', $survey->id) }}"
-               class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
+               class="px-3 sm:px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center text-sm sm:text-base"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z"></path>
@@ -26,20 +26,20 @@
         </div>
 
         {{-- Top summary containers --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="bg-white shadow rounded-lg p-6 flex flex-col items-center">
-                <span class="text-lg font-semibold">Responses</span>
-                <span class="text-2xl text-blue-600 font-bold mt-2">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 sm:mb-8">
+            <div class="bg-white shadow rounded-lg p-4 sm:p-6 flex flex-col items-center">
+                <span class="text-base sm:text-lg font-semibold">Responses</span>
+                <span class="text-xl sm:text-2xl text-blue-600 font-bold mt-2">
                     {{ $survey->responses()->count() }}
                 </span>
             </div>
-            <div class="bg-white shadow rounded-lg p-6 flex flex-col items-center">
-                <span class="text-lg font-semibold">Average Time</span>
-                <span class="text-2xl text-blue-600 font-bold mt-2">--</span>
+            <div class="bg-white shadow rounded-lg p-4 sm:p-6 flex flex-col items-center">
+                <span class="text-base sm:text-lg font-semibold">Average Time</span>
+                <span class="text-xl sm:text-2xl text-blue-600 font-bold mt-2">--</span>
             </div>
-            <div class="bg-white shadow rounded-lg p-6 flex flex-col items-center">
-                <span class="text-lg font-semibold">Points</span>
-                <span class="text-2xl text-blue-600 font-bold mt-2">--</span>
+            <div class="bg-white shadow rounded-lg p-4 sm:p-6 flex flex-col items-center">
+                <span class="text-base sm:text-lg font-semibold">Points</span>
+                <span class="text-xl sm:text-2xl text-blue-600 font-bold mt-2">--</span>
             </div>
         </div>
 
@@ -56,28 +56,27 @@
                     @if(in_array($question->question_type, ['multiple_choice', 'radio']))
 
                         {{-- container of question for multiple choice and radio aka single option--}}
-                        <div class="bg-white shadow rounded-2xl p-8 mb-8 flex flex-col md:flex-row md:items-center md:justify-between relative">
-                            {{-- Include the "More Details" button and modal partial --}}
-                            @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question])
-
-                            <div class="md:w-1/2 mb-6 md:mb-0">
-
-                                {{-- Display question number and text --}}
-                                <div class="font-semibold mb-2 text-lg">{{ $questionCounter }}. {{ $question->question_text }}</div>
-                                
+                        <div class="bg-white shadow rounded-lg sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8">
+                            {{-- Include the question title and "More Details" button --}}
+                            @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question, 'questionCounter' => $questionCounter])
+                            
+                            {{-- Pie Chart and Legend Container --}}
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                                 {{-- Legend --}}
-                                <ul>
-                                    @foreach($question->choices->sortBy('order') as $i => $choice)
-                                        <li class="flex items-center mb-2">
-                                            <span class="inline-block w-4 h-4 rounded-full mr-2" style="background: {{ $colors[$i % count($colors)] }}"></span>
-                                            <span>{{ $choice->choice_text }}</span>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                            {{-- Pie Chart --}}
-                            <div class="md:w-1/2 flex justify-center">
-                                <canvas id="chart-question-{{ $question->id }}" width="200" height="200"></canvas>
+                                <div class="md:w-1/2">
+                                    <ul>
+                                        @foreach($question->choices->sortBy('order') as $i => $choice)
+                                            <li class="flex items-center mb-2">
+                                                <span class="inline-block w-4 h-4 rounded-full mr-2 flex-shrink-0" style="background: {{ $colors[$i % count($colors)] }}"></span>
+                                                <span class="break-words text-justify">{{ $choice->choice_text }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                                {{-- Pie Chart --}}
+                                <div class="md:w-1/2 flex justify-center">
+                                    <canvas id="chart-question-{{ $question->id }}" class="max-w-full h-auto" width="200" height="200"></canvas>
+                                </div>
                             </div>
                         </div>
                         @push('scripts')
@@ -192,14 +191,12 @@
                         }
                     @endphp
 
-                        <div class="bg-white shadow rounded-lg p-6 mb-6 relative">
-                            {{-- Include the "More Details" button and modal partial --}}
-                            @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question])
+                        <div class="bg-white shadow rounded-lg p-4 sm:p-6 mb-6">
+                            {{-- Include the question title and "More Details" button --}}
+                            @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question, 'questionCounter' => $questionCounter])
 
-                            {{-- Display question number and text --}}
-                            <div class="font-semibold mb-2 text-lg w-[1000px]">{{ $questionCounter }}. {{ $question->question_text }}</div>
                             <div class="overflow-x-auto">
-                                <table class="table-auto w-full border-collapse border border-gray-300 mb-4">
+                                <table class="table-auto w-full border-collapse border border-gray-300 mb-4 min-w-max">
                                     <thead>
                                         <tr>
                                             <th class="border border-gray-300 px-4 py-2"></th>
@@ -221,8 +218,8 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="flex justify-center mt-6">
-                                <canvas id="likert-chart-{{ $question->id }}" height="{{ 150 * count($likertRows) }}"></canvas>
+                            <div class="flex justify-center mt-6 overflow-x-auto">
+                                <canvas id="likert-chart-{{ $question->id }}" class="max-w-full" height="{{ 150 * count($likertRows) }}"></canvas>
                             </div>
                         </div>
                         @push('scripts')
@@ -283,12 +280,9 @@
 
                     {{-- Handle other types like essay, short_text, date, rating --}}
                     @else
-                        <div class="bg-white shadow rounded-lg p-6 mb-6 relative">
-                            {{-- Include the "More Details" button and modal partial --}}
-                            @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question])
-
-                            {{-- Display question number and text --}}
-                            <div class="font-semibold mb-4 text-lg w-[1000px]">{{ $questionCounter }}. {{ $question->question_text }}</div>
+                        <div class="bg-white shadow rounded-lg p-4 sm:p-6 mb-6">
+                            {{-- Include the question title and "More Details" button --}}
+                            @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question, 'questionCounter' => $questionCounter])
 
                             {{-- FOR RATING--}}
                             @if($question->question_type === 'rating')
@@ -304,11 +298,11 @@
                                     $ratingCounts = array_values($ratingCountsRaw);
                                 @endphp
 
-                                <div class="flex flex-col md:flex-row gap-8">
+                                <div class="flex flex-col lg:flex-row gap-4 sm:gap-8">
 
                                     {{-- Left Side: Average Rating --}}
-                                    <div class="md:w-1/3 flex flex-col items-center justify-center border-r border-gray-200 pr-8">
-                                        <div class="text-4xl font-bold mb-2">{{ number_format($averageRating, 1) }}</div>
+                                    <div class="lg:w-1/3 flex flex-col items-center justify-center lg:border-r border-gray-200 lg:pr-8 pb-4 lg:pb-0">
+                                        <div class="text-3xl sm:text-4xl font-bold mb-2">{{ number_format($averageRating, 1) }}</div>
                                         <div class="flex items-center space-x-1 mb-2">
                                             @php $roundedAverage = round($averageRating); @endphp
                                             @for($i = 1; $i <= $starCount; $i++)
@@ -317,12 +311,12 @@
                                                 </svg>
                                             @endfor
                                         </div>
-                                        <div class="text-gray-500 text-sm">Average Rating ({{ $totalAnswers }} responses)</div>
+                                        <div class="text-gray-500 text-xs sm:text-sm text-center">Average Rating ({{ $totalAnswers }} responses)</div>
                                     </div>
 
                                     {{-- Right Side: Rating Distribution Chart --}}
-                                    <div class="md:w-2/3 relative" style="min-height: 150px;"> 
-                                        <canvas id="rating-chart-{{ $question->id }}"></canvas>
+                                    <div class="lg:w-2/3 relative overflow-x-auto" style="min-height: 150px;"> 
+                                        <canvas id="rating-chart-{{ $question->id }}" class="max-w-full"></canvas>
                                     </div>
 
                                 </div>
@@ -387,7 +381,7 @@
                                         $answerCount = $answers->count();
                                     @endphp
                                     @forelse($answers->take($displayLimit) as $i => $answer)
-                                        <div class="p-3 bg-gray-50 rounded border border-gray-200 overflow-hidden text-ellipsis whitespace-nowrap">
+                                        <div class="p-3 bg-gray-50 rounded border border-gray-200 break-words overflow-wrap-anywhere">
                                             {{ $answer->answer }}
                                         </div>
                                         @if($i === $displayLimit - 1 && $answerCount > $displayLimit)

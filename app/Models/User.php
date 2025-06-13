@@ -37,7 +37,8 @@ class User extends Authenticatable
         'phone_number',
         'points',
         'trust_score',
-        'experience_points', // Add experience_points to fillable
+        'experience_points',
+        'account_level', // Add this line
         'type',
         'profile_photo_path',
         'institution_id',

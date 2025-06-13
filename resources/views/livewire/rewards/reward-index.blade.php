@@ -1,14 +1,10 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- Include level-up event listener -->
-    @include('livewire.rewards.partials.level-up-listener')
-
-
     <!-- New Layout: User Stats and Points Display -->
     <div class="bg-white p-2"> 
         <div class="flex flex-col md:flex-row items-center md:items-start justify-between md:space-x-8">
             <!-- Left Side: Header and Points Display -->
             <div class="md:w-1/2 lg:w-2/3 flex flex-col items-center md:items-start">
-                <h1 class="text-4xl font-bold text-black text-center md:text-left mb-4">Redeem Rewards</h1>
+                <h1 class="text-4xl font-bold text-gray-600 text-center md:text-left mb-4">Redeem Rewards</h1>
                 
                 <div class="flex flex-col justify-between items-center md:items-start mb-6"> 
                     <div class="flex items-center">
@@ -32,10 +28,7 @@
                     
                     <!-- User Stats -->
                     <div class="mt-3 text-center"> 
-                        <p class="text-lg font-semibold text-gray-800">{{ $user?->name }}</p>
-                        
-                        <!-- User Title -->
-                        <p class="text-sm font-medium text-blue-600 mb-1">{{ ucfirst($user?->rank ?: 'silver') }}</p>
+                        <p class="text-lg font-semibold text-gray-600">{{ $user?->name }}</p>
                         
                         <!-- XP Progress Bar -->
                         <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1 dark:bg-gray-700">
@@ -43,15 +36,37 @@
                         </div>
                         
                         <!-- Level Display -->
-                        <p class="text-xs text-gray-500 mb-2">Level {{ $userLevel }} • {{ $userExperience }}/{{ $xpForNextLevel }} XP</p>
-                        
-                        <!-- Trust Score -->
-                        <div class="flex items-center justify-center mt-1"> 
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span class="text-gray-600">Trust: {{ $userTrustScore }}/100</span>
+                        @if($userLevel >= 30)
+                            <p class="text-xs text-gray-500 mb-2">Level {{ $userLevel }} Maxed • {{ $userExperience }} XP</p>
+                        @else
+                            <p class="text-xs text-gray-500 mb-2">Level {{ $userLevel }} • {{ $userExperience }}/{{ $xpForNextLevel }} XP</p>
+                        @endif
+                        <!-- User Rank Badge with inline styles based on rank -->
+                        <div class="inline-block mb-2">
+                            @php
+                                $rankStyles = [
+                                    'silver' => [
+                                        'bg' => 'linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 50%, #A8A8A8 100%)',
+                                        'text' => '#333333',
+                                    ],
+                                    'gold' => [
+                                        'bg' => 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%)',
+                                        'text' => '#ffffff',
+                                    ],
+                                    'diamond' => [
+                                        'bg' => 'linear-gradient(135deg, #A1FFFF 0%, #3AA8C1 50%, #0078A8 100%)',
+                                        'text' => '#ffffff',
+                                    ]
+                                ];
+                                $userRank = strtolower($user?->rank ?: 'silver');
+                                $currentRankStyle = $rankStyles[$userRank] ?? $rankStyles['silver'];
+                            @endphp
+                            <div class="text-sm font-medium py-1 px-3 rounded-full" 
+                                 style="background: {{ $currentRankStyle['bg'] }}; color: {{ $currentRankStyle['text'] }}; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);">
+                                {{ ucfirst($user?->rank ?: 'silver') }}
+                            </div>
                         </div>
+                        
                     </div>
                 </a>
             </div>
@@ -139,71 +154,4 @@
             </div>
         @endif
     </x-modal>
-
-
-
-     @if(Auth::check())
-            <div class="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-md">
-                <div class="flex flex-wrap gap-2 items-center">
-                    <span class="text-sm font-semibold text-purple-800">Test Controls:</span>
-                    
-                    <!-- Add Points Buttons -->
-                    <button wire:click="addPoints(1)" class="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">
-                        +1
-                    </button>
-                    <button wire:click="addPoints(10)" class="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">
-                        +10
-                    </button>
-                    <button wire:click="addPoints(100)" class="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">
-                        +100
-                    </button>
-                    <button wire:click="addPoints(1000)" class="px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600">
-                        +1000
-                    </button>
-                    
-                    <!-- Subtract Points Buttons -->
-                    <button wire:click="subtractPoints(1)" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
-                        -1
-                    </button>
-                    <button wire:click="subtractPoints(10)" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
-                        -10
-                    </button>
-                    <button wire:click="subtractPoints(100)" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
-                        -100
-                    </button>
-                    <button wire:click="subtractPoints(1000)" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
-                        -1000
-                    </button>
-                </div>
-                
-                <!-- XP Test Controls -->
-                <div class="flex flex-wrap gap-2 items-center mt-2">
-                    <span class="text-sm font-semibold text-purple-800">XP Controls:</span>
-                    
-                    <button wire:click="levelUp" class="px-3 py-1 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600">
-                        Level Up
-                    </button>
-                    <button wire:click="resetLevel" class="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600">
-                        Reset Level
-                    </button>
-
-                    <!-- New XP Buttons -->
-                    <button wire:click="addXp(1)" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 text-xs rounded-md">
-                        +1 XP
-                    </button>
-                    
-                    <button wire:click="addXp(10)" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 text-xs rounded-md">
-                        +10 XP
-                    </button>
-
-                </div>
-                
-                <!-- Success message -->
-                @if(session()->has('message'))
-                    <div class="mt-2 text-sm text-green-700">
-                        {{ session('message') }}
-                    </div>
-                @endif
-            </div>
-        @endif
 </div>

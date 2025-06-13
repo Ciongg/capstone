@@ -21,7 +21,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 
-
     {{-- Script to manage scroll restoration and scroll to top on page load --}}
     <script>
         // Check if browser supports scroll restoration
@@ -101,14 +100,14 @@
 
                             <!-- Desktop Navigation Links: Guest Users -->
                             @guest
-                                <a href="/" wire:navigate class="{{ $navLinkClass(request()->is('/')) }} hover:text-[#03b8ff] hover:underline">Home</a>
-                                <a href="/about" wire:navigate class="{{ $navLinkClass(request()->is('about')) }} hover:text-[#03b8ff] hover:underline">About</a>
-                                <a href="/rewards-info" wire:navigate class="{{ $navLinkClass(request()->is('rewards-info')) }} hover:text-[#03b8ff] hover:underline">Rewards</a>
+                                <a href="/" class="{{ $navLinkClass(request()->is('/')) }} hover:text-[#03b8ff] hover:underline">Home</a>
+                                <a href="/about" class="{{ $navLinkClass(request()->is('about')) }} hover:text-[#03b8ff] hover:underline">About</a>
+                                <a href="/rewards-info" class="{{ $navLinkClass(request()->is('rewards-info')) }} hover:text-[#03b8ff] hover:underline">Rewards</a>
                             @else
                                 {{-- Desktop Navigation Links: Authenticated Users (Common) --}}
-                                <a href="/feed" wire:navigate class="{{ $navLinkClass(request()->routeIs('feed.index')) }} hover:text-[#03b8ff] hover:underline">Feed</a>
+                                <a href="/feed" class="{{ $navLinkClass(request()->routeIs('feed.index')) }} hover:text-[#03b8ff] hover:underline">Feed</a>
                                 <a href="/rewards" class="{{ $navLinkClass(request()->routeIs('rewards.index')) }} hover:text-[#03b8ff] hover:underline">Redeem</a>
-                                <a href="/vouchers" wire:navigate class="{{ $navLinkClass(request()->routeIs('vouchers.index')) }} hover:text-[#03b8ff] hover:underline">Vouchers</a>
+                                <a href="/vouchers" class="{{ $navLinkClass(request()->routeIs('vouchers.index')) }} hover:text-[#03b8ff] hover:underline">Vouchers</a>
                                 
                                 {{-- Desktop Navigation Links: Role Specific --}}
                                 @if(Auth::user()->isResearcher())
@@ -149,7 +148,7 @@
                                                 style="display: none;"
                                             >
                                                 <a href="/institution/analytics" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('institution/analytics')) }} hover:bg-gray-100">Analytics</a>
-                                                <a href="/institution/users" wire:navigate class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('institution/users')) }} hover:bg-gray-100">Users</a>
+                                                <a href="/institution/users" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('institution/users')) }} hover:bg-gray-100">Users</a>
                                             </div>
                                         </div>
                                     @else
@@ -178,10 +177,10 @@
                                             class="absolute z-50 mt-2 bg-white border border-gray-200 rounded-md shadow-lg py-1 w-48"
                                             style="display: none;"
                                         >
-                                            <a href="/admin/surveys" wire:navigate class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/surveys*')) }} hover:bg-gray-100">Manage Surveys</a>
-                                            <a href="/admin/reward-redemptions" wire:navigate class="block px-4 py-2 text-sm {{ $navLinkClass(request()->routeIs('reward-redemptions.index')) }} hover:bg-gray-100">Manage Rewards</a>
-                                            <a href="/admin/users" wire:navigate class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/users*')) }} hover:bg-gray-100">Manage Users</a>
-                                            <a href="/admin/reports" wire:navigate class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/reports')) }} hover:bg-gray-100">Manage Support Request</a>
+                                            <a href="/admin/surveys" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/surveys*')) }} hover:bg-gray-100">Manage Surveys</a>
+                                            <a href="/admin/reward-redemptions" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->routeIs('reward-redemptions.index')) }} hover:bg-gray-100">Manage Rewards</a>
+                                            <a href="/admin/users" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/users*')) }} hover:bg-gray-100">Manage Users</a>
+                                            <a href="/admin/reports" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/reports')) }} hover:bg-gray-100">Manage Support Request</a>
                                         </div>
                                     </div>
                                 @endif
@@ -206,8 +205,8 @@
                             </a>
                         @else
                             {{-- Authentication Links (Guest Users) --}}
-                            <a href="{{ route('register') }}" wire:navigate class="{{ request()->routeIs('register') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Register</a>
-                            <a href="{{ route('login') }}" wire:navigate class="inline-block bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-6 py-2 rounded-lg">Login</a>
+                            <a href="{{ route('register') }}" class="{{ request()->routeIs('register') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff] hover:underline">Register</a>
+                            <a href="{{ route('login') }}" class="inline-block bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-6 py-2 rounded-lg">Login</a>
                         @endauth
                     </div>
                 </div>
@@ -241,25 +240,24 @@
             <div class="flex flex-col space-y-4 text-lg pt-4">
                 @guest
                     {{-- Mobile Menu Links: Guest Users --}}
-                    <a href="/" wire:navigate @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('/')) }} hover:text-[#03b8ff]">Home</a>
-                    <a href="/about" wire:navigate @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('about')) }} hover:text-[#03b8ff]">About</a>
-                    <a href="/rewards-info" wire:navigate @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('rewards-info')) }} hover:text-[#03b8ff]">Rewards</a>
+                    <a href="/" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('/')) }} hover:text-[#03b8ff]">Home</a>
+                    <a href="/about" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('about')) }} hover:text-[#03b8ff]">About</a>
+                    <a href="/rewards-info" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('rewards-info')) }} hover:text-[#03b8ff]">Rewards</a>
                     <hr class="border-gray-300 my-2"> {{-- Separator --}}
                     {{-- Mobile Menu Authentication Buttons: Guest Users --}}
-                    <a href="{{ route('register') }}" wire:navigate @click="mobileMenuOpen = false" class="bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-6 py-2 rounded-lg text-center">Register</a>
-                    <a href="{{ route('login') }}" wire:navigate @click="mobileMenuOpen = false" class="bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-6 py-2 rounded-lg text-center">Login</a>
+                    <a href="{{ route('register') }}" @click="mobileMenuOpen = false" class="bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-6 py-2 rounded-lg text-center">Register</a>
+                    <a href="{{ route('login') }}" @click="mobileMenuOpen = false" class="bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-6 py-2 rounded-lg text-center">Login</a>
                 @else
                     {{-- Mobile Menu: User Profile Section (Authenticated Users) --}}
-                    <div class="flex items-center mb-4 pb-4 border-b border-gray-200">
+                    <a href="/profile" @click="mobileMenuOpen = false" class="flex items-center mb-4 pb-4 border-b border-gray-200 {{ request()->routeIs('profile.index') ? 'text-[#03b8ff]' : 'text-gray-700' }} hover:text-[#03b8ff]">
                         <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" class="w-12 h-12 rounded-full object-cover border border-gray-400">
                         <span class="font-semibold ml-3">{{ Auth::user()->name }}</span>
-                    </div>
+                    </a>
 
                     {{-- Mobile Menu Links: Authenticated Users (Common) --}}
-                    <a href="/feed" wire:navigate @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->routeIs('feed.index')) }} hover:text-[#03b8ff]">Feed</a>
+                    <a href="/feed" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->routeIs('feed.index')) }} hover:text-[#03b8ff]">Feed</a>
                     <a href="/rewards" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->routeIs('rewards.index')) }} hover:text-[#03b8ff]">Redeem</a>
-                    <a href="/vouchers" wire:navigate @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->routeIs('vouchers.index')) }} hover:text-[#03b8ff]">Vouchers</a>
-                    <a href="/profile" @click="mobileMenuOpen = false" class="{{ request()->routeIs('profile.index') ? 'text-[#03b8ff] font-bold' : 'text-gray-700' }} hover:text-[#03b8ff]">Profile</a>
+                    <a href="/vouchers" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->routeIs('vouchers.index')) }} hover:text-[#03b8ff]">Vouchers</a>
                     
                     {{-- Mobile Menu Links: Role Specific --}}
                     @if(Auth::user()->isResearcher())
@@ -283,7 +281,7 @@
                         <div class="border-t border-gray-200 pt-2 mt-2">
                             <p class="font-semibold text-gray-700 mb-2">Institution</p>
                             <a href="/institution/analytics" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/analytics')) }} hover:text-[#03b8ff]">Analytics</a>
-                            <a href="/institution/users" wire:navigate @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/users')) }} hover:text-[#03b8ff]">Users</a>
+                            <a href="/institution/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/users')) }} hover:text-[#03b8ff]">Users</a>
                         </div>
                         @else
                             {{-- Disabled links (if institution is invalid) --}}
@@ -294,10 +292,10 @@
                         {{-- Super Admin: Manage Sub-menu --}}
                         <div class="border-t border-gray-200 pt-2 mt-2">
                             <p class="font-semibold text-gray-700 mb-2">Manage</p>
-                            <a href="/admin/surveys" wire:navigate @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/surveys*')) }} hover:text-[#03b8ff]">Manage Surveys</a>
-                            <a href="/admin/reward-redemptions" wire:navigate @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->routeIs('reward-redemptions.index')) }} hover:text-[#03b8ff]">Manage Rewards</a>
-                            <a href="/admin/users" wire:navigate @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/users*')) }} hover:text-[#03b8ff]">Manage Users</a>
-                            <a href="/admin/reports" wire:navigate @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/reports')) }} hover:text-[#03b8ff]">Manage Support Request</a>
+                            <a href="/admin/surveys" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/surveys*')) }} hover:text-[#03b8ff]">Manage Surveys</a>
+                            <a href="/admin/reward-redemptions" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->routeIs('reward-redemptions.index')) }} hover:text-[#03b8ff]">Manage Rewards</a>
+                            <a href="/admin/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/users*')) }} hover:text-[#03b8ff]">Manage Users</a>
+                            <a href="/admin/reports" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/reports')) }} hover:text-[#03b8ff]">Manage Support Request</a>
                         </div>
                     @endif
                 @endauth
@@ -331,7 +329,6 @@
     </x-modal>
     <!-- End of Modal Sections -->
 
-
     <!-- Main Content Area -->
     <main class=" mx-auto ">
         @yield('content') {{-- Blade directive to output the content of the current section --}}
@@ -343,5 +340,45 @@
     @stack('scripts') {{-- Blade directive to push scripts from child views --}}
     @livewireScripts <!-- Required Livewire scripts -->
     <!-- End of Additional Scripts Section -->
+
+    <!-- XP Test Control Panel (Only visible for authenticated users) -->
+    @auth
+        <div x-data="{ open: false }" class="fixed bottom-0 right-0 m-4 z-50">
+            <!-- Floating toggle button - only visible when panel is closed -->
+            <button 
+                x-show="!open"
+                @click="open = !open" 
+                class="bg-purple-600 text-white p-2 rounded-full shadow-lg hover:bg-purple-700 focus:outline-none"
+                
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+            </button>
+            
+            <!-- Control panel -->
+            <div 
+                x-show="open" 
+                
+                class="bg-white border border-gray-200 rounded-lg shadow-xl p-4 mb-2 w-64"
+            >
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-purple-800">Test Controls</h3>
+                    <button @click="open = false" class="text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="w-full">
+                    <livewire:test-controls />
+                </div>
+            </div>
+        </div>
+    @endauth
+
+    <!-- Include Level-Up Listener -->
+    @include('livewire.rewards.partials.level-up-listener')
 </body>
 </html>

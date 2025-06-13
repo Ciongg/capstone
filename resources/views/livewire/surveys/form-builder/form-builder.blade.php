@@ -152,33 +152,18 @@
                             ></div>
 
                             {{-- Question Content --}}
-                            <div class="flex justify-between items-start">
+                            <div class="flex mb-4 justify-between items-start">
                                 <div class="flex items-start space-x-2 w-full pr-4 sm:pr-16">
                                     <span class="text-gray-500 font-bold self-start pt-2">Q{{ $question->order }}.</span>
                                     <textarea
                                         id="question-text-{{ $question->id }}"
-                                        x-data="{
-                                            init() {
-                                                $nextTick(() => this.adjustHeight());
-                                            },
-                                            adjustHeight() {
-                                                const id = $el.id; // Get the ID
-                                                $el.style.height = 'auto';
-                                                const newHeight = `${$el.scrollHeight}px`;
-                                                $el.style.height = newHeight;
-                                                // Ensure it sets the store value
-                                                Alpine.store('textareaHeights').set(id, newHeight);
-                                            }
-                                        }"
-                                        @input="adjustHeight()"
                                         wire:model.defer="questions.{{ $question->id }}.question_text"
                                         wire:blur="updateQuestion({{ $question->id }})"
                                         placeholder="Enter question text"
                                         onfocus="this.select()"
                                         class="w-full p-2 border border-gray-300 rounded resize-none overflow-hidden"
                                         rows="1"
-                                        data-autoresize
-                                        :style="{ height: $store.textareaHeights ? $store.textareaHeights.get('question-text-{{ $question->id }}') : 'auto' }"
+                                        style="field-sizing: content; min-height: 2.5em; max-height: 10em;"
                                     ></textarea>
                                 </div>
                                 <span class="ml-4 whitespace-nowrap text-sm text-gray-500 self-start pt-2 hidden sm:block">
