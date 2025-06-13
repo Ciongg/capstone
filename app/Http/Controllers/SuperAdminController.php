@@ -112,4 +112,10 @@ class SuperAdminController extends Controller
     {
         return view('super-admin.support-requests.index');
     }
+
+
+     public function reportsIndex()
+    {
+        return view('super-admin.show-reports');
+    }
 }

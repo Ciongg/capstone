@@ -4,6 +4,8 @@ namespace App\Livewire\SupportRequests;
 
 use Livewire\Component;
 use App\Models\SupportRequest;
+use App\Models\Survey;
+use App\Models\Report;
 
 class CreateSupportRequestModal extends Component
 {
@@ -24,10 +26,62 @@ class CreateSupportRequestModal extends Component
     // Form validation rules
     protected function rules()
     {
-        return [
+        $rules = [
             'subject' => 'required|min:5|max:255',
             'description' => 'required|min:20',
             'request_type' => 'required|in:survey_lock_appeal,report_appeal,account_issue,survey_question,other',
+        ];
+        
+        // Make related_id required for specific request types
+        if (in_array($this->request_type, ['survey_lock_appeal', 'report_appeal'])) {
+            $rules['related_id'] = [
+                'required',
+                'numeric',
+                function ($attribute, $value, $fail) {
+                    if ($this->request_type === 'survey_lock_appeal') {
+                        if (!$this->validateSurveyOwnership($value)) {
+                            $fail('The survey ID is invalid or you do not own this survey.');
+                        }
+                    } elseif ($this->request_type === 'report_appeal') {
+                        if (!$this->validateReportRespondent($value)) {
+                            $fail('The report ID is invalid or you are not the reported user in this report.');
+                        }
+                    }
+                }
+            ];
+        }
+        
+        return $rules;
+    }
+    
+    /**
+     * Validate that the survey belongs to the authenticated user
+     */
+    private function validateSurveyOwnership($surveyId)
+    {
+        return Survey::where('id', $surveyId)
+            ->where('user_id', auth()->id())
+            ->exists();
+    }
+    
+    /**
+     * Validate that the report exists and the user is the respondent
+     */
+    private function validateReportRespondent($reportId)
+    {
+        return Report::where('id', $reportId)
+            ->where('respondent_id', auth()->id())
+            ->exists();
+    }
+    
+    // Custom validation messages
+    protected function messages()
+    {
+        return [
+            'related_id.required' => $this->request_type === 'survey_lock_appeal' 
+                ? 'Survey ID is required for survey lock appeals.'
+                : 'Report ID is required for report appeals.',
+            'related_id.numeric' => 'The ID must be a valid number.',
         ];
     }
 
@@ -37,6 +91,14 @@ class CreateSupportRequestModal extends Component
         $this->validate();
         
         try {
+            // Set the related_model based on request type
+            $relatedModel = null;
+            if ($this->request_type === 'survey_lock_appeal') {
+                $relatedModel = 'Survey';
+            } elseif ($this->request_type === 'report_appeal') {
+                $relatedModel = 'Report';
+            }
+            
             SupportRequest::create([
                 'user_id' => auth()->id(),
                 'subject' => $this->subject,
@@ -44,7 +106,7 @@ class CreateSupportRequestModal extends Component
                 'request_type' => $this->request_type,
                 'status' => $this->status,
                 'related_id' => $this->related_id,
-                'related_model' => $this->related_model,
+                'related_model' => $relatedModel,
             ]);
             
             $this->showSuccess = true;

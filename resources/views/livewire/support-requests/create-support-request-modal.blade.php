@@ -67,20 +67,30 @@
                         @error('description') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     
-                    {{-- Related ID field can be shown conditionally if needed --}}
+                    {{-- Related ID field - now required for specific types --}}
                     @if($request_type == 'survey_lock_appeal' || $request_type == 'report_appeal')
                     <div class="form-group mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
                         <label for="related_id" class="block text-sm font-medium text-gray-700 mb-2">
-                            {{ $request_type == 'survey_lock_appeal' ? 'Survey ID' : 'Report ID' }} (optional)
+                            {{ $request_type == 'survey_lock_appeal' ? 'Survey ID' : 'Report ID' }} 
+                            <span class="text-red-500">*</span>
                         </label>
                         <input
-                            type="text"
+                            type="number"
                             id="related_id"
                             wire:model="related_id"
+                            required
+                            min="1"
                             class="w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 bg-white focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-25 transition-all duration-200"
-                            placeholder="{{ $request_type == 'survey_lock_appeal' ? 'Enter survey ID if known' : 'Enter report ID if known' }}"
+                            placeholder="{{ $request_type == 'survey_lock_appeal' ? 'Enter your survey ID' : 'Enter the report ID from your inbox message' }}"
                         >
-                        <p class="mt-2 text-xs text-blue-700">Providing the ID will help us process your request faster.</p>
+                        <p class="mt-2 text-xs text-blue-700">
+                            @if($request_type == 'survey_lock_appeal')
+                                This must be a survey that you own.
+                            @else
+                                This must be a report where you are the reported user. Check your inbox for the Report ID.
+                            @endif
+                        </p>
+                        @error('related_id') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     @endif
                 </form>

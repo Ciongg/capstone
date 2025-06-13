@@ -21,6 +21,8 @@ class SupportRequestsIndex extends Component
         'requestTypeFilter' => ['except' => 'all'],
     ];
 
+    protected $listeners = ['refreshSupportRequests' => '$refresh'];
+
     public function updatedSearchTerm()
     {
         $this->resetPage();

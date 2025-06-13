@@ -4,6 +4,9 @@ namespace App\Livewire\SuperAdmin\SupportRequests\Modal;
 
 use Livewire\Component;
 use App\Models\SupportRequest;
+use App\Models\Survey;
+use App\Models\Report;
+use App\Models\InboxMessage;
 
 class SupportRequestViewModal extends Component
 {
@@ -12,6 +15,7 @@ class SupportRequestViewModal extends Component
     public $adminNotes;
     public $status;
     public $relatedItem = null;
+    public $relatedItemTitle = null;
 
     protected $rules = [
         'adminNotes' => 'nullable|string',
@@ -32,15 +36,14 @@ class SupportRequestViewModal extends Component
         $this->adminNotes = $this->supportRequest->admin_notes;
         $this->status = $this->supportRequest->status;
         
-        // Try to load related item if exists
+        // Load related item based on request type
         if ($this->supportRequest->related_id && $this->supportRequest->related_model) {
-            try {
-                $modelClass = $this->supportRequest->related_model;
-                if (class_exists($modelClass)) {
-                    $this->relatedItem = $modelClass::find($this->supportRequest->related_id);
-                }
-            } catch (\Exception $e) {
-                // Related model couldn't be loaded - that's okay
+            if ($this->supportRequest->request_type === 'survey_lock_appeal' && $this->supportRequest->related_model === 'Survey') {
+                $this->relatedItem = Survey::find($this->supportRequest->related_id);
+                $this->relatedItemTitle = $this->relatedItem ? $this->relatedItem->title : 'Survey not found';
+            } elseif ($this->supportRequest->request_type === 'report_appeal' && $this->supportRequest->related_model === 'Report') {
+                $this->relatedItem = Report::with(['survey', 'reporter', 'respondent'])->find($this->supportRequest->related_id);
+                $this->relatedItemTitle = $this->relatedItem ? ($this->relatedItem->survey->title ?? 'Unknown Survey') : 'Report not found';
             }
         }
     }
@@ -51,6 +54,7 @@ class SupportRequestViewModal extends Component
         
         $statusChanged = $this->supportRequest->status !== $this->status;
         $wasResolved = $this->status === 'resolved' && $this->supportRequest->status !== 'resolved';
+        $previousStatus = $this->supportRequest->status;
         
         $this->supportRequest->admin_notes = $this->adminNotes;
         $this->supportRequest->status = $this->status;
@@ -62,7 +66,15 @@ class SupportRequestViewModal extends Component
         
         $this->supportRequest->save();
         
+        // Send inbox notification if status changed
+        if ($statusChanged && $this->supportRequest->user_id) {
+            $this->sendStatusUpdateNotification($previousStatus);
+        }
+        
         $this->dispatch('supportRequestUpdated', $this->supportRequest->id);
+        
+        // Dispatch refresh event to parent index
+        $this->dispatch('refreshSupportRequests');
         
         $statusName = str_replace('_', ' ', ucfirst($this->status));
         $this->dispatch('notify', [
@@ -72,6 +84,23 @@ class SupportRequestViewModal extends Component
         
         // Refresh the request data
         $this->loadSupportRequest();
+    }
+    
+    private function sendStatusUpdateNotification($previousStatus)
+    {
+        $requestTypeText = ucfirst(str_replace('_', ' ', $this->supportRequest->request_type));
+        $newStatusText = ucfirst(str_replace('_', ' ', $this->status));
+        
+        $adminNotesText = !empty($this->adminNotes) 
+            ? $this->adminNotes 
+            : 'No admin comment';
+        
+        InboxMessage::create([
+            'recipient_id' => $this->supportRequest->user_id,
+            'subject' => "Support Request Status Update - {$requestTypeText} #{$this->supportRequest->id} {$newStatusText}" ,
+            'message' => "Your Support Request for {$requestTypeText} has been updated to: {$newStatusText}\n\nAdmin Notes:\n{$adminNotesText}",
+            'read_at' => null
+        ]);
     }
 
     public function render()

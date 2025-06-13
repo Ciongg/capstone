@@ -10,7 +10,7 @@ class InboxMessage extends Model
     use HasFactory;
     
     protected $fillable = [
-        'sender_id',
+
         'recipient_id',
         'subject',
         'message',
@@ -22,10 +22,7 @@ class InboxMessage extends Model
         'read_at' => 'datetime',
     ];
     
-    public function sender()
-    {
-        return $this->belongsTo(User::class, 'sender_id');
-    }
+
     
     public function recipient()
     {

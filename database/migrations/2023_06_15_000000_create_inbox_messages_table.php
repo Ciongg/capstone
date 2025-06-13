@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('inbox_messages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sender_id')->constrained('users');
             $table->foreignId('recipient_id')->constrained('users');
             $table->string('subject');
             $table->text('message');

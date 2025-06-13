@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Survey;
+use App\Models\Response;
 use Illuminate\Support\Facades\Auth;
 use App\Models\SurveyPage;
 use App\Models\SurveyQuestion;
@@ -101,6 +102,11 @@ class SurveyController extends Controller
     public function showIndividualResponses(Survey $survey): View
     {
         return view('researcher.show-individual-responses', ['surveyId' => $survey->id]);
+    }
+
+    public function showOwnResponse(Survey $survey, Response $response)
+    {
+        return view('respondent.show-own-response', compact('survey', 'response'));
     }
 
 }

@@ -45,7 +45,6 @@ class InboxController extends Controller
         ]);
         
         InboxMessage::create([
-            'sender_id' => Auth::id(),
             'recipient_id' => Auth::id(),
             'subject' => $request->subject,
             'message' => $request->message,

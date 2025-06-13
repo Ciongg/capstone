@@ -34,7 +34,7 @@
             x-transition:leave="transition ease-in duration-100" 
             x-transition:leave-start="transform opacity-100 scale-100" 
             x-transition:leave-end="transform opacity-0 scale-95" 
-            class="absolute right-0 z-50 mt-2 w-80 bg-white rounded-md shadow-lg overflow-hidden"
+            class="absolute right-0 z-50 mt-2 w-[28rem] bg-white rounded-md shadow-lg overflow-hidden"
             style="display: none;"
         >
             <div class="py-2">

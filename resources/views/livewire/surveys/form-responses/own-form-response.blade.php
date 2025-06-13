@@ -1,76 +1,50 @@
-{{-- filepath: c:\Users\sharp\OneDrive\Desktop\Formigo\formigo\resources\views\livewire\surveys\form-responses\individual-responses.blade.php --}}
 {{-- Main container with gray background --}}
 <div class="bg-gray-100 min-h-screen py-4 sm:py-8">
     <div class="max-w-7xl mx-auto space-y-6 sm:space-y-10 px-2 sm:px-4">
         {{-- Only show content when a response is available --}}
-        @if($currentRespondent)
-            {{-- Top card with respondent navigation and summary information --}}
+        @if($response)
+            {{-- Top card with response information --}}
             <div class="bg-white shadow-xl rounded-lg sm:rounded-2xl p-4 sm:p-10 mb-6 sm:mb-8">
-                {{-- Back and Report button container --}}
+                {{-- Back button container --}}
                 <div class="flex justify-between items-center mb-6">
-                    {{-- Back button to return to all responses view --}}
-                    <a href="{{ route('surveys.responses', $survey->id) }}"
+                    {{-- Back button --}}
+                    <button onclick="history.back()"
                        class="px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg shadow hover:bg-gray-200 flex items-center text-sm sm:text-base"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
                         Back
-                    </a>
-                    
-                    {{-- Report button to flag problematic responses --}}
-                    <button
-                        x-data
-                        x-on:click="$dispatch('open-modal', {name : 'view-report-response-modal'})"
-                        class="p-1 sm:p-2 text-red-500 hover:text-red-700"
-                        type="button"
-                        aria-label="Report Response"
-                    >
-                        <svg class="w-8 h-8 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
-                            </path>
-                        </svg>
                     </button>
+                    
+                    {{-- Points Display with Diamond --}}
+                    <div class="flex items-center">
+                        <span class="text-gray-600 mr-2 text-sm sm:text-base">Points Earned:</span>
+                        <div class="flex items-center bg-gradient-to-r from-red-600 via-orange-400 to-yellow-300 px-2 sm:px-3 py-1 rounded-full">
+                            <span class="font-bold text-white drop-shadow text-sm">{{ $survey->points_allocated ?? 0 }}</span>
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.0898,8.9999 L17.7848,4.8299 L20.5658,8.9999 L17.0898,8.9999 Z M16.8358,9.9999 L20.4068,9.9999 L13.6208,17.8579 L16.8358,9.9999 Z M7.1638,9.9999 L10.3788,17.8579 L3.5918,9.9999 L7.1638,9.9999 Z M6.9098,8.9999 L3.4338,8.9999 L6.2148,4.8299 L6.9098,8.9999 Z M7.8008,8.2649 L7.0898,3.9999 L10.9998,3.9999 L7.8008,8.2649 Z M12.9998,3.9999 L16.9098,3.9999 L16.1988,8.2649 L12.9998,3.9999 Z M8.4998,8.9999 L11.9998,4.3329 L15.4998,8.9999 L8.4998,8.9999 Z M15.7548,9.9999 L11.9998,19.1799 L8.2448,9.9999 L15.7548,9.9999 Z M21.9158,9.2229 L17.9158,3.2229 C17.9148,3.2209 17.9118,3.2199 17.9108,3.2179 C17.8688,3.1569 17.8138,3.1069 17.7478,3.0699 C17.7288,3.0589 17.7078,3.0559 17.6888,3.0469 C17.6528,3.0329 17.6208,3.0129 17.5818,3.0069 C17.5658,3.0039 17.5498,3.0099 17.5328,3.0079 C17.5218,3.0079 17.5118,2.9999 17.4998,2.9999 L6.4998,2.9999 C6.4878,2.9999 6.4778,3.0079 6.4658,3.0079 C6.4498,3.0099 6.4348,3.0039 6.4178,3.0069 C6.3788,3.0129 6.3468,3.0329 6.3118,3.0469 C6.2918,3.0559 6.2708,3.0589 6.2528,3.0699 C6.1868,3.1069 6.1308,3.1569 6.0898,3.2179 C6.0878,3.2199 6.0858,3.2209 6.0838,3.2229 L2.0838,9.2229 C1.9598,9.4099 1.9748,9.6569 2.1218,9.8269 L11.6218,20.8269 C11.6428,20.8519 11.6718,20.8629 11.6968,20.8829 C11.7188,20.8999 11.7378,20.9189 11.7628,20.9319 C11.9118,21.0139 12.0878,21.0139 12.2368,20.9319 C12.2618,20.9189 12.2808,20.8999 12.3028,20.8829 C12.3278,20.8629 12.3568,20.8519 12.3788,20.8269 L21.8788,9.8269 C22.0258,9.6569 22.0408,9.4099 21.9158,9.2229 L21.9158,9.2229 Z"/>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
                 
-                {{-- Navigation controls between responses --}}
-                <div class="flex items-center justify-center mb-6 sm:mb-8">
-                    {{-- Previous response button --}}
-                    <button
-                        class="p-2 sm:p-3 rounded-full bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
-                        wire:click="$set('current', {{ $current - 1 }})"
-                        @disabled($current === 0)
-                        aria-label="Previous"
-                    >
-                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-                    
-                    {{-- Current respondent counter with reported status --}}
-                    <div class="mx-8 sm:mx-16 text-center min-w-[180px] sm:min-w-[220px]">
-                        <div class="font-bold text-lg sm:text-2xl">
-                            Respondent {{ $current + 1 }} of {{ $survey->responses->count() }}
-                        </div>
-                        @if($currentRespondent && $currentRespondent->reported)
-                            <div class="text-red-600 font-semibold text-sm sm:text-base mt-1">
-                                Reported Response
-                            </div>
-                        @endif
+                {{-- Response header --}}
+                <div class="text-center mb-6 sm:mb-8">
+                    <div class="font-bold text-lg sm:text-2xl">
+                        {{ $respondentUser->name ?? 'Unknown User' }}'s Response
                     </div>
-                    
-                    {{-- Next response button --}}
-                    <button
-                        class="p-2 sm:p-3 rounded-full bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
-                        wire:click="$set('current', {{ $current + 1 }})"
-                        @disabled($current === $survey->responses->count() - 1)
-                        aria-label="Next"
-                    >
-                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
+                    <div class="text-gray-600 text-sm sm:text-base mt-1">
+                        Survey: {{ $survey->title }}
+                    </div>
+                    <div class="text-gray-500 text-xs sm:text-sm mt-1">
+                        Answered: {{ $response->created_at->format('Y-m-d') }} | {{ $response->created_at->format('g:i A') }}
+                    </div>
+                    @if($response->reported)
+                        <div class="text-red-600 font-semibold text-sm sm:text-base mt-1">
+                            This Response Has Been Reported
+                        </div>
+                    @endif
                 </div>
 
                 {{-- Respondent statistics grid --}}
@@ -80,7 +54,7 @@
                         <span class="text-base sm:text-lg font-semibold text-gray-500 mb-3 block text-left">Demographic Matched</span>
                         @if($respondentUser)
                             <div class="flex items-start">
-                                <div class="flex flex-wrap gap-2 flex-1 pr-16">
+                                <div class="flex flex-wrap gap-2 flex-1">
                                     {{-- Show matched demographic tags based on status --}}
                                     @if($matchedSurveyTagsInfo['status'] === 'has_matches')
                                         @foreach ($matchedSurveyTagsInfo as $tagInfo)
@@ -97,18 +71,6 @@
                                     @endif
                                 </div>
                             </div>
-                            
-                            {{-- View all demographics modal trigger --}}
-                            <div class="absolute right-2 sm:right-4 bottom-2">
-                                <button
-                                    x-data
-                                    x-on:click="$dispatch('open-modal', {name : 'view-all-demographic-modal'})"
-                                    class="text-blue-600 underline font-semibold hover:text-blue-800 text-xs sm:text-sm"
-                                    type="button"
-                                >
-                                    View All
-                                </button>
-                            </div>
                         @else
                             <div class="flex items-center justify-between">
                                 <span class="text-xl sm:text-2xl font-bold text-gray-600">--</span>
@@ -120,7 +82,6 @@
                     <div class="bg-gray-100 rounded-lg font-bold shadow p-4 sm:p-6 min-h-[120px]">
                         <span class="text-base sm:text-lg font-semibold text-gray-500 mb-3 block text-left">Trust Score</span>
                         @if($respondentUser)
-                            {{-- Color coding based on trust score value --}}
                             @php
                                 $scoreColorClass = match (true) {
                                     $trustScore === 100 => 'text-[#03b8ff]',
@@ -149,48 +110,14 @@
                     {{-- Time Completed Box --}}
                     <div class="bg-gray-100 rounded-lg font-bold shadow p-4 sm:p-6 min-h-[120px]">
                         <span class="text-base sm:text-lg font-semibold text-gray-500 mb-3 block text-left">Time Completed</span>
-                        @if($timeCompleted)
-                            <div class="flex items-center justify-between">
-                                {{-- Display the actual time from the $timeCompleted variable instead of hardcoded "4:34" --}}
-                                <span class="text-3xl sm:text-5xl font-bold" style="color: #03b8ff;">{{ $timeCompleted }}</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 sm:w-14 sm:h-14 text-gray-500 flex-shrink-0">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                </svg>
-                            </div>
-                        @else
-                            <div class="flex items-center justify-between">
-                                <span class="text-2xl sm:text-3xl font-bold" style="color: #03b8ff;">--</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 sm:w-14 sm:h-14 text-gray-500 flex-shrink-0">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                </svg>
-                            </div>
-                        @endif
+                        <div class="flex items-center justify-between">
+                            <span class="text-3xl sm:text-5xl font-bold" style="color: #03b8ff;">{{ $timeCompleted ?? "0" }}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 sm:w-14 sm:h-14 text-gray-500 flex-shrink-0">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                        </div>
                     </div>
                 </div>
-
-                {{-- Demographics modal component - moved outside the conditional --}}
-                <x-modal name="view-all-demographic-modal" title="All Demographics">
-                    @if($respondentUser)
-                        <livewire:surveys.form-responses.modal.view-all-demographic-modal 
-                            :survey="$survey" 
-                            :user="$respondentUser" 
-                            :key="'demographic-modal-'.$current" 
-                        />
-                    @else
-                        <div class="text-gray-500 italic">
-                            No user data available for this respondent.
-                        </div>
-                    @endif
-                </x-modal>
-
-                {{-- Report Response Modal with unique key --}}
-                <x-modal name="view-report-response-modal" title="Report Response">
-                    <livewire:surveys.form-responses.modal.view-report-response-modal 
-                        :response="$currentRespondent" 
-                        :survey="$survey" 
-                        :key="'report-modal-'.$current.'-'.$currentRespondent->id" 
-                    />
-                </x-modal>
             </div>
 
             {{-- Survey pages with questions and answers --}}
@@ -244,7 +171,6 @@
                                         {{-- Show "Other" text when available --}}
                                         @if($otherChoice && isset($question['other_text']) && $question['other_text'])
                                             <div class="flex items-center space-x-3 mt-1">
-                                                
                                                 <span class="text-lg font-semibold text-gray-700">
                                                    <span class="text-gray-500"> Other Response: </span>  {{ $question['other_text'] }}
                                                 </span>
@@ -277,7 +203,6 @@
                                             {{-- Rows with selections --}}
                                             <tbody>
                                                 @foreach($question['likert_rows'] as $rowIndex => $row)
-                                                    {{-- loop is a variable found in for each loops checks the current index of the loop--}}
                                                     @php
                                                         $rowBg = $loop->even ? 'bg-gray-50' : 'bg-white';
                                                         $selectedColumnIndex = $question['likert_answer_data'][$rowIndex] ?? null;
@@ -326,11 +251,7 @@
         @else
             {{-- Display when no response is available --}}
             <div class="text-gray-500 text-lg sm:text-xl text-center py-10">
-                @if($survey->responses->isEmpty())
-                    No responses yet for this survey.
-                @else
-                    No response selected or available.
-                @endif
+                No response found.
             </div>
         @endif
     </div>

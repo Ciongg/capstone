@@ -2,16 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Response extends Model
 {
-    protected $fillable = ['survey_id', 'user_id'];
+    use HasFactory;
 
-    public function answers()
-    {
-        return $this->hasMany(Answer::class);
-    }
+    protected $fillable = [
+        'survey_id',
+        'user_id',
+        'reported',
+    ];
+
+    protected $casts = [
+        'reported' => 'boolean',
+    ];
 
     public function survey()
     {
@@ -21,5 +27,15 @@ class Response extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function answers()
+    {
+        return $this->hasMany(Answer::class);
+    }
+
+    public function reports()
+    {
+        return $this->hasMany(Report::class);
     }
 }

@@ -168,7 +168,6 @@ class TestControls extends Component
         $user = Auth::user();
         
         InboxMessage::create([
-            'sender_id' => $user->id,
             'recipient_id' => $user->id,
             'subject' => $this->inboxSubject,
             'message' => $this->inboxMessage,

@@ -64,9 +64,9 @@
                                     </h3>
                                     <span class="text-sm text-gray-500">{{ $message->created_at->diffForHumans() }}</span>
                                 </div>
-                                <p class="text-gray-600 mt-1">
+                                <div class="text-gray-600 mt-1 whitespace-pre-line">
                                     {{ $message->message }}
-                                </p>
+                                </div>
                                 
                                 <div class="mt-2 flex items-center space-x-4">
                                     @if ($message->url)

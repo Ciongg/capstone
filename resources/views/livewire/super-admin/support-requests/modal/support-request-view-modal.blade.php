@@ -69,32 +69,85 @@
             <div class="pt-4">
                 <!-- Request Details Tab -->
                 <div x-show="tab === 'details'" x-cloak>
-                    <div class="space-y-4">
-                        <!-- Description -->
-                        <div>
-                            <h4 class="font-bold mb-2">Description</h4>
-                            <div class="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap">{{ $supportRequest->description }}</div>
+                    <div class="space-y-6">
+                        <!-- Subject -->
+                        <div class="bg-white border rounded-lg p-4">
+                            <h4 class="font-bold text-lg mb-2 text-gray-800">Subject</h4>
+                            <div class="text-gray-900 break-words whitespace-pre-wrap">{{ $supportRequest->subject }}</div>
                         </div>
                         
-                        <!-- Related Entity Info -->
+                        <!-- Description -->
+                        <div class="bg-gray-50 border rounded-lg p-4">
+                            <h4 class="font-bold text-lg mb-2 text-gray-800">Description</h4>
+                            <div class="whitespace-pre-wrap text-gray-700 break-words">{{ $supportRequest->description }}</div>
+                        </div>
+                        
+                        <!-- Related Information -->
                         @if($supportRequest->related_id && $supportRequest->related_model)
-                        <div>
-                            <h4 class="font-bold mb-2">Related Information</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <span class="text-gray-600">Model Type:</span> {{ class_basename($supportRequest->related_model) }}
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h4 class="font-bold text-lg mb-3 text-blue-800">Related Information</h4>
+                            <div class="space-y-3">
+                                <div class="flex flex-col sm:flex-row sm:items-center">
+                                    <span class="font-medium text-blue-700 w-32 mb-1 sm:mb-0">Report Type:</span>
+                                    <span class="text-blue-900 break-words">{{ ucfirst(str_replace('_', ' ', $supportRequest->request_type)) }}</span>
                                 </div>
-                                <div>
-                                    <span class="text-gray-600">Item ID:</span> {{ $supportRequest->related_id }}
-                                </div>
+                                
+                                @if($supportRequest->request_type === 'survey_lock_appeal')
+                                    <div class="flex flex-col sm:flex-row sm:items-center">
+                                        <span class="font-medium text-blue-700 w-32 mb-1 sm:mb-0">Survey ID:</span>
+                                        <span class="text-blue-900">{{ $supportRequest->related_id }}</span>
+                                    </div>
+                                    @if($relatedItemTitle)
+                                        <div class="flex flex-col sm:flex-row sm:items-start">
+                                            <span class="font-medium text-blue-700 w-32 mb-1 sm:mb-0">Survey Title:</span>
+                                            <span class="text-blue-900 flex-1 break-words">{{ $relatedItemTitle }}</span>
+                                        </div>
+                                    @endif
+                                @elseif($supportRequest->request_type === 'report_appeal')
+                                    <div class="flex flex-col sm:flex-row sm:items-center">
+                                        <span class="font-medium text-blue-700 w-32 mb-1 sm:mb-0">Report ID:</span>
+                                        <span class="text-blue-900">{{ $supportRequest->related_id }}</span>
+                                    </div>
+                                    @if($relatedItemTitle)
+                                        <div class="flex flex-col sm:flex-row sm:items-start">
+                                            <span class="font-medium text-blue-700 w-32 mb-1 sm:mb-0">Survey Title:</span>
+                                            <span class="text-blue-900 flex-1 break-words">{{ $relatedItemTitle }}</span>
+                                        </div>
+                                    @endif
+                                    @if($relatedItem)
+                                        <div class="flex flex-col sm:flex-row sm:items-start">
+                                            <span class="font-medium text-blue-700 w-32 mb-1 sm:mb-0">Report Reason:</span>
+                                            <span class="text-blue-900 flex-1 break-words">{{ ucfirst(str_replace('_', ' ', $relatedItem->reason ?? 'Unknown')) }}</span>
+                                        </div>
+                                    @endif
+                                @endif
+                                
                                 @if($relatedItem)
-                                <div class="col-span-full">
-                                    <a href="#" 
-                                       class="text-blue-500 hover:underline"
-                                       onclick="event.preventDefault(); /* Add code to view related item */">
-                                        View Related Item
-                                    </a>
-                                </div>
+                                    <div class="mt-4 pt-3 border-t border-blue-200">
+                                        @if($supportRequest->request_type === 'survey_lock_appeal')
+                                            <a href="{{ route('surveys.responses', $supportRequest->related_id) }}" 
+                                               target="_blank"
+                                               class="inline-flex items-center text-blue-600 hover:text-blue-800 underline text-sm">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                                </svg>
+                                                View Survey Responses
+                                            </a>
+                                        @elseif($supportRequest->request_type === 'report_appeal')
+                                            <a href="{{ route('surveys.responses.view', ['survey' => $relatedItem->survey_id, 'response' => $relatedItem->response_id]) }}" 
+                                               target="_blank"
+                                               class="inline-flex items-center text-blue-600 hover:text-blue-800 underline text-sm">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                                </svg>
+                                                View Reported Response
+                                            </a>
+                                        @endif
+                                    </div>
+                                @else
+                                    <div class="text-red-600 text-sm italic bg-red-50 p-2 rounded border border-red-200">
+                                        Related item no longer exists or could not be found.
+                                    </div>
                                 @endif
                             </div>
                         </div>
@@ -103,54 +156,67 @@
                 </div>
                 
                 <!-- Admin Response Tab -->
-                <div x-show="tab === 'response'" x-cloak class="space-y-4">
+                <div x-show="tab === 'response'" x-cloak class="space-y-6">
                     <!-- Current Admin Notes -->
                     <div>
-                        <h4 class="font-bold mb-2">Admin Notes</h4>
-                        @if($supportRequest->admin_notes)
-                            <div class="bg-gray-50 p-4 rounded-lg mb-4 whitespace-pre-wrap">
-                                {{ $supportRequest->admin_notes }}
-                            </div>
-                        @else
-                            <div class="bg-gray-50 p-4 rounded-lg mb-4 text-gray-500 italic">
-                                No admin notes have been added yet.
-                            </div>
-                        @endif
+                        <h4 class="font-bold text-lg mb-3 text-gray-800">Current Admin Notes</h4>
+                        <textarea 
+                            rows="4" 
+                            disabled
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-gray-50 text-gray-700 resize-none"
+                            placeholder="No admin notes have been added yet."
+                        >{{ $supportRequest->admin_notes }}</textarea>
                     </div>
 
                     <!-- Admin Response Form -->
-                    <form wire:submit.prevent="updateRequest" class="mt-4">
-                        <div class="mb-4">
-                            <label for="admin_notes" class="block text-sm font-medium text-gray-700 mb-1">
-                                Update Admin Notes
-                            </label>
-                            <textarea id="admin_notes" wire:model="adminNotes" rows="4" 
-                                      class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-                                      placeholder="Add your response or internal notes here..."></textarea>
-                            @error('adminNotes') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                        </div>
+                    <div class="border-t border-gray-200 pt-6">
+                        <h4 class="font-bold text-lg mb-4 text-gray-800">Update Support Request</h4>
+                        <form wire:submit.prevent="updateRequest" class="space-y-6">
+                            <div>
+                                <label for="admin_notes" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Admin Notes
+                                </label>
+                                <textarea 
+                                    id="admin_notes" 
+                                    wire:model="adminNotes" 
+                                    rows="6" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-25 transition-all duration-200 resize-y min-h-[120px]"
+                                    placeholder="Add your response or internal notes here..."
+                                ></textarea>
+                                @error('adminNotes') 
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p> 
+                                @enderror
+                            </div>
 
-                        <div class="mb-4">
-                            <label for="status" class="block text-sm font-medium text-gray-700 mb-1">
-                                Update Status
-                            </label>
-                            <select id="status" wire:model="status" 
-                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
-                                <option value="pending">Pending</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="resolved">Resolved</option>
-                                <option value="rejected">Rejected</option>
-                            </select>
-                            @error('status') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                        </div>
+                            <div>
+                                <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Status
+                                </label>
+                                <select 
+                                    id="status" 
+                                    wire:model="status" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-25 transition-all duration-200"
+                                >
+                                    <option value="pending">Pending</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="resolved">Resolved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                                @error('status') 
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p> 
+                                @enderror
+                            </div>
 
-                        <div class="flex justify-end space-x-3">
-                            <button type="submit"
-                                    class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm">
-                                Save Changes
-                            </button>
-                        </div>
-                    </form>
+                            <div class="flex justify-end pt-4">
+                                <button 
+                                    type="submit"
+                                    class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
