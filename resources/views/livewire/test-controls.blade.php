@@ -93,6 +93,41 @@
         </div>
     </div>
     
+    <!-- Inbox Test Controls -->
+    <div class="mb-3">
+        <div class="text-xs font-semibold text-green-800 mb-2">Inbox Test Controls:</div>
+        <div class="mb-2">
+            <input 
+                type="text" 
+                wire:model="inboxSubject"
+                class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" 
+                placeholder="Message Subject"
+            >
+        </div>
+        <div class="mb-2">
+            <textarea 
+                wire:model="inboxMessage"
+                class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" 
+                rows="2"
+                placeholder="Message Content"
+            ></textarea>
+        </div>
+        <div class="mb-2">
+            <input 
+                type="text" 
+                wire:model="inboxUrl"
+                class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" 
+                placeholder="Related URL (optional)"
+            >
+        </div>
+        <button 
+            wire:click="sendTestInboxMessage" 
+            class="w-full bg-green-500 hover:bg-green-600 text-white px-3 py-1 text-xs rounded-md"
+        >
+            Send Test Inbox Message
+        </button>
+    </div>
+    
     <!-- Success message -->
     @if(session()->has('message'))
         <div class="mt-2 text-xs text-green-700 bg-green-100 p-2 rounded">

@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use App\Models\InboxMessage;
 use Illuminate\Support\Facades\Auth;
 
 class TestControls extends Component
@@ -13,6 +14,11 @@ class TestControls extends Component
     public $levelProgress = 0;
     public $rank = 'silver';
     public $userPoints = 0;
+
+    // New properties for inbox testing
+    public $inboxSubject = 'Test Message';
+    public $inboxMessage = 'This is a test message for the inbox system.';
+    public $inboxUrl = '';
 
     public function mount()
     {
@@ -154,5 +160,24 @@ class TestControls extends Component
         
         $this->refreshUserStats();
         session()->flash('message', "Level and XP reset to 1!");
+    }
+    
+    // New method to send test inbox message
+    public function sendTestInboxMessage()
+    {
+        $user = Auth::user();
+        
+        InboxMessage::create([
+            'sender_id' => $user->id,
+            'recipient_id' => $user->id,
+            'subject' => $this->inboxSubject,
+            'message' => $this->inboxMessage,
+            'url' => $this->inboxUrl ?: null,
+        ]);
+        
+        // Emit an event to refresh the inbox component
+        $this->dispatch('refreshInbox');
+        
+        session()->flash('message', 'Test message sent to your inbox!');
     }
 }

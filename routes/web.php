@@ -1,15 +1,17 @@
 <?php
 
 use App\Http\Controllers\SurveyController;
-use App\Http\Controllers\SessionController; // Keep for logout and now for login view
+use App\Http\Controllers\SessionController; 
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\RegisteredUserController; // Ensure this is imported
-use App\Http\Controllers\RewardController; // Ensure this is imported
-use App\Http\Controllers\SuperAdminController; // Ensure this is imported
-use App\Http\Controllers\InstitutionAdminController; // Ensure this is imported
-use App\Http\Controllers\VoucherController; // Ensure this is imported
+use App\Http\Controllers\RegisteredUserController;
+use App\Http\Controllers\RewardController; 
+use App\Http\Controllers\SuperAdminController; 
+use App\Http\Controllers\InstitutionAdminController;
+use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\InboxController; 
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -39,6 +41,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/surveys/{survey}/preview', [SurveyController::class, 'showAnswerForm'])->name('surveys.preview')->defaults('isPreview', true);
     Route::get('/institution/analytics', [InstitutionAdminController::class, 'analyticsIndex'])->name('institution.analytics');
     Route::get('/institution/users', [InstitutionAdminController::class, 'usersIndex'])->name('institution.users');
+
+    // Inbox Routes
+    Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+    Route::get('/inbox/{message}', [InboxController::class, 'show'])->name('inbox.show');
+    Route::post('/inbox/test', [InboxController::class, 'sendTestMessage'])->name('inbox.test');
 });
 
 Route::get('/surveys/answer/{survey}', [SurveyController::class, 'showAnswerForm'])->name('surveys.answer');
