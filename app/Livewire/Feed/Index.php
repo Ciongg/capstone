@@ -20,23 +20,25 @@ class Index extends Component
     // Basic search property remains the same
     public $search = '';
     
-    // Unified filter system - add institutionTags key
+    // Unified filter system - add answerableOnly key
     public $activeFilters = [
         'topic' => null,
         'tags' => [],
-        'institutionTags' => [], // Add a new filter for institution tags
+        'institutionTags' => [],
         'type' => null,
-        'institutionOnly' => false
+        'institutionOnly' => false,
+        'answerableOnly' => true  // Set to true by default
     ];
     
     // Panel for multi-tag selection
     public $showFilterPanel = false;
-    public $tempSelectedTagIds = []; // Temporary storage for selected tags in panel
-    public $tempSelectedInstitutionTagIds = []; // Add this new property for institution tags
+    public $tempSelectedTagIds = [];
+    public $tempSelectedInstitutionTagIds = [];
     
-    // Add temporary properties for survey type and institution filters
-    public $tempSurveyType = null; //advanced basic
-    public $tempInstitutionOnly = false; //institution only filter
+    // Add temporary properties for survey type and filters
+    public $tempSurveyType = null;
+    public $tempInstitutionOnly = false;
+    public $tempAnswerableOnly = true; // Set to true by default
     
     // Renamed for clarity - describes what this variable actually means
     public $hasUnsavedFilterChanges = false;
@@ -66,7 +68,8 @@ class Index extends Component
             $this->tempSelectedTagIds != $this->activeFilters['tags'] ||
             $this->tempSelectedInstitutionTagIds != $this->activeFilters['institutionTags'] ||
             $this->tempSurveyType !== $this->activeFilters['type'] ||
-            $this->tempInstitutionOnly !== $this->activeFilters['institutionOnly'];
+            $this->tempInstitutionOnly !== $this->activeFilters['institutionOnly'] ||
+            $this->tempAnswerableOnly !== $this->activeFilters['answerableOnly'];
     }
 
     // Toggle filter panel visibility and initialize temp selection
@@ -75,12 +78,12 @@ class Index extends Component
         $this->showFilterPanel = !$this->showFilterPanel;
         
         if ($this->showFilterPanel) {
-            // Initialize temp selection with current tags when opening
+            // Initialize temp selection with current filters when opening
             $this->tempSelectedTagIds = $this->activeFilters['tags'];
             $this->tempSelectedInstitutionTagIds = $this->activeFilters['institutionTags'];
-            // Initialize temp survey type and institution filter values
             $this->tempSurveyType = $this->activeFilters['type'];
             $this->tempInstitutionOnly = $this->activeFilters['institutionOnly'];
+            $this->tempAnswerableOnly = $this->activeFilters['answerableOnly'];
             $this->hasUnsavedFilterChanges = false; // No changes yet when we first open
         }
     }
@@ -167,9 +170,10 @@ class Index extends Component
         $this->activeFilters['tags'] = $this->tempSelectedTagIds;
         $this->activeFilters['institutionTags'] = $this->tempSelectedInstitutionTagIds;
         
-        // Save survey type and institution only settings
+        // Save survey type and access settings
         $this->activeFilters['type'] = $this->tempSurveyType;
         $this->activeFilters['institutionOnly'] = $this->tempInstitutionOnly;
+        $this->activeFilters['answerableOnly'] = $this->tempAnswerableOnly;
         
         // Close the panel
         $this->showFilterPanel = false;
@@ -178,7 +182,16 @@ class Index extends Component
         // Reset page and reload surveys
         $this->page = 1;
         $this->loadSurveys();
- 
+    }
+
+    // Toggle answerable filter - for the applied filters display
+    public function toggleAnswerableFilter()
+    {
+        $this->activeFilters['answerableOnly'] = !$this->activeFilters['answerableOnly'];
+        $this->tempAnswerableOnly = $this->activeFilters['answerableOnly'];
+        
+        $this->page = 1;
+        $this->loadSurveys();
     }
 
     // Clear all tags from panel
@@ -230,7 +243,8 @@ class Index extends Component
             && empty($this->activeFilters['tags'])
             && empty($this->activeFilters['institutionTags'])
             && is_null($this->activeFilters['type'])
-            && $this->activeFilters['institutionOnly'] === false;
+            && $this->activeFilters['institutionOnly'] === false
+            && $this->activeFilters['answerableOnly'] === true; // Default state is true
     }
     
     // Helper method to handle filter clearing and reloading logic
@@ -301,12 +315,14 @@ class Index extends Component
             'tags' => [],
             'institutionTags' => [],
             'type' => null,
-            'institutionOnly' => false
+            'institutionOnly' => false,
+            'answerableOnly' => true // Reset to default (true)
         ];
         $this->tempSelectedTagIds = [];
         $this->tempSelectedInstitutionTagIds = [];
         $this->tempSurveyType = null;
         $this->tempInstitutionOnly = false;
+        $this->tempAnswerableOnly = true; // Reset to default (true)
         
         // Reset page and reload surveys
         $this->page = 1;
@@ -314,8 +330,6 @@ class Index extends Component
         
         // Restore panel state - don't close if it was open
         $this->showFilterPanel = $currentPanelState;
-        
-
     }
 
 
@@ -339,34 +353,53 @@ class Index extends Component
         $this->loadingMore = false;
     }
     
-    // Load surveys based on filters - Modified to handle institution tags
+    // Load surveys based on filters - Modified to handle answerable filter
     protected function loadSurveys($append = false)
     {
-        
         // Get authenticated user
         $user = Auth::user();
 
-        // These relationships are defined in the User model but IDE may flag them incorrectly
+        // User tag info for filtering
         $userGeneralTags = $user ? $user->tags()->pluck('tags.id')->toArray() : [];
         $userInstitutionTags = $user ? $user->institutionTags()->pluck('institution_tags.id')->toArray() : [];
-
         $userInstitutionId = $user ? $user->institution_id : null;
+        
+        // Current date for filtering expired surveys
+        $now = now();
         
         // STEP 1: First get basic surveys with standard filters
         $basicQuery = Survey::query()
             ->where('type', 'basic')
-            ->whereIn('status', ['published', 'ongoing']) // Only published and ongoing surveys
-            ->with(['user', 'tags', 'institutionTags', 'topic']);
+            ->whereIn('status', ['published', 'ongoing']); // Only published and ongoing surveys
             
+        // Filter out expired surveys if answerable only is enabled
+        if ($this->activeFilters['answerableOnly']) {
+            $basicQuery->where(function($query) use ($now) {
+                $query->whereNull('end_date')
+                      ->orWhere('end_date', '>=', $now);
+            });
+        }
+        
+        $basicQuery->with(['user', 'tags', 'institutionTags', 'topic']);
+        
         // Apply common filters to basic survey query
         $this->applyCommonFilters($basicQuery);
         
         // STEP 2: Then get advanced surveys with demographic filters
         $advancedQuery = Survey::query()
             ->where('type', 'advanced')
-            ->whereIn('status', ['published', 'ongoing']) // Only published and ongoing surveys
-            ->with(['user', 'tags', 'institutionTags', 'topic']);
+            ->whereIn('status', ['published', 'ongoing']); // Only published and ongoing surveys
             
+        // Filter out expired surveys if answerable only is enabled
+        if ($this->activeFilters['answerableOnly']) {
+            $advancedQuery->where(function($query) use ($now) {
+                $query->whereNull('end_date')
+                      ->orWhere('end_date', '>=', $now);
+            });
+        }
+        
+        $advancedQuery->with(['user', 'tags', 'institutionTags', 'topic']);
+        
         // Apply common filters to advanced survey query
         $this->applyCommonFilters($advancedQuery);
         
@@ -383,6 +416,13 @@ class Index extends Component
             
             // Mark advanced surveys as locked if demographics don't match
             $advancedSurveys = $this->markLockedAdvancedSurveys($advancedSurveys, $userGeneralTags, $userInstitutionTags);
+            
+            // Filter out locked surveys if answerable only is enabled
+            if ($this->activeFilters['answerableOnly']) {
+                $advancedSurveys = $advancedSurveys->filter(function($survey) {
+                    return !$survey->is_demographic_locked;
+                });
+            }
         }
         else {
             // Default case (All Types) - get both types with appropriate filtering
@@ -391,28 +431,42 @@ class Index extends Component
             
             // Mark advanced surveys as locked if demographics don't match
             $advancedSurveys = $this->markLockedAdvancedSurveys($advancedSurveys, $userGeneralTags, $userInstitutionTags);
+            
+            // Filter out locked surveys if answerable only is enabled
+            if ($this->activeFilters['answerableOnly']) {
+                $advancedSurveys = $advancedSurveys->filter(function($survey) {
+                    return !$survey->is_demographic_locked;
+                });
+            }
         }
         
         // STEP 4: Mark institution-only surveys as locked if user doesn't match institution
         $combinedSurveys = $basicSurveys->concat($advancedSurveys);
         $combinedSurveys = $this->markLockedInstitutionSurveys($combinedSurveys, $user, $userInstitutionId);
         
+        // Filter out institution-locked surveys if answerable only is enabled
+        if ($this->activeFilters['answerableOnly']) {
+            $combinedSurveys = $combinedSurveys->filter(function($survey) {
+                return !$survey->is_institution_locked;
+            });
+        }
+        
         // STEP 5: Apply ordering/pagination
         $combinedSurveys = $combinedSurveys->unique('id');
         
         // Apply global sorting
-       $combinedSurveys = $combinedSurveys
-        ->unique('id')
-        ->sortBy(function ($survey) {
-            return [
-                // NEGATE points to simulate descending sort
-                -$survey->points_allocated,
+        $combinedSurveys = $combinedSurveys
+            ->unique('id')
+            ->sortBy(function ($survey) {
+                return [
+                    // NEGATE points to simulate descending sort
+                    -$survey->points_allocated,
 
-                // Use real end_date, or far future if null
-                $survey->end_date ?? now()->addYears(100),
-            ];
-        })
-        ->values(); // Re-index the collection
+                    // Use real end_date, or far future if null
+                    $survey->end_date ?? now()->addYears(100),
+                ];
+            })
+            ->values(); // Re-index the collection
 
         
         // Log counts for debugging

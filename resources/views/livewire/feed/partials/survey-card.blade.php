@@ -71,7 +71,7 @@
                     <span
                         wire:key="survey-{{ $survey->id }}-{{ $tagPrefix }}-{{ $tag->id }}"
                         class="px-3 py-2 text-xs font-semibold rounded-full shadow-md overflow-hidden whitespace-nowrap max-w-[100px] text-ellipsis
-                            {{ $matchesUserTag ? 'bg-green-300 text-green-800' : 'bg-gray-100 text-gray-800' }}"
+                            bg-gray-100 text-gray-800 {{ $matchesUserTag ? 'border-2 border-blue-400' : '' }}"
                     >
                         {{ $tag->name }}
                     </span>
