@@ -14,7 +14,7 @@
                     When a survey is locked, you cannot edit its content, add questions, or make any changes.
                     You can still preview the survey and view responses if available.
                 </p>
-                <p class="mt-2">If you believe this is incorrect, please submit a support ticket.</p>
+                <p class="mt-2">If you believe this is incorrect, please submit a support ticket of request type survey lock appeal, using survey id: {{$survey->id}}</p>
             </div>
         </div>
     </div>

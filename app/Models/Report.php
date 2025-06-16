@@ -23,8 +23,45 @@ class Report extends Model
         'question_id',
         'reason',
         'details',
+        'status',
 
     ];
+
+    // Status constants
+    const STATUS_UNAPPEALED = 'unappealed';
+    const STATUS_UNDER_APPEAL = 'under_appeal';
+    const STATUS_DISMISSED = 'dismissed';
+    const STATUS_CONFIRMED = 'confirmed';
+
+    public function canBeAppealed()
+    {
+        return $this->status === self::STATUS_UNAPPEALED;
+    }
+
+     public function isUnderAppeal()
+    {
+        return $this->status === self::STATUS_UNDER_APPEAL;
+    }
+
+
+     public function markAsUnderAppeal()
+    {
+        $this->update(['status' => self::STATUS_UNDER_APPEAL]);
+    }
+
+
+    public function markAsDismissed()
+    {
+        $this->update(['status' => self::STATUS_DISMISSED]);
+    }
+
+    public function markAsConfirmed()
+    {
+        $this->update(['status' => self::STATUS_CONFIRMED]);
+    }
+
+
+
 
     /**
      * Get the survey associated with the report.

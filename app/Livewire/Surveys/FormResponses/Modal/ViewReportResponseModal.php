@@ -116,7 +116,7 @@ class ViewReportResponseModal extends Component
                     'question_id' => $validatedQuestionId,
                     'reason' => $this->reason,
                     'details' => $this->details,
-                    'status' => 'pending'
+                    'status' => 'unappealed',
                 ]);
 
                 // Mark the response as reported
@@ -137,7 +137,7 @@ class ViewReportResponseModal extends Component
                     ]);
                 }
 
-                Log::info('Report created successfully', ['report_id' => $report->id]);
+               
             });
             
             // Success - update UI state
@@ -154,14 +154,7 @@ class ViewReportResponseModal extends Component
             $this->details = '';
             
         } catch (\Exception $e) {
-            // Log the error with more details
-            Log::error('Report creation failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'survey_id' => $this->survey->id ?? 'null',
-                'response_id' => $this->response->id ?? 'null',
-                'user_id' => auth()->id() ?? 'null'
-            ]);
+           
             
             $this->showConfirmation = false;
             $this->message = "We encountered an error while processing your report: " . $e->getMessage();

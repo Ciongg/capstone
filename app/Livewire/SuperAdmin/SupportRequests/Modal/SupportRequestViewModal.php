@@ -54,6 +54,7 @@ class SupportRequestViewModal extends Component
         
         $statusChanged = $this->supportRequest->status !== $this->status;
         $wasResolved = $this->status === 'resolved' && $this->supportRequest->status !== 'resolved';
+        $wasRejected = $this->status === 'rejected' && $this->supportRequest->status !== 'rejected';
         $previousStatus = $this->supportRequest->status;
         
         $this->supportRequest->admin_notes = $this->adminNotes;
@@ -65,6 +66,23 @@ class SupportRequestViewModal extends Component
         }
         
         $this->supportRequest->save();
+        
+        // Update associated report status if this is a report appeal
+        if ($this->supportRequest->request_type === 'report_appeal' && $this->supportRequest->related_id) {
+            if ($wasResolved) {
+                // Support request resolved = report dismissed
+                $report = Report::find($this->supportRequest->related_id);
+                if ($report) {
+                    $report->markAsDismissed();
+                }
+            } elseif ($wasRejected) {
+                // Support request rejected = report confirmed
+                $report = Report::find($this->supportRequest->related_id);
+                if ($report) {
+                    $report->markAsConfirmed();
+                }
+            }
+        }
         
         // Send inbox notification if status changed
         if ($statusChanged && $this->supportRequest->user_id) {

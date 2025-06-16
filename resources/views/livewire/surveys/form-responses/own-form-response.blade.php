@@ -40,9 +40,36 @@
                     <div class="text-gray-500 text-xs sm:text-sm mt-1">
                         Answered: {{ $response->created_at->format('Y-m-d') }} | {{ $response->created_at->format('g:i A') }}
                     </div>
-                    @if($response->reported)
+                    @if($response->reported && $reportData)
                         <div class="text-red-600 font-semibold text-sm sm:text-base mt-1">
                             This Response Has Been Reported
+                        </div>
+                        
+                        {{-- Report Details --}}
+                        <div class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4 text-left">
+                            <h4 class="font-bold text-red-800 mb-2">Report Details</h4>
+                            <div class="space-y-2 text-sm">
+                                <div>
+                                    <span class="font-medium text-red-700">Reason:</span>
+                                    <span class="text-red-900">{{ ucfirst(str_replace('_', ' ', $reportData->reason)) }}</span>
+                                </div>
+                                
+                                @if($reportedQuestionTitle)
+                                <div>
+                                    <span class="font-medium text-red-700">Reported Question:</span>
+                                    <span class="text-red-900">{{ $reportedQuestionTitle }}</span>
+                                </div>
+                                @endif
+                                
+                                <div>
+                                    <span class="font-medium text-red-700">Details:</span>
+                                    <div class="text-red-900 whitespace-pre-wrap bg-red-100 p-2 rounded mt-1">{{ $reportData->details }}</div>
+                                </div>
+                                
+                                <div class="text-xs text-red-600 mt-2">
+                                    Reported on: {{ $reportData->created_at->format('M d, Y h:i A') }}
+                                </div>
+                            </div>
                         </div>
                     @endif
                 </div>
@@ -135,7 +162,17 @@
                     {{-- Questions and answers list --}}
                     <div class="space-y-6 sm:space-y-8">
                         @foreach($page['questions'] as $question)
-                            <div>
+                            <div class="{{ $reportData && $reportData->question_id == $question['id'] ? 'bg-red-50 border-2 border-red-200 rounded-lg p-4' : '' }}">
+                                {{-- Highlight reported question --}}
+                                @if($reportData && $reportData->question_id == $question['id'])
+                                    <div class="flex items-center mb-2">
+                                        <svg class="w-5 h-5 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span class="text-red-600 font-semibold text-sm">REPORTED QUESTION</span>
+                                    </div>
+                                @endif
+                                
                                 {{-- Question text with numbering --}}
                                 <div class="font-semibold text-lg sm:text-xl mb-2 pl-2 break-words">
                                     {{ $question['order'] ?? $loop->iteration }}. {{ $question['question_text'] }}

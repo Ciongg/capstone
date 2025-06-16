@@ -16,6 +16,10 @@ class OwnFormResponse extends Component
     public ?string $timeCompleted = null;
     public array $matchedSurveyTagsInfo = [];
     public array $pagesWithProcessedAnswers = [];
+    
+    // Report data properties
+    public $reportData = null;
+    public $reportedQuestionTitle = null;
 
     public function mount($surveyId, $responseId)
     {
@@ -37,6 +41,23 @@ class OwnFormResponse extends Component
         }
 
         $this->processResponseDetails();
+        $this->loadReportData();
+    }
+
+    public function loadReportData()
+    {
+        if ($this->response && $this->response->reported) {
+            // Get the report data for this response
+            $this->reportData = $this->response->reports()
+                ->with(['question'])
+                ->latest()
+                ->first();
+            
+            // Get the reported question title if a specific question was reported
+            if ($this->reportData && $this->reportData->question_id) {
+                $this->reportedQuestionTitle = $this->reportData->question->question_text ?? 'Question not found';
+            }
+        }
     }
 
     public function processResponseDetails()

@@ -86,4 +86,20 @@ class Survey extends Model
     {
         return $this->belongsTo(SurveyTopic::class, 'survey_topic_id');
     }
+
+    /**
+     * Check if the survey is locked
+     */
+    public function isLocked()
+    {
+        return $this->is_locked === true;
+    }
+
+    /**
+     * Check if the survey can be appealed (must be locked)
+     */
+    public function canBeAppealed()
+    {
+        return $this->isLocked();
+    }
 }

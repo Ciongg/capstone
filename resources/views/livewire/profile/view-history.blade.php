@@ -1,5 +1,5 @@
 <div>
-    @forelse($user->responses()->with('survey')->latest()->get() as $response)
+    @forelse($user->responses()->with(['survey', 'reports'])->latest()->get() as $response)
         <div class="bg-white rounded-xl shadow p-4 mb-4 flex flex-col sm:flex-row sm:items-center justify-between">
             <div>
                 <div class="font-semibold text-lg text-blue-700">
@@ -8,6 +8,11 @@
                 <div class="text-gray-500 text-sm">
                     Answered: {{ $response->created_at->format('Y-m-d') }} | {{ $response->created_at->format('g:i A') }}
                 </div>
+                @if($response->reported && $response->reports->isNotEmpty())
+                    <div class="text-red-600 text-sm font-medium">
+                        Report ID: {{ $response->reports->first()->id }}
+                    </div>
+                @endif
             </div>
             <div class="mt-2 sm:mt-0 flex items-center space-x-3">
                 <div class="flex items-center">

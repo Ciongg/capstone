@@ -18,12 +18,12 @@ return new class extends Migration
             $table->foreignId('reporter_id')->comment('User ID who reported')->constrained('users')->onDelete('cascade');
             $table->foreignId('respondent_id')->nullable()->comment('User ID who got reported')->constrained('users')->onDelete('set null');
             $table->unsignedBigInteger('question_id')->nullable()->comment('References survey_questions.id');
+            $table->enum('status', ['unappealed', 'under_appeal', 'dismissed', 'confirmed'])->default('unappealed');
             $table->string('reason');
             $table->text('details');
             $table->timestamps();
             
             // Add indexes for faster queries
-            $table->index(['survey_id', 'status']);
             $table->index(['reporter_id', 'created_at']);
             $table->index('question_id');
         });

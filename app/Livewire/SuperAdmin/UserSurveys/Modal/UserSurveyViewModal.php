@@ -9,6 +9,7 @@ class UserSurveyViewModal extends Component
 {
     public $survey = null;
     public $surveyId;
+    public $lockReason = ''; // Add property to store lock reason
     
     public function mount($surveyId)
     {
@@ -30,11 +31,23 @@ class UserSurveyViewModal extends Component
             return;
         }
         
+        // Update lock status
         $this->survey->is_locked = !$this->survey->is_locked;
+        
+        // If locking, ensure lock reason is provided
+        if ($this->survey->is_locked && !empty($this->lockReason)) {
+            $this->survey->lock_reason = $this->lockReason;
+        }
+        
         $this->survey->save();
         
         $status = $this->survey->is_locked ? 'locked' : 'unlocked';
         session()->flash('modal_message', "Survey has been {$status} successfully.");
+        
+        // Reset the lock reason if unlocking
+        if (!$this->survey->is_locked) {
+            $this->lockReason = '';
+        }
         
         // Notify the parent component that the status was updated
         $this->dispatch('surveyStatusUpdated');

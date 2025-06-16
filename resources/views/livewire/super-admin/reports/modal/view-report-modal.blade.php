@@ -24,6 +24,15 @@
                         {{ str_replace('_', ' ', ucwords($report->reason)) }}
                     </span>
                 </div>
+                <div class="flex items-center mb-2">
+                    <span class="font-bold mr-2">Status:</span>
+                    <span class="px-2 py-1 rounded text-xs {{ 
+                        $report->status === 'unappealed' ? 'bg-yellow-200 text-yellow-800' : 
+                        ($report->status === 'under_appeal' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800')
+                    }}">
+                        {{ str_replace('_', ' ', ucwords($report->status)) }}
+                    </span>
+                </div>
                 <div class="mb-2">
                     <span class="font-bold">Reported:</span> {{ $report->created_at->format('M d, Y h:i A') }}
                 </div>
@@ -98,9 +107,12 @@
                                 <div><span class="font-medium">Survey:</span> {{ $report->survey->title ?? 'Unknown' }}</div>
                                 <div><span class="font-medium">Survey ID:</span> {{ $report->survey_id }}</div>
                                 <div><span class="font-medium">Response ID:</span> {{ $report->response_id }}</div>
-                                <div><span class="font-medium">Response Status:</span> 
-                                    <span class="px-2 py-1 rounded text-xs {{ $report->response->reported ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800' }}">
-                                        {{ $report->response->reported ? 'Reported' : 'Clean' }}
+                                <div><span class="font-medium">Report Status:</span> 
+                                    <span class="px-2 py-1 rounded text-xs {{ 
+                                        $report->status === 'unappealed' ? 'bg-yellow-200 text-yellow-800' : 
+                                        ($report->status === 'under_appeal' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800')
+                                    }}">
+                                        {{ str_replace('_', ' ', ucwords($report->status)) }}
                                     </span>
                                 </div>
                             </div>

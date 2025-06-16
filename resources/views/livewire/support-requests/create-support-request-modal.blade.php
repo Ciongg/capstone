@@ -25,7 +25,9 @@
                 <form wire:submit.prevent="submitRequest" class="space-y-6">
                     {{-- Request Type Selection --}}
                     <div class="form-group">
-                        <label for="request_type" class="block text-sm font-medium text-gray-700 mb-2">Request Type</label>
+                        <label for="request_type" class="block text-sm font-medium text-gray-700 mb-2">
+                            Request Type <span class="text-red-500">*</span>
+                        </label>
                         <select 
                             id="request_type" 
                             wire:model.live="request_type"
@@ -43,7 +45,9 @@
                     
                     {{-- Subject Field --}}
                     <div class="form-group">
-                        <label for="subject" class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                        <label for="subject" class="block text-sm font-medium text-gray-700 mb-2">
+                            Subject <span class="text-red-500">*</span>
+                        </label>
                         <input
                             type="text"
                             id="subject"
@@ -56,7 +60,9 @@
                     
                     {{-- Description Field --}}
                     <div class="form-group">
-                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                            Description <span class="text-red-500">*</span>
+                        </label>
                         <textarea
                             id="description"
                             wire:model="description"
@@ -78,8 +84,6 @@
                             type="number"
                             id="related_id"
                             wire:model="related_id"
-                            required
-                            min="1"
                             class="w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 bg-white focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-25 transition-all duration-200"
                             placeholder="{{ $request_type == 'survey_lock_appeal' ? 'Enter your survey ID' : 'Enter the report ID from your inbox message' }}"
                         >
@@ -87,7 +91,7 @@
                             @if($request_type == 'survey_lock_appeal')
                                 This must be a survey that you own.
                             @else
-                                This must be a report where you are the reported user. Check your inbox for the Report ID.
+                                This must be a report where you are the reported user. Note: You cannot appeal a report that is already under appeal or has been resolved.
                             @endif
                         </p>
                         @error('related_id') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -108,9 +112,17 @@
                     <button
                         type="button"
                         wire:click="submitRequest"
-                        class="px-6 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        wire:loading.attr="disabled"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                     >
-                        Submit Request
+                        <span wire:loading.remove wire:target="submitRequest">Submit Request</span>
+                        <span wire:loading wire:target="submitRequest" class="flex items-center">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Submitting...
+                        </span>
                     </button>
                 </div>
             </div>

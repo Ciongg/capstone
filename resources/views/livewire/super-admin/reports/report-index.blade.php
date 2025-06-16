@@ -64,6 +64,7 @@
                                 <th class="py-3 px-6 text-left">Reporter</th>
                                 <th class="py-3 px-6 text-left">Respondent</th>
                                 <th class="py-3 px-6 text-left">Reason</th>
+                                <th class="py-3 px-6 text-left">Status</th>
                                 <th class="py-3 px-6 text-left">Reported</th>
                                 <th class="py-3 px-6 text-left">Actions</th>
                             </tr>
@@ -90,6 +91,16 @@
                                             {{ str_replace('_', ' ', ucwords($report->reason)) }}
                                         </span>
                                     </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span class="px-2 py-1 rounded text-xs {{ 
+                                            $report->status === 'unappealed' ? 'bg-yellow-200 text-yellow-800' : 
+                                            ($report->status === 'under_appeal' ? 'bg-blue-200 text-blue-800' : 
+                                            ($report->status === 'dismissed' ? 'bg-green-200 text-green-800' : 
+                                            ($report->status === 'confirmed' ? 'bg-red-200 text-red-800' : 'bg-gray-200 text-gray-800')))
+                                        }}">
+                                            {{ str_replace('_', ' ', ucwords($report->status)) }}
+                                        </span>
+                                    </td>
                                     <td class="py-3 px-6">{{ $report->created_at->format('M d, Y') }}</td>
                                     <td class="py-3 px-6">
                                         <button 
@@ -108,7 +119,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="py-3 px-6 text-center">No reports found</td>
+                                    <td colspan="8" class="py-3 px-6 text-center">No reports found</td>
                                 </tr>
                             @endforelse
                         </tbody>
