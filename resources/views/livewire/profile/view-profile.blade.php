@@ -96,7 +96,7 @@
                             {{-- Help Request Button --}}
                             <button
                                 x-data
-                                x-on:click="$dispatch('open-modal', {name: 'support-request-modal'})"
+                                x-on:click="$dispatch('open-modal', {name: 'create-support-request-modal'})"
                                 class="flex items-center justify-center space-x-2 py-2 px-4 text-white bg-[#03b8ff] hover:bg-[#0299d5] rounded-lg shadow-md transition-colors w-full md:w-40"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -187,4 +187,9 @@
             @endif
         </div>
     </div>
+
+    {{-- Support Request Modal --}}
+    <x-modal name="create-support-request-modal" title="Support Request">
+        <livewire:support-requests.create-support-request-modal />
+    </x-modal>
 </div>

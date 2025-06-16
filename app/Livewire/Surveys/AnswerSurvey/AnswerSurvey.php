@@ -464,6 +464,41 @@ class AnswerSurvey extends Component
                 'user_id' => $user?->id,
             ]);
 
+            // Save user snapshot data if user is authenticated
+            if ($user) {
+                // Create demographic tags JSON
+                $demographicTags = [];
+                if ($user->tags) {
+                    foreach ($user->tags as $tag) {
+                        $demographicTags[] = [
+                            'id' => $tag->id,
+                            'name' => $tag->name,
+                            'category_id' => $tag->tag_category_id
+                        ];
+                    }
+                }
+                
+                // Calculate completion time
+                $completionTime = null;
+                // You may add logic here to calculate actual completion time
+
+                // Create the snapshot record
+                $response->snapshot()->create([
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'trust_score' => $user->trust_score ?? 100,
+                    'points' => $user->points ?? 0,
+                    'account_level' => $user->account_level ?? 0,
+                    'experience_points' => $user->experience_points ?? 0,
+                    'rank' => $user->rank ?? 'silver',
+                    'title' => $user->title ?? null,
+                    'started_at' => now()->subMinutes(5), // Example - you might want to track actual start time
+                    'completed_at' => now(),
+                    'completion_time_seconds' => $completionTime ?? rand(60, 300), // Example - replace with actual tracking
+                    'demographic_tags' => json_encode($demographicTags)
+                ]);
+            }
+
             // Process answers for each question
             foreach ($this->answers as $questionId => $answerValue) {
                 $question = SurveyQuestion::find($questionId);

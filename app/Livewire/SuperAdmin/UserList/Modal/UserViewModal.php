@@ -18,6 +18,11 @@ class UserViewModal extends Component
     public $activitiesLoaded = false;
     public $isInstitutionAdmin = false;
     public $institutionId = null;
+    public $trustScore = 100; // New property for editing trust score
+    
+    protected $rules = [
+        'trustScore' => ['required', 'numeric', 'min:0', 'max:100'],
+    ];
     
     public function mount($userId)
     {
@@ -50,7 +55,26 @@ class UserViewModal extends Component
             }
             
             $this->user = $user;
+            $this->trustScore = $user->trust_score; // Initialize trust score from user
         }
+    }
+    
+    // New method to save trust score
+    public function saveTrustScore()
+    {
+        if (!$this->user) {
+            return;
+        }
+        
+        // Validate the input
+        $this->validate();
+        
+        // Store old value for message
+        $oldScore = $this->user->trust_score;
+        
+        // Update the user's trust score
+        $this->user->trust_score = $this->trustScore;
+        $this->user->save();
     }
     
     public function toggleActiveStatus()

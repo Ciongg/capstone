@@ -14,7 +14,7 @@ class IndividualResponses extends Component
     public int $current = 0;
     public ?Response $currentRespondent = null;
     public ?User $respondentUser = null;
-    public int $trustScore = 0;
+    public float $trustScore = 0; // Changed from int to float to handle decimals
     public ?string $timeCompleted = null;
     public array $matchedSurveyTagsInfo = [];
     public array $pagesWithProcessedAnswers = [];
@@ -25,7 +25,8 @@ class IndividualResponses extends Component
     {
         // Load survey with all related data needed for displaying responses
         $this->survey = Survey::with([
-            'responses.user.tags',
+            'responses.user',
+            'responses.snapshot', // Add the snapshot relationship
             'responses.answers',
             'pages.questions.choices',
             'tags'
@@ -64,25 +65,57 @@ class IndividualResponses extends Component
         
         $this->respondentUser = $this->currentRespondent->user;
 
-        // Process user information if available
+        // Always get trust score from live user data when available
         if ($this->respondentUser) {
-            // Get trust score
+            // Set trust score from current user data (live)
             $this->trustScore = $this->respondentUser->trust_score ?? 0;
+        } else {
+            // Default to 0 if no user associated
+            $this->trustScore = 0;
+        }
 
-            // Process demographic matching information
+        // Process snapshot information for other data if available
+        $snapshot = $this->currentRespondent->snapshot;
+        
+        if ($snapshot) {
+            // Get completion time from snapshot
+            if ($snapshot->completion_time_seconds) {
+                $minutes = floor($snapshot->completion_time_seconds / 60);
+                $seconds = $snapshot->completion_time_seconds % 60;
+                $this->timeCompleted = sprintf("%d:%02d", $minutes, $seconds);
+            } else {
+                $this->timeCompleted = "0:00";
+            }
+
+            // Process demographic matching information from snapshot
             $this->matchedSurveyTagsInfo = [];
-            $respondentTagIds = $this->respondentUser->tags->pluck('id')->toArray(); //grab all the respondent tag IDs to an array
+            $demographicTags = json_decode($snapshot->demographic_tags, true) ?? [];
             $surveyTags = $this->survey->tags; // check this survey's tags
             $matchedCount = 0;
             
-            // Find which tags match between user and survey
+            // Find which tags match between snapshot and survey
             foreach ($surveyTags as $surveyTag) {
-                // Loop through each survey tag and check if it exists in the respondent's tag IDs.
-                // If it matches, add an associative array to matchedSurveyTagsInfo with the tag name and a matched status.
-
-                if (in_array($surveyTag->id, $respondentTagIds)) {
-                    $this->matchedSurveyTagsInfo[] = ['name' => $surveyTag->name, 'matched' => true];
-                    $matchedCount++;
+                $matched = false;
+                
+                // Check if this survey tag exists in the snapshot's demographic tags
+                foreach ($demographicTags as $demographicTag) {
+                    if (isset($demographicTag['id']) && $demographicTag['id'] === $surveyTag->id) {
+                        $this->matchedSurveyTagsInfo[] = [
+                            'name' => $surveyTag->name, 
+                            'matched' => true
+                        ];
+                        $matched = true;
+                        $matchedCount++;
+                        break;
+                    }
+                }
+                
+                // If no match was found, add it as unmatched
+                if (!$matched) {
+                    $this->matchedSurveyTagsInfo[] = [
+                        'name' => $surveyTag->name, 
+                        'matched' => false
+                    ];
                 }
             }
             
@@ -94,14 +127,37 @@ class IndividualResponses extends Component
             } else {
                  $this->matchedSurveyTagsInfo['status'] = 'has_matches';
             }
+        } else if ($this->respondentUser) {
+            // Fallback to user data for demographics if snapshot is not available
+            $this->timeCompleted = "0:00";
+            
+            // Process demographic matching using current user data
+            $this->matchedSurveyTagsInfo = [];
+            $respondentTagIds = $this->respondentUser->tags->pluck('id')->toArray();
+            $surveyTags = $this->survey->tags;
+            $matchedCount = 0;
+            
+            foreach ($surveyTags as $surveyTag) {
+                if (in_array($surveyTag->id, $respondentTagIds)) {
+                    $this->matchedSurveyTagsInfo[] = ['name' => $surveyTag->name, 'matched' => true];
+                    $matchedCount++;
+                } else {
+                    $this->matchedSurveyTagsInfo[] = ['name' => $surveyTag->name, 'matched' => false];
+                }
+            }
+            
+            if ($surveyTags->isNotEmpty() && $matchedCount === 0) {
+                 $this->matchedSurveyTagsInfo['status'] = 'none_matched';
+            } elseif ($surveyTags->isEmpty()) {
+                 $this->matchedSurveyTagsInfo['status'] = 'no_target_demographics';
+            } else {
+                 $this->matchedSurveyTagsInfo['status'] = 'has_matches';
+            }
         } else {
-            // Default values when no user data available
-            $this->trustScore = 0;
+            // Default values when no data available
+            $this->timeCompleted = "0:00";
             $this->matchedSurveyTagsInfo = ['status' => 'no_user_data'];
         }
-
-        // Set default time completed to 0
-        $this->timeCompleted = "0";
 
         // Process answers for each question in the survey
         $this->pagesWithProcessedAnswers = [];

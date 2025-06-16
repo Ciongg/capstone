@@ -183,6 +183,26 @@ class CreateSupportRequestModal extends Component
         }
     }
 
+    // Close the modal and reset state
+    public function closeModal()
+    {
+        // Reset all form fields and states
+        $this->reset([
+            'subject', 
+            'description', 
+            'request_type', 
+            'related_id', 
+            'related_model',
+            'showSuccess',
+            'message'
+        ]);
+        
+        // Reset validation errors
+        $this->resetValidation();
+        
+        $this->dispatch('close-modal', name: 'create-support-request-modal');
+    }
+
     public function render()
     {
         return view('livewire.support-requests.create-support-request-modal');

@@ -38,4 +38,12 @@ class Response extends Model
     {
         return $this->hasMany(Report::class);
     }
+
+    /**
+     * Get the snapshot record associated with this response.
+     */
+    public function snapshot()
+    {
+        return $this->hasOne(ResponseSnapshot::class);
+    }
 }

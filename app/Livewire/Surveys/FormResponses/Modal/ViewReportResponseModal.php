@@ -263,7 +263,21 @@ class ViewReportResponseModal extends Component
     
     public function closeModal()
     {
-        $this->dispatch('close-modal', ['name' => 'view-report-response-modal']);
+        // Reset all form fields and states
+        $this->reset([
+            'reason',
+            'details',
+            'questionId',
+            'message',
+            'showSuccess',
+            'showConfirmation',
+            'selectedQuestionText'
+        ]);
+        
+        // Reset validation errors
+        $this->resetValidation();
+        
+        $this->dispatch('close-modal', name: 'view-report-response-modal');
     }
     
     public function render()
