@@ -21,6 +21,10 @@ return new class extends Migration
             $table->enum('status', ['unappealed', 'under_appeal', 'dismissed', 'confirmed'])->default('unappealed');
             $table->string('reason');
             $table->text('details');
+            $table->decimal('trust_score_deduction', 8, 2)->nullable()->comment('Amount deducted from respondent trust score');
+            $table->boolean('deduction_reversed')->default(false)->comment('Whether the deduction was reversed through appeal');
+            $table->decimal('points_deducted', 8, 2)->nullable()->comment('Amount of points deducted from respondent');
+            $table->boolean('points_restored')->default(false)->comment('Whether points have been restored');
             $table->timestamps();
             
             // Add indexes for faster queries

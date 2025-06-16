@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\Survey;
 use App\Models\Response;
 use App\Models\Report;
+use App\Models\User;
 use App\Models\SurveyQuestion;
 use App\Models\InboxMessage;
 use Illuminate\Support\Facades\DB;
@@ -107,6 +108,43 @@ class ViewReportResponseModal extends Component
                     throw new \Exception('User not authenticated');
                 }
 
+                // Calculate trust score deduction for the respondent if available
+                $trustScoreDeduction = 0;
+                $pointsDeducted = 0;
+                
+                if ($this->response->user_id) {
+                    // Calculate trust score deduction
+                    $trustScoreDeduction = $this->calculateTrustScoreDeduction($this->response->user_id);
+                    
+                    $respondent = User::find($this->response->user_id);
+                    if ($respondent) {
+                        // Apply trust score deduction
+                        $respondent->trust_score = max(0, $respondent->trust_score + $trustScoreDeduction);
+                        
+                        // Handle points deduction if survey had points allocated
+                        if ($this->survey->points_allocated > 0) {
+                            $pointsDeducted = $this->survey->points_allocated;
+                            $respondent->points = max(0, $respondent->points - $pointsDeducted);
+                            
+                            Log::info('Deducted points from reported user', [
+                                'user_id' => $respondent->id,
+                                'points_deducted' => $pointsDeducted,
+                                'new_points_balance' => $respondent->points
+                            ]);
+                        }
+                        
+                        $respondent->save();
+                        
+                        Log::info('Applied deductions to reported user', [
+                            'user_id' => $respondent->id,
+                            'trust_deduction' => $trustScoreDeduction,
+                            'points_deducted' => $pointsDeducted,
+                            'new_trust_score' => $respondent->trust_score,
+                            'new_points' => $respondent->points
+                        ]);
+                    }
+                }
+
                 // Create the report record
                 $report = Report::create([
                     'survey_id' => $this->survey->id,
@@ -117,6 +155,10 @@ class ViewReportResponseModal extends Component
                     'reason' => $this->reason,
                     'details' => $this->details,
                     'status' => 'unappealed',
+                    'trust_score_deduction' => $trustScoreDeduction,
+                    'deduction_reversed' => false,
+                    'points_deducted' => $pointsDeducted,
+                    'points_restored' => false
                 ]);
 
                 // Mark the response as reported
@@ -127,17 +169,18 @@ class ViewReportResponseModal extends Component
                     $reasonText = $this->reportReasons[$this->reason] ?? 'Unknown reason';
                     $surveyTitle = $this->survey->title ?? 'Unknown Survey';
                     
+                    $pointsMessage = $pointsDeducted > 0 
+                        ? "\n\nAdditionally, {$pointsDeducted} points earned from this survey have been temporarily deducted." 
+                        : "";
+                        
                     InboxMessage::create([
                         'recipient_id' => $this->response->user_id,
-                        
                         'subject' => 'Your Survey Response Has Been Reported',
-                        'message' => "Your response to the survey '{$surveyTitle}' has been reported for: {$reasonText}.\n\nReport ID: #{$report->id}\n\nIf you believe this report was made in error, you can appeal this decision by submitting a support request through your Profile > Help Request section. Please include the Report ID #{$report->id} in your appeal.",
+                        'message' => "Your response to the survey '{$surveyTitle}' has been reported for: {$reasonText}.\n\nReport ID: #{$report->id}\n\nThis has affected your trust score by {$trustScoreDeduction} points.{$pointsMessage} If you believe this report was made in error, you can appeal this decision by submitting a support request through your Profile > Help Request section. Please include the Report ID #{$report->id} in your appeal.",
                         'related_url' => '/profile',
                         'read_at' => null
                     ]);
                 }
-
-               
             });
             
             // Success - update UI state
@@ -154,14 +197,62 @@ class ViewReportResponseModal extends Component
             $this->details = '';
             
         } catch (\Exception $e) {
-           
-            
             $this->showConfirmation = false;
             $this->message = "We encountered an error while processing your report: " . $e->getMessage();
             
             // Show error message in UI
             $this->dispatch('show-error', ['message' => $this->message]);
         }
+    }
+    
+    /**
+     * Calculate trust score deduction based on user's report history
+     * 
+     * @param int $userId
+     * @return float Negative value representing the deduction amount
+     */
+    private function calculateTrustScoreDeduction($userId)
+    {
+        // Base deduction amount
+        $baseDeduction = -5.0;
+        
+        // Get total number of responses by this user
+        $totalResponses = Response::where('user_id', $userId)->count();
+        if ($totalResponses === 0) {
+            return $baseDeduction; // Default to base deduction if no responses
+        }
+        
+        // Get number of valid reports against this user (exclude dismissed/appealed reports)
+        $reportedResponses = Report::where('respondent_id', $userId)
+            ->where('status', '!=', 'dismissed')
+            ->count();
+        
+        // Calculate percentage of reported responses
+        $reportPercentage = ($reportedResponses / $totalResponses) * 100;
+        
+        // Determine modifier based on the percentage
+        $modifier = 1.0; // Default modifier (5-20%)
+        
+        if ($reportPercentage < 5) {
+            $modifier = 0.5; // Less than 5% - reduced deduction
+        } elseif ($reportPercentage > 10) {
+            $modifier = 1.5; // More than 10% - increased deduction
+        }
+        
+        // Apply modifier to the base deduction
+        $finalDeduction = $baseDeduction * $modifier;
+        
+        Log::info('Trust score deduction calculated', [
+            'user_id' => $userId,
+            'total_responses' => $totalResponses,
+            'valid_reported_responses' => $reportedResponses,
+            'report_percentage' => $reportPercentage,
+            'modifier' => $modifier,
+            'base_deduction' => $baseDeduction,
+            'final_deduction' => $finalDeduction
+        ]);
+        
+        return round($finalDeduction, 2); // Round to 2 decimal places
     }
     
     public function cancelConfirmation()

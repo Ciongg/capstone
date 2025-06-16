@@ -32,15 +32,33 @@ class FormBuilder extends Component
         'settingsOperationCompleted' => 'handleSettingsOperationCompleted', // New listener
     ];
 
-    public function mount(Survey $survey)
+   public function mount(Survey $survey)
     {
         $this->survey = $survey;
         $this->hasResponses = $survey->responses()->exists(); // Set hasResponses
+        
+        // Check if survey has responses and update status if needed
+        $this->checkAndUpdateSurveyStatus();
+        
         $this->loadPages();
         $this->surveyTitle = $survey->title; // Make sure it's initialized
         $this->activePageId = null;
         $this->selectedQuestionId = null;
-    } 
+    }
+    
+    /**
+     * Check if survey has responses and update status to 'ongoing' if needed
+     */
+    protected function checkAndUpdateSurveyStatus()
+    {
+        // Only change status if the survey has responses and is in draft or published state
+        if ($this->hasResponses && in_array($this->survey->status, ['pending', 'published'])) {
+            $previousStatus = $this->survey->status;
+            $this->survey->status = 'ongoing';
+            $this->survey->save();
+            
+        }
+    }
 
     public function loadPages()
     {

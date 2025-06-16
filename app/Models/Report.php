@@ -24,7 +24,10 @@ class Report extends Model
         'reason',
         'details',
         'status',
-
+        'trust_score_deduction',
+        'deduction_reversed',
+        'points_deducted',
+        'points_restored'
     ];
 
     // Status constants
@@ -50,18 +53,27 @@ class Report extends Model
     }
 
 
+    /**
+     * Mark the report as dismissed (appeal successful)
+     */
     public function markAsDismissed()
     {
-        $this->update(['status' => self::STATUS_DISMISSED]);
+        $this->status = 'dismissed';
+        $this->save();
+        
+        return $this;
     }
 
+    /**
+     * Mark the report as confirmed (appeal rejected)
+     */
     public function markAsConfirmed()
     {
-        $this->update(['status' => self::STATUS_CONFIRMED]);
+        $this->status = 'confirmed';
+        $this->save();
+        
+        return $this;
     }
-
-
-
 
     /**
      * Get the survey associated with the report.
