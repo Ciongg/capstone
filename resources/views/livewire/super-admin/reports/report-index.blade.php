@@ -105,7 +105,7 @@
                                     <td class="py-3 px-6">
                                         <button 
                                             x-data
-                                            @click="
+                                            x-on:click="
                                                 $wire.set('selectedReportId', null).then(() => {
                                                     $wire.set('selectedReportId', {{ $report->id }});
                                                     $nextTick(() => $dispatch('open-modal', { name: 'view-report-modal' }));

@@ -8,6 +8,7 @@ use App\Models\TagCategory;
 use App\Models\Tag;
 use App\Models\InstitutionTagCategory;
 use App\Models\InstitutionTag;
+use App\Services\TrustScoreService;
 use Illuminate\Support\Facades\Auth;
 
 class ViewAbout extends Component
@@ -17,10 +18,32 @@ class ViewAbout extends Component
     public $selectedInstitutionTags = [];
     public $tagCategories;
     public $institutionTagCategories = [];
+    
+    // Trust score deduction info
+    public $falseReportPenalty = 0;
+    public $reportedResponseDeduction = 0;
+    public $falseReportCount = 0;
+    public $totalReportCount = 0;
+    public $reportedResponseCount = 0;
+    public $validResponseCount = 0;
+    public $falseReportThresholdMet = false;
+    public $reportedResponseThresholdMet = false;
+    public $falseReportPercentage = 0;
+    public $reportedResponsePercentage = 0;
+    
+    private TrustScoreService $trustScoreService;
+
+    public function boot(TrustScoreService $trustScoreService)
+    {
+        $this->trustScoreService = $trustScoreService;
+    }
 
     public function mount()
     {
         $this->user = Auth::user();
+        
+        // Calculate potential trust score deductions using service
+        $this->calculateTrustScoreDeductions();
         
         // Load regular tag categories and tags
         $this->tagCategories = TagCategory::with('tags')->get();
@@ -62,6 +85,28 @@ class ViewAbout extends Component
         }
     }
 
+    /**
+     * Calculate all trust score deductions for the current user
+     */
+    private function calculateTrustScoreDeductions()
+    {
+        // Get false report calculations
+        $falseReportCalc = $this->trustScoreService->calculateFalseReportPenalty($this->user->id);
+        $this->falseReportCount = $falseReportCalc['dismissed_reports'];
+        $this->totalReportCount = $falseReportCalc['total_reports'];
+        $this->falseReportPercentage = $falseReportCalc['percentage'];
+        $this->falseReportThresholdMet = $falseReportCalc['threshold_met'];
+        $this->falseReportPenalty = abs($falseReportCalc['penalty_amount']);
+        
+        // Get reported response calculations
+        $reportedResponseCalc = $this->trustScoreService->calculateReportedResponseDeduction($this->user->id);
+        $this->reportedResponseCount = $reportedResponseCalc['valid_reports'];
+        $this->validResponseCount = $reportedResponseCalc['total_responses'];
+        $this->reportedResponsePercentage = $reportedResponseCalc['percentage'];
+        $this->reportedResponseThresholdMet = $reportedResponseCalc['threshold_met'];
+        $this->reportedResponseDeduction = abs($reportedResponseCalc['penalty_amount']);
+    }
+
     public function saveTags()
     {
         // Process regular tags
@@ -101,6 +146,17 @@ class ViewAbout extends Component
 
     public function render()
     {
-        return view('livewire.profile.view-about');
+        return view('livewire.profile.view-about', [
+            'falseReportPenalty' => $this->falseReportPenalty,
+            'reportedResponseDeduction' => $this->reportedResponseDeduction,
+            'falseReportCount' => $this->falseReportCount,
+            'totalReportCount' => $this->totalReportCount,
+            'reportedResponseCount' => $this->reportedResponseCount,
+            'validResponseCount' => $this->validResponseCount,
+            'falseReportThresholdMet' => $this->falseReportThresholdMet,
+            'reportedResponseThresholdMet' => $this->reportedResponseThresholdMet,
+            'falseReportPercentage' => $this->falseReportPercentage,
+            'reportedResponsePercentage' => $this->reportedResponsePercentage
+        ]);
     }
 }

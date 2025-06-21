@@ -18,9 +18,9 @@
             <div class="flex justify-center md:justify-start mt-6">
                 <!-- Profile Pictures of Reviewers - Now First -->
                 <div class="flex -space-x-3 mb-2 mr-3">
-                    <img src="{{ asset('storage/images/person1.jpg') }}" alt="Reviewer 1" class="w-8 h-8 rounded-full border-2 border-white object-cover">
-                    <img src="{{ asset('storage/images/person2.jfif') }}" alt="Reviewer 2" class="w-8 h-8 rounded-full border-2 border-white object-cover">
-                    <img src="{{ asset('storage/images/person4.jpg') }}" alt="Reviewer 3" class="w-8 h-8 rounded-full border-2 border-white object-cover">
+                    <img src="{{ asset('images/landing/person1.jpg') }}" alt="Reviewer 1" class="w-8 h-8 rounded-full border-2 border-white object-cover">
+                    <img src="{{ asset('images/landing/person2.jfif') }}" alt="Reviewer 2" class="w-8 h-8 rounded-full border-2 border-white object-cover">
+                    <img src="{{ asset('images/landing/person4.jpg') }}" alt="Reviewer 3" class="w-8 h-8 rounded-full border-2 border-white object-cover">
                 </div>
                 
                 <!-- Stars in a single row -->
@@ -39,13 +39,13 @@
         <div class="md:w-1/2">
             <!-- Small screens (under 768px): Single image -->
             <div class="md:hidden flex justify-center">
-                <img src="{{ asset('storage/images/feed-full.png') }}" alt="Landing Image 1" class="w-3/4 rounded-lg shadow-xl">
+                <img src="{{ asset('images/landing/feed-full.png') }}" alt="Landing Image 1" class="w-3/4 rounded-lg shadow-xl">
             </div>
             
             <!-- Larger screens (768px+): Overlapping images -->
             <div class="hidden md:block relative flex justify-center md:justify-center items-center h-64 md:h-auto px-4">
-                <img src="{{ asset('storage/images/feed-full.png') }}" alt="Landing Image 1" class="absolute w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[20px] translate-y-[-20px]">
-                <img src="{{ asset('storage/images/rewards.png') }}" alt="Landing Image 2" class="relative w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[120px] translate-y-[90px]">
+                <img src="{{ asset('images/landing/feed-full.png') }}" alt="Landing Image 1" class="absolute w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[20px] translate-y-[-20px]">
+                <img src="{{ asset('images/landing/rewards.png') }}" alt="Landing Image 2" class="relative w-3/4 lg:w-2/3 rounded-lg shadow-xl transform translate-x-[120px] translate-y-[90px]">
             </div>
         </div>
     </div>

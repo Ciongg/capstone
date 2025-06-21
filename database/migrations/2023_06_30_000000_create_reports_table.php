@@ -25,6 +25,7 @@ return new class extends Migration
             $table->boolean('deduction_reversed')->default(false)->comment('Whether the deduction was reversed through appeal');
             $table->decimal('points_deducted', 8, 2)->nullable()->comment('Amount of points deducted from respondent');
             $table->boolean('points_restored')->default(false)->comment('Whether points have been restored');
+             $table->decimal('reporter_trust_score_deduction', 8, 2)->nullable();
             $table->timestamps();
             
             // Add indexes for faster queries

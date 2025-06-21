@@ -23,11 +23,11 @@ class TestResponseSeeder extends Seeder
         $responseCount = 50;
         
         // Get available surveys with IDs 1-10
-        $surveyIds = Survey::where('id', '<=', 10)->pluck('id')->toArray();
+        $surveyIds = Survey::where('id', '<=', 5)->pluck('id')->toArray();
         
         // If we don't have enough surveys, create dummy survey IDs
         if (empty($surveyIds)) {
-            $surveyIds = range(1, 10);
+            $surveyIds = range(1, 5);
         }
         
         // Create responses

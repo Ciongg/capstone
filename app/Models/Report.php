@@ -26,6 +26,7 @@ class Report extends Model
         'status',
         'trust_score_deduction',
         'deduction_reversed',
+        'reporter_trust_score_deduction',
         'points_deducted',
         'points_restored'
     ];

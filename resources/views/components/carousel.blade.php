@@ -44,7 +44,7 @@
             
             <!-- Feed Image -->
             <div class="w-full px-4 flex items-center justify-center">
-                <img src="{{ asset('storage/images/feed-carousel.png') }}" alt="Feed" 
+                <img src="{{ asset('images/landing/feed-carousel.png') }}" alt="Feed" 
                      class="w-full max-h-[280px] object-contain rounded-lg shadow-xl">
             </div>
         </div>
@@ -65,7 +65,7 @@
             
             <!-- Rewards Image -->
             <div class="w-full px-4 flex items-center justify-center">
-                <img src="{{ asset('storage/images/rewards-carousel.png') }}" alt="Rewards" 
+                <img src="{{ asset('images/landing/rewards-carousel.png') }}" alt="Rewards" 
                      class="w-full max-h-[280px] object-contain rounded-lg shadow-xl">
             </div>
         </div>
@@ -86,7 +86,7 @@
             
             <!-- Targeted Image -->
             <div class="w-full px-4 flex items-center justify-center">
-                <img src="{{ asset('storage/images/targeted-carousel.png') }}" alt="Targeted Surveys" 
+                <img src="{{ asset('images/landing/targeted-carousel.png') }}" alt="Targeted Surveys" 
                      class="w-full max-h-[280px] object-contain rounded-lg shadow-xl">
             </div>
         </div>
@@ -107,7 +107,7 @@
             
             <!-- Form Builder Image -->
             <div class="w-full px-4 flex items-center justify-center">
-                <img src="{{ asset('storage/images/form-builder-carousel.png') }}" alt="Form Builder" 
+                <img src="{{ asset('images/landing/form-builder-carousel.png') }}" alt="Form Builder" 
                      class="w-full max-h-[280px] object-contain rounded-lg shadow-xl">
             </div>
         </div>

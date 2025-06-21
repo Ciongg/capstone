@@ -8,9 +8,10 @@ use App\Models\Survey;
 use App\Models\Report;
 use App\Models\User;
 use App\Models\InboxMessage;
+use App\Models\Response; // Import Response model
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-
+use App\Services\TrustScoreService; 
 class SupportRequestViewModal extends Component
 {
     public $requestId;
@@ -19,11 +20,18 @@ class SupportRequestViewModal extends Component
     public $status;
     public $relatedItem = null;
     public $relatedItemTitle = null;
+    private TrustScoreService $trustScoreService;
 
     protected $rules = [
         'adminNotes' => 'nullable|string',
         'status' => 'required|in:pending,in_progress,resolved,rejected',
     ];
+
+
+    public function boot(TrustScoreService $trustScoreService)
+    {
+        $this->trustScoreService = $trustScoreService;
+    }
 
     public function mount($requestId)
     {
@@ -51,7 +59,7 @@ class SupportRequestViewModal extends Component
         }
     }
 
-    public function updateRequest()
+    public function updateRequest(TrustScoreService $trustScoreService)
     {
         $this->validate();
         
@@ -74,6 +82,7 @@ class SupportRequestViewModal extends Component
         if ($this->supportRequest->request_type === 'report_appeal' && $this->supportRequest->related_id) {
             $report = Report::find($this->supportRequest->related_id);
             
+            
             if ($report) {
                 try {
                     DB::transaction(function() use ($report, $wasResolved, $wasRejected) {
@@ -81,13 +90,36 @@ class SupportRequestViewModal extends Component
                             // Support request resolved = report dismissed and trust score deduction reversed
                             $report->markAsDismissed();
                             
-                            // Only proceed if deduction hasn't been reversed already
-                            if (!$report->deduction_reversed && $report->trust_score_deduction && $report->respondent_id) {
-                                // Reverse deduction for the falsely reported user
+                            // Also update the associated response to mark it as not reported anymore
+                            if ($report->response_id) {
+                                $response = Response::find($report->response_id);
+                                if ($response) {
+                                    $response->reported = false;
+                                    $response->save();
+                                    
+                                    Log::info('Reset reported status for response', [
+                                        'report_id' => $report->id,
+                                        'response_id' => $response->id
+                                    ]);
+                                }
+                            }
+                            
+                            // Handle the respondent (user who was falsely reported)
+                            if (!$report->deduction_reversed && $report->respondent_id) {
                                 $respondent = User::find($report->respondent_id);
                                 if ($respondent) {
-                                    $deductionAmount = abs($report->trust_score_deduction); // Convert to positive for addition
-                                    $respondent->trust_score += $deductionAmount;
+                                    // Only restore trust score if there was a deduction
+                                    if ($report->trust_score_deduction) {
+                                        $deductionAmount = abs($report->trust_score_deduction); // Convert to positive for addition
+                                        $respondent->trust_score += $deductionAmount;
+                                        
+                                        Log::info('Reversed trust score deduction for respondent', [
+                                            'report_id' => $report->id,
+                                            'respondent_id' => $respondent->id,
+                                            'restored_amount' => $deductionAmount,
+                                            'new_trust_score' => $respondent->trust_score
+                                        ]);
+                                    }
                                     
                                     // Restore points if they were deducted
                                     if ($report->points_deducted > 0 && !$report->points_restored) {
@@ -108,50 +140,67 @@ class SupportRequestViewModal extends Component
                                         InboxMessage::create([
                                             'recipient_id' => $respondent->id,
                                             'subject' => 'Points Restored After Successful Appeal',
-                                            'message' => "Your appeal for Report #{$report->id} has been approved.{$pointsMessage}\n\nYour trust score has also been restored by {$deductionAmount} points.",
+                                            'message' => "Your appeal for Report #{$report->id} has been approved.{$pointsMessage}\n\n" . 
+                                                ($report->trust_score_deduction ? "Your trust score has also been restored by {$deductionAmount} points." : "No trust score adjustment was needed."),
                                             'read_at' => null
                                         ]);
                                     }
                                     
                                     $respondent->save();
+                                }
+                            }
+                            
+                            // Handle the reporter (user who made the false report) - ALWAYS process this
+                            if ($report->reporter_id) {
+                                $reporter = User::find($report->reporter_id);
+                                if ($reporter) {
+
+
+
+                                    // Calculate penalty based on reporter's false report history
+                                    $calcFalseReport = $this->trustScoreService->calculateFalseReportPenalty($report->reporter_id);
+                                    $penaltyAmount = $calcFalseReport['penalty_amount']; // Get the actual penalty amount
+                                    // Apply penalty if applicable (could be 0)
+                                    if ($penaltyAmount < 0) {
+                                        $reporter->trust_score = max(0, $reporter->trust_score + $penaltyAmount);
+                                    }
+                                    $reporter->save();
                                     
-                                    Log::info('Reversed trust score deduction for respondent', [
+                                    // Always record the penalty amount in the report (even if 0)
+                                    $report->reporter_trust_score_deduction = $penaltyAmount;
+                                    
+                                    Log::info('Processed false report for reporter', [
                                         'report_id' => $report->id,
-                                        'respondent_id' => $respondent->id,
-                                        'restored_amount' => $deductionAmount,
-                                        'new_trust_score' => $respondent->trust_score
+                                        'reporter_id' => $reporter->id,
+                                        'penalty_amount' => $penaltyAmount,
+                                        'penalty_applied' => ($penaltyAmount < 0),
+                                        'new_trust_score' => $reporter->trust_score
+                                    ]);
+                                    
+                                    // Get count of dismissed reports for this reporter
+                                    $dismissedReportsCount = Report::where('reporter_id', $reporter->id)
+                                        ->where('status', 'dismissed')
+                                        ->count();
+                                    
+                                    // ALWAYS notify the false reporter with detailed message
+                                    InboxMessage::create([
+                                        'recipient_id' => $reporter->id,
+                                        'subject' => 'Report Reviewed and Dismissed',
+                                        'message' => "Your report (ID #{$report->id}) has been reviewed and determined to be invalid. 
+
+You now have {$dismissedReportsCount} false " . ($dismissedReportsCount == 1 ? "report" : "reports") . " on your account.
+
+When a user exceeds 2 false reports, they will receive trust score penalties for each additional false report. As this is your " . $this->trustScoreService->getOrdinal($dismissedReportsCount) . " false report, " . ($penaltyAmount < 0 ? "a trust score penalty of " . abs($penaltyAmount) . " points has been applied to your account." : "no penalty has been applied yet.") . "
+
+Please ensure all reports are legitimate to avoid future penalties. Multiple false reports may result in increasing penalties and account restrictions.",
+                                        'read_at' => null
                                     ]);
                                 }
-                                
-                                // Apply penalty to the reporter (false report)
-                                if ($report->reporter_id) {
-                                    $reporter = User::find($report->reporter_id);
-                                    if ($reporter) {
-                                        // Apply same deduction to reporter that was originally applied to respondent
-                                        $reporter->trust_score = max(0, $reporter->trust_score + $report->trust_score_deduction);
-                                        $reporter->save();
-                                        
-                                        Log::info('Applied false report penalty to reporter', [
-                                            'report_id' => $report->id,
-                                            'reporter_id' => $reporter->id,
-                                            'penalty_amount' => $report->trust_score_deduction,
-                                            'new_trust_score' => $reporter->trust_score
-                                        ]);
-                                        
-                                        // Notify the false reporter
-                                        InboxMessage::create([
-                                            'recipient_id' => $reporter->id,
-                                            'subject' => 'False Report Penalty Applied',
-                                            'message' => "Your report (ID #{$report->id}) has been reviewed and determined to be invalid. As a result, a trust score penalty of {$report->trust_score_deduction} points has been applied to your account. Please ensure all reports are legitimate to avoid future penalties.",
-                                            'read_at' => null
-                                        ]);
-                                    }
-                                }
-                                
-                                // Mark deduction as reversed in the report
-                                $report->deduction_reversed = true;
-                                $report->save();
                             }
+                            
+                            // ALWAYS mark the report as processed
+                            $report->deduction_reversed = true;
+                            $report->save();
                         } elseif ($wasRejected) {
                             // Support request rejected = report confirmed
                             $report->markAsConfirmed();
@@ -220,8 +269,12 @@ class SupportRequestViewModal extends Component
         ]);
     }
 
+    
+ 
+    
     public function render()
     {
         return view('livewire.super-admin.support-requests.modal.support-request-view-modal');
     }
 }
+
