@@ -219,9 +219,24 @@ class SurveySeeder extends Seeder
         if (!File::isDirectory(storage_path('app/public/surveys'))) {
             File::makeDirectory(storage_path('app/public/surveys'), 0755, true);
         }
-        
-        // Get available image files from storage
-        $imageFiles = Storage::disk('public')->files('surveys');
+
+        // Copy images from public/images/surveys to storage/app/public/surveys if not already present
+        $sourceImages = public_path('images/surveys');
+        $destImages = storage_path('app/public/surveys');
+        $imageFiles = [];
+
+        if (File::isDirectory($sourceImages)) {
+            $files = File::files($sourceImages);
+            foreach ($files as $file) {
+                $destPath = $destImages . '/' . $file->getFilename();
+                if (!File::exists($destPath)) {
+                    File::copy($file->getPathname(), $destPath);
+                }
+                $imageFiles[] = 'surveys/' . $file->getFilename(); // Path relative to 'public' disk
+            }
+        } else {
+            $this->command->warn('No images found in public/images/surveys. No images will be assigned to surveys.');
+        }
         
         // Create 10 random surveys
         for ($i = 0; $i < 5; $i++) {
