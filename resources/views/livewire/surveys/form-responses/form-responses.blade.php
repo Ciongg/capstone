@@ -43,6 +43,17 @@
             </div>
         </div>
 
+        {{-- Add after the summary containers --}}
+        <div class="flex justify-end mb-4">
+            <button
+                wire:click="clearAllAISummaries"
+                class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 font-semibold"
+                onclick="return confirm('Are you sure you want to clear all AI summaries for this survey?')"
+            >
+                Clear All AI Summaries
+            </button>
+        </div>
+
         @php
             $colors = ['#60a5fa', '#fbbf24', '#34d399', '#f87171', '#a78bfa', '#f472b6', '#facc15', '#38bdf8'];
             $questionCounter = 1; // Initialize question counter
@@ -60,14 +71,22 @@
                             {{-- Include the question title and "More Details" button --}}
                             @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question, 'questionCounter' => $questionCounter])
                             
+                            {{-- Store choice colors in a JSON object for consistent reference --}}
+                            @php
+                                $choiceColors = [];
+                                foreach($question->choices->sortBy('order') as $i => $choice) {
+                                    $choiceColors[$choice->id] = $colors[$i % count($colors)];
+                                }
+                            @endphp
+                            
                             {{-- Pie Chart and Legend Container --}}
                             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                                 {{-- Legend --}}
                                 <div class="md:w-1/2">
                                     <ul>
-                                        @foreach($question->choices->sortBy('order') as $i => $choice)
+                                        @foreach($question->choices->sortBy('order') as $choice)
                                             <li class="flex items-center mb-2">
-                                                <span class="inline-block w-4 h-4 rounded-full mr-2 flex-shrink-0" style="background: {{ $colors[$i % count($colors)] }}"></span>
+                                                <span class="inline-block w-4 h-4 rounded-full mr-2 flex-shrink-0" style="background: {{ $choiceColors[$choice->id] }}"></span>
                                                 <span class="break-words text-justify">{{ $choice->choice_text }}</span>
                                             </li>
                                         @endforeach
@@ -94,6 +113,8 @@
                                 //  pulls choices and answers from the question laravel collection into JS using JSON
                                 const choices = @json($question->choices->sortBy('order')->values());
                                 const answers = @json($question->answers);
+                                // Get the same color mapping used for the legend
+                                const choiceColors = @json($choiceColors);
                                 
                                 // Initialize counts for each choice for pie chart data to be all zeroes
                                 let data = Array(choices.length).fill(0);
@@ -120,17 +141,12 @@
                                         console.error('Error parsing answer:', answer.answer, e);
                                     }
                                 });
+                                
                                 //maps through the choices to use as labels grabbing their text choice_text
                                 let labels = choices.map(choice => choice.choice_text);
 
-                                // cycle loop through colors array to assign colors to each slice of pie chart
-                                // Use modulo to cycle through colors based on index
-                                // 0 % 3 = 0, 1 % 3 = 1, 2 % 3 = 2, 3 % 3 = 0, etc.
-                                let backgroundColor = [
-                                    @foreach($question->choices->sortBy('order') as $i => $choice)
-                                        "{{ $colors[$i % count($colors)] }}",
-                                    @endforeach
-                                ];
+                                // Use the exact same colors as the legend by mapping choice IDs to their colors
+                                let backgroundColor = choices.map(choice => choiceColors[choice.id]);
                                 
                                 chartInstance{{ $question->id }} = new Chart(ctx, {
                                     type: 'pie',

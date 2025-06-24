@@ -27,6 +27,7 @@ return new class extends Migration
             $table->boolean('required')->default(false);
             $table->json('likert_columns')->nullable();
             $table->json('likert_rows')->nullable();
+            $table->text('ai_summary')->nullable();
             $table->timestamps();
         });
     }

@@ -22,6 +22,7 @@ class SurveyQuestion extends Model
         // 'limit_answers', // Removed
         'limit_condition', // Added
         'max_answers', // Keep
+        'ai_summary',
     ];
 
     protected $casts = [

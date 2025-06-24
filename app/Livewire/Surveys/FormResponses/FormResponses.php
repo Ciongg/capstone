@@ -14,6 +14,17 @@ class FormResponses extends Component
         $this->survey = Survey::with('pages.questions.answers')->findOrFail($surveyId);
     }
 
+    public function clearAllAISummaries()
+    {
+        foreach ($this->survey->pages as $page) {
+            foreach ($page->questions as $question) {
+                $question->ai_summary = null;
+                $question->save();
+            }
+        }
+
+    }
+
     public function render()
     {
         return view('livewire.surveys.form-responses.form-responses', [

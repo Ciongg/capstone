@@ -172,18 +172,74 @@
             <span class="text-base sm:text-lg font-semibold">Summarize With AI</span>
         </div>
         
-        <div class="space-y-4">
-            <textarea 
-                class="w-full h-20 sm:h-24 p-3 border border-gray-300 rounded-lg focus:ring focus:ring-blue-200 focus:border-blue-500 text-sm sm:text-base" 
-                placeholder="Generates a summary of the responses gathered..."
-            ></textarea>
+        <div class="space-y-4" x-data="{ 
+            copied: false,
+            copyText() {
+                const textarea = this.$refs.summaryTextarea;
+                if (!textarea.value) return;
+                
+                navigator.clipboard.writeText(textarea.value)
+                    .then(() => {
+                        this.copied = true;
+                        setTimeout(() => this.copied = false, 2000);
+                    })
+                    .catch(() => {
+                        // Fallback method that requires selection
+                        textarea.select();
+                        document.execCommand('copy');
+                        // Clear selection immediately after
+                        window.getSelection().removeAllRanges();
+                        this.copied = true;
+                        setTimeout(() => this.copied = false, 2000);
+                    });
+            }
+        }">
+            <div class="relative">
+                <textarea 
+                    class="w-full h-48 sm:h-64 p-3 border border-gray-300 rounded-lg focus:ring focus:ring-blue-200 focus:border-blue-500 text-sm sm:text-base bg-gray-50" 
+                    placeholder="Click 'Generate' to create an AI summary of the responses..."
+                    wire:model.defer="aiSummary"
+                    id="aiSummaryTextarea-{{ $question->id }}"
+                    x-ref="summaryTextarea"
+                    readonly
+                >{{ $aiSummary }}</textarea>
+                
+                {{-- Copy to clipboard button with Alpine.js --}}
+                <button 
+                    class="absolute top-2 right-2 p-2 bg-gray-200 hover:bg-gray-300 rounded-md transition-colors duration-200 text-gray-700"
+                    @click="copyText"
+                    title="Copy to clipboard"
+                    type="button"
+                >
+                    <template x-if="!copied">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+                        </svg>
+                    </template>
+                    <template x-if="copied">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-green-500">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                    </template>
+                </button>
+            </div>
             
             <div class="flex justify-end">
                 <button 
-                    class="px-4 sm:px-5 py-2 font-medium rounded-md text-white text-sm sm:text-base" 
+                    class="px-4 sm:px-5 py-2 font-medium rounded-md text-white text-sm sm:text-base flex items-center justify-center"
                     style="background-color: #03b8ff;"
+                    wire:click="generateSummary"
+                    wire:loading.class="opacity-75"
+                    wire:loading.attr="disabled"
                 >
-                    Generate
+                    <span wire:loading.remove wire:target="generateSummary">Generate</span>
+                    <span wire:loading wire:target="generateSummary">
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        Generating...
+                    </span>
                 </button>
             </div>
         </div>
