@@ -39,7 +39,10 @@ class SurveySettingsModal extends Component
     public $topics;
 
     // Add the listener property
-    protected $listeners = ['surveyTitleUpdated' => 'updateTitleFromEvent'];
+    protected $listeners = [
+        'surveyTitleUpdated' => 'updateTitleFromEvent',
+        'refresh-survey-data' => 'refreshSurveyData'
+    ];
 
     public function mount($survey)
     {
@@ -50,11 +53,11 @@ class SurveySettingsModal extends Component
         $this->target_respondents = $survey->target_respondents;
         $this->start_date = $survey->start_date ? Carbon::parse($survey->start_date)->format('Y-m-d\TH:i') : null;
         $this->end_date = $survey->end_date ? Carbon::parse($survey->end_date)->format('Y-m-d\TH:i') : null;
-        $this->isInstitutionOnly = (bool)$survey->is_institution_only; // Explicitly cast to boolean
+        $this->isInstitutionOnly = (bool)$survey->is_institution_only;
         $this->survey_topic_id = $survey->survey_topic_id;
         $this->topics = SurveyTopic::all();
 
-        // Set points based on survey type
+        // Set points based on survey type AND boost count
         $this->points_allocated = $this->getPointsForType($this->type);
 
         $this->tagCategories = TagCategory::with('tags')->get();
@@ -87,10 +90,22 @@ class SurveySettingsModal extends Component
         $this->title = $title;
     }
 
-    // Get points based on survey type
+    // Add this new method to refresh survey data
+    public function refreshSurveyData()
+    {
+        // Refresh the survey from database to get updated boost_count
+        $this->survey = $this->survey->fresh();
+        
+        // Recalculate points_allocated with updated boost_count
+        $this->points_allocated = $this->getPointsForType($this->type);
+    }
+
+    // Get points based on survey type AND boost count
     public function getPointsForType($type)
     {
-        return $type === 'advanced' ? 20 : 10;
+        $basePoints = $type === 'advanced' ? 20 : 10;
+        $boostPoints = ($this->survey->boost_count ?? 0) * 5;
+        return $basePoints + $boostPoints;
     }
 
     // When type is updated, update points automatically
@@ -101,8 +116,6 @@ class SurveySettingsModal extends Component
 
     public function saveSurveyInformation()
     {
-
-
         if ($this->survey) {
             // Handle banner image saving here
             if ($this->banner_image) {
@@ -120,8 +133,9 @@ class SurveySettingsModal extends Component
             $this->survey->target_respondents = $this->target_respondents;
             $this->survey->start_date = $this->start_date;
             $this->survey->end_date = $this->end_date;
+            // Use the calculated points instead of just base points
             $this->survey->points_allocated = $this->getPointsForType($this->type);
-            $this->survey->is_institution_only = $this->isInstitutionOnly; // Save the institution-only setting
+            $this->survey->is_institution_only = $this->isInstitutionOnly;
             $this->survey->survey_topic_id = $this->survey_topic_id;
             $this->survey->save();
 

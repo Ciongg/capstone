@@ -75,7 +75,11 @@
                         </svg>
                     </div>
                 </div>
-                <button type="button" class="px-4 py-2 bg-[#03b8ff] hover:bg-[#0295d1] text-white font-medium rounded transition duration-200 text-sm w-full sm:w-auto">
+                <button 
+                    type="button" 
+                    x-on:click="$dispatch('open-modal', {name : 'survey-boost-modal-{{ $survey->id }}'})"
+                    class="px-4 py-2 bg-[#03b8ff] hover:bg-[#0295d1] text-white font-medium rounded transition duration-200 text-sm w-full sm:w-auto"
+                >
                     Allocate Points
                 </button>
             </div>
@@ -304,4 +308,9 @@
             });
         });
     </script>
+
+    <!-- Survey Boost Modal -->
+    <x-modal name="survey-boost-modal-{{ $survey->id }}" title="Survey Boost Allocation">
+        @livewire('surveys.form-builder.modal.survey-boost-modal', ['survey' => $survey], key('survey-boost-modal-' . $survey->id))
+    </x-modal>
 </div>

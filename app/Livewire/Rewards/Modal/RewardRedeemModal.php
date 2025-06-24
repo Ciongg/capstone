@@ -98,6 +98,27 @@ class RewardRedeemModal extends Component
                         }
                     }
                     
+                    // Handle Survey Boost system reward
+                    if ($this->reward->name === 'Survey Boost') {
+                        // Create or update user's survey boost rewards
+                        $existingBoost = \App\Models\UserSystemReward::where('user_id', $user->id)
+                            ->where('type', 'survey_boost')
+                            ->where('status', 'unused')
+                            ->first();
+                            
+                        if ($existingBoost) {
+                            $existingBoost->quantity += $quantityToRedeem;
+                            $existingBoost->save();
+                        } else {
+                            \App\Models\UserSystemReward::create([
+                                'user_id' => $user->id,
+                                'type' => 'survey_boost',
+                                'quantity' => $quantityToRedeem,
+                                'status' => 'unused'
+                            ]);
+                        }
+                    }
+                    
                     // Decrement system reward quantity if limited
                     if ($this->reward->quantity != -1) {
                         $this->reward->quantity -= $quantityToRedeem;

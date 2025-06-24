@@ -26,6 +26,7 @@ return new class extends Migration
             $table->text('lock_reason')->nullable();
             $table->unsignedInteger('target_respondents')->nullable()->default(30);
             $table->unsignedInteger('points_allocated')->nullable();
+            $table->unsignedInteger('boost_count')->default(0); // Track number of boosts applied
             $table->string('image_path')->nullable();
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date')->nullable();

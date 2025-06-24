@@ -626,12 +626,7 @@ class AnswerSurvey extends Component
     }
     
 
-    /**
-     * Translate a question to the specified language
-     * 
-     * @param mixed $params Contains questionId and language 
-     * @return void
-     */
+  
     public function translateQuestion($questionId = null, $language = null)
     {
         // Handle both array format and individual parameters
