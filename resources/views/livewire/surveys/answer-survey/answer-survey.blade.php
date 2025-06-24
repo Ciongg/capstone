@@ -1,8 +1,6 @@
 <div class="bg-gray-100 min-h-screen py-8">
     <div class="max-w-7xl mx-auto relative">
      
-        
-
         {{-- Back Button (Only in Preview Mode) --}}
         @include('livewire.surveys.answer-survey.partials.preview-button')
 
@@ -16,29 +14,97 @@
                     {{-- Page Header - pass isPreview flag --}}
                     @include('livewire.surveys.answer-survey.partials.page-header', ['page' => $page, 'isPreview' => $isPreview ?? false])
                         
-                        
                         @foreach($page->questions->sortBy('order') as $question)
-                            <div class="mb-8">
-                                <label class="block font-medium mb-2 text-lg">
-                                    {{ $questionNumber++ }}. {{ $question->question_text }}
-                                    @if($question->required)
-                                        <span class="text-red-500">*</span>
-                                    @endif
-                                </label>
-                                
-                                {{-- Include the appropriate question type partial --}}
-                                @include('livewire.surveys.answer-survey.partials.question-types.' . $question->question_type, ['question' => $question])
-                                
-
-                            </div>
-                        @endforeach
+    <div class="mb-8">
+        <div class="flex items-center gap-1 mb-2">
+            {{-- Question number with loading indicator using wire:loading --}}
+            <div class="flex items-center">
+                {{-- Loading indicator that shows only when this specific question is being translated --}}
+                <div wire:loading wire:target="translateQuestion({{ $question->id }}, 'tl')" class="flex items-center justify-center mr-2">
+                    <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </div>
+                <div wire:loading wire:target="translateQuestion({{ $question->id }}, 'zh-CN')" class="flex items-center justify-center mr-2">
+                    <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </div>
+                <div wire:loading wire:target="translateQuestion({{ $question->id }}, 'zh-TW')" class="flex items-center justify-center mr-2">
+                    <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </div>
+                <div wire:loading wire:target="translateQuestion({{ $question->id }}, 'ar')" class="flex items-center justify-center mr-2">
+                    <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </div>
+                <div wire:loading wire:target="translateQuestion({{ $question->id }}, 'ja')" class="flex items-center justify-center mr-2">
+                    <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </div>
+                <div wire:loading wire:target="translateQuestion({{ $question->id }}, 'vi')" class="flex items-center justify-center mr-2">
+                    <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </div>
+                <div wire:loading wire:target="translateQuestion({{ $question->id }}, 'th')" class="flex items-center justify-center mr-2">
+                    <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </div>
+                <div wire:loading wire:target="translateQuestion({{ $question->id }}, 'ms')" class="flex items-center justify-center mr-2">
+                    <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </div>
+                <div wire:loading wire:target="translateQuestion({{ $question->id }}, 'en')" class="flex items-center justify-center mr-2">
+                    <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </div>
+                
+                <label class="block font-medium text-lg">
+                    {{ $questionNumber++ }}. 
+                    <span class="{{ isset($translatedQuestions[$question->id]) ? 'text-blue-600' : '' }}">
+                        {{ $translatedQuestions[$question->id] ?? $question->question_text }}
+                    </span>
+                    @if($question->required)
+                        <span class="text-red-500">*</span>
+                    @endif
+                </label>
+            </div>
+            
+            {{-- Translation dropdown component --}}
+            <div class="inline-block relative" wire:key="translate-{{ $question->id }}">
+                <x-question-translate-dropdown :question-id="$question->id" :translating-questions="$translatingQuestions" :is-loading="$isLoading" />
+            </div>
+        </div>
+        
+        {{-- Include the appropriate question type partial --}}
+        @include('livewire.surveys.answer-survey.partials.question-types.' . $question->question_type, [
+            'question' => $question,
+            'translatedChoices' => $translatedChoices
+        ])
+    </div>
+@endforeach
 
                         {{-- Navigation buttons --}}
                         @include('livewire.surveys.answer-survey.partials.navigation-buttons', [
-                            //$loop is based on the foreach loop, it provides information about the current iteration
-                            'isFirstPage' => $loop->first, //sends true if this is the first page
-                            'isLastPage' => $loop->last,  //sends true if this is the last page
-                            'currentPage' => $pageIndex //sends the current page index
+                            'isFirstPage' => $loop->first,
+                            'isLastPage' => $loop->last,
+                            'currentPage' => $pageIndex
                         ])
                     </div>
                 @endforeach
@@ -46,6 +112,7 @@
         </form>
     </div>
 </div>
+
 
 @push('scripts')
 <script>
@@ -92,3 +159,4 @@
     });
 </script>
 @endpush
+

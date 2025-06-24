@@ -72,7 +72,10 @@
                     wire:change="$set('answers.{{ $question->id }}', {{ $choice->id }})"
                 @endif
             >
-            <label for="radio-{{ $question->id }}-{{ $choice->id }}" class="cursor-pointer flex-grow text-gray-700">{{ $choice->choice_text }}</label>
+            <label for="radio-{{ $question->id }}-{{ $choice->id }}" 
+                  class="cursor-pointer flex-grow text-gray-700 {{ isset($translatedChoices[$question->id][$choice->id]) ? 'text-blue-600' : '' }}">
+                {{ isset($translatedChoices[$question->id][$choice->id]) ? $translatedChoices[$question->id][$choice->id] : $choice->choice_text }}
+            </label>
 
             @if($choice->is_other)
                 <input

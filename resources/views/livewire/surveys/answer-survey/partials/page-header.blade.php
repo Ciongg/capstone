@@ -5,10 +5,6 @@
         @endif
     </div>
     
-    {{-- Translate button positioned to the right of the title, but only if not in preview mode --}}
-    @if(!isset($isPreview) || !$isPreview)
-        <x-translate-button />
-    @endif
 </div>
 
 @if($page->subtitle)

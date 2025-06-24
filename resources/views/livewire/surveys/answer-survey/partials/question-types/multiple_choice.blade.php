@@ -92,17 +92,17 @@
                         @change="$nextTick(() => countSelected())"
                     >
                     
-                    {{-- Choice label --}}
+                    {{-- Choice label with translation support --}}
                     <label for="checkbox-{{ $question->id }}-{{ $choice->id }}" 
-                          class="cursor-pointer flex-grow text-gray-700">
-                        {{ $choice->choice_text }}
+                          class="cursor-pointer flex-grow text-gray-700 {{ isset($translatedChoices[$question->id][$choice->id]) ? 'text-blue-600' : '' }}">
+                        {{ isset($translatedChoices[$question->id][$choice->id]) ? $translatedChoices[$question->id][$choice->id] : $choice->choice_text }}
                     </label>
 
                     {{-- "Other" text input if applicable --}}
                     @if($choice->is_other)
                         <input
                             type="text"
-                            wire:model="otherTexts.{{ $question->id }}"
+                            wire:model.live="otherTexts.{{ $question->id }}"
                             placeholder="Please specify"
                             class="ml-2 border border-gray-300 rounded px-2 py-1 flex-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
                             :class="{'bg-gray-100': !isOtherSelected({{ $choice->id }})}"

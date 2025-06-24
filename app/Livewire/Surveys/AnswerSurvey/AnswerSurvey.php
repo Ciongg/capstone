@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\SurveyQuestion;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class AnswerSurvey extends Component
 {
@@ -50,6 +51,35 @@ class AnswerSurvey extends Component
      * @var bool
      */
     public $isPreview = false;
+
+    /**
+     * Store translated question text
+     * @var array
+     */
+    public $translatedQuestions = [];
+    
+    /**
+     * Store translated choice text
+     * @var array
+     */
+    public $translatedChoices = [];
+    
+    /**
+     * Track questions that are currently being translated
+     * @var array
+     */
+    public $translatingQuestions = [];
+
+    /**
+     * Global loading state for translation
+     * @var bool
+     */
+    public $isLoading = false;
+
+    /**
+     * Listener for component events
+     */
+    protected $listeners = ['translateQuestion' => 'translateQuestion', '$refresh'];
 
     /**
      * Initialize the component with a survey
@@ -597,6 +627,187 @@ class AnswerSurvey extends Component
     
 
     /**
+     * Translate a question to the specified language
+     * 
+     * @param mixed $params Contains questionId and language 
+     * @return void
+     */
+    public function translateQuestion($questionId = null, $language = null)
+    {
+        // Handle both array format and individual parameters
+        if (is_array($questionId)) {
+            // If first param is an array, extract values from it
+            $params = $questionId;
+            $questionId = $params['questionId'] ?? null;
+            $language = $params['language'] ?? null;
+        }
+        
+        // Validate required parameters
+        if (!$questionId || !$language) {
+            return;
+        }
+        
+        // Set loading state for this question
+        $this->translatingQuestions[$questionId] = true;
+        $this->dispatch('$refresh'); // Immediately refresh UI to show loading
+
+        // Set global loading state to true
+        $this->isLoading = true;
+        $this->dispatch('$refresh');
+
+        // Find the question in the survey
+        $question = null;
+        foreach ($this->survey->pages as $page) {
+            $foundQuestion = $page->questions->firstWhere('id', $questionId);
+            if ($foundQuestion) {
+                $question = $foundQuestion;
+                break;
+            }
+        }
+        
+        if (!$question) {
+            $this->translatingQuestions[$questionId] = false;
+            $this->isLoading = false;
+            $this->dispatch('$refresh');
+            return;
+        }
+
+        // If translating to English, just use the original text
+        if ($language === 'en') {
+            $this->translatedQuestions[$questionId] = null;
+            $this->translatedChoices[$questionId] = null;
+            $this->translatingQuestions[$questionId] = false;
+            $this->isLoading = false;
+            $this->dispatch('$refresh');
+            return;
+        }
+        
+        $originalText = $question->question_text;
+        $hasChoices = false;
+        $textsToTranslate = ["Q: {$originalText}"];
+        $choiceMapping = [];
+        
+        // Include choices for translation if question has them
+        if (in_array($question->question_type, ['multiple_choice', 'radio']) && $question->choices->count() > 0) {
+            $hasChoices = true;
+            foreach ($question->choices as $index => $choice) {
+                $choiceKey = "C{$index}";
+                $textsToTranslate[] = "{$choiceKey}: {$choice->choice_text}";
+                $choiceMapping[$choiceKey] = $choice->id;
+            }
+        }
+        
+        $textToTranslate = implode("\n", $textsToTranslate);
+        
+        // Get language name for prompt
+        $languageNames = [
+            'tl' => 'Filipino',
+            'zh-CN' => 'Simplified Chinese',
+            'zh-TW' => 'Traditional Chinese',
+            'ar' => 'Arabic',
+            'ja' => 'Japanese',
+            'vi' => 'Vietnamese',
+            'th' => 'Thai',
+            'ms' => 'Malay',
+        ];
+        
+        $targetLanguage = $languageNames[$language] ?? $language;
+        
+        try {
+            // Call Gemini API for translation with improved prompt
+            $apiKey = env('GEMINI_API_KEY');
+            
+            // Enhanced prompt for better accuracy
+            $enhancedPrompt = "Translate this survey content from English to {$targetLanguage}. Follow these rules:\n\n"
+                . "FORMAT: Keep exact prefixes (Q:, C0:, C1:, etc.) - one item per line\n"
+                . "STYLE: Use formal, clear language for survey respondents\n"
+                . "ACCURACY: Double-check by mentally back-translating to English\n"
+                . "OUTPUT: Only translated text with prefixes - no explanations\n\n"
+                . "TEXT:\n{$textToTranslate}\n\n"
+                . "Provide verified {$targetLanguage} translation:";
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->timeout(30)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
+                'contents' => [
+                    [
+                        'parts' => [
+                            [
+                                'text' => $enhancedPrompt
+                            ]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'maxOutputTokens' => 300,
+                    'temperature' => 0.1, // Even lower for more consistent results
+                    'topP' => 0.9,
+                    'topK' => 40,
+                ],
+                'safetySettings' => [
+                    [
+                        'category' => 'HARM_CATEGORY_HATE_SPEECH',
+                        'threshold' => 'BLOCK_MEDIUM_AND_ABOVE'
+                    ],
+                    [
+                        'category' => 'HARM_CATEGORY_DANGEROUS_CONTENT',
+                        'threshold' => 'BLOCK_MEDIUM_AND_ABOVE'
+                    ]
+                ]
+            ]);
+            
+            if ($response->successful() && isset($response['candidates'][0]['content']['parts'][0]['text'])) {
+                $translatedText = $response['candidates'][0]['content']['parts'][0]['text'];
+                
+                // Process the translated text to extract question and choices
+                $translatedLines = explode("\n", $translatedText);
+                
+                // Initialize translated data structures
+                $translatedQuestion = null;
+                $translatedChoicesData = [];
+                
+                // Process each line
+                foreach ($translatedLines as $line) {
+                    if (!is_string($line)) continue; // <-- Fix: Only process strings
+                    $line = trim($line);
+                    
+                    // Extract question
+                    if (strpos($line, 'Q:') === 0) {
+                        $translatedQuestion = trim(substr($line, 2));
+                    } 
+                    // Extract choices
+                    elseif ($hasChoices && preg_match('/^C(\d+):\s*(.+)$/', $line, $matches)) {
+                        $choiceIndex = "C" . $matches[1];
+                        $choiceText = trim($matches[2]);
+                        
+                        if (isset($choiceMapping[$choiceIndex])) {
+                            $choiceId = $choiceMapping[$choiceIndex];
+                            $translatedChoicesData[$choiceId] = $choiceText;
+                        }
+                    }
+                }
+                
+                // Store translated data
+                $this->translatedQuestions[$questionId] = $translatedQuestion ?? $originalText . ' (Translation incomplete)';
+                
+                if ($hasChoices) {
+                    $this->translatedChoices[$questionId] = $translatedChoicesData;
+                }
+            } else {
+                Log::error('Translation failed: ' . $response->body());
+                $this->translatedQuestions[$questionId] = $originalText . ' (Translation failed)';
+            }
+        } catch (\Exception $e) {
+            Log::error('Translation error: ' . $e->getMessage());
+            $this->translatedQuestions[$questionId] = $originalText . ' (Translation error)';
+        }
+
+        $this->translatingQuestions[$questionId] = false;
+        $this->isLoading = false;
+        $this->dispatch('$refresh');
+    }
+    
+    /**
      * Render the component
      */
     public function render()
@@ -604,6 +815,10 @@ class AnswerSurvey extends Component
         return view('livewire.surveys.answer-survey.answer-survey', [
             'survey' => $this->survey,
             'answers' => $this->answers,
+            'translatedQuestions' => $this->translatedQuestions,
+            'translatedChoices' => $this->translatedChoices,
+            'isLoading' => $this->isLoading,
         ]);
     }
 }
+
