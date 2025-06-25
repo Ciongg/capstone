@@ -1,6 +1,11 @@
 @php
     $likertColumns = is_array($question->likert_columns) ? $question->likert_columns : (json_decode($question->likert_columns, true) ?: []);
     $likertRows = is_array($question->likert_rows) ? $question->likert_rows : (json_decode($question->likert_rows, true) ?: []);
+    
+    // Get translated data if available
+    $translatedData = $translatedChoices[$question->id] ?? [];
+    $translatedRows = $translatedData['rows'] ?? [];
+    $translatedColumns = $translatedData['columns'] ?? [];
 @endphp
 
 <div class="mt-2"
@@ -26,7 +31,9 @@
                 <tr>
                     <th class="bg-white w-52"></th>
                     @foreach($likertColumns as $colIndex => $column)
-                        <th class="bg-white px-4 py-2 text-base font-medium">{{ $column }}</th>
+                        <th class="bg-white px-4 py-2 text-base font-medium {{ isset($translatedColumns[$colIndex]) ? 'text-blue-600' : '' }}">
+                            {{ $translatedColumns[$colIndex] ?? $column }}
+                        </th>
                     @endforeach
                 </tr>
             </thead>
@@ -34,7 +41,9 @@
                 @foreach($likertRows as $rowIndex => $row)
                     @php $rowBg = $loop->even ? 'bg-gray-50' : 'bg-white'; @endphp
                     <tr class="{{ $rowBg }}">
-                        <td class="px-4 py-2 text-left text-base">{{ $row }}</td>
+                        <td class="px-4 py-2 text-left text-base {{ isset($translatedRows[$rowIndex]) ? 'text-blue-600' : '' }}" style="white-space: pre-line;">
+                            {{ $translatedRows[$rowIndex] ?? $row }}
+                        </td>
                         @foreach($likertColumns as $colIndex => $column)
                             <td class="px-4 py-2">
                                 <input
@@ -45,6 +54,7 @@
                                     value="{{ $colIndex }}"
                                     class="accent-blue-500"
                                     style="width: 1.5em; height: 1.5em;"
+                                    title="{{ $translatedRows[$rowIndex] ?? $row }} - {{ $translatedColumns[$colIndex] ?? $column }}"
                                 >
                             </td>
                         @endforeach
@@ -66,20 +76,24 @@
     <div class="md:hidden space-y-6">
         @foreach($likertRows as $rowIndex => $row)
             <div class="bg-white shadow-sm rounded-lg p-4 mb-4">
-                <div class="font-medium text-base mb-3">{{ $row }}</div>
+                <div class="font-medium text-base mb-3 {{ isset($translatedRows[$rowIndex]) ? 'text-blue-600' : '' }}" style="white-space: pre-line;">
+                    {{ $translatedRows[$rowIndex] ?? $row }}
+                </div>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2" x-data="{ rowId: {{ $rowIndex }} }">
                     @foreach($likertColumns as $colIndex => $column)
                         <button 
                             type="button"
                             x-on:click="toggle(rowId, {{ $colIndex }})"
-                            class="w-full py-3 px-2 text-center rounded border transition-all text-sm flex items-center justify-center"
+                            class="w-full py-3 px-2 text-center rounded border transition-all text-sm flex items-center justify-center {{ isset($translatedColumns[$colIndex]) ? 'text-blue-600' : '' }}"
                             :class="selected[rowId] === {{ $colIndex }} 
                                 ? 'bg-blue-100 border-blue-500 text-blue-800 font-medium' 
                                 : 'border-gray-300 hover:bg-gray-50'"
                             style="min-height:45px; padding-left:0.75rem; padding-right:0.75rem; font-variation-settings: 'wght' 500;"
                         >
-                            <span class="break-words block w-full" style="hyphens: auto; word-break: break-word;">{{ $column }}</span>
+                            <span class="break-words block w-full" style="hyphens: auto; word-break: break-word;">
+                                {{ $translatedColumns[$colIndex] ?? $column }}
+                            </span>
                         </button>
                     @endforeach
                 </div>

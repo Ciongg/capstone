@@ -627,30 +627,114 @@ class AnswerSurvey extends Component
     
 
   
+  /**
+     * Translate question using DeepSeek API
+     * 
+     * @param string $textToTranslate
+     * @param string $targetLanguage
+     * @return string|null
+     */
+    protected function translateWithDeepSeek($textToTranslate, $targetLanguage)
+    {
+        $deepseekPrompt = "You are a professional translator. Translate ONLY from English to {$targetLanguage}.\n\n"
+            . "CRITICAL RULES:\n"
+            . "1. Use ONLY {$targetLanguage} characters and words\n"
+            . "2. NO mixing with other languages (Russian, English, etc.)\n"
+            . "3. NO transliteration - use native {$targetLanguage} script only\n"
+            . "4. Keep prefixes (Q:, C0:, etc.) exactly as shown\n"
+            . "5. One translation per line\n"
+            . "6. If uncertain, use simple {$targetLanguage} equivalent\n\n"
+            . "REJECT: Mixed language text like 'тьюторингサービス'\n"
+            . "ACCEPT: Pure {$targetLanguage} only\n\n"
+            . "TEXT TO TRANSLATE:\n{$textToTranslate}\n\n"
+            . "Provide PURE {$targetLanguage} translation (no mixed languages):";
+
+        $endpoint = rtrim(env('AZURE_DEEPSEEK_ENDPOINT'), '/');
+        $apiKey = env('AZURE_DEEPSEEK_KEY');
+        $modelName = "DeepSeek-R1-0528";
+        $apiVersion = "2024-05-01-preview";
+
+        $apiUrl = "{$endpoint}/openai/deployments/{$modelName}/chat/completions?api-version={$apiVersion}";
+
+        Log::info("Calling DeepSeek at: {$apiUrl}");
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'api-key' => $apiKey,
+        ])->timeout(30)->post($apiUrl, [
+            'messages' => [
+                ['role' => 'system', 'content' => 'You are a professional translator.'],
+                ['role' => 'user', 'content' => $deepseekPrompt]
+            ],
+            'max_tokens' => 2048,
+            'temperature' => 0.1
+        ]);
+
+        if ($response->successful() && isset($response['choices'][0]['message']['content'])) {
+            Log::info('DeepSeek translation successful.');
+            return $response['choices'][0]['message']['content'];
+        } else {
+            Log::error('DeepSeek translation failed: ' . $response->body());
+            return null;
+        }
+    }
+
+    /**
+     * Translate question using Gemini API
+     * 
+     * @param string $textToTranslate
+     * @param string $targetLanguage
+     * @return string|null
+     */
+    protected function translateWithGemini($textToTranslate, $targetLanguage)
+    {
+        $apiKey = env('GEMINI_API_KEY');
+        $geminiPrompt = "Translate this survey content from English to {$targetLanguage}. Follow these rules:\n\n"
+            . "FORMAT: Keep exact prefixes (Q:, C0:, C1:, etc.) - one item per line\n"
+            . "STYLE: Use formal, clear language for survey respondents\n"
+            . "ACCURACY: Double-check by mentally back-translating to English\n"
+            . "OUTPUT: Only translated text with prefixes - no explanations\n\n"
+            . "TEXT:\n{$textToTranslate}\n\n"
+            . "Provide verified {$targetLanguage} translation:";
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+        ])->timeout(30)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
+            'contents' => [
+                ['parts' => [['text' => $geminiPrompt]]]
+            ],
+            'generationConfig' => [
+                'maxOutputTokens' => 300,
+                'temperature' => 0.1,
+                'topP' => 0.9,
+                'topK' => 40,
+            ],
+        ]);
+
+        if ($response->successful()) {
+            Log::info('Gemini translation successful.');
+            return $response['candidates'][0]['content']['parts'][0]['text'] ?? null;
+        } else {
+            Log::error('Gemini translation failed: ' . $response->body());
+            return null;
+        }
+    }
+
     public function translateQuestion($questionId = null, $language = null)
     {
-        // Handle both array format and individual parameters
         if (is_array($questionId)) {
-            // If first param is an array, extract values from it
             $params = $questionId;
             $questionId = $params['questionId'] ?? null;
             $language = $params['language'] ?? null;
         }
-        
-        // Validate required parameters
-        if (!$questionId || !$language) {
-            return;
-        }
-        
-        // Set loading state for this question
-        $this->translatingQuestions[$questionId] = true;
-        $this->dispatch('$refresh'); // Immediately refresh UI to show loading
 
-        // Set global loading state to true
+        if (!$questionId || !$language) return;
+
+        $this->translatingQuestions[$questionId] = true;
         $this->isLoading = true;
         $this->dispatch('$refresh');
 
-        // Find the question in the survey
+        // Locate the question
         $question = null;
         foreach ($this->survey->pages as $page) {
             $foundQuestion = $page->questions->firstWhere('id', $questionId);
@@ -659,7 +743,7 @@ class AnswerSurvey extends Component
                 break;
             }
         }
-        
+
         if (!$question) {
             $this->translatingQuestions[$questionId] = false;
             $this->isLoading = false;
@@ -667,7 +751,6 @@ class AnswerSurvey extends Component
             return;
         }
 
-        // If translating to English, just use the original text
         if ($language === 'en') {
             $this->translatedQuestions[$questionId] = null;
             $this->translatedChoices[$questionId] = null;
@@ -676,13 +759,15 @@ class AnswerSurvey extends Component
             $this->dispatch('$refresh');
             return;
         }
-        
+
         $originalText = $question->question_text;
-        $hasChoices = false;
         $textsToTranslate = ["Q: {$originalText}"];
         $choiceMapping = [];
-        
-        // Include choices for translation if question has them
+        $likertMapping = [];
+        $hasChoices = false;
+        $hasLikert = false;
+
+        // Handle multiple choice and radio questions
         if (in_array($question->question_type, ['multiple_choice', 'radio']) && $question->choices->count() > 0) {
             $hasChoices = true;
             foreach ($question->choices as $index => $choice) {
@@ -691,10 +776,40 @@ class AnswerSurvey extends Component
                 $choiceMapping[$choiceKey] = $choice->id;
             }
         }
-        
+
+        // Handle Likert scale questions
+        if ($question->question_type === 'likert') {
+            $hasLikert = true;
+            
+            // Get Likert rows (statements)
+            $likertRows = $this->getLikertRows($question);
+            if (!empty($likertRows)) {
+                foreach ($likertRows as $rowIndex => $rowText) {
+                    $rowKey = "R{$rowIndex}";
+                    $textsToTranslate[] = "{$rowKey}: {$rowText}";
+                    $likertMapping['rows'][$rowKey] = $rowIndex;
+                }
+            }
+            
+            // Get Likert columns (scale options)
+            $likertColumns = [];
+            if (is_array($question->likert_columns)) {
+                $likertColumns = $question->likert_columns;
+            } else {
+                $likertColumns = json_decode($question->likert_columns, true) ?: [];
+            }
+            
+            if (!empty($likertColumns)) {
+                foreach ($likertColumns as $colIndex => $colText) {
+                    $colKey = "COL{$colIndex}";
+                    $textsToTranslate[] = "{$colKey}: {$colText}";
+                    $likertMapping['columns'][$colKey] = $colIndex;
+                }
+            }
+        }
+
         $textToTranslate = implode("\n", $textsToTranslate);
-        
-        // Get language name for prompt
+
         $languageNames = [
             'tl' => 'Filipino',
             'zh-CN' => 'Simplified Chinese',
@@ -705,96 +820,78 @@ class AnswerSurvey extends Component
             'th' => 'Thai',
             'ms' => 'Malay',
         ];
-        
         $targetLanguage = $languageNames[$language] ?? $language;
-        
-        try {
-            // Call Gemini API for translation with improved prompt
-            $apiKey = env('GEMINI_API_KEY');
-            
-            // Enhanced prompt for better accuracy
-            $enhancedPrompt = "Translate this survey content from English to {$targetLanguage}. Follow these rules:\n\n"
-                . "FORMAT: Keep exact prefixes (Q:, C0:, C1:, etc.) - one item per line\n"
-                . "STYLE: Use formal, clear language for survey respondents\n"
-                . "ACCURACY: Double-check by mentally back-translating to English\n"
-                . "OUTPUT: Only translated text with prefixes - no explanations\n\n"
-                . "TEXT:\n{$textToTranslate}\n\n"
-                . "Provide verified {$targetLanguage} translation:";
 
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->timeout(30)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
-                'contents' => [
-                    [
-                        'parts' => [
-                            [
-                                'text' => $enhancedPrompt
-                            ]
-                        ]
-                    ]
-                ],
-                'generationConfig' => [
-                    'maxOutputTokens' => 300,
-                    'temperature' => 0.1, // Even lower for more consistent results
-                    'topP' => 0.9,
-                    'topK' => 40,
-                ],
-                'safetySettings' => [
-                    [
-                        'category' => 'HARM_CATEGORY_HATE_SPEECH',
-                        'threshold' => 'BLOCK_MEDIUM_AND_ABOVE'
-                    ],
-                    [
-                        'category' => 'HARM_CATEGORY_DANGEROUS_CONTENT',
-                        'threshold' => 'BLOCK_MEDIUM_AND_ABOVE'
-                    ]
-                ]
-            ]);
-            
-            if ($response->successful() && isset($response['candidates'][0]['content']['parts'][0]['text'])) {
-                $translatedText = $response['candidates'][0]['content']['parts'][0]['text'];
-                
-                // Process the translated text to extract question and choices
-                $translatedLines = explode("\n", $translatedText);
-                
-                // Initialize translated data structures
-                $translatedQuestion = null;
-                $translatedChoicesData = [];
-                
-                // Process each line
-                foreach ($translatedLines as $line) {
-                    if (!is_string($line)) continue; // <-- Fix: Only process strings
-                    $line = trim($line);
-                    
-                    // Extract question
-                    if (strpos($line, 'Q:') === 0) {
-                        $translatedQuestion = trim(substr($line, 2));
-                    } 
-                    // Extract choices
-                    elseif ($hasChoices && preg_match('/^C(\d+):\s*(.+)$/', $line, $matches)) {
-                        $choiceIndex = "C" . $matches[1];
-                        $choiceText = trim($matches[2]);
-                        
-                        if (isset($choiceMapping[$choiceIndex])) {
-                            $choiceId = $choiceMapping[$choiceIndex];
-                            $translatedChoicesData[$choiceId] = $choiceText;
-                        }
+        $translatedText = null;
+
+        // Try DeepSeek first
+        try {
+            $translatedText = $this->translateWithDeepSeek($textToTranslate, $targetLanguage);
+        } catch (\Exception $e) {
+            Log::error('DeepSeek exception: ' . $e->getMessage());
+        }
+
+        // Fallback to Gemini if DeepSeek failed
+        if (!$translatedText) {
+            try {
+                $translatedText = $this->translateWithGemini($textToTranslate, $targetLanguage);
+            } catch (\Exception $e) {
+                Log::error('Gemini exception: ' . $e->getMessage());
+            }
+        }
+
+        // Process output
+        $translatedQuestion = null;
+        $translatedChoicesData = [];
+        $translatedLikertData = [];
+
+        if ($translatedText) {
+            foreach (explode("\n", $translatedText) as $line) {
+                if (!is_string($line)) continue;
+                $line = trim($line);
+
+                if (str_starts_with($line, 'Q:')) {
+                    $translatedQuestion = trim(substr($line, 2));
+                } 
+                // Handle multiple choice/radio choices
+                elseif ($hasChoices && preg_match('/^C(\d+):\s*(.+)$/', $line, $matches)) {
+                    $choiceKey = "C" . $matches[1];
+                    $choiceText = trim($matches[2]);
+                    if (isset($choiceMapping[$choiceKey])) {
+                        $choiceId = $choiceMapping[$choiceKey];
+                        $translatedChoicesData[$choiceId] = $choiceText;
                     }
                 }
-                
-                // Store translated data
-                $this->translatedQuestions[$questionId] = $translatedQuestion ?? $originalText . ' (Translation incomplete)';
-                
-                if ($hasChoices) {
-                    $this->translatedChoices[$questionId] = $translatedChoicesData;
+                // Handle Likert rows
+                elseif ($hasLikert && preg_match('/^R(\d+):\s*(.+)$/', $line, $matches)) {
+                    $rowKey = "R" . $matches[1];
+                    $rowText = trim($matches[2]);
+                    if (isset($likertMapping['rows'][$rowKey])) {
+                        $rowIndex = $likertMapping['rows'][$rowKey];
+                        $translatedLikertData['rows'][$rowIndex] = $rowText;
+                    }
                 }
-            } else {
-                Log::error('Translation failed: ' . $response->body());
-                $this->translatedQuestions[$questionId] = $originalText . ' (Translation failed)';
+                // Handle Likert columns
+                elseif ($hasLikert && preg_match('/^COL(\d+):\s*(.+)$/', $line, $matches)) {
+                    $colKey = "COL" . $matches[1];
+                    $colText = trim($matches[2]);
+                    if (isset($likertMapping['columns'][$colKey])) {
+                        $colIndex = $likertMapping['columns'][$colKey];
+                        $translatedLikertData['columns'][$colIndex] = $colText;
+                    }
+                }
             }
-        } catch (\Exception $e) {
-            Log::error('Translation error: ' . $e->getMessage());
-            $this->translatedQuestions[$questionId] = $originalText . ' (Translation error)';
+        }
+
+        // Store results
+        $this->translatedQuestions[$questionId] = $translatedQuestion ?? $originalText . ' (Translation incomplete)';
+        
+        if ($hasChoices) {
+            $this->translatedChoices[$questionId] = $translatedChoicesData;
+        }
+        
+        if ($hasLikert) {
+            $this->translatedChoices[$questionId] = $translatedLikertData;
         }
 
         $this->translatingQuestions[$questionId] = false;
@@ -816,4 +913,3 @@ class AnswerSurvey extends Component
         ]);
     }
 }
-

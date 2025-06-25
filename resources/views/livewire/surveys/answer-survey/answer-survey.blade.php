@@ -36,18 +36,24 @@
                                         </div>
                                     </div>
                                     
-                                    <!-- Translation dropdown component -->
-                                    <div class="inline-block flex-shrink-0 ml-2 mt-[28px]" wire:key="translate-{{ $question->id }}">
-                                        @if(isset($translatingQuestions[$question->id]) && $translatingQuestions[$question->id])
-                                            <div class="p-1 bg-blue-50 rounded-full">
+                                    <!-- Translation dropdown component with question-specific loading states -->
+                                    <div class="inline-block flex-shrink-0 ml-2 mt-[28px] relative" wire:key="translate-{{ $question->id }}">
+                                        
+                                        <!-- Loading spinner: Shows only for this specific question -->
+                                        <div wire:loading wire:target="translateQuestion({{ $question->id }})">
+                                            <div class="p-1">
                                                 <svg class="animate-spin w-4 h-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                                                 </svg>
                                             </div>
-                                        @else
+                                        </div>
+                                    
+                                        <!-- Dropdown component: Hidden when loading -->
+                                        <div wire:loading.remove wire:target="translateQuestion({{ $question->id }})">
                                             <x-question-translate-dropdown :question-id="$question->id" />
-                                        @endif
+                                        </div>
+
                                     </div>
                                 </div>
                                 
@@ -114,3 +120,4 @@
     });
 </script>
 @endpush
+
