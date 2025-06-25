@@ -8,12 +8,15 @@ use App\Models\SurveyPage;
 use App\Models\SurveyQuestion;
 use App\Models\SurveyChoice;
 use Illuminate\Support\Facades\Auth;
+use App\Livewire\Surveys\FormBuilder\Templates\ISO25010Template;
+use App\Livewire\Surveys\FormBuilder\Templates\AcademicResearchTemplate;
 
 class SurveyTypeModal extends Component
 {
-    public $step = 'type'; // 'type' or 'method'
+    public $step = 'type'; // 'type', 'method', or 'template'
     public $surveyType; // 'basic' or 'advanced'
     public $creationMethod; // 'scratch' or 'template'
+    public $selectedTemplate; // 'iso25010' or 'academic'
 
     public function selectSurveyType(string $type)
     {
@@ -24,42 +27,91 @@ class SurveyTypeModal extends Component
     public function selectCreationMethod(string $method)
     {
         $this->creationMethod = $method;
+        
+        // If template is selected, go to template selection step
+        if ($method === 'template') {
+            $this->step = 'template';
+        }
+    }
+
+    public function selectTemplate(string $template)
+    {
+        $this->selectedTemplate = $template;
     }
 
     public function goBack()
     {
         $this->step = 'type';
-        $this->creationMethod = null; // Reset creation method when going back
+        $this->creationMethod = null;
+        $this->selectedTemplate = null;
+    }
+
+    public function goBackToMethod()
+    {
+        $this->step = 'method';
+        $this->selectedTemplate = null;
     }
 
     public function proceedToCreateSurvey()
     {
         if (!$this->surveyType || !$this->creationMethod) {
-            // Optionally, add some error handling/feedback here
+            return;
+        }
+
+        // For template method, ensure a template is selected
+        if ($this->creationMethod === 'template' && !$this->selectedTemplate) {
             return;
         }
 
         // Determine points based on survey type
         $pointsAllocated = ($this->surveyType === 'advanced') ? 20 : 10;
 
+        // Set appropriate title based on template selection
+        $surveyTitle = 'Untitled Survey';
+        if ($this->creationMethod === 'template') {
+            $surveyTitle = match($this->selectedTemplate) {
+                'iso25010' => 'ISO 25010 Software Quality Evaluation',
+                'academic' => 'Academic Research Survey',
+                default => 'Untitled Survey'
+            };
+        }
+
         $surveyModel = Survey::create([
             'user_id' => Auth::id(),
-            'title' => 'Untitled Survey',
+            'title' => $surveyTitle,
             'description' => null,
             'status' => 'pending',
             'type' => $this->surveyType,
             'points_allocated' => $pointsAllocated,
         ]);
 
+        if ($this->creationMethod === 'template') {
+            // Use template classes to create structured surveys
+            match($this->selectedTemplate) {
+                'iso25010' => ISO25010Template::createTemplate($surveyModel),
+                'academic' => AcademicResearchTemplate::createTemplate($surveyModel),
+                default => $this->createDefaultSurvey($surveyModel)
+            };
+        } else {
+            // Create default structure for "from scratch" option
+            $this->createDefaultSurvey($surveyModel);
+        }
+
+        $this->dispatch('close-modal');
+        return redirect()->route('surveys.create', ['survey' => $surveyModel->id]);
+    }
+
+    private function createDefaultSurvey(Survey $survey)
+    {
         // Add a default page to the survey
         $page = SurveyPage::create([
-            'survey_id' => $surveyModel->id,
+            'survey_id' => $survey->id,
             'page_number' => 1,
         ]);
 
         // Add a default question to the page
         $question = SurveyQuestion::create([
-            'survey_id' => $surveyModel->id,
+            'survey_id' => $survey->id,
             'survey_page_id' => $page->id,
             'question_text' => 'Enter Question Title',
             'question_type' => 'multiple_choice',
@@ -79,14 +131,6 @@ class SurveyTypeModal extends Component
             'choice_text' => 'Option 2',
             'order' => 2,
         ]);
-        
-        // TODO: If $this->creationMethod is 'template', load template structure here
-
-        $this->dispatch('close-modal'); // Dispatch event for Alpine modal to close
-
-        // It's important that the redirect happens after the dispatch if the modal needs to visually close first.
-        // However, Livewire redirects are full page reloads, so the modal will be gone anyway.
-        return redirect()->route('surveys.create', ['survey' => $surveyModel->id]);
     }
 
     public function render()

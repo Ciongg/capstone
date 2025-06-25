@@ -120,5 +120,74 @@
                 </button>
             </div>
         </div>
+    @elseif ($step === 'template')
+        <div class="w-full max-w-lg">
+            <h2 class="text-2xl font-bold text-center mb-4">Choose a Template</h2>
+            <p class="mb-6 text-gray-600 text-center">Select from our pre-designed templates to get started quickly with your {{ $surveyType }} survey.</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                <!-- ISO 25010 Template Card -->
+                <button 
+                    wire:click="selectTemplate('iso25010')" 
+                    class="flex flex-col min-h-[260px] rounded-lg overflow-hidden shadow-xl hover:shadow-lg hover:scale-105 hover:ring-2 hover:ring-offset-2 hover:ring-[#03b8ff] transition-all
+                           {{ $selectedTemplate === 'iso25010' ? 'ring-2 ring-offset-2 ring-[#03b8ff]' : '' }}"
+                >
+                    <div class="bg-gray-100 p-4 flex items-center justify-center">
+                        <div class="bg-gray-200 w-full px-4 py-5 rounded-3xl flex items-center justify-center h-28 shadow-sm">
+                            <svg class="w-12 h-12 text-[#03b8ff]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 2v3m0 14v3m10-10h-3M5 12H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="bg-gray-100 p-4 text-center flex-grow">
+                        <h3 class="font-medium text-base mb-2">ISO 25010 Template</h3>
+                        <p class="text-xs text-gray-600">Software quality evaluation based on ISO 25010 standard metrics</p>
+                    </div>
+                </button>
+                
+                <!-- Academic Research Template Card -->
+                <button 
+                    wire:click="selectTemplate('academic')" 
+                    class="flex flex-col min-h-[260px] rounded-lg overflow-hidden shadow-xl hover:shadow-lg hover:scale-105 hover:ring-2 hover:ring-offset-2 hover:ring-[#03b8ff] transition-all
+                           {{ $selectedTemplate === 'academic' ? 'ring-2 ring-offset-2 ring-[#03b8ff]' : '' }}"
+                >
+                    <div class="bg-gray-100 p-4 flex items-center justify-center">
+                        <div class="bg-gray-200 w-full px-4 py-5 rounded-3xl flex items-center justify-center h-28 shadow-sm">
+                            <svg class="w-12 h-12 text-[#03b8ff]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 14l9-5-9-5-9 5 9 5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 14l9-5-9-5-9 5 9 5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="bg-gray-100 p-4 text-center flex-grow">
+                        <h3 class="font-medium text-base mb-2">Academic Research Template</h3>
+                        <p class="text-xs text-gray-600">Structured survey template for academic research studies</p>
+                    </div>
+                </button>
+            </div>
+            
+            <!-- Navigation buttons -->
+            <div class="flex justify-between items-center mt-6">
+                <button 
+                    wire:click="goBackToMethod" 
+                    class="flex items-center text-gray-600 hover:text-[#03b8ff]"
+                >
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back
+                </button>
+                
+                <button 
+                    wire:click="proceedToCreateSurvey"
+                    class="px-6 py-2 bg-[#03b8ff] text-white font-medium rounded-lg hover:bg-[#0296d1] disabled:opacity-50 disabled:cursor-not-allowed"
+                    @if(!$selectedTemplate) disabled @endif
+                >
+                    Continue
+                </button>
+            </div>
+        </div>
     @endif
 </div>
