@@ -30,7 +30,7 @@ return new class extends Migration
             $table->enum('type', ['respondent', 'researcher', 'institution_admin', 'super_admin'])->default('respondent');
             $table->foreignId('institution_id')->nullable()->constrained('institutions')->onDelete('set null'); // Add this line
             $table->string('password');
-            $table->string('profile_photo_path', 2048)->nullable()->after('email'); 
+            $table->string('profile_photo_path', 2048)->nullable(); 
             $table->rememberToken();
             $table->timestamps();
         });

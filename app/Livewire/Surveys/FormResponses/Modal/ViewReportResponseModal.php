@@ -178,7 +178,8 @@ class ViewReportResponseModal extends Component
 
                 // Mark the response as reported
                 $this->response->update(['reported' => true]);
-
+                $this->response->save();
+                
                 // Send inbox notification to the reported user
                 if ($this->response->user_id) {
                     $reasonText = $this->reportReasons[$this->reason] ?? 'Unknown reason';

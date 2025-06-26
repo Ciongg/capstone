@@ -149,7 +149,7 @@
                     <div class="flex justify-between items-center mb-2">
                         <div>
                             <span class="text-gray-600">Reported responses:</span>
-                            <span class="font-medium">{{ $reportedResponseCount }}</span>
+                            <span class="font-medium">{{ $reportedResponseCount}}</span>
                             <span class="text-gray-400 mx-1">/</span>
                             <span class="text-gray-600">Valid responses:</span>
                             <span class="font-medium">{{ $validResponseCount }}</span>

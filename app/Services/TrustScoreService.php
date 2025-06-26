@@ -129,8 +129,8 @@ class TrustScoreService
             ]);
             
             // Get number of valid reports against this user (confirmed or unappealed)
-            $validReports =  $reportCount ?? Report::where('respondent_id', $userId)
-                ->whereIn('status', ['confirmed', 'unapppealed'])
+            $validReports = $reportCount ?? Report::where('respondent_id', $userId)
+                ->whereIn('status', ['confirmed', 'unappealed'])
                 ->count();
                 
             // Apply override if provided
@@ -138,10 +138,8 @@ class TrustScoreService
                 $validReports = $reportCount;
             }
             
-            // Get total number of valid (non-reported) responses by this user
-            $totalResponses = Response::where('user_id', $userId)
-                ->where('status', '!=', 'rejected')
-                ->count();
+            // Get total number of responses by this user (all responses, not just reported ones)
+            $totalResponses = Response::where('user_id', $userId)->count();
             
             // Calculate percentage
             $reportedPercentage = ($totalResponses > 0) ? ($validReports / $totalResponses) * 100 : 0;
@@ -153,6 +151,7 @@ class TrustScoreService
                 'percentage' => round($reportedPercentage, 1),
                 'threshold_met' => false,
                 'penalty_amount' => 0,
+                
             ];
             
             // Check threshold

@@ -2,8 +2,8 @@
     <div class="flex items-center justify-center mb-6">
         <div class="text-center">
             <div class="flex justify-center mb-3">
-                <div class="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-500 p-3 rounded-full">
-                    <img src="{{ asset('images/icons/rocket.svg') }}" alt="Rocket" class="w-8 h-8 text-white filter brightness-0 invert">
+                <div class="bg-gray-100 p-3 rounded-full">
+                    <img src="{{ asset('images/icons/rocket.svg') }}" alt="Rocket" class="w-8 h-8">
                 </div>
             </div>
             <h2 class="text-xl font-bold text-gray-900 mb-2">Survey Boost Allocation</h2>
@@ -15,8 +15,8 @@
     <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4 mb-6">
         <div class="flex items-center justify-between">
             <div class="flex items-center">
-                <div class="bg-gradient-to-r from-yellow-400 to-orange-400 p-2 rounded-full mr-3">
-                    <img src="{{ asset('images/icons/rocket.svg') }}" alt="Rocket" class="w-5 h-5 filter brightness-0 invert">
+                <div class="bg-gray-100 px-2 py-2 rounded-full mr-3">
+                    <img src="{{ asset('images/icons/rocket.svg') }}" alt="Rocket" class="w-4 h-4">
                 </div>
                 <div>
                     <span class="text-sm font-medium text-gray-700">Available Survey Boosts</span>
@@ -102,7 +102,7 @@
             </button>
             <button 
                 type="submit"
-                class="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-md hover:from-orange-600 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 via-orange-400 to-yellow-300 text-white font-medium rounded-md hover:from-red-700 hover:via-orange-500 hover:to-yellow-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 wire:loading.attr="disabled"
                 @if(($survey->boost_count ?? 0) >= 4 || $availableBoosts <= 0) disabled @endif
             >
