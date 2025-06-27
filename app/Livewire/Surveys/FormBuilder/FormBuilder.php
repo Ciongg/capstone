@@ -25,6 +25,21 @@ class FormBuilder extends Component
     public $ratingStars = [];
     public $likertColumns = [];
     public $likertRows = [];
+    
+    // Add loading states
+    public $loadingAddChoice = [];
+    public $loadingAddOther = [];
+    public $loadingDeleteChoice = [];
+    public $loadingAddLikertColumn = [];
+    public $loadingAddLikertRow = [];
+    public $loadingDeleteLikertColumn = [];
+    public $loadingDeleteLikertRow = [];
+    public $loadingMoveChoice = [];
+    public $loadingUpdateRating = [];
+    public $loadingDeletePage = [];
+    public $loadingDeleteQuestion = [];
+    public $loadingMoveQuestion = [];
+    public $loadingAddPage = false;
 
     // Add the listener property
     protected $listeners = [
@@ -144,10 +159,14 @@ class FormBuilder extends Component
 
     public function updateRatingStars($questionId)
     {
+        $this->loadingUpdateRating[$questionId] = true;
+        
         $question = SurveyQuestion::findOrFail($questionId);
         $question->stars = $this->ratingStars[$questionId] ?? 5;
         $question->save();
         $this->loadPages();
+        
+        $this->loadingUpdateRating[$questionId] = false;
     }
 
     public function updatePage($pageId, $field, $value)
@@ -334,34 +353,50 @@ class FormBuilder extends Component
 
     public function moveQuestionUp($questionId)
     {
+        $this->loadingMoveQuestion[$questionId] = true;
+        
         $question = SurveyQuestion::find($questionId);
         if ($question) {
             $this->moveItemOrder(SurveyQuestion::class, $questionId, 'up', ['survey_page_id' => $question->survey_page_id]);
         }
+        
+        $this->loadingMoveQuestion[$questionId] = false;
     }
 
     public function moveQuestionDown($questionId)
     {
+        $this->loadingMoveQuestion[$questionId] = true;
+        
         $question = SurveyQuestion::find($questionId);
         if ($question) {
             $this->moveItemOrder(SurveyQuestion::class, $questionId, 'down', ['survey_page_id' => $question->survey_page_id]);
         }
+        
+        $this->loadingMoveQuestion[$questionId] = false;
     }
 
     public function moveChoiceUp($choiceId)
     {
+        $this->loadingMoveChoice[$choiceId] = true;
+        
         $choice = SurveyChoice::find($choiceId);
         if ($choice) {
             $this->moveItemOrder(SurveyChoice::class, $choiceId, 'up', ['survey_question_id' => $choice->survey_question_id]);
         }
+        
+        $this->loadingMoveChoice[$choiceId] = false;
     }
 
     public function moveChoiceDown($choiceId)
     {
+        $this->loadingMoveChoice[$choiceId] = true;
+        
         $choice = SurveyChoice::find($choiceId);
         if ($choice) {
             $this->moveItemOrder(SurveyChoice::class, $choiceId, 'down', ['survey_question_id' => $choice->survey_question_id]);
         }
+        
+        $this->loadingMoveChoice[$choiceId] = false;
     }
 
     /**
@@ -442,6 +477,19 @@ class FormBuilder extends Component
 
     public function addItem($type, $parentId = null, $options = [])
     {
+        // Set loading state for choice-related operations
+        if ($type === 'choice' && $parentId) {
+            $this->loadingAddChoice[$parentId] = true;
+        } elseif ($type === 'otherOption' && $parentId) {
+            $this->loadingAddOther[$parentId] = true;
+        } elseif ($type === 'likertColumn' && $parentId) {
+            $this->loadingAddLikertColumn[$parentId] = true;
+        } elseif ($type === 'likertRow' && $parentId) {
+            $this->loadingAddLikertRow[$parentId] = true;
+        } elseif ($type === 'page') {
+            $this->loadingAddPage = true;
+        }
+
         switch($type) {
             case 'page':
                 // Get the highest order and increment it for the new page
@@ -455,11 +503,13 @@ class FormBuilder extends Component
                 ]);
                 
                 $this->dispatch('pageAdded', pageId: $newItem->id);
+                
+                // Clear loading state
+                $this->loadingAddPage = false;
                 break;
                 
             case 'question':
-                if (!$parentId) return; // Need a page ID
-                
+                if (!$parentId) return;
                 $page = SurveyPage::findOrFail($parentId);
                 $questionType = $options['question_type'] ?? 'multiple_choice';
                 $selectedQuestionId = $this->selectedQuestionId;
@@ -488,10 +538,8 @@ class FormBuilder extends Component
                 
                 // Handle type-specific initialization
                 $this->initializeQuestionType($newItem, $questionType);
-                
                 $this->selectedQuestionId = $newItem->id;
                 $this->activePageId = $page->id;
-                
                 $this->dispatch('questionAdded', questionId: $newItem->id, pageId: $page->id);
                 break;
                 
@@ -531,6 +579,9 @@ class FormBuilder extends Component
                     'is_other' => $options['is_other'] ?? false,
                 ]);
             }
+            
+            // Clear loading state
+            $this->loadingAddChoice[$parentId] = false;
             break;
 
             case 'otherOption':
@@ -554,9 +605,11 @@ class FormBuilder extends Component
                     'is_other' => true, // Mark as 'Other'
                 ]);
             }
+            
+            // Clear loading state
+            $this->loadingAddOther[$parentId] = false;
             break;
 
-                
             case 'likertColumn':
                 if (!$parentId) return; // Need a question ID
                 
@@ -570,6 +623,9 @@ class FormBuilder extends Component
                 
                 $question->likert_columns = json_encode($columns);
                 $question->save();
+                
+                // Clear loading state
+                $this->loadingAddLikertColumn[$parentId] = false;
                 
                 $newItem = $question;
                 break;
@@ -587,6 +643,9 @@ class FormBuilder extends Component
 
                     $question->likert_rows = json_encode($rows);
                     $question->save();
+
+                    // Clear loading state
+                    $this->loadingAddLikertRow[$parentId] = false;
 
                     $newItem = $question;
                 break;
@@ -636,7 +695,20 @@ class FormBuilder extends Component
 
     public function removeItem($type, $itemId)
     {
-    switch($type) {
+        // Set loading state for deletion operations
+        if ($type === 'choice') {
+            $this->loadingDeleteChoice[$itemId] = true;
+        } elseif ($type === 'likertColumn') {
+            $this->loadingDeleteLikertColumn[$itemId] = true;
+        } elseif ($type === 'likertRow') {
+            $this->loadingDeleteLikertRow[$itemId] = true;
+        } elseif ($type === 'page') {
+            $this->loadingDeletePage[$itemId] = true;
+        } elseif ($type === 'question') {
+            $this->loadingDeleteQuestion[$itemId] = true;
+        }
+
+        switch($type) {
         case 'page':
             $page = SurveyPage::findOrFail($itemId);
             $deletedOrder = $page->order;
@@ -660,6 +732,9 @@ class FormBuilder extends Component
                 $this->selectedQuestionId = null;
                 $this->dispatch('pageSelected', pageId: $this->activePageId);
             }
+            
+            // Clear loading state
+            $this->loadingDeletePage[$itemId] = false;
             break;
             
         case 'question':
@@ -682,6 +757,9 @@ class FormBuilder extends Component
                 $this->activePageId = $pageId;
                 $this->dispatch('pageSelected', pageId: $pageId);
             }
+            
+            // Clear loading state
+            $this->loadingDeleteQuestion[$itemId] = false;
             break;
             
         case 'choice':
@@ -695,6 +773,9 @@ class FormBuilder extends Component
             SurveyChoice::where('survey_question_id', $questionId)
                 ->where('order', '>', $deletedOrder)
                 ->decrement('order');
+            
+            // Clear loading state
+            $this->loadingDeleteChoice[$itemId] = false;
             break;
             
         case 'likertColumn':
@@ -723,6 +804,9 @@ class FormBuilder extends Component
             $question->likert_columns = json_encode($columns);
             $question->save();
         }
+        
+        // Clear loading state
+        $this->loadingDeleteLikertColumn[$itemId] = false;
         break;
         
         case 'likertRow':
@@ -751,6 +835,9 @@ class FormBuilder extends Component
             $question->likert_rows = json_encode($rows);
             $question->save();
         }
+        
+        // Clear loading state
+        $this->loadingDeleteLikertRow[$itemId] = false;
         break;
         }
         
@@ -763,3 +850,4 @@ class FormBuilder extends Component
         return view('livewire.surveys.form-builder.form-builder');
     }
 }
+

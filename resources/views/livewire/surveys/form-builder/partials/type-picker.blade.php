@@ -28,7 +28,20 @@
 @endphp
 
 <div
-    x-data="{ {{ $showTypePickerVar }}: false }"
+    x-data="{
+        {{ $showTypePickerVar }}: false,
+        adding: false,
+        async add(type) {
+            this.adding = true;
+            await $wire.addItem(
+                type === 'page' ? 'page' : 'question',
+                type === 'page' ? null : activePageId,
+                type === 'page' ? {} : { question_type: type }
+            );
+            this.adding = false;
+            this.{{ $showTypePickerVar }} = false;
+        }
+    }"
     :key="{{ $alpineKey }}"
     @click.away="{{ $showTypePickerVar }} = false"
 >
@@ -54,13 +67,25 @@
         x-transition:leave="transition ease-in duration-75"
         x-transition:leave-start="opacity-100 scale-100"
         x-transition:leave-end="opacity-0 scale-95"
-        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 sm:gap-2 mt-2 border p-2 rounded bg-white shadow overflow-x-auto"
+        class="relative grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 sm:gap-2 mt-2 border p-2 rounded bg-white shadow overflow-x-auto"
         x-cloak
     >
+        {{-- Loading overlay --}}
+        <div
+            x-show="adding"
+            class="absolute inset-0 bg-white/80 flex items-center justify-center z-20"
+            style="backdrop-filter: blur(2px);"
+        >
+            <svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="ml-3 text-blue-700 font-semibold text-base">Adding...</span>
+        </div>
         @foreach ($questionTypes as $type)
             <button
-                @click="{{ $showTypePickerVar }} = false"
-                wire:click="{!! $type === 'page' ? $pageClickAction : str_replace('TYPE', $type, $wireClickAction) !!}"
+                @click="add('{{ $type }}')"
+                :disabled="adding"
                 class="flex flex-col items-center justify-center p-1 sm:p-2 rounded text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition duration-150 ease-in-out min-w-[70px]"
                 type="button"
                 title="{{ $type === 'radio' ? 'Single Choice' : ucwords(str_replace('_', ' ', $type)) }}"
@@ -73,3 +98,4 @@
         @endforeach
     </div>
 </div>
+       

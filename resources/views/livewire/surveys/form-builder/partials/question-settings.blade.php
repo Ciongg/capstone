@@ -9,24 +9,44 @@
                 <button
                     wire:click.stop="moveQuestionUp({{ $question->id }})"
                     type="button"
-                    class="px-2 py-1 text-xs rounded {{ $qIndex === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-300 hover:bg-gray-400 text-gray-700 hover:text-gray-900' }}"
+                    class="px-2 py-1 text-xs rounded {{ $qIndex === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-300 hover:bg-gray-400 text-gray-700 hover:text-gray-900' }} flex items-center justify-center"
                     {{ $qIndex === 0 ? 'disabled' : '' }}
                     aria-label="Move question up"
+                    wire:loading.attr="disabled"
+                    wire:target="moveQuestionUp({{ $question->id }})"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                    </svg>
+                    <span wire:loading.remove wire:target="moveQuestionUp({{ $question->id }})">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                        </svg>
+                    </span>
+                    <span wire:loading wire:target="moveQuestionUp({{ $question->id }})">
+                         <svg class="animate-spin h-4 w-4 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </span>
                 </button>
                 <button
                     wire:click.stop="moveQuestionDown({{ $question->id }})"
                     type="button"
-                    class="px-2 py-1 text-xs rounded {{ $qIndex === $totalQuestions - 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-300 hover:bg-gray-400 text-gray-700 hover:text-gray-900' }}"
+                    class="px-2 py-1 text-xs rounded {{ $qIndex === $totalQuestions - 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-300 hover:bg-gray-400 text-gray-700 hover:text-gray-900' }} flex items-center justify-center"
                     {{ $qIndex === $totalQuestions - 1 ? 'disabled' : '' }}
                     aria-label="Move question down"
+                    wire:loading.attr="disabled"
+                    wire:target="moveQuestionDown({{ $question->id }})"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <span wire:loading.remove wire:target="moveQuestionDown({{ $question->id }})">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </span>
+                    <span wire:loading wire:target="moveQuestionDown({{ $question->id }})">
+                         <svg class="animate-spin h-4 w-4 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </span>
                 </button>
             </div>
 

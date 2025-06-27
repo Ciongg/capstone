@@ -8,9 +8,15 @@
                     <div class="text-center">
                         <button
                             wire:click="addItem('page')"
-                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center w-32 h-10"
+                            wire:loading.attr="disabled"
+                            wire:target="addItem('page')"
                         >
-                            + Add Page
+                            <span wire:loading.remove wire:target="addItem('page')">+ Add Page</span>
+                            <svg wire:loading wire:target="addItem('page')" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
                         </button>
                     </div>
                 @else
@@ -68,9 +74,15 @@
                         {{-- Add Page Button --}}
                         <button
                             wire:click="addItem('page')"
-                            class="ml-2 sm:ml-4 px-2 sm:px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex-shrink-0"
+                            class="ml-2 sm:ml-4 px-2 sm:px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex-shrink-0 flex items-center justify-center w-24 h-8"
+                            wire:loading.attr="disabled"
+                            wire:target="addItem('page')"
                         >
-                            + Add Page
+                            <span wire:loading.remove wire:target="addItem('page')">+ Add Page</span>
+                            <svg wire:loading wire:target="addItem('page')" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
                         </button>
                     </div>
                 @endif

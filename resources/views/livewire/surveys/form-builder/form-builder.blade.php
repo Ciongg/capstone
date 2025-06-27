@@ -134,9 +134,9 @@
                     @include('livewire.surveys.form-builder.partials.page-header', ['page' => $page])
 
                     @php
-                        // Ensure questions are sorted by order for accurate indexing
                         $sortedQuestions = $page->questions->sortBy('order')->values();
                     @endphp
+
                     @foreach ($sortedQuestions as $qIndex => $question)
                         <div
                             id="question-{{ $question->id }}"
@@ -197,3 +197,4 @@
         </div>
     </div> <!-- End of wrapper for interactive elements -->
 </div>
+                          

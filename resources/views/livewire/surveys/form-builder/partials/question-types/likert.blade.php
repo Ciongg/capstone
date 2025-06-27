@@ -25,23 +25,43 @@
                                     @blur="focused = false"
                                 ></textarea>
                                 <button
-                                    x-show="focused"
-                                    x-transition
+                                    x-show="selectedQuestionId === {{ $question->id }}" x-cloak
                                     wire:click="removeItem('likertColumn', '{{ $question->id }}-{{ $colIndex }}')"
                                     type="button"
-                                    class="text-red-500 text-base absolute right-0 top-1/2 -translate-y-1/2"
+                                    class="text-red-500 text-base absolute right-0 top-1/2 -translate-y-1/2 flex items-center"
                                     style="vertical-align: middle;"
-                                >&#10005;</button>
+                                    wire:loading.attr="disabled"
+                                    wire:target="removeItem('likertColumn', '{{ $question->id }}-{{ $colIndex }}')"
+                                >
+                                    <span wire:loading.remove wire:target="removeItem('likertColumn', '{{ $question->id }}-{{ $colIndex }}')">&#10005;</span>
+                                    <span wire:loading wire:target="removeItem('likertColumn', '{{ $question->id }}-{{ $colIndex }}')">
+                                        <svg class="animate-spin h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </span>
+                                </button>
                             </div>
                         </th>
                     @endforeach
                     <th class="bg-white px-4 py-2">
                         @if($selectedQuestionId === $question->id)
-                            <button wire:click="addItem( 'likertColumn', {{ $question->id }})"
+                            <button 
+                                wire:click="addItem('likertColumn', {{ $question->id }})"
                                 type="button"
-                                class="text-blue-600 text-2xl font-bold hover:text-blue-800"
+                                class="text-blue-600 text-2xl font-bold hover:text-blue-800 flex items-center"
                                 title="Add Option"
-                            >+</button>
+                                wire:loading.attr="disabled"
+                                wire:target="addItem('likertColumn', {{ $question->id }})"
+                            >
+                                <span wire:loading.remove wire:target="addItem('likertColumn', {{ $question->id }})">+</span>
+                                <span wire:loading wire:target="addItem('likertColumn', {{ $question->id }})" class="flex items-center space-x-1">
+                                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </span>
+                            </button>
                         @endif
                     </th>
                 </tr>
@@ -68,13 +88,22 @@
                                 ></textarea>
                                 <span style="width: 2em; display: inline-block;">
                                     <button
-                                        x-show="focused"
-                                        x-transition
+                                        x-show="selectedQuestionId === {{ $question->id }}" x-cloak
                                         wire:click="removeItem('likertRow', '{{ $question->id }}-{{ $rowIndex }}')"
                                         type="button"
-                                        class="text-red-500 text-base"
+                                        class="text-red-500 text-base flex items-center"
                                         style="vertical-align: middle;"
-                                    >&#10005;</button>
+                                        wire:loading.attr="disabled"
+                                        wire:target="removeItem('likertRow', '{{ $question->id }}-{{ $rowIndex }}')"
+                                    >
+                                        <span wire:loading.remove wire:target="removeItem('likertRow', '{{ $question->id }}-{{ $rowIndex }}')">&#10005;</span>
+                                        <span wire:loading wire:target="removeItem('likertRow', '{{ $question->id }}-{{ $rowIndex }}')">
+                                            <svg class="animate-spin h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 718-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </span>
+                                    </button>
                                 </span>
                             </div>
                         </td>
@@ -111,19 +140,38 @@
                                 @blur="focused = false"
                             ></textarea>
                             <button
-                                x-show="focused"
-                                x-transition
+                                x-show="selectedQuestionId === {{ $question->id }}" x-cloak
                                 wire:click="removeItem('likertColumn', '{{ $question->id }}-{{ $colIndex }}')"
                                 type="button"
-                                class="text-red-500 text-base px-2"
-                            >&#10005;</button>
+                                class="text-red-500 text-base px-2 flex items-center"
+                                wire:loading.attr="disabled"
+                                wire:target="removeItem('likertColumn', '{{ $question->id }}-{{ $colIndex }}')"
+                            >
+                                <span wire:loading.remove wire:target="removeItem('likertColumn', '{{ $question->id }}-{{ $colIndex }}')">&#10005;</span>
+                                <span wire:loading wire:target="removeItem('likertColumn', '{{ $question->id }}-{{ $colIndex }}')">
+                                    <svg class="animate-spin h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </span>
+                            </button>
                         </div>
                     @endforeach
                     <button wire:click="addItem('likertColumn', {{ $question->id }})"
                         type="button"
-                        class="text-blue-600 text-sm font-medium hover:text-blue-800 mt-2"
+                        class="text-blue-600 text-sm font-medium hover:text-blue-800 mt-2 flex items-center space-x-1"
                         title="Add Option"
-                    >+ Add Option</button>
+                        wire:loading.attr="disabled"
+                        wire:target="addItem('likertColumn', {{ $question->id }})"
+                    >
+                        <span wire:loading.remove wire:target="addItem('likertColumn', {{ $question->id }})">+ Add Option</span>
+                        <span wire:loading wire:target="addItem('likertColumn', {{ $question->id }})" class="flex items-center space-x-1">
+                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                    </button>
                 </div>
             </div>
         @endif
@@ -146,12 +194,21 @@
                                 @blur="focused = false"
                             ></textarea>
                             <button
-                                x-show="focused"
-                                x-transition
+                                x-show="selectedQuestionId === {{ $question->id }}" x-cloak
                                 wire:click="removeItem('likertRow', '{{ $question->id }}-{{ $rowIndex }}')"
                                 type="button"
-                                class="text-red-500 text-base px-2 mt-1"
-                            >&#10005;</button>
+                                class="text-red-500 text-base px-2 mt-1 flex items-center"
+                                wire:loading.attr="disabled"
+                                wire:target="removeItem('likertRow', '{{ $question->id }}-{{ $rowIndex }}')"
+                            >
+                                <span wire:loading.remove wire:target="removeItem('likertRow', '{{ $question->id }}-{{ $rowIndex }}')">&#10005;</span>
+                                <span wire:loading wire:target="removeItem('likertRow', '{{ $question->id }}-{{ $rowIndex }}')">
+                                    <svg class="animate-spin h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </span>
+                            </button>
                         </div>
                     @else
                         <div class="font-medium text-gray-800">{{ $row }}</div>
@@ -174,10 +231,24 @@
 
         @if($selectedQuestionId === $question->id)
             <div class="flex justify-start">
-                <button class="text-green-600 hover:text-green-800 font-bold" wire:click="addItem('likertRow', {{ $question->id }})"
+                <button 
+                    class="text-green-800 hover:text-green-900 font-bold flex items-center space-x-1" 
+                    wire:click="addItem('likertRow', {{ $question->id }})"
                     type="button"
                     title="Add Statement"
-                ><span class="text-2xl ">+</span> statement</button>
+                    wire:loading.attr="disabled"
+                    wire:target="addItem('likertRow', {{ $question->id }})"
+                >
+                    <span wire:loading.remove wire:target="addItem('likertRow', {{ $question->id }})">
+                        <span class="text-2xl">+</span> statement
+                    </span>
+                    <span wire:loading wire:target="addItem('likertRow', {{ $question->id }})" class="flex items-center space-x-1">
+                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-100" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+                </button>
             </div>
         @endif
     </div>
@@ -185,10 +256,26 @@
     <!-- Add Statement Button for Desktop -->
     @if($selectedQuestionId === $question->id)
         <div class="hidden md:flex justify-start mt-3">
-            <button class="text-green-600 hover:text-green-800 font-bold" wire:click="addItem('likertRow', {{ $question->id }})"
+            <button 
+                class="text-green-600 hover:text-green-800 font-bold flex items-center space-x-1" 
+                wire:click="addItem('likertRow', {{ $question->id }})"
                 type="button"
                 title="Add Statement"
-            ><span class="text-2xl ">+</span> statement</button>
+                wire:loading.attr="disabled"
+                wire:target="addItem('likertRow', {{ $question->id }})"
+            >
+                <span wire:loading.remove wire:target="addItem('likertRow', {{ $question->id }})">
+                    <span class="text-2xl">+</span> statement
+                </span>
+                <span wire:loading wire:target="addItem('likertRow', {{ $question->id }})" class="flex items-center space-x-1">
+                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </span>
+            </button>
         </div>
     @endif
 </div>
+       
+          
