@@ -11,111 +11,45 @@ class ViewAllResponsesModal extends Component
 {
     public SurveyQuestion $question;
     public $aiSummary = '';
+    public $exactCounts = '';
     public $loading = false;
 
 
     public function mount()
     {
         $this->aiSummary = $this->question->ai_summary ?? '';
-    }
-
-    public function generateSummary()
-    {
-        Log::info('Generating summary for question ID: ' . $this->question->id);
-        $this->loading = true;
-
-        // Process answers and generate prompt based on question type
-        $questionType = $this->question->question_type;
-        $prompt = '';
-        
-        switch ($questionType) {
-            case 'multiple_choice':
-                $prompt = $this->generateMultipleChoicePrompt();
-                break;
-                
-            case 'radio':
-                $prompt = $this->generateRadioPrompt();
-                break;
-                
-            case 'likert':
-                $prompt = $this->generateLikertPrompt();
-                break;
-                
-            case 'rating':
-                $prompt = $this->generateRatingPrompt();
-                break;
-                
-            case 'date':
-                $prompt = $this->generateDatePrompt();
-                break;
-                
-            case 'essay':
-            case 'short_text':
-                $prompt = $this->generateTextPrompt();
-                break;
-                
-            default:
-                // Fallback for any other question types
-                $prompt = $this->generateGenericPrompt();
-        }
-
-        $apiKey = env('GEMINI_API_KEY');
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-        ])->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . $apiKey, [
-            'contents' => [
-                [
-                    'parts' => [
-                        ['text' => $prompt]
-                    ]
-                ]
-            ],
-            'generationConfig' => [
-                'maxOutputTokens' => 500,
-                'temperature' => 0.7,
-            ]
-        ]);
-
-        $json = $response->json();
-        $summary = '';
-
-        if (
-            $response->ok() &&
-            isset($json['candidates'][0]['content']['parts'][0]['text'])
-        ) {
-            $summary = $json['candidates'][0]['content']['parts'][0]['text'];
-        } elseif (isset($json['error']['message'])) {
-            $summary = 'Gemini API error: ' . $json['error']['message'];
-        } else {
-            $summary = 'Failed to generate summary. Please try again.';
-        }
-
-        // Save to DB first
-        Log::info('API response received. Saving summary for question ID: ' . $this->question->id);
-        $this->question->ai_summary = $summary;
-        $this->question->save();
-
-        // Set the property locally
-        $this->aiSummary = $summary;
-        $this->loading = false;
-
-        Log::info('Summary generated and saved. AI Summary value: ' . $this->aiSummary);
-        
-        // Forcefully refresh the component
-        $this->dispatch('$refresh');
+        // Generate exact counts on mount for immediate display
+        $this->exactCounts = $this->generateExactCounts();
     }
 
     /**
-     * Generate prompt for multiple choice questions
+     * Generate exact counts data locally for all question types
      */
-    private function generateMultipleChoicePrompt()
+    private function generateExactCounts()
     {
-        // Get all choices for this question
+        switch ($this->question->question_type) {
+            case 'multiple_choice':
+                return $this->generateMultipleChoiceExactCounts();
+            case 'radio':
+                return $this->generateRadioExactCounts();
+            case 'likert':
+                return $this->generateLikertExactCounts();
+            case 'rating':
+                return $this->generateRatingExactCounts();
+            case 'date':
+                return $this->generateDateExactCounts();
+            default:
+                return '';
+        }
+    }
+
+    /**
+     * Generate exact counts for multiple choice questions
+     */
+    private function generateMultipleChoiceExactCounts()
+    {
         $choices = $this->question->choices()->get()->pluck('choice_text', 'id')->toArray();
-        
-        // Process and count the selections
         $choiceCounts = [];
-        $totalResponses = 0;
         $uniqueResponses = $this->question->answers->unique('response_id')->count();
         
         foreach ($this->question->answers as $answer) {
@@ -131,61 +65,28 @@ class ViewAllResponsesModal extends Component
                             $choiceCounts[$choiceText]++;
                         }
                     }
-                    $totalResponses++;
                 }
             } catch (\Exception $e) {
-                // Skip invalid responses
                 Log::warning("Invalid multiple choice response: " . $e->getMessage());
             }
         }
         
-        // Prepare exact counts data
-        $exactCountsData = "EXACT COUNTS (DO NOT MODIFY THESE):\n";
-        $exactCountsData .= "Total unique respondents: {$uniqueResponses}\n";
+        $result = "Out of {$uniqueResponses} respondents, ";
+        $statements = [];
         foreach ($choiceCounts as $choiceText => $count) {
-            $percentage = $totalResponses > 0 ? round(($count / $uniqueResponses) * 100) : 0;
-            $exactCountsData .= "\"{$choiceText}\": EXACTLY {$count} selections ({$percentage}%)\n";
+            $percentage = $uniqueResponses > 0 ? round(($count / $uniqueResponses) * 100) : 0;
+            $statements[] = "{$percentage}% ({$count}) selected \"{$choiceText}\"";
         }
         
-        // Get original answers for reference
-        $rawAnswers = $this->question->answers->map(function($answer) use ($choices) {
-            try {
-                $selectedChoices = json_decode($answer->answer, true);
-                if (is_array($selectedChoices)) {
-                    return array_map(function($id) use ($choices) {
-                        return $choices[$id] ?? "Choice ID $id";
-                    }, $selectedChoices);
-                }
-            } catch (\Exception $e) {
-                return ["Error parsing answer"];
-            }
-            return [];
-        })->filter()->toArray();
-        
-        // Build the prompt with instructions specific to multiple choice
-        return "Analyze the following MULTIPLE CHOICE question responses and provide a summary in essay format (200-250 words).\n\n"
-            . "Question: \"{$this->question->question_text}\"\n\n"
-            . $exactCountsData . "\n"
-            . "Write an insightful essay-style summary using plain text only (no markdown or formatting). Format as follows:\n\n"
-            . "FIRST PARAGRAPH: Begin with \"Out of {$uniqueResponses} respondents\" and include all statistical information. "
-            . "Write all statements about percentages and counts in this exact format: XX% (Y) selected [choice]. "
-            . "Include at least the top 3 choices (if applicable) in this first paragraph.\n\n"
-            . "SECOND PARAGRAPH: After presenting all the statistics, start a new paragraph to analyze patterns and provide insights. "
-            . "Compare the different selections and explain what the distribution might indicate about respondent preferences or behaviors.\n\n"
-            . "IMPORTANT: Always follow this exact format for statistics: XX% (Y) where XX is the percentage and Y is the exact count.\n"
-            . "NEVER use the format (XX%, Y) or combine percentage and count in the same parentheses.\n\n"
-            . "Note that respondents could select multiple options, so percentages may add up to more than 100%.\n";
+        return $result . implode(', ', $statements) . '.';
     }
 
     /**
-     * Generate prompt for radio questions (single choice)
+     * Generate exact counts for radio questions
      */
-    private function generateRadioPrompt()
+    private function generateRadioExactCounts()
     {
-        // Get all choices for this question
         $choices = $this->question->choices()->get()->pluck('choice_text', 'id')->toArray();
-        
-        // Process and count the selections
         $choiceCounts = array_fill_keys(array_values($choices), 0);
         $totalResponses = $this->question->answers->unique('response_id')->count();
         
@@ -197,153 +98,24 @@ class ViewAllResponsesModal extends Component
             }
         }
         
-        // Prepare exact counts data
-        $exactCountsData = "EXACT COUNTS (DO NOT MODIFY THESE):\n";
-        $exactCountsData .= "Total respondents: {$totalResponses}\n";
+        $result = "Out of {$totalResponses} respondents, ";
+        $statements = [];
         foreach ($choiceCounts as $choiceText => $count) {
-            $percentage = $totalResponses > 0 ? round(($count / $totalResponses) * 100) : 0;
-            $exactCountsData .= "\"{$choiceText}\": EXACTLY {$count} responses ({$percentage}%)\n";
+            if ($count > 0) {
+                $percentage = round(($count / $totalResponses) * 100);
+                $statements[] = "{$percentage}% ({$count}) selected \"{$choiceText}\"";
+            }
         }
         
-        // Build the prompt with instructions specific to radio/single-choice
-        return "Analyze the following SINGLE CHOICE question responses and provide a summary in essay format (200-250 words).\n\n"
-            . "Question: \"{$this->question->question_text}\"\n\n"
-            . $exactCountsData . "\n"
-            . "Write an insightful essay-style summary using plain text only (no markdown or formatting). Format as follows:\n\n"
-            . "FIRST PARAGRAPH: Begin with \"Out of {$totalResponses} respondents\" and include all statistical information. "
-            . "Write all statements about percentages and counts in this exact format: XX% (Y) selected [choice]. "
-            . "Include all choices that received responses in this first paragraph.\n\n"
-            . "SECOND PARAGRAPH: After presenting all the statistics, start a new paragraph to analyze patterns and provide insights. "
-            . "Compare the different selections and explain what the distribution might indicate about respondent preferences or behaviors.\n\n"
-            . "IMPORTANT: Always follow this exact format for statistics: XX% (Y) where XX is the percentage and Y is the exact count.\n"
-            . "NEVER use the format (XX%, Y) or combine percentage and count in the same parentheses.\n";
+        return $result . implode(', ', $statements) . '.';
     }
 
     /**
-     * Generate prompt for Likert scale questions
+     * Generate exact counts for rating questions
      */
-    private function generateLikertPrompt()
+    private function generateRatingExactCounts()
     {
-        // Get Likert scale rows and columns
-        $likertRows = is_array($this->question->likert_rows) ? 
-            $this->question->likert_rows : 
-            json_decode($this->question->likert_rows ?? '[]', true);
-            
-        $likertColumns = is_array($this->question->likert_columns) ? 
-            $this->question->likert_columns : 
-            json_decode($this->question->likert_columns ?? '[]', true);
-        
-        if (empty($likertRows) || empty($likertColumns)) {
-            return $this->generateGenericPrompt(); // Fallback if Likert data is missing
-        }
-        
-        // Create a matrix to count responses for each row/column combination
-        $responseCounts = [];
-        foreach ($likertRows as $rowIdx => $rowText) {
-            $responseCounts[$rowIdx] = array_fill(0, count($likertColumns), 0);
-        }
-        
-        // Process answers
-        $totalResponses = $this->question->answers->unique('response_id')->count();
-        $processedResponses = 0;
-        
-        foreach ($this->question->answers as $answer) {
-            try {
-                $likertAnswers = json_decode($answer->answer, true);
-                if (is_array($likertAnswers)) {
-                    foreach ($likertAnswers as $rowIdx => $colIdx) {
-                        if (isset($responseCounts[$rowIdx]) && isset($responseCounts[$rowIdx][$colIdx])) {
-                            $responseCounts[$rowIdx][$colIdx]++;
-                        }
-                    }
-                    $processedResponses++;
-                }
-            } catch (\Exception $e) {
-                // Skip invalid responses
-                Log::warning("Invalid Likert response: " . $e->getMessage());
-            }
-        }
-        
-        // Prepare exact counts data with percentage breakdowns per row
-        $exactCountsData = "EXACT COUNTS PER STATEMENT (DO NOT MODIFY THESE):\n";
-        $exactCountsData .= "Total respondents: {$totalResponses}\n\n";
-        
-        foreach ($likertRows as $rowIdx => $rowText) {
-            $exactCountsData .= "Statement: \"{$rowText}\"\n";
-            
-            foreach ($likertColumns as $colIdx => $colText) {
-                $count = $responseCounts[$rowIdx][$colIdx];
-                $percentage = $totalResponses > 0 ? round(($count / $totalResponses) * 100) : 0;
-                $exactCountsData .= "- \"{$colText}\": {$percentage}% ({$count})\n";
-            }
-            $exactCountsData .= "\n";
-        }
-        
-        // Extract the topic from the question text or use a default
-        $questionTopic = $this->extractTopicFromQuestion($this->question->question_text, $likertRows);
-        
-        // Build a prompt specific to Likert analysis with format matching multiple choice/radio
-        return "Analyze the following LIKERT SCALE question responses and provide a detailed summary in essay format (MAX 300 words).\n\n"
-            . "Question: \"{$this->question->question_text}\"\n\n"
-            . $exactCountsData 
-            . "Write an insightful essay-style summary using plain text only (no markdown or formatting). Format as follows:\n\n"
-            . "FIRST PARAGRAPH: Begin with \"Based on responses from {$totalResponses} participants regarding {$questionTopic},\" and briefly introduce the overall sentiment (positive/negative/mixed).\n\n"
-            . "STATISTICAL PARAGRAPHS: Create one paragraph for EACH statement. For each statement:\n"
-            . "\"The statement [statement text] reveals [observation], with XX% (Y) selecting [response option] and XX% (Y) selecting [response option]...\" Include all relevant response options with their exact percentages and counts.\n\n" 
-            . "CONCLUSION PARAGRAPH: After presenting all the statistics for all statements, add a final paragraph that analyzes patterns across statements and what these results suggest about {$questionTopic} overall.\n\n"
-            . "IMPORTANT:\n"
-            . "1. Always write percentages as XX% followed by the exact count in parentheses like: 27% (8).\n"
-            . "2. NEVER use the format (XX%, Y) or put both percentage and count in the same parentheses.\n"
-            . "3. Ensure your analysis stays within a maximum of 300 words total.\n"
-            . "4. Make sure to analyze ALL statements before concluding.\n";
-    }
-    
-    /**
-     * Helper method to extract a topic from the question text or likert rows
-     */
-    private function extractTopicFromQuestion($questionText, $likertRows)
-    {
-        // Try to extract topic from question text (after "about" or "regarding" or similar phrases)
-        $topicPhrases = ['about', 'regarding', 'concerning', 'related to', 'on', 'with'];
-        
-        foreach ($topicPhrases as $phrase) {
-            if (stripos($questionText, $phrase . ' ') !== false) {
-                $parts = explode($phrase . ' ', strtolower($questionText), 2);
-                if (isset($parts[1])) {
-                    // Clean up the extracted topic
-                    $topic = trim($parts[1]);
-                    // Remove trailing punctuation
-                    $topic = rtrim($topic, '.,:;');
-                    return $topic;
-                }
-            }
-        }
-        
-        // If no topic found from question, try to infer from first likert row
-        if (!empty($likertRows)) {
-            $firstRow = reset($likertRows);
-            if (strpos($firstRow, 'advisor') !== false) {
-                return 'academic advising';
-            } elseif (strpos($firstRow, 'professor') !== false || strpos($firstRow, 'faculty') !== false) {
-                return 'faculty performance';
-            } elseif (strpos($firstRow, 'course') !== false) {
-                return 'course quality';
-            }
-        }
-        
-        // Default topic if nothing else works
-        return 'this topic';
-    }
-
-    /**
-     * Generate prompt for rating questions
-     */
-    private function generateRatingPrompt()
-    {
-        // Get the number of stars for this question
         $stars = $this->question->stars ?? 5;
-        
-        // Count ratings
         $ratingCounts = array_fill(1, $stars, 0);
         $totalRatings = 0;
         $sum = 0;
@@ -357,37 +129,88 @@ class ViewAllResponsesModal extends Component
             }
         }
         
-        // Calculate average rating
         $averageRating = $totalRatings > 0 ? round($sum / $totalRatings, 1) : 0;
         
-        // Prepare exact counts data
-        $exactCountsData = "EXACT COUNTS (DO NOT MODIFY THESE):\n";
-        $exactCountsData .= "Total respondents: {$totalRatings}\n";
-        $exactCountsData .= "Average rating: {$averageRating} out of {$stars}\n\n";
+        $result = "Based on feedback from {$totalRatings} respondents, the average rating was {$averageRating} out of {$stars} stars. ";
+        $statements = [];
         
         foreach ($ratingCounts as $rating => $count) {
             $percentage = $totalRatings > 0 ? round(($count / $totalRatings) * 100) : 0;
-            $exactCountsData .= "{$rating} star" . ($rating != 1 ? "s" : "") . ": {$count} responses ({$percentage}%)\n";
+            $starText = $rating == 1 ? "star" : "stars";
+            $statements[] = "{$percentage}% ({$count}) gave a rating of {$rating} {$starText}";
         }
         
-        // Build the prompt specifically for rating analysis with two-paragraph structure
-        return "Analyze the following RATING question responses and provide a summary in essay format (200-250 words).\n\n"
-            . "Question: \"{$this->question->question_text}\"\n"
-            . "Rating Scale: 1 to {$stars} stars\n\n"
-            . $exactCountsData . "\n"
-            . "Write an insightful essay-style summary using plain text only (no markdown or formatting). Format as follows:\n\n"
-            . "FIRST PARAGRAPH: Begin with \"Based on feedback from {$totalRatings} respondents, the average rating was {$averageRating} out of {$stars} stars.\" Then include all statistical information including the distribution of ratings. Write all statements about percentages and counts in this exact format: XX% (Y) gave a rating of [rating]. Include the breakdown of all ratings (1-{$stars} stars).\n\n"
-            . "SECOND PARAGRAPH: After presenting all the statistics, analyze patterns and provide insights. Compare the different rating levels and explain what the distribution might indicate. Discuss what percentage gave positive ratings (4-{$stars}) versus negative ratings (1-2), and interpret what this suggests about overall satisfaction or quality.\n\n"
-            . "IMPORTANT: Always follow this exact format for statistics: XX% (Y) where XX is the percentage and Y is the exact count.\n"
-            . "NEVER use the format (XX%, Y) or combine percentage and count in the same parentheses.\n";
+        return $result . implode('. ', $statements) . '.';
     }
 
     /**
-     * Generate prompt for date questions
+     * Generate exact counts for Likert questions
      */
-    private function generateDatePrompt()
+    private function generateLikertExactCounts()
     {
-        // Extract dates from answers
+        $likertRows = is_array($this->question->likert_rows) ? 
+            $this->question->likert_rows : 
+            json_decode($this->question->likert_rows ?? '[]', true);
+            
+        $likertColumns = is_array($this->question->likert_columns) ? 
+            $this->question->likert_columns : 
+            json_decode($this->question->likert_columns ?? '[]', true);
+        
+        if (empty($likertRows) || empty($likertColumns)) {
+            return '';
+        }
+        
+        $responseCounts = [];
+        foreach ($likertRows as $rowIdx => $rowText) {
+            $responseCounts[$rowIdx] = array_fill(0, count($likertColumns), 0);
+        }
+        
+        $totalResponses = $this->question->answers->unique('response_id')->count();
+        
+        foreach ($this->question->answers as $answer) {
+            try {
+                $likertAnswers = json_decode($answer->answer, true);
+                if (is_array($likertAnswers)) {
+                    foreach ($likertAnswers as $rowIdx => $colIdx) {
+                        if (isset($responseCounts[$rowIdx]) && isset($responseCounts[$rowIdx][$colIdx])) {
+                            $responseCounts[$rowIdx][$colIdx]++;
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning("Invalid Likert response: " . $e->getMessage());
+            }
+        }
+        
+        // Build result with each statement formatted separately
+        $results = [];
+        
+        foreach ($likertRows as $rowIdx => $rowText) {
+            $statementResult = "{$rowText}\n";
+            
+            $statements = [];
+            foreach ($likertColumns as $colIdx => $colText) {
+                $count = $responseCounts[$rowIdx][$colIdx];
+                if ($count > 0) {
+                    $percentage = round(($count / $totalResponses) * 100);
+                    $statements[] = "{$percentage}% ({$count}) selected \"{$colText}\"";
+                }
+            }
+            
+            if (!empty($statements)) {
+                $statementResult .= "Out of {$totalResponses} respondents, " . implode(', ', $statements) . ".";
+                $results[] = $statementResult;
+            }
+        }
+        
+        return implode("\n\n", $results);
+    }
+
+    /**
+     * Generate exact counts for date questions
+     */
+    private function generateDateExactCounts()
+    {
         $dates = [];
         foreach ($this->question->answers as $answer) {
             try {
@@ -399,103 +222,249 @@ class ViewAllResponsesModal extends Component
             }
         }
         
-        // Analyze date patterns
         $totalDates = count($dates);
-        if ($totalDates > 0) {
-            sort($dates);
-            $earliestDate = $dates[0];
-            $latestDate = $dates[$totalDates - 1];
-            
-            // Group dates by month/year
-            $dateGroups = [];
-            foreach ($dates as $date) {
-                $month = date('Y-m', strtotime($date));
-                if (!isset($dateGroups[$month])) {
-                    $dateGroups[$month] = 0;
-                }
-                $dateGroups[$month]++;
-            }
-            
-            // Prepare date distribution data
-            $dateDistribution = "Date distribution:\n";
-            foreach ($dateGroups as $month => $count) {
-                $percentage = round(($count / $totalDates) * 100);
-                $formattedMonth = date('F Y', strtotime($month . "-01"));
-                $dateDistribution .= "{$formattedMonth}: {$count} responses ({$percentage}%)\n";
-            }
-        } else {
-            $earliestDate = "N/A";
-            $latestDate = "N/A";
-            $dateDistribution = "No valid dates provided.";
+        if ($totalDates == 0) {
+            return "No valid dates were provided by respondents.";
         }
         
-        // Prepare data for the prompt
-        $exactCountsData = "EXACT COUNTS (DO NOT MODIFY THESE):\n";
-        $exactCountsData .= "Total respondents: {$totalDates}\n";
-        $exactCountsData .= "Earliest date: {$earliestDate}\n";
-        $exactCountsData .= "Latest date: {$latestDate}\n\n";
-        $exactCountsData .= $dateDistribution;
+        sort($dates);
+        $earliestDate = $dates[0];
+        $latestDate = $dates[$totalDates - 1];
         
-        // Build a prompt for date analysis with a clear two-paragraph structure
-        return "Analyze the following DATE question responses and provide a summary in essay format (200-250 words).\n\n"
-            . "Question: \"{$this->question->question_text}\"\n\n"
-            . $exactCountsData . "\n"
-            . "Write an insightful essay-style summary using plain text only (no markdown or formatting). Format as follows:\n\n"
-            . "FIRST PARAGRAPH: Begin with \"Based on dates provided by {$totalDates} respondents, ranging from {$earliestDate} to {$latestDate}...\" Then include all date distribution statistics. Identify which months/periods have the highest concentration of responses and highlight any patterns in the date selection. Include specific counts and percentages for key date ranges.\n\n"
-            . "SECOND PARAGRAPH: After presenting the date statistics, provide analysis and insights about what these date patterns suggest in relation to the question asked. Consider what the clustering of dates might indicate about respondent behavior, preferences, or experiences. Interpret the significance of these patterns in the specific context of the question.\n\n"
-            . "IMPORTANT: Always write percentages as XX% followed by the exact count in parentheses like: 27% (8).\n"
-            . "NEVER use the format (XX%, Y) or combine percentage and count in the same parentheses.\n";
-    }
-
-    /**
-     * Generate prompt for essay and short text questions
-     */
-    private function generateTextPrompt()
-    {
-        // Collect all text responses
-        $responses = $this->question->answers->pluck('answer')->filter()->toArray();
-        $totalResponses = count($responses);
+        $dateGroups = [];
+        foreach ($dates as $date) {
+            $month = date('Y-m', strtotime($date));
+            if (!isset($dateGroups[$month])) {
+                $dateGroups[$month] = 0;
+            }
+            $dateGroups[$month]++;
+        }
         
-        // Get the full text of responses for analysis
-        $responseText = implode("\n\n", $responses);
+        $result = "Based on dates provided by {$totalDates} respondents, ranging from {$earliestDate} to {$latestDate}, ";
+        $statements = [];
         
-        // Build a prompt for text analysis with specific instructions for each paragraph
-        return "Analyze the following " . strtoupper($this->question->question_type) . " question responses and provide a summary in essay format strictly (200-250 words).\n\n"
-            . "Question: \"{$this->question->question_text}\"\n"
-            . "Total responses: {$totalResponses}\n\n"
-            . "Write an insightful two-paragraph summary using plain text only (no markdown or formatting).\n\n"
-            . "PARAGRAPH 1 - INTRODUCTION AND OVERVIEW: Begin with \"After analyzing {$totalResponses} responses about [topic of question]...\" and introduce the main themes or sentiments that emerged from the responses. Include the total number of respondents, what the open-ended question was about, the most common theme or feeling expressed, and the general tone of responses (positive, negative, mixed, etc.).\n\n"
-            . "PARAGRAPH 2 - SUPPORTING THEMES, CONTRASTS & DEEPER INTERPRETATION: Dig deeper into the variety of responses, highlighting contrasting views and offering possible interpretations or implications. Include examples of less common but meaningful themes, contrasting opinions (e.g., positive vs. negative, hopeful vs. concerned), what these mixed responses might imply, and possible reasons behind certain emotional trends or patterns observed.\n\n"
-            . "Responses to analyze:\n" . $responseText;
-    }
-
-    /**
-     * Generate a generic prompt for any other question type
-     */
-    private function generateGenericPrompt()
-    {
-        // Collect all responses
-        $responses = $this->question->answers->pluck('answer')->filter()->toArray();
-        $totalResponses = count($responses);
+        foreach ($dateGroups as $month => $count) {
+            $percentage = round(($count / $totalDates) * 100);
+            $formattedMonth = date('F Y', strtotime($month . "-01"));
+            $statements[] = "{$percentage}% ({$count}) selected dates in {$formattedMonth}";
+        }
         
-        // Get the full text of responses
-        $responseText = implode("\n", $responses);
-        
-        // Build a generic prompt
-        return "Analyze the following survey question responses and provide a summary in essay format (200-250 words).\n\n"
-            . "Question: \"{$this->question->question_text}\"\n"
-            . "Question Type: {$this->question->question_type}\n"
-            . "Total responses: {$totalResponses}\n\n"
-            . "Write an insightful essay-style summary using plain text only (no markdown or formatting). Begin with:\n\n"
-            . "\"Based on {$totalResponses} responses to this question...\"\n\n"
-            . "Identify patterns, trends, common themes, and notable outliers in the responses.\n\n"
-            . "Responses to analyze:\n" . $responseText;
+        return $result . implode(', ', $statements) . '.';
     }
 
     // A direct setter method for updateAiSummary
     public function updateAiSummary($value)
     {
         $this->aiSummary = $value;
+    }
+
+    public function generateSummary()
+    {
+        Log::info('Generating summary for question ID: ' . $this->question->id);
+        $this->loading = true;
+
+        // Generate local exact counts first (already available from mount)
+        $exactCounts = $this->generateExactCounts();
+        
+        // Process answers and generate prompt based on question type
+        $questionType = $this->question->question_type;
+        $prompt = '';
+        
+        switch ($questionType) {
+            case 'multiple_choice':
+                $prompt = "Analyze the patterns and insights from the multiple choice question responses above and provide additional analysis in essay format (150-200 words).\n\n"
+                    . "Question: \"{$this->question->question_text}\"\n\n"
+                    . "The exact statistics have already been provided. Focus your analysis on:\n"
+                    . "- What the distribution patterns might indicate about respondent preferences or behaviors\n"
+                    . "- Compare the different selections and their significance\n"
+                    . "- Identify any notable trends or unexpected results\n"
+                    . "- Provide insights about what these choices suggest in the context of the question\n\n"
+                    . "Write in plain text only (no markdown or formatting). Note that respondents could select multiple options.\n";
+                break;
+                
+            case 'radio':
+                $prompt = "Analyze the patterns and insights from the single choice question responses above and provide additional analysis in essay format (150-200 words).\n\n"
+                    . "Question: \"{$this->question->question_text}\"\n\n"
+                    . "The exact statistics have already been provided. Focus your analysis on:\n"
+                    . "- What the distribution patterns might indicate about respondent preferences or behaviors\n"
+                    . "- Compare the different selections and their significance\n"
+                    . "- Identify any notable trends or unexpected results\n"
+                    . "- Provide insights about what these choices suggest in the context of the question\n\n"
+                    . "Write in plain text only (no markdown or formatting).\n";
+                break;
+                
+            case 'likert':
+                $likertRows = is_array($this->question->likert_rows) ? 
+                    $this->question->likert_rows : 
+                    json_decode($this->question->likert_rows ?? '[]', true);
+                
+                $prompt = "Analyze the Likert scale response statistics below and provide insights for each statement.\n\n"
+                    . "Question: \"{$this->question->question_text}\"\n\n"
+                    . "RESPONSE STATISTICS:\n"
+                    . $exactCounts . "\n\n"
+                    . "Based on the statistics above, provide a 2-3 sentence analysis for each of the " . count($likertRows) . " statements about what the response distribution reveals about respondent attitudes, satisfaction, or opinions. Focus on interpreting the patterns, trends, and what the percentages suggest.\n\n"
+                    . "IMPORTANT: You must format your response exactly as follows:\n"
+                    . "Statement 1: [2-3 sentence analysis of what the response pattern reveals]\n"
+                    . "Continue for all " . count($likertRows) . " statements.\n\n"
+                    . "Write in plain text only (no markdown or formatting). Focus on interpreting what the distribution of responses (percentages and counts) tells us about respondent opinions, satisfaction levels, or attitudes for each statement. Do not repeat the statistics or statement text.\n\n"
+                    . "Example: 'Statement 1: This indicates that most respondents feel positively about this aspect, with the majority selecting agree or strongly agree options. However, the notable percentage of neutral responses suggests some uncertainty or mixed experiences among a portion of students. This pattern reveals a generally positive but not unanimous sentiment.'\n";
+                break;
+                
+            case 'rating':
+                $prompt = "Based on the rating question response statistics provided separately, analyze the patterns and insights in a single paragraph (100-150 words).\n\n"
+                    . "Question: \"{$this->question->question_text}\"\n\n"
+                    . "The exact statistics and average rating are displayed separately. Focus your analysis on:\n"
+                    . "- What the rating distribution suggests about overall satisfaction or quality\n"
+                    . "- Any surprising trends or insights from the rating patterns\n\n"
+                    . "Write in plain text only (no markdown or formatting). Do not repeat the statistics.\n";
+                break;
+                
+            case 'date':
+                $prompt = "Based on the date question response statistics provided separately, analyze the patterns and insights in a single paragraph (100-150 words).\n\n"
+                    . "Question: \"{$this->question->question_text}\"\n\n"
+                    . "The exact statistics and date distributions are displayed separately. Focus your analysis on:\n"
+                    . "- What the clustering of dates might indicate about respondent behavior, preferences, or experiences\n"
+                    . "- Interpret the significance of these patterns in the specific context of the question\n"
+                    . "- Consider seasonal trends, time periods, or events that might influence the date selection\n\n"
+                    . "Write in plain text only (no markdown or formatting). Do not repeat the statistics.\n";
+                break;
+                
+            case 'essay':
+            case 'short_text':
+                $responses = $this->question->answers->pluck('answer')->filter()->toArray();
+                $totalResponses = count($responses);
+                $responseText = implode("\n\n", $responses);
+                
+                $prompt = "Analyze the following " . strtoupper($this->question->question_type) . " question responses and provide a summary in a single paragraph (150-200 words).\n\n"
+                    . "Question: \"{$this->question->question_text}\"\n"
+                    . "Total responses: {$totalResponses}\n\n"
+                    . "Write an insightful summary using plain text only (no markdown or formatting). Begin with \"After analyzing {$totalResponses} responses about [topic of question]...\" and include:\n"
+                    . "- The main themes or sentiments that emerged from the responses\n"
+                    . "- The most common theme or feeling expressed and general tone (positive, negative, mixed)\n"
+                    . "- Contrasting views and less common but meaningful themes\n"
+                    . "- Possible interpretations or implications of the response patterns\n"
+                    . "- What these mixed responses might suggest about the topic\n\n"
+                    . "Responses to analyze:\n" . $responseText;
+                break;
+                
+            default:
+                $responses = $this->question->answers->pluck('answer')->filter()->toArray();
+                $totalResponses = count($responses);
+                $responseText = implode("\n", $responses);
+                
+                $prompt = "Analyze the following survey question responses and provide a summary in essay format (200-250 words).\n\n"
+                    . "Question: \"{$this->question->question_text}\"\n"
+                    . "Question Type: {$this->question->question_type}\n"
+                    . "Total responses: {$totalResponses}\n\n"
+                    . "Write an insightful essay-style summary using plain text only (no markdown or formatting). Begin with:\n\n"
+                    . "\"Based on {$totalResponses} responses to this question...\"\n\n"
+                    . "Identify patterns, trends, common themes, and notable outliers in the responses.\n\n"
+                    . "Responses to analyze:\n" . $responseText;
+        }
+
+        $apiKey = env('GEMINI_API_KEY');
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+        ])->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . $apiKey, [
+            'contents' => [
+                [
+                    'parts' => [
+                        ['text' => $prompt]
+                    ]
+                ]
+            ],
+            'generationConfig' => [
+                'maxOutputTokens' => 1000,
+                'temperature' => 0.7,
+            ]
+        ]);
+
+        $json = $response->json();
+        $aiAnalysis = '';
+
+        if (
+            $response->ok() &&
+            isset($json['candidates'][0]['content']['parts'][0]['text'])
+        ) {
+            $aiAnalysis = $json['candidates'][0]['content']['parts'][0]['text'];
+        } elseif (isset($json['error']['message'])) {
+            $aiAnalysis = 'Gemini API error: ' . $json['error']['message'];
+        } else {
+            $aiAnalysis = 'Failed to generate summary. Please try again.';
+        }
+
+        // Special handling for Likert to combine stats with individual analyses
+        if ($this->question->question_type === 'likert') {
+            $this->aiSummary = $this->combineLikertStatsWithAnalysis($exactCounts, $aiAnalysis);
+        } else {
+            // For other question types, only store the AI analysis part
+            $this->aiSummary = $aiAnalysis;
+        }
+
+        // Save only the AI analysis to DB (exact counts are generated dynamically)
+        Log::info('API response received. Saving summary for question ID: ' . $this->question->id);
+        $this->question->ai_summary = $this->aiSummary;
+        $this->question->save();
+
+        $this->loading = false;
+
+        Log::info('Summary generated and saved. AI Summary value: ' . $this->aiSummary);
+        
+        // Forcefully refresh the component
+        $this->dispatch('$refresh');
+    }
+
+    /**
+     * Combine Likert statistics with AI analysis for each statement
+     */
+    private function combineLikertStatsWithAnalysis($exactCounts, $aiAnalysis)
+    {
+        $likertRows = is_array($this->question->likert_rows) ? 
+            $this->question->likert_rows : 
+            json_decode($this->question->likert_rows ?? '[]', true);
+        
+        // If AI analysis is empty, return a fallback message
+        if (empty(trim($aiAnalysis))) {
+            Log::warning("Empty AI analysis received for Likert question ID: " . $this->question->id);
+            return "AI analysis could not be generated at this time. Please try again.";
+        }
+        
+        // Parse AI analysis by statements
+        $analysisLines = explode("\n", trim($aiAnalysis));
+        $statementAnalyses = [];
+        
+        foreach ($analysisLines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+            
+            // Try to match "Statement X:" pattern
+            if (preg_match('/^Statement\s+(\d+):\s*(.+)/', $line, $matches)) {
+                $statementIndex = intval($matches[1]) - 1; // Convert to 0-based index
+                $analysis = trim($matches[2]);
+                if (!empty($analysis)) {
+                    $statementAnalyses[$statementIndex] = $analysis;
+                }
+            }
+        }
+        
+        // If no statements were parsed, return the original AI analysis
+        if (empty($statementAnalyses)) {
+            Log::warning("Could not parse statement-based analysis for Likert question ID: " . $this->question->id);
+            return $aiAnalysis; // Return the raw AI response as fallback
+        }
+        
+        // Build the final analysis results
+        $analysisResults = [];
+        for ($i = 0; $i < count($likertRows); $i++) {
+            if (isset($statementAnalyses[$i])) {
+                $analysisResults[] = "Statement " . ($i + 1) . ": " . $statementAnalyses[$i];
+            } else {
+                // Fallback for missing statement analysis
+                $analysisResults[] = "Statement " . ($i + 1) . ": Analysis not available for this statement.";
+            }
+        }
+        
+        return implode("\n\n", $analysisResults);
     }
 
     public function render()

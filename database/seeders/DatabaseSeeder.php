@@ -108,10 +108,10 @@ class DatabaseSeeder extends Seeder
             TagCategorySeeder::class,
             TagSeeder::class,
             SurveyTopicSeeder::class, // Run this first
-            // SurveySeeder::class,      // Then run SurveySeeder
+            SurveySeeder::class,      // Then run SurveySeeder
             RewardSeeder::class,      // Add the RewardSeeder to be run
             VoucherSeeder::class,     // Add VoucherSeeder
-            // TestResponseSeeder::class, // Add our new TestResponseSeeder
+            TestResponseSeeder::class, // Add our new TestResponseSeeder
               // Add test reports
         ]);
     }
