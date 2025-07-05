@@ -658,23 +658,33 @@ class AnswerSurvey extends Component
 
         Log::info("Calling DeepSeek at: {$apiUrl}");
 
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'api-key' => $apiKey,
-        ])->timeout(30)->post($apiUrl, [
-            'messages' => [
-                ['role' => 'system', 'content' => 'You are a professional translator.'],
-                ['role' => 'user', 'content' => $deepseekPrompt]
-            ],
-            'max_tokens' => 2048,
-            'temperature' => 0.1
-        ]);
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'api-key' => $apiKey,
+            ])->timeout(30)->post($apiUrl, [
+                'messages' => [
+                    ['role' => 'system', 'content' => 'You are a professional translator.'],
+                    ['role' => 'user', 'content' => $deepseekPrompt]
+                ],
+                'max_tokens' => 2048,
+                'temperature' => 0.1
+            ]);
 
-        if ($response->successful() && isset($response['choices'][0]['message']['content'])) {
-            Log::info('DeepSeek translation successful.');
-            return $response['choices'][0]['message']['content'];
-        } else {
-            Log::error('DeepSeek translation failed: ' . $response->body());
+            if ($response->successful() && isset($response['choices'][0]['message']['content'])) {
+                $translatedText = $response['choices'][0]['message']['content'];
+                Log::info('DeepSeek translation successful.');
+                Log::info('Translated text: ' . $translatedText);
+                return $translatedText;
+            } else {
+                Log::error('DeepSeek translation failed: ' . $response->body());
+                return null;
+            }
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('DeepSeek timeout or connection error: ' . $e->getMessage());
+            return null;
+        } catch (\Exception $e) {
+            Log::error('DeepSeek unexpected error: ' . $e->getMessage());
             return null;
         }
     }
@@ -697,25 +707,33 @@ class AnswerSurvey extends Component
             . "TEXT:\n{$textToTranslate}\n\n"
             . "Provide verified {$targetLanguage} translation:";
 
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-        ])->timeout(30)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
-            'contents' => [
-                ['parts' => [['text' => $geminiPrompt]]]
-            ],
-            'generationConfig' => [
-                'maxOutputTokens' => 300,
-                'temperature' => 0.1,
-                'topP' => 0.9,
-                'topK' => 40,
-            ],
-        ]);
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->timeout(30)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
+                'contents' => [
+                    ['parts' => [['text' => $geminiPrompt]]]
+                ],
+                'generationConfig' => [
+                    'maxOutputTokens' => 500,
+                    'temperature' => 0.1,
+                    'topP' => 0.9,
+                    'topK' => 40,
+                ],
+            ]);
 
-        if ($response->successful()) {
-            Log::info('Gemini translation successful.');
-            return $response['candidates'][0]['content']['parts'][0]['text'] ?? null;
-        } else {
-            Log::error('Gemini translation failed: ' . $response->body());
+            if ($response->successful()) {
+                Log::info('Gemini translation successful.');
+                return $response['candidates'][0]['content']['parts'][0]['text'] ?? null;
+            } else {
+                Log::error('Gemini translation failed: ' . $response->body());
+                return null;
+            }
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Gemini timeout or connection error: ' . $e->getMessage());
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Gemini unexpected error: ' . $e->getMessage());
             return null;
         }
     }
@@ -824,67 +842,67 @@ class AnswerSurvey extends Component
 
         $translatedText = null;
 
-        // Try DeepSeek first
+        // Try DeepSeek first with timeout handling
         try {
             $translatedText = $this->translateWithDeepSeek($textToTranslate, $targetLanguage);
         } catch (\Exception $e) {
             Log::error('DeepSeek exception: ' . $e->getMessage());
+            // Continue to fallback instead of breaking
         }
 
-        // Fallback to Gemini if DeepSeek failed
+        // Fallback to Gemini if DeepSeek failed with timeout handling
         if (!$translatedText) {
             try {
                 $translatedText = $this->translateWithGemini($textToTranslate, $targetLanguage);
             } catch (\Exception $e) {
                 Log::error('Gemini exception: ' . $e->getMessage());
+                // Continue to incomplete translation instead of breaking
             }
         }
 
-        // Process output
+        // Process output with improved multi-line handling
         $translatedQuestion = null;
         $translatedChoicesData = [];
         $translatedLikertData = [];
 
         if ($translatedText) {
-            foreach (explode("\n", $translatedText) as $line) {
-                if (!is_string($line)) continue;
-                $line = trim($line);
+            // Remove "think" statements and trim the text
+            $translatedText = preg_replace('/<think>.*?<\/think>/s', '', $translatedText);
+            $translatedText = trim($translatedText);
 
-                if (str_starts_with($line, 'Q:')) {
-                    $translatedQuestion = trim(substr($line, 2));
-                } 
-                // Handle multiple choice/radio choices
-                elseif ($hasChoices && preg_match('/^C(\d+):\s*(.+)$/', $line, $matches)) {
-                    $choiceKey = "C" . $matches[1];
-                    $choiceText = trim($matches[2]);
-                    if (isset($choiceMapping[$choiceKey])) {
-                        $choiceId = $choiceMapping[$choiceKey];
-                        $translatedChoicesData[$choiceId] = $choiceText;
+            $lines = explode("\n", $translatedText);
+            $currentSection = null;
+            $currentContent = [];
+            
+            foreach ($lines as $line) {
+                if (!is_string($line)) continue;
+                // Don't trim here to preserve leading spaces if needed
+                
+                // Check if this line starts a new section
+                if (preg_match('/^(Q|C\d+|R\d+|COL\d+):\s*(.*)$/', $line, $matches)) {
+                    // Save previous section if exists
+                    if ($currentSection !== null) {
+                        $this->saveTranslatedSection($currentSection, $currentContent, $translatedQuestion, $translatedChoicesData, $translatedLikertData, $choiceMapping, $likertMapping, $hasChoices, $hasLikert);
                     }
+                    
+                    // Start new section
+                    $currentSection = $matches[1];
+                    $currentContent = [trim($matches[2])];
+                } else if ($currentSection !== null) {
+                    // Continue current section with multi-line content
+                    // Preserve the line even if it's empty to maintain spacing
+                    $currentContent[] = rtrim($line);
                 }
-                // Handle Likert rows
-                elseif ($hasLikert && preg_match('/^R(\d+):\s*(.+)$/', $line, $matches)) {
-                    $rowKey = "R" . $matches[1];
-                    $rowText = trim($matches[2]);
-                    if (isset($likertMapping['rows'][$rowKey])) {
-                        $rowIndex = $likertMapping['rows'][$rowKey];
-                        $translatedLikertData['rows'][$rowIndex] = $rowText;
-                    }
-                }
-                // Handle Likert columns
-                elseif ($hasLikert && preg_match('/^COL(\d+):\s*(.+)$/', $line, $matches)) {
-                    $colKey = "COL" . $matches[1];
-                    $colText = trim($matches[2]);
-                    if (isset($likertMapping['columns'][$colKey])) {
-                        $colIndex = $likertMapping['columns'][$colKey];
-                        $translatedLikertData['columns'][$colIndex] = $colText;
-                    }
-                }
+            }
+            
+            // Save the last section
+            if ($currentSection !== null) {
+                $this->saveTranslatedSection($currentSection, $currentContent, $translatedQuestion, $translatedChoicesData, $translatedLikertData, $choiceMapping, $likertMapping, $hasChoices, $hasLikert);
             }
         }
 
         // Store results
-        $this->translatedQuestions[$questionId] = $translatedQuestion ?? $originalText . ' (Translation incomplete)';
+        $this->translatedQuestions[$questionId] = $translatedQuestion ?? $originalText . ' (Translation incomplete - timeout or error occurred)';
         
         if ($hasChoices) {
             $this->translatedChoices[$questionId] = $translatedChoicesData;
@@ -894,11 +912,41 @@ class AnswerSurvey extends Component
             $this->translatedChoices[$questionId] = $translatedLikertData;
         }
 
+        // Always reset loading states even if translation fails
         $this->translatingQuestions[$questionId] = false;
         $this->isLoading = false;
         $this->dispatch('$refresh');
     }
     
+    /**
+     * Helper method to save a translated section with multi-line support
+     */
+    private function saveTranslatedSection($sectionKey, $content, &$translatedQuestion, &$translatedChoicesData, &$translatedLikertData, $choiceMapping, $likertMapping, $hasChoices, $hasLikert)
+    {
+        // Join content with newlines to preserve line breaks
+        $fullContent = implode("\n", $content);
+        
+        if ($sectionKey === 'Q') {
+            // For questions, preserve the newlines for proper display
+            $translatedQuestion = $fullContent;
+        } 
+        // Handle multiple choice/radio choices
+        elseif ($hasChoices && isset($choiceMapping[$sectionKey])) {
+            $choiceId = $choiceMapping[$sectionKey];
+            $translatedChoicesData[$choiceId] = $fullContent;
+        }
+        // Handle Likert rows
+        elseif ($hasLikert && isset($likertMapping['rows'][$sectionKey])) {
+            $rowIndex = $likertMapping['rows'][$sectionKey];
+            $translatedLikertData['rows'][$rowIndex] = $fullContent;
+        }
+        // Handle Likert columns
+        elseif ($hasLikert && isset($likertMapping['columns'][$sectionKey])) {
+            $colIndex = $likertMapping['columns'][$sectionKey];
+            $translatedLikertData['columns'][$colIndex] = $fullContent;
+        }
+    }
+
     /**
      * Render the component
      */

@@ -258,6 +258,211 @@ class ViewAllResponsesModal extends Component
         $this->aiSummary = $value;
     }
 
+    /**
+     * Generate summary using DeepSeek API
+     * 
+     * @param string $prompt
+     * @return string|null
+     */
+    protected function generateSummaryWithDeepSeek($prompt)
+    {
+        $deepseekPrompt = "You are an expert survey data analyst. Provide ONLY your final analysis without showing your thinking process or reasoning steps.\n\n"
+            . "ACCEPT: Direct analysis only\n\n"
+            . "ANALYSIS REQUEST:\n{$prompt}\n\n"
+            . "Provide DIRECT analysis (no thinking process):";
+
+        $endpoint = rtrim(env('AZURE_DEEPSEEK_ENDPOINT'), '/');
+        $apiKey = env('AZURE_DEEPSEEK_KEY');
+        $modelName = "DeepSeek-R1-0528";
+        $apiVersion = "2024-05-01-preview";
+
+        $apiUrl = "{$endpoint}/openai/deployments/{$modelName}/chat/completions?api-version={$apiVersion}";
+
+        Log::info("Calling DeepSeek for summary generation at: {$apiUrl}");
+
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'api-key' => $apiKey,
+            ])->timeout(30)->post($apiUrl, [
+                'messages' => [
+                    ['role' => 'system', 'content' => 'You are an expert survey data analyst. Provide only direct analysis without any thinking process.'],
+                    ['role' => 'user', 'content' => $deepseekPrompt]
+                ],
+                'max_tokens' => 1000,
+                'temperature' => 1,
+            ]);
+
+            if ($response->successful() && isset($response['choices'][0]['message']['content'])) {
+                $content = $response['choices'][0]['message']['content'];
+                
+                // Parse the response to extract only the final analysis, similar to translation parsing
+                $content = $this->parseDeepSeekAnalysisResponse($content);
+                
+                Log::info('DeepSeek summary generation successful.');
+                Log::info('Generated analysis: ' . $content);
+                return $content;
+            } else {
+                Log::error('DeepSeek summary generation failed: ' . $response->body());
+                return null;
+            }
+        } catch (\Exception $e) {
+            Log::error('DeepSeek summary generation exception: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Parse DeepSeek response to extract only the final analysis content
+     * Similar to how translation parsing works in AnswerSurvey
+     * 
+     * @param string $content
+     * @return string
+     */
+    private function parseDeepSeekAnalysisResponse($content)
+    {
+        // Remove <think> tags and their content completely
+        $content = preg_replace('/<think>.*?<\/think>/s', '', $content);
+        
+        // Split by lines and look for analysis patterns
+        $lines = explode("\n", $content);
+        $analysisLines = [];
+        $inThinking = false;
+        $foundAnalysis = false;
+        
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+            
+            // Skip obvious thinking indicators
+            if (preg_match('/^(Let me|I need to|First,|Looking at|The data shows that)/i', $line) ||
+                preg_match('/^(Thinking|Analysis process|Reasoning):/i', $line) ||
+                str_contains(strtolower($line), 'thinking process') ||
+                str_contains(strtolower($line), 'let me analyze')) {
+                $inThinking = true;
+                continue;
+            }
+            
+            // Look for content that starts the actual analysis
+            if (preg_match('/^(The|This|Based|Overall|Out of|After analyzing)/i', $line) && strlen($line) > 20) {
+                $inThinking = false;
+                $foundAnalysis = true;
+            }
+            
+            // For Likert questions, look for "Statement X:" pattern
+            if (preg_match('/^Statement\s+\d+:/i', $line)) {
+                $inThinking = false;
+                $foundAnalysis = true;
+            }
+            
+            // Collect analysis lines
+            if (!$inThinking && ($foundAnalysis || strlen($line) > 30)) {
+                $analysisLines[] = $line;
+            }
+        }
+        
+        // If we found structured analysis, return it
+        if (!empty($analysisLines)) {
+            $result = implode("\n", $analysisLines);
+            return trim($result);
+        }
+        
+        // Fallback: use the cleaned content
+        $cleanedContent = $this->cleanDeepSeekResponse($content);
+        return !empty($cleanedContent) ? $cleanedContent : $content;
+    }
+
+    /**
+     * Clean DeepSeek response to remove thinking process
+     * 
+     * @param string $content
+     * @return string
+     */
+    private function cleanDeepSeekResponse($content)
+    {
+        // Remove <think> tags and their content
+        $content = preg_replace('/<think>.*?<\/think>/s', '', $content);
+        
+        // Remove any content between thinking markers
+        $content = preg_replace('/\*\*Thinking:\*\*.*?(?=\*\*Analysis:\*\*|\*\*Response:\*\*|$)/s', '', $content);
+        $content = preg_replace('/\*\*Analysis:\*\*\s*/s', '', $content);
+        $content = preg_replace('/\*\*Response:\*\*\s*/s', '', $content);
+        
+        // Remove lines that start with common thinking indicators
+        $lines = explode("\n", $content);
+        $cleanLines = [];
+        $skipThinking = false;
+        
+        foreach ($lines as $line) {
+            $trimmedLine = trim($line);
+            
+            // Skip lines that indicate thinking process
+            if (preg_match('/^(Let me|I need to|First,|Looking at|The data shows that)/i', $trimmedLine) ||
+                preg_match('/^(Thinking|Analysis|Reasoning):/i', $trimmedLine) ||
+                str_contains($trimmedLine, 'thinking process') ||
+                str_contains($trimmedLine, 'mental') && str_contains($trimmedLine, 'analysis')) {
+                $skipThinking = true;
+                continue;
+            }
+            
+            // If we find content that looks like final analysis, start including
+            if (preg_match('/^(The|This|Based|Overall|In conclusion)/i', $trimmedLine) && strlen($trimmedLine) > 20) {
+                $skipThinking = false;
+            }
+            
+            if (!$skipThinking && !empty($trimmedLine)) {
+                $cleanLines[] = $line;
+            }
+        }
+        
+        $cleanedContent = implode("\n", $cleanLines);
+        
+        // Final cleanup - trim and ensure we have content
+        $cleanedContent = trim($cleanedContent);
+        
+        return !empty($cleanedContent) ? $cleanedContent : $content;
+    }
+
+    /**
+     * Generate summary using Gemini API
+     * 
+     * @param string $prompt
+     * @return string|null
+     */
+    protected function generateSummaryWithGemini($prompt)
+    {
+        $apiKey = env('GEMINI_API_KEY');
+
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->timeout(30)->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . $apiKey, [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'maxOutputTokens' => 1000,
+                    'temperature' => 0.7,
+                ]
+            ]);
+
+            if ($response->successful() && isset($response['candidates'][0]['content']['parts'][0]['text'])) {
+                Log::info('Gemini summary generation successful.');
+                return $response['candidates'][0]['content']['parts'][0]['text'];
+            } else {
+                Log::error('Gemini summary generation failed: ' . $response->body());
+                return null;
+            }
+        } catch (\Exception $e) {
+            Log::error('Gemini summary generation exception: ' . $e->getMessage());
+            return null;
+        }
+    }
+
     public function generateSummary()
     {
         Log::info('Generating summary for question ID: ' . $this->question->id);
@@ -272,25 +477,29 @@ class ViewAllResponsesModal extends Component
         
         switch ($questionType) {
             case 'multiple_choice':
-                $prompt = "Analyze the patterns and insights from the multiple choice question responses above and provide additional analysis in essay format (150-200 words).\n\n"
+                $prompt = "Analyze the multiple choice question response statistics below and provide insights in strictly 1 paragraph essay format (150-200 words).\n\n"
                     . "Question: \"{$this->question->question_text}\"\n\n"
-                    . "The exact statistics have already been provided. Focus your analysis on:\n"
+                    . "RESPONSE STATISTICS:\n"
+                    . $exactCounts . "\n\n"
+                    . "Based on the statistics above, provide analysis focusing on:\n"
                     . "- What the distribution patterns might indicate about respondent preferences or behaviors\n"
                     . "- Compare the different selections and their significance\n"
                     . "- Identify any notable trends or unexpected results\n"
                     . "- Provide insights about what these choices suggest in the context of the question\n\n"
-                    . "Write in plain text only (no markdown or formatting). Note that respondents could select multiple options.\n";
+                    . "Write in plain text only (no markdown or formatting). Note that respondents could select multiple options. Do not repeat the exact statistics.\n";
                 break;
                 
             case 'radio':
-                $prompt = "Analyze the patterns and insights from the single choice question responses above and provide additional analysis in essay format (150-200 words).\n\n"
+                $prompt = "Analyze the single choice question response statistics below and provide insights in strictly 1 paragraph essay format (150-200 words).\n\n"
                     . "Question: \"{$this->question->question_text}\"\n\n"
-                    . "The exact statistics have already been provided. Focus your analysis on:\n"
+                    . "RESPONSE STATISTICS:\n"
+                    . $exactCounts . "\n\n"
+                    . "Based on the statistics above, provide analysis focusing on:\n"
                     . "- What the distribution patterns might indicate about respondent preferences or behaviors\n"
                     . "- Compare the different selections and their significance\n"
                     . "- Identify any notable trends or unexpected results\n"
                     . "- Provide insights about what these choices suggest in the context of the question\n\n"
-                    . "Write in plain text only (no markdown or formatting).\n";
+                    . "Write in plain text only (no markdown or formatting). Do not repeat the exact statistics.\n";
                 break;
                 
             case 'likert':
@@ -302,7 +511,7 @@ class ViewAllResponsesModal extends Component
                     . "Question: \"{$this->question->question_text}\"\n\n"
                     . "RESPONSE STATISTICS:\n"
                     . $exactCounts . "\n\n"
-                    . "Based on the statistics above, provide a 2-3 sentence analysis for each of the " . count($likertRows) . " statements about what the response distribution reveals about respondent attitudes, satisfaction, or opinions. Focus on interpreting the patterns, trends, and what the percentages suggest.\n\n"
+                    . "Based on the statistics above, provide a 1-2 sentence analysis for each of the " . count($likertRows) . " statements about what the response distribution reveals about respondent attitudes, satisfaction, or opinions. Focus on interpreting the patterns, trends, and what the percentages suggest.\n\n"
                     . "IMPORTANT: You must format your response exactly as follows:\n"
                     . "Statement 1: [2-3 sentence analysis of what the response pattern reveals]\n"
                     . "Continue for all " . count($likertRows) . " statements.\n\n"
@@ -311,18 +520,23 @@ class ViewAllResponsesModal extends Component
                 break;
                 
             case 'rating':
-                $prompt = "Based on the rating question response statistics provided separately, analyze the patterns and insights in a single paragraph (100-150 words).\n\n"
+                $prompt = "Analyze the rating question response statistics below and provide insights in strictly 1 paragraph essay format (100-150 words).\n\n"
                     . "Question: \"{$this->question->question_text}\"\n\n"
-                    . "The exact statistics and average rating are displayed separately. Focus your analysis on:\n"
+                    . "RESPONSE STATISTICS:\n"
+                    . $exactCounts . "\n\n"
+                    . "Based on the statistics above, focus your analysis on:\n"
                     . "- What the rating distribution suggests about overall satisfaction or quality\n"
-                    . "- Any surprising trends or insights from the rating patterns\n\n"
+                    . "- Any surprising trends or insights from the rating patterns\n"
+                    . "- What the average rating and distribution reveal about respondent opinions\n\n"
                     . "Write in plain text only (no markdown or formatting). Do not repeat the statistics.\n";
                 break;
                 
             case 'date':
-                $prompt = "Based on the date question response statistics provided separately, analyze the patterns and insights in a single paragraph (100-150 words).\n\n"
+                $prompt = "Analyze the date question response statistics below and provide insights in strictly 1 paragraph essay format (100-150 words).\n\n"
                     . "Question: \"{$this->question->question_text}\"\n\n"
-                    . "The exact statistics and date distributions are displayed separately. Focus your analysis on:\n"
+                    . "RESPONSE STATISTICS:\n"
+                    . $exactCounts . "\n\n"
+                    . "Based on the statistics above, focus your analysis on:\n"
                     . "- What the clustering of dates might indicate about respondent behavior, preferences, or experiences\n"
                     . "- Interpret the significance of these patterns in the specific context of the question\n"
                     . "- Consider seasonal trends, time periods, or events that might influence the date selection\n\n"
@@ -335,7 +549,7 @@ class ViewAllResponsesModal extends Component
                 $totalResponses = count($responses);
                 $responseText = implode("\n\n", $responses);
                 
-                $prompt = "Analyze the following " . strtoupper($this->question->question_type) . " question responses and provide a summary in a single paragraph (150-200 words).\n\n"
+                $prompt = "Analyze the following " . strtoupper($this->question->question_type) . " question responses and provide a summary in a strictly 1 paragraph essay format (150-200 words).\n\n"
                     . "Question: \"{$this->question->question_text}\"\n"
                     . "Total responses: {$totalResponses}\n\n"
                     . "Write an insightful summary using plain text only (no markdown or formatting). Begin with \"After analyzing {$totalResponses} responses about [topic of question]...\" and include:\n"
@@ -352,7 +566,7 @@ class ViewAllResponsesModal extends Component
                 $totalResponses = count($responses);
                 $responseText = implode("\n", $responses);
                 
-                $prompt = "Analyze the following survey question responses and provide a summary in essay format (200-250 words).\n\n"
+                $prompt = "Analyze the following survey question responses and provide a summary in strictly 1 paragraph essay format (150-200 words).\n\n"
                     . "Question: \"{$this->question->question_text}\"\n"
                     . "Question Type: {$this->question->question_type}\n"
                     . "Total responses: {$totalResponses}\n\n"
@@ -362,35 +576,19 @@ class ViewAllResponsesModal extends Component
                     . "Responses to analyze:\n" . $responseText;
         }
 
-        $apiKey = env('GEMINI_API_KEY');
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-        ])->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . $apiKey, [
-            'contents' => [
-                [
-                    'parts' => [
-                        ['text' => $prompt]
-                    ]
-                ]
-            ],
-            'generationConfig' => [
-                'maxOutputTokens' => 1000,
-                'temperature' => 0.7,
-            ]
-        ]);
+        $aiAnalysis = null;
 
-        $json = $response->json();
-        $aiAnalysis = '';
+        // Try DeepSeek first
+        $aiAnalysis = $this->generateSummaryWithDeepSeek($prompt);
 
-        if (
-            $response->ok() &&
-            isset($json['candidates'][0]['content']['parts'][0]['text'])
-        ) {
-            $aiAnalysis = $json['candidates'][0]['content']['parts'][0]['text'];
-        } elseif (isset($json['error']['message'])) {
-            $aiAnalysis = 'Gemini API error: ' . $json['error']['message'];
-        } else {
-            $aiAnalysis = 'Failed to generate summary. Please try again.';
+        // Fallback to Gemini if DeepSeek failed
+        if (!$aiAnalysis) {
+            $aiAnalysis = $this->generateSummaryWithGemini($prompt);
+        }
+
+        // If both APIs failed, provide fallback message
+        if (!$aiAnalysis) {
+            $aiAnalysis = 'Data summarization incomplete. Please try again later or contact support if the issue persists.';
         }
 
         // Special handling for Likert to combine stats with individual analyses

@@ -20,7 +20,7 @@
                                     <!-- Question container with grid layout -->
                                     <div class="grid grid-cols-[30px_1fr] gap-2 items-start w-full">
                                         <!-- Question number in fixed width column -->
-                                        <div class="font-medium text-lg mt-[28px]">
+                                        <div class="font-medium text-lg">
                                             {{ $questionNumber++ }}.
                                              @if($question->required)
                                                 <span class="text-red-500">*</span>
@@ -29,15 +29,18 @@
                                         
                                         <!-- Question text with preserved line breaks, aligned to top -->
                                         <div class="font-medium text-lg">
-                                            <div class="{{ isset($translatedQuestions[$question->id]) ? 'text-blue-600' : '' }}" style="white-space: pre-line; display: inline-block;">
-                                                {{ preg_replace('/^\s+/', '', $translatedQuestions[$question->id] ?? $question->question_text) }}
+                                            <div class="{{ isset($translatedQuestions[$question->id]) ? 'text-blue-600' : '' }}">
+                                                @if(isset($translatedQuestions[$question->id]))
+                                                    {!! nl2br(e($translatedQuestions[$question->id])) !!}
+                                                @else
+                                                    {!! nl2br(e($question->question_text)) !!}
+                                                @endif
                                             </div>
-                                           
                                         </div>
                                     </div>
                                     
                                     <!-- Translation dropdown component with question-specific loading states -->
-                                    <div class="inline-block flex-shrink-0 ml-2 mt-[28px] relative" wire:key="translate-{{ $question->id }}">
+                                    <div class="inline-block flex-shrink-0 ml-2 relative" wire:key="translate-{{ $question->id }}">
                                         
                                         <!-- Loading spinner: Shows only for this specific question -->
                                         <div wire:loading wire:target="translateQuestion({{ $question->id }})">
