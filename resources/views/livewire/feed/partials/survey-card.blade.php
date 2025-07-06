@@ -113,19 +113,51 @@
             {{-- Days Until Closing --}}
             @php
                 $daysLeft = null;
+                $minutesLeft = null;
+                $timeDisplay = null;
+                
                 if($survey->end_date) {
                     $endDate = \Carbon\Carbon::parse($survey->end_date);
                     $now = \App\Services\TestTimeService::now();
                     $daysLeft = round($now->diffInDays($endDate, false));
+                    
+                    // Check if end date is in the past
+                    if ($now->gt($endDate)) {
+                        $timeDisplay = 'Ended';
+                    }
+                    // If it ends today (0 days), show minutes remaining
+                    elseif ($daysLeft == 0) {
+                        $minutesLeft = $now->diffInMinutes($endDate, false);
+                        
+                        if ($minutesLeft > 60) {
+                            $hoursLeft = floor($minutesLeft / 60);
+                            $remainingMinutes = $minutesLeft % 60;
+                            $timeDisplay = $hoursLeft . 'h ' . $remainingMinutes . 'm left';
+                        } elseif ($minutesLeft > 0) {
+                            // Round the minutes to nearest whole number
+                            $roundedMinutes = round($minutesLeft);
+                            $timeDisplay = $roundedMinutes . ' minutes left';
+                        } else {
+                            $timeDisplay = 'Ended';
+                        }
+                    } else {
+                        // Standard day display for future days
+                        $timeDisplay = $daysLeft == 1 ? '1 day left' : $daysLeft.' days left';
+                    }
                 }
             @endphp
             <div class="flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                @if($daysLeft !== null)
-                    <span class="text-xs {{ $daysLeft < 3 ? 'text-red-600 font-semibold' : 'text-gray-700' }}">
-                        {{ $daysLeft >= 0 ? ($daysLeft == 0 ? 'Ends Today' : ($daysLeft == 1 ? '1 day left' : $daysLeft.' days left')) : 'Ended' }}
+                @if($timeDisplay !== null)
+                    <span class="text-xs {{ 
+                        (($daysLeft !== null && $daysLeft < 3 && $daysLeft >= 0) || 
+                         ($minutesLeft !== null && $minutesLeft < 60) || 
+                         $timeDisplay === 'Ended') ? 
+                        'text-red-600 font-semibold' : 'text-gray-700' 
+                    }}">
+                        {{ $timeDisplay }}
                     </span>
                 @else
                     <span class="text-xs text-gray-700">Open-ended</span>
@@ -138,27 +170,56 @@
     <div class="w-full flex items-center mt-auto mb-4 px-3 sm:px-4 flex-shrink-0">
         {{-- Read More Button --}}
         <div>
-            <button
-                class="px-4 py-1 rounded-full font-bold text-white cursor-pointer transition
-                       bg-[#03b8ff] hover:bg-[#0295d1] hover:shadow-lg focus:outline-none"
-                       
-                type="button"
+            @if(($survey->is_expired_locked ?? false) || ($survey->is_response_limit_locked ?? false) || ($survey->is_demographic_locked ?? false) || ($survey->is_institution_locked ?? false))
+                <!-- Locked survey - different button style -->
+                <button
+                    class="px-4 py-1 rounded-full font-bold text-white cursor-pointer transition
+                           bg-gray-400 hover:bg-gray-500 focus:outline-none"
+                           
+                    type="button"
 
-                x-on:click="
-                    $wire.set('modalSurveyId', null).then(() => {
-                        $wire.set('modalSurveyId', {{ $survey->id }});
-                        $nextTick(() => $dispatch('open-modal', { name: 'surveyDetailModal' }));
-                    })
-                "
-                
-            >
-                Read More
-            </button>
+                    x-on:click="
+                        $wire.set('modalSurveyId', null).then(() => {
+                            $wire.set('modalSurveyId', {{ $survey->id }});
+                            $nextTick(() => $dispatch('open-modal', { name: 'surveyDetailModal' }));
+                        })
+                    "
+                    
+                >
+                    View Details
+                </button>
+            @else
+                <!-- Unlocked survey - normal button style -->
+                <button
+                    class="px-4 py-1 rounded-full font-bold text-white cursor-pointer transition
+                           bg-[#03b8ff] hover:bg-[#0295d1] hover:shadow-lg focus:outline-none"
+                           
+                    type="button"
+
+                    x-on:click="
+                        $wire.set('modalSurveyId', null).then(() => {
+                            $wire.set('modalSurveyId', {{ $survey->id }});
+                            $nextTick(() => $dispatch('open-modal', { name: 'surveyDetailModal' }));
+                        })
+                    "
+                    
+                >
+                    Read More
+                </button>
+            @endif
         </div>
 
-        {{-- Institution Only Indicator (Centered) --}}
+        {{-- Institution Only Indicator & Lock Status (Centered) --}}
         <div class="flex-grow text-center">
-            @if($survey->is_institution_only)
+            @if($survey->is_response_limit_locked ?? false)
+                <span class="text-xs font-bold rounded-full px-3 py-1 bg-orange-500 text-white">Max Responses</span>
+            @elseif($survey->is_expired_locked ?? false)
+                <span class="text-xs font-bold rounded-full px-3 py-1 bg-red-500 text-white">Expired</span>
+            @elseif($survey->is_demographic_locked ?? false)
+                <span class="text-xs font-bold rounded-full px-3 py-1 bg-gray-500 text-white">Locked</span>
+            @elseif($survey->is_institution_locked ?? false)
+                <span class="text-xs font-bold rounded-full px-3 py-1 bg-gray-500 text-white">Institution Only</span>
+            @elseif($survey->is_institution_only)
                 <span class="text-xs font-bold rounded-full px-3 py-1 bg-yellow-500 text-white">Institution Only</span>
             @endif
         </div>

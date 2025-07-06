@@ -15,21 +15,29 @@ class ViewSurveyModal extends Component
    public function mount($surveyId)
     {
         $this->surveyId = $surveyId;
-        $this->survey = Survey::findOrFail($surveyId);
+        $this->survey = Survey::with(['responses'])->findOrFail($surveyId);
 
         // Skip if already locked
-        if (isset($this->survey->is_demographic_locked) && isset($this->survey->is_institution_locked) && isset($this->survey->is_expired_locked)) {
+        if (isset($this->survey->is_demographic_locked) && isset($this->survey->is_institution_locked) && isset($this->survey->is_expired_locked) && isset($this->survey->is_response_limit_locked)) {
             return;
         }
 
         $user = Auth::user();
         $userInstitutionId = $user?->institution_id;
 
-        // Expiration Lock
+        // Expiration Lock - Use TestTimeService consistently
         if ($this->survey->end_date && $this->survey->end_date < \App\Services\TestTimeService::now()) {
             $this->survey->is_expired_locked = true;
         } else {
             $this->survey->is_expired_locked = false;
+        }
+
+        // Response Limit Lock
+        if ($this->survey->target_respondents) {
+            $currentResponseCount = $this->survey->responses()->count();
+            $this->survey->is_response_limit_locked = ($currentResponseCount >= $this->survey->target_respondents);
+        } else {
+            $this->survey->is_response_limit_locked = false;
         }
 
         // Institution Lock

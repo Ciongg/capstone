@@ -51,8 +51,15 @@ class SurveySettingsModal extends Component
         $this->description = $survey->description;
         $this->type = $survey->type;
         $this->target_respondents = $survey->target_respondents;
-        $this->start_date = $survey->start_date ? Carbon::parse($survey->start_date)->format('Y-m-d\TH:i') : null;
-        $this->end_date = $survey->end_date ? Carbon::parse($survey->end_date)->format('Y-m-d\TH:i') : null;
+        
+        // Format dates properly for datetime-local inputs
+        $this->start_date = $survey->start_date ? 
+            Carbon::parse($survey->start_date)->format('Y-m-d\TH:i') : 
+            null;
+        $this->end_date = $survey->end_date ? 
+            Carbon::parse($survey->end_date)->format('Y-m-d\TH:i') : 
+            null;
+            
         $this->isInstitutionOnly = (bool)$survey->is_institution_only;
         $this->survey_topic_id = $survey->survey_topic_id;
         $this->topics = SurveyTopic::all();
@@ -114,40 +121,133 @@ class SurveySettingsModal extends Component
         $this->points_allocated = $this->getPointsForType($value);
     }
 
+    // Add validation for start_date when it's updated
+    public function updatedStartDate($value)
+    {
+        // If end_date exists and is before the new start_date, clear it
+        if ($value && $this->end_date && $this->end_date < $value) {
+            $this->end_date = null;
+        }
+    }
+
     public function saveSurveyInformation()
     {
-        if ($this->survey) {
-            // Handle banner image saving here
-            if ($this->banner_image) {
-                if ($this->survey->image_path) {
-                    Storage::disk('public')->delete($this->survey->image_path);
+        try {
+            // Add validation rules with more specific time validation
+            $this->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'type' => 'required|in:basic,advanced',
+                'target_respondents' => 'nullable|integer|min:1',
+                'start_date' => [
+                    'nullable',
+                    'date',
+                    function ($attribute, $value, $fail) {
+                        if ($value) {
+                            try {
+                                $startDate = Carbon::createFromFormat('Y-m-d\TH:i', $value, 'Asia/Manila');
+                                $minAllowedTime = Carbon::now('Asia/Manila')->addMinutes(5);
+                                
+                                if ($startDate->lt($minAllowedTime)) {
+                                    $fail('The start date must be at least 5 minutes in the future.');
+                                }
+                            } catch (\Exception $e) {
+                                $fail('Please provide a valid date and time.');
+                            }
+                        }
+                    }
+                ],
+                'end_date' => [
+                    'nullable',
+                    'date',
+                    function ($attribute, $value, $fail) {
+                        if ($value && $this->start_date) {
+                            try {
+                                $startDate = Carbon::createFromFormat('Y-m-d\TH:i', $this->start_date, 'Asia/Manila');
+                                $endDate = Carbon::createFromFormat('Y-m-d\TH:i', $value, 'Asia/Manila');
+                                
+                                if ($endDate->lte($startDate)) {
+                                    $fail('The end date must be after the start date.');
+                                }
+                            } catch (\Exception $e) {
+                                $fail('Please provide a valid date and time.');
+                            }
+                        } elseif ($value && !$this->start_date) {
+                            try {
+                                // If no start date but has end date, end date must be at least 5 minutes in future
+                                $endDate = Carbon::createFromFormat('Y-m-d\TH:i', $value, 'Asia/Manila');
+                                $minAllowedTime = Carbon::now('Asia/Manila')->addMinutes(5);
+                                
+                                if ($endDate->lt($minAllowedTime)) {
+                                    $fail('The end date must be at least 5 minutes in the future.');
+                                }
+                            } catch (\Exception $e) {
+                                $fail('Please provide a valid date and time.');
+                            }
+                        }
+                    }
+                ],
+                'survey_topic_id' => 'nullable|exists:survey_topic,id',
+                'banner_image' => 'nullable|image|max:2048', // 2MB max
+            ], [
+                'start_date.date' => 'Please provide a valid date and time.',
+                'end_date.date' => 'Please provide a valid date and time.',
+            ]);
+
+            // If validation passes, proceed with saving
+            if ($this->survey) {
+                // Handle banner image saving here
+                if ($this->banner_image) {
+                    if ($this->survey->image_path) {
+                        Storage::disk('public')->delete($this->survey->image_path);
+                    }
+                    $path = $this->banner_image->store('surveys', 'public');
+                    $this->survey->image_path = $path;
                 }
-                $path = $this->banner_image->store('surveys', 'public');
-                $this->survey->image_path = $path;
+
+                // Convert datetime-local format to proper datetime for database with timezone
+                $startDate = $this->start_date ? Carbon::createFromFormat('Y-m-d\TH:i', $this->start_date, 'Asia/Manila') : null;
+                $endDate = $this->end_date ? Carbon::createFromFormat('Y-m-d\TH:i', $this->end_date, 'Asia/Manila') : null;
+
+                // Save other fields
+                $this->survey->title = $this->title;
+                $this->survey->description = $this->description;
+                $this->survey->type = $this->type;
+                $this->survey->target_respondents = $this->target_respondents;
+                $this->survey->start_date = $startDate;
+                $this->survey->end_date = $endDate;
+                // Use the calculated points instead of just base points
+                $this->survey->points_allocated = $this->getPointsForType($this->type);
+                $this->survey->is_institution_only = $this->isInstitutionOnly;
+                $this->survey->survey_topic_id = $this->survey_topic_id;
+                $this->survey->save();
+
+                $surveyId = $this->survey->id;
+                $this->banner_image = null; 
+                $this->survey = $this->survey->fresh(); 
+
+                // Dispatch events only on successful save
+                $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Survey information Updated!')->to(FormBuilder::class);
+                $this->dispatch('surveyTitleUpdated', title: $this->title)->to(FormBuilder::class);
+                $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
             }
 
-            // Save other fields
-            $this->survey->title = $this->title;
-            $this->survey->description = $this->description;
-            $this->survey->type = $this->type;
-            $this->survey->target_respondents = $this->target_respondents;
-            $this->survey->start_date = $this->start_date;
-            $this->survey->end_date = $this->end_date;
-            // Use the calculated points instead of just base points
-            $this->survey->points_allocated = $this->getPointsForType($this->type);
-            $this->survey->is_institution_only = $this->isInstitutionOnly;
-            $this->survey->survey_topic_id = $this->survey_topic_id;
-            $this->survey->save();
-
-            $surveyId = $this->survey->id;
-            $this->banner_image = null; 
-            $this->survey = $this->survey->fresh(); 
-
-            // Dispatch events
-            $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Survey information Updated!')->to(FormBuilder::class);
-
-            $this->dispatch('surveyTitleUpdated', title: $this->title)->to(FormBuilder::class); // If still needed globally
-            $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Log validation errors for debugging
+            \Log::error("Validation failed:", [
+                'errors' => $e->errors(),
+                'start_date' => $this->start_date,
+                'end_date' => $this->end_date
+            ]);
+            
+            // Re-throw validation exception so @error directives can display the errors
+            // Do NOT close the modal when validation fails
+            throw $e;
+        } catch (\Exception $e) {
+            // Handle other exceptions
+            \Log::error("Save survey information error: " . $e->getMessage());
+            session()->flash('error', 'An error occurred while saving the survey information.');
+            throw $e;
         }
     }
 

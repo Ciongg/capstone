@@ -81,6 +81,7 @@
 @push('scripts')
 <script>
     document.addEventListener('livewire:initialized', () => {
+        // Handle successful survey submission
         Livewire.on('surveySubmitted', (eventData) => {
             // Extract data from the event (this is the key fix)
             const data = eventData[0] || eventData;
@@ -117,6 +118,59 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     window.location.href = "{{ route('feed.index') }}";
+                }
+            });
+        });
+
+        // Handle survey submission errors
+        Livewire.on('surveySubmissionError', (eventData) => {
+            const data = eventData[0] || eventData;
+            
+            // Determine button text and color based on error type
+            let buttonText = '<i class="fas fa-home mr-2"></i> Back to Feed';
+            let buttonColor = '#3085d6';
+            
+            if (data.type === 'already_responded') {
+                buttonText = '<i class="fas fa-chart-bar mr-2"></i> View My Responses';
+                buttonColor = '#17a2b8';
+            } else if (data.type === 'expired' || data.type === 'limit_reached') {
+                buttonText = '<i class="fas fa-search mr-2"></i> Find Other Surveys';
+                buttonColor = '#6c757d';
+            }
+
+            // Show the error alert
+            Swal.fire({
+                title: data.title || 'Submission Failed',
+                html: `
+                    <div class="p-2">
+                        <div class="mb-4 text-gray-600">
+                            ${data.message || 'Your response could not be submitted.'}
+                        </div>
+                        ${data.type === 'expired' ? 
+                            '<div class="text-sm text-red-500"><i class="fas fa-clock mr-1"></i> Survey ended on: ' + 
+                            (new Date('{{ $survey->end_date }}').toLocaleDateString()) + '</div>' : ''
+                        }
+                        ${data.type === 'limit_reached' ? 
+                            '<div class="text-sm text-orange-500"><i class="fas fa-users mr-1"></i> Maximum responses: {{ $survey->target_respondents ?? "N/A" }}</div>' : ''
+                        }
+                    </div>
+                `,
+                icon: data.icon || 'error',
+                confirmButtonText: buttonText,
+                confirmButtonColor: buttonColor,
+                allowOutsideClick: false,
+                customClass: {
+                    confirmButton: 'px-5 py-3 text-lg'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    if (data.type === 'already_responded') {
+                        // Redirect to user's responses page if it exists
+                        window.location.href = "{{ route('feed.index') }}";
+                    } else {
+                        // Default redirect to feed
+                        window.location.href = "{{ route('feed.index') }}";
+                    }
                 }
             });
         });

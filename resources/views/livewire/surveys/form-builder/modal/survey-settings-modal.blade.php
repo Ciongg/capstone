@@ -174,15 +174,56 @@
                 <label class="block font-semibold mb-1">Target Respondents</label>
                 <input type="number" wire:model.defer="target_respondents" class="w-full border rounded px-3 py-2" min="1" />
             </div>
-            <div>
-                <label class="block font-semibold mb-1">Start Date</label>
-                <input type="datetime-local" wire:model.defer="start_date" class="w-full border rounded px-3 py-2" />
-                @error('start_date') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-            </div>
-            <div>
-                <label class="block font-semibold mb-1">End Date</label>
-                <input type="datetime-local" wire:model.defer="end_date" class="w-full border rounded px-3 py-2" />
-                @error('end_date') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+            
+            <!-- Date Inputs - Fixed to use Livewire models -->
+            <div x-data="{
+                currentTime: new Date().toISOString().slice(0, 16),
+                updateEndDateConstraints() {
+                    const endDateInput = this.$refs.endDateInput;
+                    const startDateInput = this.$refs.startDateInput;
+                    if (endDateInput && startDateInput) {
+                        const minDate = startDateInput.value || this.currentTime;
+                        endDateInput.min = minDate;
+                        endDateInput.setAttribute('min', minDate);
+                        
+                        // Clear end date if it's now before the new start date
+                        if (startDateInput.value && endDateInput.value && endDateInput.value < startDateInput.value) {
+                            endDateInput.value = '';
+                            // Trigger Livewire update
+                            endDateInput.dispatchEvent(new Event('input'));
+                        }
+                    }
+                }
+            }" x-init="$nextTick(() => updateEndDateConstraints())">
+                <div class="mb-4">
+                    <label class="block font-semibold mb-1">Start Date</label>
+                    <input 
+                        type="datetime-local" 
+                        wire:model.defer="start_date"
+                        x-ref="startDateInput"
+                        class="w-full border rounded px-3 py-2"
+                        x-init="$el.min = currentTime; $el.setAttribute('min', currentTime);"
+                        :min="currentTime"
+                        @input="updateEndDateConstraints()"
+                        @change="updateEndDateConstraints()"
+                    />
+                    @error('start_date') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block font-semibold mb-1">End Date</label>
+                    <input 
+                        type="datetime-local" 
+                        wire:model.defer="end_date"
+                        x-ref="endDateInput"
+                        class="w-full border rounded px-3 py-2"
+                        x-init="$nextTick(() => { 
+                            const startInput = $refs.startDateInput;
+                            $el.min = (startInput && startInput.value) ? startInput.value : currentTime; 
+                        })"
+                    />
+                    @error('end_date') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                </div>
             </div>
             
             {{-- Save Button for Information --}}

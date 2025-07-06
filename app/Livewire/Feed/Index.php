@@ -11,7 +11,7 @@ use App\Models\InstitutionTagCategory;
 use App\Models\InstitutionTag;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-
+use App\Services\TestTimeService;
 class Index extends Component
 {
 
@@ -353,7 +353,30 @@ class Index extends Component
         $this->loadingMore = false;
     }
     
-    // Load surveys based on filters - Modified to handle answerable filter
+    // Helper method to mark surveys that have reached their response limit
+    private function markResponseLimitReachedSurveys($surveys)
+    {
+        return $surveys->each(function ($survey) {
+            if ($survey->target_respondents) {
+                $currentResponseCount = $survey->responses()->count();
+                $survey->is_response_limit_locked = ($currentResponseCount >= $survey->target_respondents);
+            } else {
+                $survey->is_response_limit_locked = false;
+            }
+        });
+    }
+
+    // Helper method to mark surveys that have expired
+    private function markExpiredSurveys($surveys)
+    {
+        $now = TestTimeService::now();
+        
+        return $surveys->each(function ($survey) use ($now) {
+            $survey->is_expired_locked = $survey->end_date && $now->gt($survey->end_date);
+        });
+    }
+
+    // Load surveys based on filters - Modified to handle response limit and expiration locks
     protected function loadSurveys($append = false)
     {
         // Get authenticated user
@@ -364,41 +387,23 @@ class Index extends Component
         $userInstitutionTags = $user ? $user->institutionTags()->pluck('institution_tags.id')->toArray() : [];
         $userInstitutionId = $user ? $user->institution_id : null;
         
-        // Current date for filtering expired surveys
-        $now = \App\Services\TestTimeService::now();
+        // Current date for filtering expired surveys - Use TestTimeService consistently
+        $now = TestTimeService::now();
         
         // STEP 1: First get basic surveys with standard filters
         $basicQuery = Survey::query()
             ->where('type', 'basic')
-            ->whereIn('status', ['published', 'ongoing']); // Only published and ongoing surveys
+            ->whereIn('status', ['published', 'ongoing']) // Only published and ongoing surveys
+            ->with(['user', 'tags', 'institutionTags', 'topic', 'responses']);
             
-        // Filter out expired surveys if answerable only is enabled
-        if ($this->activeFilters['answerableOnly']) {
-            $basicQuery->where(function($query) use ($now) {
-                $query->whereNull('end_date')
-                      ->orWhere('end_date', '>=', $now);
-            });
-        }
-        
-        $basicQuery->with(['user', 'tags', 'institutionTags', 'topic']);
-        
         // Apply common filters to basic survey query
         $this->applyCommonFilters($basicQuery);
         
         // STEP 2: Then get advanced surveys with demographic filters
         $advancedQuery = Survey::query()
             ->where('type', 'advanced')
-            ->whereIn('status', ['published', 'ongoing']); // Only published and ongoing surveys
-            
-        // Filter out expired surveys if answerable only is enabled
-        if ($this->activeFilters['answerableOnly']) {
-            $advancedQuery->where(function($query) use ($now) {
-                $query->whereNull('end_date')
-                      ->orWhere('end_date', '>=', $now);
-            });
-        }
-        
-        $advancedQuery->with(['user', 'tags', 'institutionTags', 'topic']);
+            ->whereIn('status', ['published', 'ongoing']) // Only published and ongoing surveys
+            ->with(['user', 'tags', 'institutionTags', 'topic', 'responses']);
         
         // Apply common filters to advanced survey query
         $this->applyCommonFilters($advancedQuery);
@@ -416,13 +421,6 @@ class Index extends Component
             
             // Mark advanced surveys as locked if demographics don't match
             $advancedSurveys = $this->markLockedAdvancedSurveys($advancedSurveys, $userGeneralTags, $userInstitutionTags);
-            
-            // Filter out locked surveys if answerable only is enabled
-            if ($this->activeFilters['answerableOnly']) {
-                $advancedSurveys = $advancedSurveys->filter(function($survey) {
-                    return !$survey->is_demographic_locked;
-                });
-            }
         }
         else {
             // Default case (All Types) - get both types with appropriate filtering
@@ -431,30 +429,28 @@ class Index extends Component
             
             // Mark advanced surveys as locked if demographics don't match
             $advancedSurveys = $this->markLockedAdvancedSurveys($advancedSurveys, $userGeneralTags, $userInstitutionTags);
-            
-            // Filter out locked surveys if answerable only is enabled
-            if ($this->activeFilters['answerableOnly']) {
-                $advancedSurveys = $advancedSurveys->filter(function($survey) {
-                    return !$survey->is_demographic_locked;
-                });
-            }
         }
         
-        // STEP 4: Mark institution-only surveys as locked if user doesn't match institution
+        // STEP 4: Mark all surveys for various lock conditions
         $combinedSurveys = $basicSurveys->concat($advancedSurveys);
         $combinedSurveys = $this->markLockedInstitutionSurveys($combinedSurveys, $user, $userInstitutionId);
+        $combinedSurveys = $this->markExpiredSurveys($combinedSurveys);
+        $combinedSurveys = $this->markResponseLimitReachedSurveys($combinedSurveys);
         
-        // Filter out institution-locked surveys if answerable only is enabled
+        // STEP 5: Apply answerable only filter if enabled
         if ($this->activeFilters['answerableOnly']) {
             $combinedSurveys = $combinedSurveys->filter(function($survey) {
-                return !$survey->is_institution_locked;
+                return !$survey->is_demographic_locked 
+                    && !$survey->is_institution_locked 
+                    && !$survey->is_expired_locked 
+                    && !$survey->is_response_limit_locked;
             });
         }
         
-        // STEP 5: Apply ordering/pagination
+        // STEP 6: Apply ordering/pagination
         $combinedSurveys = $combinedSurveys->unique('id');
         
-        // Apply global sorting
+        // Apply global sorting with TestTimeService
         $combinedSurveys = $combinedSurveys
             ->unique('id')
             ->sortBy(function ($survey) {
@@ -462,20 +458,12 @@ class Index extends Component
                     // NEGATE points to simulate descending sort
                     -$survey->points_allocated,
 
-                    // Use real end_date, or far future if null
-                    $survey->end_date ?? now()->addYears(100),
+                    // Use real end_date, or far future if null - Use TestTimeService for consistency
+                    $survey->end_date ?? TestTimeService::now()->addYears(100),
                 ];
             })
             ->values(); // Re-index the collection
 
-        
-        // Log counts for debugging
-        // Log::info('Survey counts in feed:', [
-        //     'basic_count' => $basicSurveys->count(),
-        //     'advanced_count' => $advancedSurveys->count(),
-        //     'total_combined' => $combinedSurveys->count()
-        // ]);
-        
         // Handle pagination
         $total = $combinedSurveys->count();
         $this->hasMorePages = $total > ($this->page * $this->perPage);
@@ -494,7 +482,6 @@ class Index extends Component
         }
 
         $this->dispatch('filter-changed');
-
     }
    
     // Helper method to apply common filters to any survey query

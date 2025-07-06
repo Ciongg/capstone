@@ -36,7 +36,9 @@ class Survey extends Model
         'end_date' => 'datetime',
         'is_institution_only' => 'boolean',
         'is_locked' => 'boolean',
-        'points' => 'decimal:2', // Assuming points can have decimals, adjust if not
+        'target_respondents' => 'integer',
+        'points_allocated' => 'integer',
+        'boost_count' => 'integer',
     ];
 
     public function pages()

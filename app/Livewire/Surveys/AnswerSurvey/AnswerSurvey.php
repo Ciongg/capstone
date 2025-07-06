@@ -430,6 +430,92 @@ class AnswerSurvey extends Component
     }
 
     /**
+     * Validate if survey is still accepting responses
+     * 
+     * @return array|null Returns error details if validation fails, null if valid
+     */
+    protected function validateSurveyAvailability()
+    {
+        $now = TestTimeService::now();
+        
+        // Check if survey has ended
+        if ($this->survey->end_date && $now->gt($this->survey->end_date)) {
+            return [
+                'type' => 'expired',
+                'title' => 'Survey Expired',
+                'message' => 'This survey has ended and is no longer accepting responses.',
+                'icon' => 'error'
+            ];
+        }
+        
+        // Check if survey has reached response limit
+        if ($this->survey->target_respondents) {
+            $currentResponseCount = Response::where('survey_id', $this->survey->id)->count();
+            if ($currentResponseCount >= $this->survey->target_respondents) {
+                return [
+                    'type' => 'limit_reached',
+                    'title' => 'Response Limit Reached',
+                    'message' => 'This survey has reached its maximum number of responses and is no longer accepting new submissions.',
+                    'icon' => 'warning'
+                ];
+            }
+        }
+        
+        // Check if survey is locked
+        if ($this->survey->is_locked) {
+            return [
+                'type' => 'locked',
+                'title' => 'Survey Unavailable',
+                'message' => $this->survey->lock_reason ?? 'This survey is currently unavailable.',
+                'icon' => 'error'
+            ];
+        }
+        
+        // Check if survey status allows responses
+        if (!in_array($this->survey->status, ['published', 'ongoing'])) {
+            return [
+                'type' => 'unavailable',
+                'title' => 'Survey Not Available',
+                'message' => 'This survey is not currently accepting responses.',
+                'icon' => 'error'
+            ];
+        }
+        
+        return null; // All validations passed
+    }
+
+    /**
+     * Check if user has already responded to this survey
+     * 
+     * @return array|null Returns error details if user already responded, null if valid
+     */
+    protected function validateUserResponse()
+    {
+        // Temporarily commented out to allow multiple responses
+        /*
+        $user = Auth::user();
+        if (!$user) {
+            return null; // Allow anonymous responses if not authenticated
+        }
+        
+        $existingResponse = Response::where('survey_id', $this->survey->id)
+                                  ->where('user_id', $user->id)
+                                  ->exists();
+        
+        if ($existingResponse) {
+            return [
+                'type' => 'already_responded',
+                'title' => 'Already Submitted',
+                'message' => 'You have already submitted a response to this survey.',
+                'icon' => 'info'
+            ];
+        }
+        */
+        
+        return null;
+    }
+
+    /**
      * Process form submission - handles both page navigation and final submission
      */
     public function submit()
@@ -457,33 +543,72 @@ class AnswerSurvey extends Component
         
         // Handle final submission
         if ($this->navAction === 'submit') {
-            // Validate all questions in the survey
-            $this->validate($this->getAllValidationRules(), $this->getAllValidationMessages());
-
-            // In preview mode, don't save anything, just show success message
-            if ($this->isPreview) {
-                session()->flash('success', 'Preview submitted successfully! (No data saved)');
-                
-                // If user is a super admin, redirect to surveys index
-                if (Auth::check() && Auth::user()->isSuperAdmin()) {
-                    return redirect()->route('surveys.index');
+            try {
+                // In preview mode, skip all validations and just show success
+                if ($this->isPreview) {
+                    // Validate form data for preview
+                    $this->validate($this->getAllValidationRules(), $this->getAllValidationMessages());
+                    
+                    session()->flash('success', 'Preview submitted successfully! (No data saved)');
+                    
+                    // If user is a super admin, redirect to surveys index
+                    if (Auth::check() && Auth::user()->isSuperAdmin()) {
+                        return redirect()->route('surveys.index');
+                    }
+                    
+                    // Otherwise redirect to form builder
+                    return redirect()->route('surveys.create', ['survey' => $this->survey->id]);
                 }
-                
-                // Otherwise redirect to form builder
-                return redirect()->route('surveys.create', ['survey' => $this->survey->id]);
-            }
 
-            // In normal mode, save the responses
-            $this->saveResponses();
-            
-            // Show SweetAlert2 success message with redirect
-            // The actual alert is triggered via a dispatched browser event
-            $this->dispatch('surveySubmitted', [
-                'title' => 'Survey Completed!',
-                'message' => 'Thank you for completing the survey.',
-                'points' => $this->survey->points_allocated,
-                'surveyName' => $this->survey->title
-            ]);
+                // Validate survey availability (end date, response limits, etc.)
+                $availabilityError = $this->validateSurveyAvailability();
+                if ($availabilityError) {
+                    $this->dispatch('surveySubmissionError', $availabilityError);
+                    return;
+                }
+
+                // Validate user hasn't already responded - COMMENTED OUT
+                /*
+                $userResponseError = $this->validateUserResponse();
+                if ($userResponseError) {
+                    $this->dispatch('surveySubmissionError', $userResponseError);
+                    return;
+                }
+                */
+
+                // Validate all questions in the survey
+                $this->validate($this->getAllValidationRules(), $this->getAllValidationMessages());
+
+                // Save the responses
+                $this->saveResponses();
+                
+                // Show success message
+                $this->dispatch('surveySubmitted', [
+                    'title' => 'Survey Completed!',
+                    'message' => 'Thank you for completing the survey.',
+                    'points' => $this->survey->points_allocated,
+                    'surveyName' => $this->survey->title
+                ]);
+
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                // Re-throw validation exceptions to show form errors
+                throw $e;
+            } catch (\Exception $e) {
+                // Log the error for debugging
+                Log::error('Survey submission error: ' . $e->getMessage(), [
+                    'survey_id' => $this->survey->id,
+                    'user_id' => Auth::id(),
+                    'error' => $e->getTraceAsString()
+                ]);
+
+                // Show generic error message
+                $this->dispatch('surveySubmissionError', [
+                    'type' => 'system_error',
+                    'title' => 'Submission Failed',
+                    'message' => 'An unexpected error occurred while submitting your response. Please try again or contact support if the problem persists.',
+                    'icon' => 'error'
+                ]);
+            }
         }
     }
     
@@ -512,8 +637,6 @@ class AnswerSurvey extends Component
             $response = Response::create([
                 'survey_id' => $this->survey->id,
                 'user_id' => $user?->id,
-                'started_at' => $startedAt,
-                'completed_at' => $completedAt,
             ]);
 
             // Save user snapshot data if user is authenticated

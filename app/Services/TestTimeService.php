@@ -27,7 +27,7 @@ class TestTimeService
     public static function now()
     {
         $testTime = self::getTestTime();
-        return $testTime ? Carbon::parse($testTime) : Carbon::now();
+        return $testTime ? Carbon::parse($testTime) : Carbon::now('Asia/Manila');
     }
     
     public static function isTestModeActive()
