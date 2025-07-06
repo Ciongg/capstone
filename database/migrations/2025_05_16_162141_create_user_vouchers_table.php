@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreignId('voucher_id')->constrained()->onDelete('cascade'); // Link to the specific voucher instance
             $table->foreignId('reward_redemption_id')->constrained()->onDelete('cascade'); // Link to the redemption transaction
             $table->enum('status', ['available', 'unavailable', 'active', 'used', 'expired'])->default('available'); // Updated status options
+            $table->timestamp('activated_at')->nullable(); // When QR code was generated
+            $table->timestamp('expires_at')->nullable(); // When the voucher expires (30 mins after activation)
             $table->timestamp('used_at')->nullable();
             $table->timestamps();
 

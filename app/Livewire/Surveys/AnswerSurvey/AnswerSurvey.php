@@ -13,6 +13,8 @@ use App\Models\SurveyQuestion;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use App\Services\TestTimeService;
+use Carbon\Carbon;
 
 class AnswerSurvey extends Component
 {
@@ -77,6 +79,12 @@ class AnswerSurvey extends Component
     public $isLoading = false;
 
     /**
+     * Track when the survey was started
+     * @var Carbon
+     */
+    public $startedAt;
+
+    /**
      * Listener for component events
      */
     protected $listeners = ['translateQuestion' => 'translateQuestion', '$refresh'];
@@ -115,6 +123,11 @@ class AnswerSurvey extends Component
 
         // Set up initial answer structure
         $this->initializeAnswers();
+
+        // Track survey start time when component is mounted (not in preview mode)
+        if (!$this->isPreview) {
+            $this->startedAt = TestTimeService::now();
+        }
     }
 
     /**
@@ -488,10 +501,19 @@ class AnswerSurvey extends Component
                 $this->survey->save();
             }
 
+            // Get started_at from component property and completed_at from current time
+            $startedAt = $this->startedAt ?? TestTimeService::now();
+            $completedAt = TestTimeService::now();
+            
+            // Calculate completion time in seconds
+            $completionTimeSeconds = $startedAt->diffInSeconds($completedAt);
+
             // Create a new response record
             $response = Response::create([
                 'survey_id' => $this->survey->id,
                 'user_id' => $user?->id,
+                'started_at' => $startedAt,
+                'completed_at' => $completedAt,
             ]);
 
             // Save user snapshot data if user is authenticated
@@ -507,10 +529,6 @@ class AnswerSurvey extends Component
                         ];
                     }
                 }
-                
-                // Calculate completion time
-                $completionTime = null;
-                // You may add logic here to calculate actual completion time
 
                 // Create the snapshot record
                 $response->snapshot()->create([
@@ -522,9 +540,9 @@ class AnswerSurvey extends Component
                     'experience_points' => $user->experience_points ?? 0,
                     'rank' => $user->rank ?? 'silver',
                     'title' => $user->title ?? null,
-                    'started_at' => now()->subMinutes(5), // Example - you might want to track actual start time
-                    'completed_at' => now(),
-                    'completion_time_seconds' => $completionTime ?? rand(60, 300), // Example - replace with actual tracking
+                    'started_at' => $startedAt,
+                    'completed_at' => $completedAt,
+                    'completion_time_seconds' => $completionTimeSeconds,
                     'demographic_tags' => json_encode($demographicTags)
                 ]);
             }
