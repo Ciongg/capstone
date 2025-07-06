@@ -365,7 +365,7 @@ class Index extends Component
         $userInstitutionId = $user ? $user->institution_id : null;
         
         // Current date for filtering expired surveys
-        $now = now();
+        $now = \App\Services\TestTimeService::now();
         
         // STEP 1: First get basic surveys with standard filters
         $basicQuery = Survey::query()

@@ -20,9 +20,22 @@ class TestControls extends Component
     public $inboxMessage = 'This is a test message for the inbox system.';
     public $inboxUrl = '';
 
+    // New properties for date/time testing
+    public $testDateTime = '';
+    public $isTestModeActive = false;
+    public $currentTestTime = '';
+
+    // Properties to control section visibility
+    public $showPointsControls = false;
+    public $showLevelControls = false;
+    public $showXpControls = false;
+    public $showInboxControls = false;
+    public $showDateTimeControls = false;
+
     public function mount()
     {
         $this->refreshUserStats();
+        $this->refreshTestTimeStatus();
     }
 
     public function refreshUserStats()
@@ -178,5 +191,94 @@ class TestControls extends Component
         $this->dispatch('refreshInbox');
         
         session()->flash('message', 'Test message sent to your inbox!');
+    }
+
+    public function refreshTestTimeStatus()
+    {
+        $this->isTestModeActive = \App\Services\TestTimeService::isTestModeActive();
+        if ($this->isTestModeActive) {
+            $this->currentTestTime = \App\Services\TestTimeService::getTestTime();
+        } else {
+            $this->currentTestTime = '';
+        }
+        
+        // Set default test date time to current time if empty
+        if (empty($this->testDateTime)) {
+            $this->testDateTime = now()->format('Y-m-d\TH:i');
+        }
+    }
+
+    public function setTestTime()
+    {
+        if (empty($this->testDateTime)) {
+            session()->flash('message', 'Please select a date and time!');
+            return;
+        }
+
+        \App\Services\TestTimeService::setTestTime($this->testDateTime);
+        $this->refreshTestTimeStatus();
+        session()->flash('message', 'Test time set to: ' . $this->testDateTime);
+    }
+
+    public function resetTestTime()
+    {
+        \App\Services\TestTimeService::clearTestTime();
+        $this->refreshTestTimeStatus();
+        session()->flash('message', 'Test time reset to real time!');
+    }
+
+    public function addHours($hours)
+    {
+        if (!$this->isTestModeActive) {
+            session()->flash('message', 'Test mode must be active to modify time!');
+            return;
+        }
+
+        $currentTestTime = \App\Services\TestTimeService::getTestTime();
+        $newTime = \Carbon\Carbon::parse($currentTestTime)->addHours($hours);
+        
+        \App\Services\TestTimeService::setTestTime($newTime->format('Y-m-d H:i:s'));
+        $this->refreshTestTimeStatus();
+        session()->flash('message', "Added {$hours} hours to test time!");
+    }
+
+    public function addDays($days)
+    {
+        if (!$this->isTestModeActive) {
+            session()->flash('message', 'Test mode must be active to modify time!');
+            return;
+        }
+
+        $currentTestTime = \App\Services\TestTimeService::getTestTime();
+        $newTime = \Carbon\Carbon::parse($currentTestTime)->addDays($days);
+        
+        \App\Services\TestTimeService::setTestTime($newTime->format('Y-m-d H:i:s'));
+        $this->refreshTestTimeStatus();
+        session()->flash('message', "Added {$days} days to test time!");
+    }
+
+    public function togglePointsControls()
+    {
+        $this->showPointsControls = !$this->showPointsControls;
+    }
+
+    public function toggleLevelControls()
+    {
+        $this->showLevelControls = !$this->showLevelControls;
+    }
+
+    public function toggleXpControls()
+    {
+        $this->showXpControls = !$this->showXpControls;
+    }
+
+    public function toggleInboxControls()
+    {
+        $this->showInboxControls = !$this->showInboxControls;
+    }
+
+    public function toggleDateTimeControls()
+    {
+        $this->showDateTimeControls = !$this->showDateTimeControls;
     }
 }

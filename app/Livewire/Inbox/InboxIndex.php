@@ -31,7 +31,7 @@ class InboxIndex extends Component
             ->first();
             
         if ($message && !$message->read_at) {
-            $message->read_at = now();
+            $message->read_at = \App\Services\TestTimeService::now();
             $message->save();
         }
     }
@@ -40,7 +40,7 @@ class InboxIndex extends Component
     {
         InboxMessage::where('recipient_id', Auth::id())
             ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+            ->update(['read_at' => \App\Services\TestTimeService::now()]);
     }
     
     public function clearInbox()

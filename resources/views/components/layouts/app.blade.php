@@ -372,7 +372,8 @@
             </button>
             
             <!-- Control panel -->
-            <div 
+            <div
+                x-cloak 
                 x-show="open" 
                 
                 class="bg-white border border-gray-200 rounded-lg shadow-xl p-4 mb-2 w-64"

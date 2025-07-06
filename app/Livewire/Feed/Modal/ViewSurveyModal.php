@@ -18,12 +18,19 @@ class ViewSurveyModal extends Component
         $this->survey = Survey::findOrFail($surveyId);
 
         // Skip if already locked
-        if (isset($this->survey->is_demographic_locked) && isset($this->survey->is_institution_locked)) {
+        if (isset($this->survey->is_demographic_locked) && isset($this->survey->is_institution_locked) && isset($this->survey->is_expired_locked)) {
             return;
         }
 
         $user = Auth::user();
         $userInstitutionId = $user?->institution_id;
+
+        // Expiration Lock
+        if ($this->survey->end_date && $this->survey->end_date < \App\Services\TestTimeService::now()) {
+            $this->survey->is_expired_locked = true;
+        } else {
+            $this->survey->is_expired_locked = false;
+        }
 
         // Institution Lock
         if ($this->survey->is_institution_only) {

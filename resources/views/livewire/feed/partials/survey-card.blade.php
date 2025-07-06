@@ -115,7 +115,7 @@
                 $daysLeft = null;
                 if($survey->end_date) {
                     $endDate = \Carbon\Carbon::parse($survey->end_date);
-                    $now = \Carbon\Carbon::now();
+                    $now = \App\Services\TestTimeService::now();
                     $daysLeft = round($now->diffInDays($endDate, false));
                 }
             @endphp

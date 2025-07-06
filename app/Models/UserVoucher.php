@@ -60,7 +60,7 @@ class UserVoucher extends Model
     public function markAsUsed()
     {
         $this->status = self::STATUS_USED;
-        $this->used_at = now();
+        $this->used_at = \App\Services\TestTimeService::now();
         $this->save();
         return $this;
     }
