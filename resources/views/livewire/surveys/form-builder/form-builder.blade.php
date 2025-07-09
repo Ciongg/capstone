@@ -191,7 +191,7 @@
                                         onfocus="this.select()"
                                         class="w-full p-2 border border-gray-300 rounded resize-none overflow-hidden"
                                         rows="1"
-                                        style="field-sizing: content; min-height: 2.5em; max-height: 10em;"
+                                        style="field-sizing: content; min-height: 2.5em; max-height: 200em;"
                                     ></textarea>
                                 </div>
                                 <span class="ml-4 whitespace-nowrap text-sm text-gray-500 self-start pt-2 hidden sm:block">

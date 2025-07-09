@@ -737,8 +737,7 @@ class FormBuilder extends Component
 
 
 
-
-
+   
    public function removeItem($type, $itemId)
    {
        // Set loading state for deletion operations

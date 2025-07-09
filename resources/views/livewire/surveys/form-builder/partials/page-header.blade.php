@@ -25,7 +25,7 @@
         placeholder="Enter page title"
         class="w-full text-xl sm:text-2xl font-bold p-2 border border-gray-300 rounded mb-2 resize-none overflow-hidden"
         rows="1"
-        style="field-sizing: content; min-height: 3em; max-height: 12em;"
+        style="field-sizing: content; min-height: 3em; max-height: 100em;"
         @if(isset($survey) && $survey->is_locked) readonly @endif
     >{{ $page->title }}</textarea>
 
@@ -36,7 +36,7 @@
         placeholder="Enter page subtitle"
         class="w-full text-base sm:text-lg text-gray-600 p-2 border border-gray-300 rounded resize-none overflow-hidden"
         rows="1"
-        style="field-sizing: content; min-height: 3em; max-height: 12em;"
+        style="field-sizing: content; min-height: 3em; max-height: 100em;"
         @if(isset($survey) && $survey->is_locked) readonly @endif
     >{{ $page->subtitle }}</textarea>
         

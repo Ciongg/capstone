@@ -56,8 +56,16 @@
                                         class="px-1 py-0 text-xs rounded-tr {{ $loop->first ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800' }}"
                                         {{ $loop->first ? 'disabled' : '' }}
                                         aria-label="Move page up"
+                                        wire:loading.attr="disabled"
+                                        wire:target="movePageUp({{ $page->id }})"
                                     >
-                                        ▲
+                                        <span wire:loading.remove wire:target="movePageUp({{ $page->id }})">▲</span>
+                                        <span wire:loading wire:target="movePageUp({{ $page->id }})">
+                                            <svg class="animate-spin h-3 w-3 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                            </svg>
+                                        </span>
                                     </button>
                                     <button
                                         wire:click.stop="movePageDown({{ $page->id }})"
@@ -65,8 +73,16 @@
                                         class="px-1 py-0 text-xs rounded-br {{ $loop->last ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800' }}"
                                         {{ $loop->last ? 'disabled' : '' }}
                                         aria-label="Move page down"
+                                        wire:loading.attr="disabled"
+                                        wire:target="movePageDown({{ $page->id }})"
                                     >
-                                        ▼
+                                        <span wire:loading.remove wire:target="movePageDown({{ $page->id }})">▼</span>
+                                        <span wire:loading wire:target="movePageDown({{ $page->id }})">
+                                            <svg class="animate-spin h-3 w-3 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                            </svg>
+                                        </span>
                                     </button>
                                 </div>
                             </div>
