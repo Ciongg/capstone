@@ -60,6 +60,7 @@ class SurveySettingsModal extends Component
             Carbon::parse($survey->end_date)->format('Y-m-d\TH:i') : 
             null;
             
+        // Ensure we're using the actual database value
         $this->isInstitutionOnly = (bool)$survey->is_institution_only;
         $this->survey_topic_id = $survey->survey_topic_id;
         $this->topics = SurveyTopic::all();
@@ -226,8 +227,20 @@ class SurveySettingsModal extends Component
                 $this->banner_image = null; 
                 $this->survey = $this->survey->fresh(); 
 
-                // Dispatch events only on successful save
-                $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Survey information Updated!')->to(FormBuilder::class);
+                // Clear demographics based on institution-only status
+                if ($this->isInstitutionOnly) {
+                    // If now institution-only, clear all general survey tags
+                    $this->survey->tags()->sync([]);
+                    $this->selectedSurveyTags = [];
+                } else {
+                    // If now public, clear all institution tags
+                    $this->survey->institutionTags()->sync([]);
+                    $this->selectedInstitutionTags = [];
+                }
+
+                // Dispatch events only on successful save - use save status with custom message
+                $this->dispatch('setSaveStatus', status: 'saved', message: 'New settings saved!')->to(FormBuilder::class);
+            $this->dispatch('surveySettingsUpdated', surveyId: $surveyId)->to(FormBuilder::class);
                 $this->dispatch('surveyTitleUpdated', title: $this->title)->to(FormBuilder::class);
                 $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
             }
@@ -246,7 +259,6 @@ class SurveySettingsModal extends Component
         } catch (\Exception $e) {
             // Handle other exceptions
             \Log::error("Save survey information error: " . $e->getMessage());
-            session()->flash('error', 'An error occurred while saving the survey information.');
             throw $e;
         }
     }
@@ -273,9 +285,8 @@ class SurveySettingsModal extends Component
         // Reset the selected institution tags array
         $this->selectedInstitutionTags = [];
         
-        // Dispatch events
-        $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Survey demographic tags updated! Institution demographics have been cleared.');
-    
+        // Dispatch events - use save status with custom message
+        $this->dispatch('setSaveStatus', status: 'saved', message: 'New settings saved!')->to(FormBuilder::class);
         $this->dispatch('close-modal', name: 'survey-settings-modal-' . $this->survey->id);
     }
 
@@ -332,16 +343,9 @@ class SurveySettingsModal extends Component
         
         $surveyId = $this->survey->id;
         
-        // Dispatch events
-        $this->dispatch('settingsOperationCompleted', status: 'success', message: 'Institution demographics updated! General survey demographics have been cleared.');
+        // Dispatch events - use save status with custom message
+        $this->dispatch('setSaveStatus', status: 'saved', message: 'New settings saved!')->to(FormBuilder::class);
         $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
-    }
-
-    // Add this method to handle updating tabs when the institution-only checkbox changes
-    public function updatedIsInstitutionOnly($value)
-    {
-        // Emit event to update Alpine.js components with the new value
-        $this->dispatch('updated', ['isInstitutionOnly' => (bool)$value]);
     }
 
     public function render()
@@ -349,3 +353,6 @@ class SurveySettingsModal extends Component
         return view('livewire.surveys.form-builder.modal.survey-settings-modal');
     }
 }
+
+
+

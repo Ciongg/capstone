@@ -1,16 +1,14 @@
-<div class="bg-white shadow flex items-center justify-between px-3 sm:px-6 py-3 mb-4 min-w-[300px] overflow-x-auto">
+<div class="bg-white shadow flex items-center justify-between px-3 sm:px-6 py-3 mb-4 min-w-[300px]">
     {{-- Left Side: Title --}}
-    <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+    <div class="flex items-center flex-1 min-w-0 mr-4">
         <input
             type="text"
-            wire:model.defer="surveyTitle"
-            wire:blur="updateSurveyTitle"
-            class="text-lg sm:text-xl font-bold border-b border-gray-300 focus:border-blue-500 outline-none bg-transparent py-1 w-[120px] sm:w-auto"
-            style="min-width: 120px; max-width: 300px;"
+            value="{{ $surveyTitle }}"
+            class="text-sm sm:text-base font-bold border-b border-gray-300 outline-none bg-transparent py-1 cursor-default w-full min-w-0"
+            style="max-width: 80%;"
             placeholder="Untitled Survey"
-            @if($survey->is_locked || $survey->status === 'ongoing') readonly @endif
+            readonly
         />
-        <span class="text-gray-500 italic text-sm hidden sm:inline">Survey Title</span>
     </div>
 
     {{-- Right Side: Buttons & Status --}}

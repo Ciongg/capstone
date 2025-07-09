@@ -1,11 +1,11 @@
 <div x-data="{ tab: 'info' }" class="space-y-4 p-4">
 
-    <!-- Tab Buttons - Modified for mobile responsiveness -->
-    <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mb-4">
+    <!-- Tab Buttons -->
+    <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mb-4 w-full">
         <button
             type="button"
             :class="tab === 'info' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
-            class="px-4 py-2 rounded font-semibold focus:outline-none text-sm sm:text-base w-full sm:w-auto"
+            class="px-4 py-2 rounded font-semibold focus:outline-none w-full sm:w-auto"
             @click="tab = 'info'"
         >
             Survey Information
@@ -17,7 +17,7 @@
                 'bg-gray-200 text-gray-700': tab !== 'demographics',
                 'opacity-50 cursor-not-allowed': isInstitutionOnly
             }"
-            class="px-4 py-2 rounded font-semibold focus:outline-none text-sm sm:text-base w-full sm:w-auto"
+            class="px-4 py-2 rounded font-semibold focus:outline-none w-full sm:w-auto"
             @click="!isInstitutionOnly && (tab = 'demographics')"
             x-bind:disabled="isInstitutionOnly"
             x-data="{ isInstitutionOnly: @js($isInstitutionOnly) }"
@@ -32,7 +32,7 @@
                 'bg-gray-200 text-gray-700': tab !== 'institution_demographics',
                 'opacity-50 cursor-not-allowed': !isInstitutionOnly
             }"
-            class="px-4 py-2 rounded font-semibold focus:outline-none text-sm sm:text-base w-full sm:w-auto"
+            class="px-4 py-2 rounded font-semibold focus:outline-none w-full sm:w-auto"
             @click="isInstitutionOnly && (tab = 'institution_demographics')"
             x-bind:disabled="!isInstitutionOnly"
             x-data="{ isInstitutionOnly: @js($isInstitutionOnly) }"
@@ -41,7 +41,6 @@
             Institution Demographics
         </button>
     </div>
-
     <!-- Survey Information Tab -->
     <div x-show="tab === 'info'" x-cloak>
         <form wire:submit.prevent="saveSurveyInformation" class="space-y-4" x-data="{ fileName: '' }">
@@ -330,17 +329,16 @@
         </form>
     </div>
 
-    <!-- Institution-Only Checkbox handler - Add this script to update tab behavior -->
+    <!-- Institution-Only Checkbox handler - Update the script -->
     <script>
         document.addEventListener('livewire:initialized', () => {
             @this.on('updated', (event) => {
                 if (typeof event.isInstitutionOnly !== 'undefined') {
-                    // Update the isInstitutionOnly property in all Alpine.js components that use it
-                    Alpine.store('isInstitutionOnly', event.isInstitutionOnly);
+                    // Get the Alpine component for the modal
+                    const modalComponent = Alpine.$data(document.querySelector('[x-data*="tab"]'));
                     
-                    // If tabs are now disabled, switch back to info tab
-                    if (event.isInstitutionOnly && Alpine.$data(document.querySelector('[x-data*="tab"]')).tab === 'demographics') {
-                        Alpine.$data(document.querySelector('[x-data*="tab"]')).tab = 'info';
+                    // Update the isInstitutionOnly property in the main Alpine component
+                    if
                     } 
                     else if (!event.isInstitutionOnly && Alpine.$data(document.querySelector('[x-data*="tab"]')).tab === 'institution_demographics') {
                         Alpine.$data(document.querySelector('[x-data*="tab"]')).tab = 'info';

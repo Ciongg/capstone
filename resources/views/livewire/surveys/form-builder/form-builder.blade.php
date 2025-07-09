@@ -70,6 +70,34 @@
     "
 >
 
+    <!-- Save Status Indicator -->
+    <div class="fixed top-4 right-4 z-50">
+        @if($saveStatus === 'saving')
+            <div class="flex items-center space-x-2 bg-blue-100 text-blue-700 px-3 py-2 rounded-lg shadow-md">
+                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span class="text-sm font-medium">{{ $saveMessage }}</span>
+            </div>
+        @elseif($saveStatus === 'saved')
+            <div 
+                class="flex items-center space-x-2 bg-green-100 text-green-700 px-3 py-2 rounded-lg shadow-md"
+                x-data="{ show: true }"
+                x-show="show"
+                x-init="setTimeout(() => show = false, 2000)"
+                x-transition:leave="transition ease-in duration-300"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+            >
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="text-sm font-medium">{{ $saveMessage }}</span>
+            </div>
+        @endif
+    </div>
+
     <!-- Survey Locked Warning -->
     @include('livewire.surveys.form-builder.partials.locked-warning', ['survey' => $survey])
 
@@ -197,4 +225,15 @@
         </div>
     </div> <!-- End of wrapper for interactive elements -->
 </div>
-                          
+
+@push('scripts')
+<script>
+    document.addEventListener('livewire:initialized', () => {
+        Livewire.on('clearSaveStatus', () => {
+            setTimeout(() => {
+                Livewire.find('{{ $_instance->getId() }}').set('saveStatus', '');
+            }, 2000);
+        });
+    });
+</script>
+@endpush
