@@ -2,7 +2,14 @@
     
     {{-- Alpine.js Data Initialization --}}
     <!-- Sticky Page Selector Container -->
-    <div class="sticky top-0 z-30 bg-white shadow px-3 sm:px-6 py-3 mb-4 rounded overflow-hidden min-w-[300px]">
+    <div class="sticky top-20 z-30 shadow px-3 sm:px-6 py-3 mb-4 rounded overflow-hidden min-w-[300px] transition-all duration-300"
+         :class="scrollY > 50 ? 'bg-white/60 backdrop-blur-sm' : 'bg-white'"
+         x-data="{ scrollY: 0 }"
+         x-init="
+            window.addEventListener('scroll', () => {
+                scrollY = window.scrollY;
+            });
+         ">
                 <!-- Page Selector -->
                 @if ($pages->isEmpty())
                     <div class="text-center">

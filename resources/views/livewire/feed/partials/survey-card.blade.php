@@ -1,7 +1,7 @@
 {{-- Individual Survey Card --}}
-<div wire:key="survey-card-{{ $survey->id }}" class="relative bg-white shadow-lg rounded-xl p-0 flex flex-col min-h-[500px]">
+<div wire:key="survey-card-{{ $survey->id }}" class="relative bg-white shadow-2xl rounded-xl p-0 flex flex-col min-h-[500px]">
     {{-- Header --}}
-    <div class="w-full px-3 sm:px-4 py-3 rounded-t-xl bg-gray-100 border-b border-gray-100 flex-shrink-0">
+    <div class="w-full px-3 sm:px-4 py-3 rounded-t-xl bg-gray-50 border-b border-gray-200 flex-shrink-0 mb-2 shadow-[inset_0_0px_4px_0_rgba(0,0,0,0.1)]">
         <div class="flex items-center mb-2">
             <img src="{{ $survey->user->profile_photo_url }}" alt="{{ $survey->user->name ?? 'User' }}" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover mr-2 sm:mr-3">
             <div class="flex flex-col flex-grow min-w-0">
@@ -174,37 +174,57 @@
                 <!-- Locked survey - different button style -->
                 <button
                     class="px-4 py-1 rounded-full font-bold text-white cursor-pointer transition
-                           bg-gray-400 hover:bg-gray-500 focus:outline-none"
+                           bg-gray-400 hover:bg-gray-500 focus:outline-none min-w-[100px] h-8 flex items-center justify-center"
                            
                     type="button"
-
+                    x-data="{ loading: false }"
                     x-on:click="
+                        loading = true;
                         $wire.set('modalSurveyId', null).then(() => {
                             $wire.set('modalSurveyId', {{ $survey->id }});
-                            $nextTick(() => $dispatch('open-modal', { name: 'surveyDetailModal' }));
-                        })
+                            $nextTick(() => {
+                                $dispatch('open-modal', { name: 'surveyDetailModal' });
+                                loading = false;
+                            });
+                        }).catch(() => {
+                            loading = false;
+                        });
                     "
                     
                 >
-                    View Details
+                    <span x-show="!loading">View Details</span>
+                    <svg x-show="loading" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
                 </button>
             @else
                 <!-- Unlocked survey - normal button style -->
                 <button
                     class="px-4 py-1 rounded-full font-bold text-white cursor-pointer transition
-                           bg-[#03b8ff] hover:bg-[#0295d1] hover:shadow-lg focus:outline-none"
+                           bg-[#03b8ff] hover:bg-[#0295d1] hover:shadow-lg focus:outline-none min-w-[100px] h-8 flex items-center justify-center"
                            
                     type="button"
-
+                    x-data="{ loading: false }"
                     x-on:click="
+                        loading = true;
                         $wire.set('modalSurveyId', null).then(() => {
                             $wire.set('modalSurveyId', {{ $survey->id }});
-                            $nextTick(() => $dispatch('open-modal', { name: 'surveyDetailModal' }));
-                        })
+                            $nextTick(() => {
+                                $dispatch('open-modal', { name: 'surveyDetailModal' });
+                                loading = false;
+                            });
+                        }).catch(() => {
+                            loading = false;
+                        });
                     "
                     
                 >
-                    Read More
+                    <span x-show="!loading">Read More</span>
+                    <svg x-show="loading" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
                 </button>
             @endif
         </div>

@@ -124,43 +124,39 @@
 
     {{-- Dynamic Content Container with Tabs --}}
     <div class="bg-white rounded-xl shadow-lg mt-4 w-full">
-        {{-- Navigation Tabs - Modified for consistent centering --}}
-        <div class="px-3 sm:px-6 border-b border-gray-200">
-            <div class="flex justify-center overflow-x-auto space-x-6 md:space-x-12 py-3 scrollbar-hide">
+        {{-- Navigation Tabs - Modified for expanding design --}}
+        <div class="border-b border-gray-200">
+            <div class="flex -mb-px w-full">
                 <button
-                    class="px-3 sm:px-4 py-2 font-medium transition relative flex-shrink-0"
-                    :class="tab === 'about' ? 'text-blue-600 font-semibold' : 'text-gray-600 hover:text-blue-500'"
+                    class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
+                    :class="tab === 'about' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
                     @click="tab = 'about'"
                 >
                     About
-                    <div :class="tab === 'about' ? 'absolute bottom-0 left-0 w-full h-0.5 bg-blue-600' : ''" class="transform -translate-y-2"></div>
                 </button>
                 <button
-                    class="px-3 sm:px-4 py-2 font-medium transition relative"
-                    :class="tab === 'surveys' ? 'text-blue-600 font-semibold' : 'text-gray-600 hover:text-blue-500'"
+                    class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
+                    :class="tab === 'surveys' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
                     @click="tab = 'surveys'"
                 >
                     My Surveys
-                    <div :class="tab === 'surveys' ? 'absolute bottom-0 left-0 w-full h-0.5 bg-blue-600' : ''" class="transform -translate-y-2"></div>
                 </button>
                 <button
-                    class="px-3 sm:px-4 py-2 font-medium transition relative"
-                    :class="tab === 'history' ? 'text-blue-600 font-semibold' : 'text-gray-600 hover:text-blue-500'"
+                    class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
+                    :class="tab === 'history' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
                     @click="tab = 'history'"
                 >
                     Survey History
-                    <div :class="tab === 'history' ? 'absolute bottom-0 left-0 w-full h-0.5 bg-blue-600' : ''" class="transform -translate-y-2"></div>
                 </button>
                 
                 {{-- Only show Institution Demographics tab for Institution Admins --}}
                 @if($user->type === 'institution_admin')
                 <button
-                    class="px-3 sm:px-4 py-2 font-medium transition relative"
-                    :class="tab === 'institution_demographics' ? 'text-blue-600 font-semibold' : 'text-gray-600 hover:text-blue-500'"
+                    class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
+                    :class="tab === 'institution_demographics' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
                     @click="tab = 'institution_demographics'"
                 >
                     Institution Demographics
-                    <div :class="tab === 'institution_demographics' ? 'absolute bottom-0 left-0 w-full h-0.5 bg-blue-600' : ''" class="transform -translate-y-2"></div>
                 </button>
                 @endif
             </div>

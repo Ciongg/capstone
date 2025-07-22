@@ -1,6 +1,6 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- New Layout: User Stats and Points Display -->
-    <div class="bg-white p-2"> 
+    <div class="bg-white p-6"> 
         <div class="flex flex-col md:flex-row items-center md:items-start justify-between md:space-x-8">
             <!-- Left Side: Header and Points Display -->
             <div class="md:w-1/2 lg:w-2/3 flex flex-col items-center md:items-start">
@@ -79,18 +79,18 @@
     <!-- Tabs Navigation -->
     <div class="mb-6">
         <div class="border-b border-gray-200">
-            <div class="flex justify-center md:justify-start -mb-px w-full">
+            <div class="flex -mb-px w-full">
                 <button 
                     wire:click="setActiveTab('system')"  
-                    class="py-4 flex-1 md:flex-none md:px-6 text-center border-b-2 font-medium text-sm focus:outline-none
-                          {{ $activeTab === 'system' ? 'border-[#03b8ff] text-[#03b8ff]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
+                    class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition
+                          {{ $activeTab === 'system' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300' }}"
                 >
                     System Rewards
                 </button>
                 <button 
                     wire:click="setActiveTab('voucher')" 
-                    class="py-4 flex-1 md:flex-none md:px-6 text-center border-b-2 font-medium text-sm focus:outline-none
-                          {{ $activeTab === 'voucher' ? 'border-[#03b8ff] text-[#03b8ff]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
+                    class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition
+                          {{ $activeTab === 'voucher' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300' }}"
                 >
                     Gift Vouchers
                 </button>

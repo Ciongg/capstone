@@ -42,6 +42,8 @@ class SurveyTypeModal extends Component
     public function goBack()
     {
         $this->step = 'type';
+        // Reset only the current step's selection, not previous steps
+        $this->surveyType = null;
         $this->creationMethod = null;
         $this->selectedTemplate = null;
     }
@@ -49,6 +51,7 @@ class SurveyTypeModal extends Component
     public function goBackToMethod()
     {
         $this->step = 'method';
+        // Reset only the current step's selection, not previous steps
         $this->selectedTemplate = null;
     }
 

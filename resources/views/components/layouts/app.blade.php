@@ -59,8 +59,11 @@
 <body>
 
     <!-- Navigation Bar Section -->
-    <nav class="bg-white" x-data="{ 
+    <nav class="sticky top-0 z-40 transition-all duration-300 shadow-md" 
+         :class="scrollY > 50 ? 'bg-white/60 backdrop-blur-sm' : 'bg-white'"
+         x-data="{ 
         mobileMenuOpen: false, // Alpine.js state for mobile menu visibility
+        scrollY: 0,
         // Function to toggle mobile menu and body scroll lock
         toggleMenu() {
             this.mobileMenuOpen = !this.mobileMenuOpen;
@@ -70,7 +73,12 @@
                 document.body.classList.remove('no-scroll'); // Remove no-scroll class from body
             }
         }
-    }">
+    }"
+         x-init="
+            window.addEventListener('scroll', () => {
+                scrollY = window.scrollY;
+            });
+         ">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div class="flex justify-between items-center gap-4">
                 <!-- Left side: Logo/Brand Name -->
@@ -345,7 +353,7 @@
     <!-- End of Modal Sections -->
 
     <!-- Main Content Area -->
-    <main class=" mx-auto ">
+    <main class="mx-auto bg-gray-50">
         @yield('content') {{-- Blade directive to output the content of the current section --}}
     </main>
     <!-- End of Main Content Area -->

@@ -61,26 +61,46 @@
     <!-- Redeem Button -->
     <div class="p-4 border-t border-gray-200 bg-gray-50">
         <button 
-            x-data
+            x-data="{ loading: false }"
             x-on:click="
-                $wire.set('selectedRewardId', null).then(() => {
-                    $wire.set('selectedRewardId', {{ $reward->id }});
-                    $nextTick(() => $dispatch('open-modal', { name: 'reward-redeem-modal' }));
-                })
+                if (!loading) {
+                    loading = true;
+                    $wire.set('selectedRewardId', null).then(() => {
+                        $wire.set('selectedRewardId', {{ $reward->id }});
+                        $nextTick(() => {
+                            $dispatch('open-modal', { name: 'reward-redeem-modal' });
+                            loading = false;
+                        });
+                    });
+                }
             "
             
             class="w-full bg-[#03b8ff] hover:bg-[#0295d1] text-white font-medium py-2 px-4 rounded transition duration-200 
-                  {{ $this->isRewardDisabled($reward) ? 'opacity-50 cursor-not-allowed' : '' }}"
+                  {{ $this->isRewardDisabled($reward) ? 'opacity-50 cursor-not-allowed' : '' }}
+                  flex items-center justify-center min-h-[40px]"
             {{ $this->isRewardDisabled($reward) ? 'disabled' : '' }}>
-            @if(Auth::user() && Auth::user()->points >= $reward->cost)
-                @if($reward->quantity == 0 && $reward->quantity != -1)
-                    Sold Out
+            
+            <!-- Loading Spinner -->
+            <div x-show="loading" class="flex items-center">
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                
+            </div>
+            
+            <!-- Default Button Text -->
+            <div x-show="!loading">
+                @if(Auth::user() && Auth::user()->points >= $reward->cost)
+                    @if($reward->quantity == 0 && $reward->quantity != -1)
+                        Sold Out
+                    @else
+                        Redeem
+                    @endif
                 @else
-                    Redeem
+                    Not Enough Points
                 @endif
-            @else
-                Not Enough Points
-            @endif
+            </div>
         </button>
     </div>
 </div>

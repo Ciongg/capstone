@@ -4,18 +4,18 @@
 
         <!-- Tab Navigation -->
         <div class="border-b border-gray-200 mb-6">
-            <div class="flex -mb-px">
+            <div class="flex -mb-px w-full">
                 <button 
                     x-on:click="tab = 'available'" 
-                    :class="tab === 'available' ? 'border-[#03b8ff] text-[#03b8ff]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                    class="py-4 px-6 border-b-2 font-medium text-sm focus:outline-none"
+                    :class="tab === 'available' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
+                    class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
                 >
                     Available Vouchers
                 </button>
                 <button 
                     x-on:click="tab = 'used'" 
-                    :class="tab === 'used' ? 'border-[#03b8ff] text-[#03b8ff]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                    class="py-4 px-6 border-b-2 font-medium text-sm focus:outline-none"
+                    :class="tab === 'used' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
+                    class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
                 >
                     Used Vouchers
                 </button>

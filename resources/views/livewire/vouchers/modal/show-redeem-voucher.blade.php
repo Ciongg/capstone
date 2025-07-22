@@ -8,7 +8,7 @@
     @if($userVoucher)
         @if(!$showQrCodeView)
             {{-- Confirmation View --}}
-            <div class="flex flex-col items-center space-y-6">
+            <div class="flex flex-col items-center space-y-4">
                 <!-- Voucher Details -->
                 <div class="bg-gray-50 p-4 rounded-md w-full">
                     <div class="flex items-center">
@@ -45,11 +45,14 @@
                     </div>
                     
                     <div class="mt-4">
-                        <p class="text-sm text-gray-600">Generate a QR code for this voucher to redeem at the store?</p>
-                        <p class="text-xs text-gray-500 mt-1">This will mark your voucher as active.</p>
-                        <div class="mt-2 p-3 bg-yellow-50 border border-yellow-300 rounded-md">
-                            <p class="text-xs text-yellow-700 font-semibold">Important:</p>
-                            <ul class="list-disc list-inside text-xs text-yellow-600 mt-1">
+                        <div class="mb-4">
+                            <p class="text-base text-gray-700 font-medium">Generate a QR code for this voucher to redeem at the store?</p>
+                            <p class="text-sm text-gray-600 mt-2">This will mark your voucher as active.</p>
+                        </div>
+                        
+                        <div class="p-4 bg-yellow-50 border border-yellow-300 rounded-md">
+                            <p class="text-sm text-yellow-700 font-semibold mb-2">Important:</p>
+                            <ul class="list-disc list-inside text-sm text-yellow-600 space-y-1">
                                 <li>You will have <strong>30 minutes</strong> to redeem once the QR code is generated.</li>
                                 <li>Ensure you are within the store vicinity.</li>
                                 <li>Confirm the store is open before generating the QR code.</li>
@@ -58,7 +61,7 @@
                     </div>
                     
                     @if(session()->has('error'))
-                        <div class="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <div class="mt-3 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                             {{ session('error') }}
                         </div>
                     @endif
@@ -68,7 +71,7 @@
                 <div class="w-full flex justify-center">
                     <button 
                         wire:click="redeemVoucher"
-                        class="inline-flex items-center justify-center px-6 py-2 border border-transparent text-base font-medium rounded-md text-white bg-[#03b8ff] hover:bg-[#0295d1]"
+                        class="w-full max-w-xs inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#03b8ff] hover:bg-[#0295d1] transition-colors duration-200"
                         {{ $userVoucher->status === 'used' || $userVoucher->status === 'expired' ? 'disabled' : '' }}
                     >
                         <span wire:loading wire:target="redeemVoucher" class="mr-2">
@@ -123,7 +126,7 @@
 
                     {{-- Reference ID --}}
                     <p class="text-md font-medium text-gray-700">
-                        Reference ID: <span class="font-bold">{{ $userVoucher->voucher->reference_no }}</span>
+                        <span class="font-bold">{{ $userVoucher->voucher->reference_no }}</span>
                     </p>
 
                     {{-- Countdown Timer --}}
@@ -135,7 +138,7 @@
                         <p class="text-xs text-yellow-600 mt-1">QR code will expire automatically</p>
                     </div>
                     
-                    <p class="text-xs text-gray-500 mt-2">Present this QR code to the store for redemption.</p>
+                    <p class="text-xs text-gray-500 mt-2">Present this QR code to the store/merchant only for valid redemption.</p>
                     
                 @elseif($userVoucher->status === 'active' && $isExpired)
                     {{-- Show Expired State for Active Vouchers That Timed Out --}}
