@@ -18,6 +18,10 @@ class IndividualResponses extends Component
     public ?string $timeCompleted = null;
     public array $matchedSurveyTagsInfo = [];
     public array $pagesWithProcessedAnswers = [];
+    
+    // Add properties for Go To Respondent feature
+    public $gotoRespondent = '';
+    public $gotoError = '';
 
     protected $listeners = ['responseReported' => 'handleResponseReported'];
 
@@ -321,6 +325,21 @@ class IndividualResponses extends Component
         
         // Optional: Show a brief success message or visual feedback
         $this->dispatch('$refresh');
+    }
+
+    public function goToRespondent()
+    {
+        $this->gotoError = '';
+        $max = $this->survey->responses->count();
+        $number = intval($this->gotoRespondent);
+        // Validate input: must be a number, >= 1, <= max
+        if (!is_numeric($this->gotoRespondent) || $number < 1 || $number > $max) {
+            $this->gotoError = "Please enter a valid respondent number between 1 and $max.";
+            return;
+        }
+        $this->current = $number - 1;
+        $this->gotoRespondent = '';
+        $this->processCurrentResponseDetails();
     }
 
     public function render()

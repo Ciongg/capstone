@@ -13,6 +13,7 @@ class ViewAllResponsesModal extends Component
     public $aiSummary = '';
     public $exactCounts = '';
     public $loading = false;
+    public $selectedModel = 'deepseek'; // 'deepseek' or 'gemini'
 
 
     public function mount()
@@ -465,150 +466,134 @@ class ViewAllResponsesModal extends Component
 
     public function generateSummary()
     {
-        Log::info('Generating summary for question ID: ' . $this->question->id);
-        $this->loading = true;
+        $questionTitle = $this->question->question_text;
+        $choices = $this->question->choices()->get();
+        $answers = $this->question->answers;
+        $totalRespondents = $answers->unique('response_id')->count();
+        $choiceCounts = [];
+        $choiceTexts = [];
 
-        // Generate local exact counts first (already available from mount)
-        $exactCounts = $this->generateExactCounts();
-        
-        // Process answers and generate prompt based on question type
-        $questionType = $this->question->question_type;
-        $prompt = '';
-        
-        switch ($questionType) {
-            case 'multiple_choice':
-                $prompt = "Analyze the multiple choice question response statistics below and provide insights in strictly 1 paragraph essay format (150-200 words).\n\n"
-                    . "Question: \"{$this->question->question_text}\"\n\n"
-                    . "RESPONSE STATISTICS:\n"
-                    . $exactCounts . "\n\n"
-                    . "Based on the statistics above, provide analysis focusing on:\n"
-                    . "- What the distribution patterns might indicate about respondent preferences or behaviors\n"
-                    . "- Compare the different selections and their significance\n"
-                    . "- Identify any notable trends or unexpected results\n"
-                    . "- Provide insights about what these choices suggest in the context of the question\n\n"
-                    . "Write in plain text only (no markdown or formatting). Note that respondents could select multiple options. Do not repeat the exact statistics.\n";
-                break;
-                
-            case 'radio':
-                $prompt = "Analyze the single choice question response statistics below and provide insights in strictly 1 paragraph essay format (150-200 words).\n\n"
-                    . "Question: \"{$this->question->question_text}\"\n\n"
-                    . "RESPONSE STATISTICS:\n"
-                    . $exactCounts . "\n\n"
-                    . "Based on the statistics above, provide analysis focusing on:\n"
-                    . "- What the distribution patterns might indicate about respondent preferences or behaviors\n"
-                    . "- Compare the different selections and their significance\n"
-                    . "- Identify any notable trends or unexpected results\n"
-                    . "- Provide insights about what these choices suggest in the context of the question\n\n"
-                    . "Write in plain text only (no markdown or formatting). Do not repeat the exact statistics.\n";
-                break;
-                
-            case 'likert':
-                $likertRows = is_array($this->question->likert_rows) ? 
-                    $this->question->likert_rows : 
-                    json_decode($this->question->likert_rows ?? '[]', true);
-                
-                $prompt = "Analyze the Likert scale response statistics below and provide insights for each statement.\n\n"
-                    . "Question: \"{$this->question->question_text}\"\n\n"
-                    . "RESPONSE STATISTICS:\n"
-                    . $exactCounts . "\n\n"
-                    . "Based on the statistics above, provide a 1-2 sentence analysis for each of the " . count($likertRows) . " statements about what the response distribution reveals about respondent attitudes, satisfaction, or opinions. Focus on interpreting the patterns, trends, and what the percentages suggest.\n\n"
-                    . "IMPORTANT: You must format your response exactly as follows:\n"
-                    . "Statement 1: [2-3 sentence analysis of what the response pattern reveals]\n"
-                    . "Continue for all " . count($likertRows) . " statements.\n\n"
-                    . "Write in plain text only (no markdown or formatting). Focus on interpreting what the distribution of responses (percentages and counts) tells us about respondent opinions, satisfaction levels, or attitudes for each statement. Do not repeat the statistics or statement text.\n\n"
-                    . "Example: 'Statement 1: This indicates that most respondents feel positively about this aspect, with the majority selecting agree or strongly agree options. However, the notable percentage of neutral responses suggests some uncertainty or mixed experiences among a portion of students. This pattern reveals a generally positive but not unanimous sentiment.'\n";
-                break;
-                
-            case 'rating':
-                $prompt = "Analyze the rating question response statistics below and provide insights in strictly 1 paragraph essay format (100-150 words).\n\n"
-                    . "Question: \"{$this->question->question_text}\"\n\n"
-                    . "RESPONSE STATISTICS:\n"
-                    . $exactCounts . "\n\n"
-                    . "Based on the statistics above, focus your analysis on:\n"
-                    . "- What the rating distribution suggests about overall satisfaction or quality\n"
-                    . "- Any surprising trends or insights from the rating patterns\n"
-                    . "- What the average rating and distribution reveal about respondent opinions\n\n"
-                    . "Write in plain text only (no markdown or formatting). Do not repeat the statistics.\n";
-                break;
-                
-            case 'date':
-                $prompt = "Analyze the date question response statistics below and provide insights in strictly 1 paragraph essay format (100-150 words).\n\n"
-                    . "Question: \"{$this->question->question_text}\"\n\n"
-                    . "RESPONSE STATISTICS:\n"
-                    . $exactCounts . "\n\n"
-                    . "Based on the statistics above, focus your analysis on:\n"
-                    . "- What the clustering of dates might indicate about respondent behavior, preferences, or experiences\n"
-                    . "- Interpret the significance of these patterns in the specific context of the question\n"
-                    . "- Consider seasonal trends, time periods, or events that might influence the date selection\n\n"
-                    . "Write in plain text only (no markdown or formatting). Do not repeat the statistics.\n";
-                break;
-                
-            case 'essay':
-            case 'short_text':
-                $responses = $this->question->answers->pluck('answer')->filter()->toArray();
-                $totalResponses = count($responses);
-                $responseText = implode("\n\n", $responses);
-                
-                $prompt = "Analyze the following " . strtoupper($this->question->question_type) . " question responses and provide a summary in a strictly 1 paragraph essay format (150-200 words).\n\n"
-                    . "Question: \"{$this->question->question_text}\"\n"
-                    . "Total responses: {$totalResponses}\n\n"
-                    . "Write an insightful summary using plain text only (no markdown or formatting). Begin with \"After analyzing {$totalResponses} responses about [topic of question]...\" and include:\n"
-                    . "- The main themes or sentiments that emerged from the responses\n"
-                    . "- The most common theme or feeling expressed and general tone (positive, negative, mixed)\n"
-                    . "- Contrasting views and less common but meaningful themes\n"
-                    . "- Possible interpretations or implications of the response patterns\n"
-                    . "- What these mixed responses might suggest about the topic\n\n"
-                    . "Responses to analyze:\n" . $responseText;
-                break;
-                
-            default:
-                $responses = $this->question->answers->pluck('answer')->filter()->toArray();
-                $totalResponses = count($responses);
-                $responseText = implode("\n", $responses);
-                
-                $prompt = "Analyze the following survey question responses and provide a summary in strictly 1 paragraph essay format (150-200 words).\n\n"
-                    . "Question: \"{$this->question->question_text}\"\n"
-                    . "Question Type: {$this->question->question_type}\n"
-                    . "Total responses: {$totalResponses}\n\n"
-                    . "Write an insightful essay-style summary using plain text only (no markdown or formatting). Begin with:\n\n"
-                    . "\"Based on {$totalResponses} responses to this question...\"\n\n"
-                    . "Identify patterns, trends, common themes, and notable outliers in the responses.\n\n"
-                    . "Responses to analyze:\n" . $responseText;
-        }
-
-        $aiAnalysis = null;
-
-        // Try DeepSeek first
-        $aiAnalysis = $this->generateSummaryWithDeepSeek($prompt);
-
-        // Fallback to Gemini if DeepSeek failed
-        if (!$aiAnalysis) {
-            $aiAnalysis = $this->generateSummaryWithGemini($prompt);
-        }
-
-        // If both APIs failed, provide fallback message
-        if (!$aiAnalysis) {
-            $aiAnalysis = 'Data summarization incomplete. Please try again later or contact support if the issue persists.';
-        }
-
-        // Special handling for Likert to combine stats with individual analyses
         if ($this->question->question_type === 'likert') {
-            $this->aiSummary = $this->combineLikertStatsWithAnalysis($exactCounts, $aiAnalysis);
-        } else {
-            // For other question types, only store the AI analysis part
-            $this->aiSummary = $aiAnalysis;
+            // Build per-statement distributions
+            $likertRows = is_array($this->question->likert_rows) ? $this->question->likert_rows : (json_decode($this->question->likert_rows ?? '[]', true) ?: []);
+            $likertColumns = is_array($this->question->likert_columns) ? $this->question->likert_columns : (json_decode($this->question->likert_columns ?? '[]', true) ?: []);
+            $groupedAnswers = $answers->groupBy('response_id');
+            $rowDistributions = [];
+            $rowCounts = [];
+            foreach ($likertRows as $rowIdx => $rowText) {
+                $rowCounts[$rowIdx] = array_fill(0, count($likertColumns), 0);
+            }
+            foreach ($groupedAnswers as $responseId => $respAnswers) {
+                $likertAnswerData = json_decode($respAnswers->first()?->answer, true);
+                if (is_array($likertAnswerData)) {
+                    foreach ($likertRows as $rowIdx => $rowText) {
+                        $colIdx = $likertAnswerData[$rowIdx] ?? null;
+                        if ($colIdx !== null && isset($rowCounts[$rowIdx][$colIdx])) {
+                            $rowCounts[$rowIdx][$colIdx]++;
+                        }
+                    }
+                }
+            }
+            // Build distribution strings
+            foreach ($likertRows as $rowIdx => $rowText) {
+                $distParts = [];
+                foreach ($likertColumns as $colIdx => $colText) {
+                    $count = $rowCounts[$rowIdx][$colIdx];
+                    $percentage = $totalRespondents > 0 ? round(($count / $totalRespondents) * 100) : 0;
+                    $distParts[] = $percentage . "% (" . $count . ") selected \"" . $colText . "\"";
+                }
+                $rowDistributions[] = $rowText . "\nOut of {$totalRespondents} respondents, " . implode(", ", $distParts) . ".";
+            }
+            $likertBlock = implode("\n\n", $rowDistributions);
+            $prompt = "For each statement below, write a detailed, direct essay-style insight (3-4 sentences, 60-120 words) about what the response distribution reveals about respondent attitudes, satisfaction, or opinions. Each insight should be as thorough as the summary for a multiple choice question, interpreting trends, implications, and what the results suggest. Do NOT repeat the statistics. Do NOT include any thinking process or reasoning steps. Only provide the interpretation/insight. Do NOT use any Markdown, asterisks, or bold formatting—return only raw text.\n\nFormat your response as follows:\n[Statement text]\n[Insight]\n\nContinue for each statement.\n\nStatements and distributions:\n" . $likertBlock;
+            // Use the selected model, fallback to the other if it fails
+            $insight = null;
+            if ($this->selectedModel === 'deepseek') {
+                $insight = $this->generateSummaryWithDeepSeek($prompt);
+                if ($insight) {
+                    // Post-process DeepSeek output for newlines between pairs
+                    $lines = preg_split('/\r\n|\r|\n/', $insight);
+                    $formatted = [];
+                    foreach ($lines as $i => $line) {
+                        $formatted[] = $line;
+                        // Insert blank line after every insight (every odd line)
+                        if ($i % 2 === 1 && trim($line) !== '') {
+                            $formatted[] = '';
+                        }
+                    }
+                    $insight = implode(PHP_EOL, $formatted);
+                }
+                if (!$insight) {
+                    $insight = $this->generateSummaryWithGemini($prompt);
+                }
+            } else {
+                $insight = $this->generateSummaryWithGemini($prompt);
+                if (!$insight) {
+                    $insight = $this->generateSummaryWithDeepSeek($prompt);
+                }
+            }
+            if (!$insight) {
+                $insight = 'Data summarization incomplete. Please try again later or contact support if the issue persists.';
+            }
+            $this->aiSummary = $insight;
+            $this->question->ai_summary = $insight;
+            $this->question->save();
+            $this->dispatch('$refresh');
+            return;
         }
 
-        // Save only the AI analysis to DB (exact counts are generated dynamically)
-        Log::info('API response received. Saving summary for question ID: ' . $this->question->id);
-        $this->question->ai_summary = $this->aiSummary;
+        // Count answers for each choice
+        foreach ($choices as $choice) {
+            $choiceTexts[$choice->id] = $choice->choice_text;
+            $choiceCounts[$choice->id] = 0;
+        }
+        foreach ($answers as $answer) {
+            $decoded = json_decode($answer->answer, true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $choiceId) {
+                    if (isset($choiceCounts[$choiceId])) {
+                        $choiceCounts[$choiceId]++;
+                    }
+                }
+            } else {
+                if (isset($choiceCounts[$answer->answer])) {
+                    $choiceCounts[$answer->answer]++;
+                }
+            }
+        }
+
+        // Build the distribution string for the prompt
+        $distributionParts = [];
+        foreach ($choiceCounts as $choiceId => $count) {
+            $distributionParts[] = $choiceTexts[$choiceId] . ": " . $count;
+        }
+        $distributionString = implode(", ", $distributionParts);
+
+        // Compose the prompt for the LLM (insight only)
+        $statsBlock = "Question: {$questionTitle}\nTotal respondents: {$totalRespondents}\nDistribution: {$distributionString}";
+        $prompt = "Based on the following survey question and answer distribution, write a concise, direct essay-style insight (3-4 sentences, 60-120 words) about what the distribution reveals about respondent preferences, trends, or implications. Do NOT repeat the distribution or statistics. Do NOT include any thinking process or reasoning steps. Only provide the interpretation/insight. Do NOT use any Markdown, asterisks, or bold formatting—return only raw text.\n\n" . $statsBlock;
+
+        // Use the selected model, fallback to the other if it fails
+        $insight = null;
+        if ($this->selectedModel === 'deepseek') {
+            $insight = $this->generateSummaryWithDeepSeek($prompt);
+            if (!$insight) {
+                $insight = $this->generateSummaryWithGemini($prompt);
+            }
+        } else {
+            $insight = $this->generateSummaryWithGemini($prompt);
+            if (!$insight) {
+                $insight = $this->generateSummaryWithDeepSeek($prompt);
+            }
+        }
+        if (!$insight) {
+            $insight = 'Data summarization incomplete. Please try again later or contact support if the issue persists.';
+        }
+
+        // Only use the LLM-generated insight as the summary
+        $this->aiSummary = $insight;
+        $this->question->ai_summary = $insight;
         $this->question->save();
-
-        $this->loading = false;
-
-        Log::info('Summary generated and saved. AI Summary value: ' . $this->aiSummary);
-        
-        // Forcefully refresh the component
         $this->dispatch('$refresh');
     }
 

@@ -250,8 +250,9 @@
                 <textarea 
                     class="w-full h-48 sm:h-64 p-3 border border-gray-300 rounded-lg focus:ring focus:ring-blue-200 focus:border-blue-500 text-sm sm:text-base bg-gray-50" 
                     placeholder="Click 'Generate' to create an AI summary of the responses..."
-                    wire:model.defer="aiSummary"
+                    wire:model="aiSummary"
                     id="aiSummaryTextarea-{{ $question->id }}"
+                    wire:key="aiSummaryTextarea-{{ $question->id }}-{{ md5($aiSummary) }}"
                     x-ref="summaryTextarea"
                     readonly
                 >{{ $aiSummary }}</textarea>
@@ -276,7 +277,12 @@
                 </button>
             </div>
             
-            <div class="flex justify-end">
+            <div class="flex justify-end items-center space-x-2">
+                {{-- AI Model Selector as a select dropdown --}}
+                <select wire:model="selectedModel" class="px-2 py-1 border rounded text-sm focus:ring focus:ring-blue-200 focus:border-blue-500">
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="gemini">Gemini</option>
+                </select>
                 <button 
                     class="px-4 sm:px-5 py-2 font-medium rounded-md text-white text-sm sm:text-base flex items-center justify-center"
                     style="background-color: #03b8ff;"

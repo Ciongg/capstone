@@ -8,15 +8,40 @@
             <div class="bg-white shadow-xl rounded-lg sm:rounded-2xl p-4 sm:p-10 mb-6 sm:mb-8">
                 {{-- Back and Report button container --}}
                 <div class="flex justify-between items-center mb-6">
-                    {{-- Back button to return to all responses view --}}
-                    <a href="{{ route('surveys.responses', $survey->id) }}"
-                       class="px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg shadow hover:bg-gray-200 flex items-center text-sm sm:text-base"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        Back
-                    </a>
+                    {{-- Back and Go To Respondent container --}}
+                    <div class="flex items-center space-x-2">
+                        {{-- Back button to return to all responses view --}}
+                        <a href="{{ route('surveys.responses', $survey->id) }}"
+                           class="px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg shadow hover:bg-gray-200 flex items-center text-sm sm:text-base"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            Back
+                        </a>
+                        {{-- Go to respondent input --}}
+                        <form wire:submit.prevent="goToRespondent" class="flex flex-col items-center ml-2">
+                            <div class="flex items-center">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="{{ $survey->responses->count() }}"
+                                    wire:model.defer="gotoRespondent"
+                                    class="w-16 sm:w-20 px-2 py-1 border rounded text-center mr-2"
+                                    placeholder="No."
+                                />
+                                <button
+                                    type="submit"
+                                    class="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 font-bold"
+                                >
+                                    Go To Respondent
+                                </button>
+                                @if($gotoError)
+                                    <span class="text-xs text-red-600 ml-2 whitespace-nowrap">{{ $gotoError }}</span>
+                                @endif
+                            </div>
+                        </form>
+                    </div>
                     
                     {{-- Report button to flag problematic responses --}}
                     <button
@@ -48,6 +73,8 @@
                         </svg>
                     </button>
                     
+                 
+
                     {{-- Current respondent counter with reported status --}}
                     <div class="mx-8 sm:mx-16 text-center min-w-[180px] sm:min-w-[220px]">
                         <div class="font-bold text-lg sm:text-2xl">
