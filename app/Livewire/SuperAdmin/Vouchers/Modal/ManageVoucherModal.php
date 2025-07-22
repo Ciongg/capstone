@@ -21,6 +21,7 @@ class ManageVoucherModal extends Component
     public $cost;
     public $quantity;
     public $type;
+    public $rank_requirement = 'silver';
     
     public $image;
     public $currentImage;
@@ -39,6 +40,7 @@ class ManageVoucherModal extends Component
         'quantity' => 'nullable|integer|min:-1',
         'image' => 'nullable|image|max:2048',
         'restockQuantity' => 'nullable|integer|min:1|max:100',
+        'rank_requirement' => 'required|in:silver,gold,diamond',
     ];
 
     public function mount($rewardId)
@@ -58,6 +60,7 @@ class ManageVoucherModal extends Component
         $this->quantity = $reward->quantity;
         $this->type = $reward->type;
         $this->currentImage = $reward->image_path;
+        $this->rank_requirement = $reward->rank_requirement ?? 'silver';
         
         // Get voucher counts if this is a voucher type reward
         if ($this->type == 'Voucher' || $this->type == 'voucher') {
@@ -85,6 +88,7 @@ class ManageVoucherModal extends Component
             'status' => $this->status,
             'cost' => $this->cost,
             'quantity' => $this->quantity,
+            'rank_requirement' => $this->rank_requirement,
         ];
         
         // Process image if a new one was uploaded
@@ -171,7 +175,6 @@ class ManageVoucherModal extends Component
             $voucher->store_name = $sampleVoucher->store_name;
             $voucher->promo = $reward->description;
             $voucher->cost = $reward->cost;
-            $voucher->level_requirement = $sampleVoucher->level_requirement;
             $voucher->availability = 'available';
             $voucher->expiry_date = $sampleVoucher->expiry_date;
             $voucher->image_path = $reward->image_path;

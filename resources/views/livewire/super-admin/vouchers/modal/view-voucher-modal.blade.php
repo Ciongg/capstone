@@ -73,7 +73,7 @@
                     </div>
                     
                     <div>
-                        <span class="font-medium">Level Requirement:</span> Level {{ $voucher->level_requirement }}
+                        <span class="font-medium">Rank Requirement:</span> {{ $voucher->reward->rank_requirement ?? 'silver' | ucfirst }}
                     </div>
                     
                     <div>

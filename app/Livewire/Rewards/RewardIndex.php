@@ -107,9 +107,15 @@ class RewardIndex extends Component
         $user = Auth::user();
         
         // Calculate user level and XP progress
-        $userLevel = $user ? $user->getLevel() : 1;
-        $levelProgress = $user ? $user->getLevelProgressPercentage() : 0;
-        $xpForNextLevel = $user ? $user->getXpRequiredForNextLevel() : 100;
+        if ($user) {
+            $userLevel = $user->getLevel();
+            $levelProgress = $user->getLevelProgressPercentage();
+            $xpForNextLevel = $user->getXpRequiredForNextLevel();
+        } else {
+            $userLevel = 1;
+            $levelProgress = 0;
+            $xpForNextLevel = 100;
+        }
         
         return view('livewire.rewards.reward-index', [
             'user' => $user,

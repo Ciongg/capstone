@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('store_name');
             $table->string('promo');
             $table->integer('cost'); // Copied from reward for reference
-            $table->integer('level_requirement')->default(0);
             $table->timestamp('expiry_date')->nullable();
             $table->enum('availability', ['available', 'unavailable', 'expired', 'used'])->default('available');
             $table->string('image_path')->nullable(); // Copied from reward

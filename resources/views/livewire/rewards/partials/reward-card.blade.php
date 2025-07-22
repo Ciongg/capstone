@@ -40,9 +40,7 @@
             <div class="text-sm font-medium text-gray-500 mb-1">{{ $reward->vouchers->first()->store_name }}</div>
         @endif
         <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ $reward->name }}</h3>
-        
         <p class="text-sm text-gray-600 mb-3">{{ $reward->description }}</p>
-        
         <div class="flex items-center text-sm text-gray-600">
             @if($reward->quantity == -1)
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -60,10 +58,18 @@
     
     <!-- Redeem Button -->
     <div class="p-4 border-t border-gray-200 bg-gray-50">
+        @php
+            $rankPriority = ['silver' => 1, 'gold' => 2, 'diamond' => 3];
+            $userRank = strtolower(Auth::user()->rank ?? 'silver');
+            $userRankPriority = $rankPriority[$userRank] ?? 1;
+            $requiredRank = $reward->rank_requirement ?? 'silver';
+            $requiredRankPriority = $rankPriority[$requiredRank] ?? 1;
+            $rankMet = $userRankPriority >= $requiredRankPriority;
+        @endphp
         <button 
             x-data="{ loading: false }"
             x-on:click="
-                if (!loading) {
+                if (!loading && {{ $rankMet ? 'true' : 'false' }}) {
                     loading = true;
                     $wire.set('selectedRewardId', null).then(() => {
                         $wire.set('selectedRewardId', {{ $reward->id }});
@@ -74,24 +80,22 @@
                     });
                 }
             "
-            
             class="w-full bg-[#03b8ff] hover:bg-[#0295d1] text-white font-medium py-2 px-4 rounded transition duration-200 
-                  {{ $this->isRewardDisabled($reward) ? 'opacity-50 cursor-not-allowed' : '' }}
+                  {{ !$rankMet ? 'opacity-50 cursor-not-allowed' : '' }}
                   flex items-center justify-center min-h-[40px]"
-            {{ $this->isRewardDisabled($reward) ? 'disabled' : '' }}>
-            
+            {{ !$rankMet ? 'disabled' : '' }}>
             <!-- Loading Spinner -->
             <div x-show="loading" class="flex items-center">
                 <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                
             </div>
-            
             <!-- Default Button Text -->
             <div x-show="!loading">
-                @if(Auth::user() && Auth::user()->points >= $reward->cost)
+                @if(!$rankMet)
+                    {{ ucfirst($requiredRank) }} rank only
+                @elseif(Auth::user() && Auth::user()->points >= $reward->cost)
                     @if($reward->quantity == 0 && $reward->quantity != -1)
                         Sold Out
                     @else

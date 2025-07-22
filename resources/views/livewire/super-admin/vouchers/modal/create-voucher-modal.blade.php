@@ -134,18 +134,19 @@
                         @error('quantity') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
-                    <!-- Level Requirement -->
+                    <!-- Rank Requirement -->
                     <div>
-                        <label for="level_requirement" class="block text-sm font-medium text-gray-700 mb-1">Level Requirement</label>
-                        <input
-                            type="number"
-                            id="level_requirement"
-                            wire:model="level_requirement"
+                        <label for="rank_requirement" class="block text-sm font-medium text-gray-700 mb-1">Rank Requirement</label>
+                        <select
+                            id="rank_requirement"
+                            wire:model="rank_requirement"
                             class="w-full border-gray-300 rounded-md shadow-sm px-4 py-3 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-                            min="0"
-                            placeholder="Minimum user level (0 = no requirement)"
                         >
-                        @error('level_requirement') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                            <option value="silver">Silver</option>
+                            <option value="gold">Gold</option>
+                            <option value="diamond">Diamond</option>
+                        </select>
+                        @error('rank_requirement') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <!-- Expiry Date -->

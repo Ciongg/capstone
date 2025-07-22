@@ -17,7 +17,6 @@ class Voucher extends Model
         'store_name',
         'promo',
         'cost',
-        'level_requirement',
         'expiry_date',
         'availability',
         'image_path',

@@ -46,7 +46,7 @@ class VoucherSeeder extends Seeder
                     'store_name' => $storeName,
                     'promo' => $promo,
                     'cost' => $reward->cost,
-                    'level_requirement' => ceil($reward->cost / 100), // Example logic
+                    // 'level_requirement' => ceil($reward->cost / 100), // Removed, use rank_requirement if needed
                     'expiry_date' => Carbon::now()->addMonths(rand(1, 6)),
                     'availability' => 'available',
                     'image_path' => $reward->image_path, // Use image from parent reward

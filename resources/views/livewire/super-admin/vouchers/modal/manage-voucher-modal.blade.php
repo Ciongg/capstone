@@ -114,6 +114,21 @@
                     @error('cost') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
+                <!-- Rank Requirement -->
+                <div>
+                    <label for="rank_requirement" class="block text-sm font-medium text-gray-700 mb-1">Rank Requirement</label>
+                    <select
+                        id="rank_requirement"
+                        wire:model="rank_requirement"
+                        class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                    >
+                        <option value="silver">Silver</option>
+                        <option value="gold">Gold</option>
+                        <option value="diamond">Diamond</option>
+                    </select>
+                    @error('rank_requirement') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+
                 <!-- Quantity Display or Input -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>

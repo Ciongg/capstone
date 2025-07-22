@@ -19,7 +19,7 @@ class CreateVoucherModal extends Component
     public $store_name;
     public $promo;
     public $cost;
-    public $level_requirement = 0;
+    public $rank_requirement = 'silver';
     public $expiry_date;
     public $image;
     public $quantity = 1;
@@ -33,7 +33,7 @@ class CreateVoucherModal extends Component
         'store_name' => 'required|string|max:255',
         'promo' => 'required|string|max:2000',
         'cost' => 'required|integer|min:0',
-        'level_requirement' => 'required|integer|min:0',
+        'rank_requirement' => 'required|in:silver,gold,diamond',
         'quantity' => 'required|integer|min:1|max:100',
         'expiry_date' => 'nullable|date|after_or_equal:today',
         'image' => 'nullable|image|max:2048',
@@ -41,8 +41,7 @@ class CreateVoucherModal extends Component
 
     public function mount()
     {
-        // Initialize with default values
-        $this->level_requirement = 0;
+        $this->rank_requirement = 'silver';
         $this->quantity = 1;
     }
 
@@ -54,73 +53,49 @@ class CreateVoucherModal extends Component
         $imagePath = null;
         if ($this->image) {
             $imagePath = $this->image->store('voucher-images', 'public');
-            
-            // Make sure the path is correctly formatted for storage retrieval
-            if (Str::startsWith($imagePath, 'storage/')) {
-                $imagePath = Str::replaceFirst('storage/', '', $imagePath);
-            }
         }
 
         // Create the reward record first
-        $reward = new Reward();
-        $reward->name = $this->name;
-        $reward->description = $this->promo;
-        $reward->status = 'available';
-        $reward->cost = $this->cost;
-        $reward->quantity = $this->quantity;
-        $reward->type = 'voucher';
-        $reward->image_path = $imagePath;
-        $reward->save();
+        $reward = Reward::create([
+            'name' => $this->name,
+            'description' => $this->promo,
+            'status' => 'available',
+            'cost' => $this->cost,
+            'quantity' => $this->quantity,
+            'type' => 'voucher',
+            'rank_requirement' => $this->rank_requirement,
+            'image_path' => $imagePath,
+        ]);
 
         // Parse expiry date
-        $expiryDate = null;
-        if ($this->expiry_date) {
-            $expiryDate = Carbon::parse($this->expiry_date);
-        }
+        $expiryDate = $this->expiry_date ? \Carbon\Carbon::parse($this->expiry_date) : null;
 
         // Generate and save the specified quantity of vouchers
-        $createdCount = 0;
-        $maxAttempts = $this->quantity * 3; // Allow for some retry attempts in case of duplicates
-        $attempts = 0;
-
-        while ($createdCount < $this->quantity && $attempts < $maxAttempts) {
-            $attempts++;
-            
-            // Generate unique reference number
+        for ($i = 0; $i < $this->quantity; $i++) {
             $referenceNo = $this->generateUniqueReferenceNumber();
-            
-            // Check if reference number already exists
-            if (Voucher::where('reference_no', $referenceNo)->exists()) {
-                continue; // Skip this iteration and try again
+            // Ensure uniqueness
+            while (\App\Models\Voucher::where('reference_no', $referenceNo)->exists()) {
+                $referenceNo = $this->generateUniqueReferenceNumber();
             }
-
-            // Create the voucher
-            $voucher = new Voucher();
-            $voucher->reward_id = $reward->id;
-            $voucher->reference_no = $referenceNo;
-            $voucher->store_name = $this->store_name;
-            $voucher->promo = $this->promo;
-            $voucher->cost = $this->cost;
-            $voucher->level_requirement = $this->level_requirement;
-            $voucher->availability = 'available'; // Always set to available
-            $voucher->expiry_date = $expiryDate;
-            $voucher->image_path = $imagePath;
-            $voucher->save();
-
-            $createdCount++;
+            \App\Models\Voucher::create([
+                'reward_id' => $reward->id,
+                'reference_no' => $referenceNo,
+                'store_name' => $this->store_name,
+                'promo' => $this->promo,
+                'cost' => $this->cost,
+                'availability' => 'available',
+                'expiry_date' => $expiryDate,
+                'image_path' => $imagePath,
+            ]);
         }
 
         // Show success message
         $this->showSuccess = true;
-        $this->message = "Successfully created {$createdCount} voucher" . ($createdCount > 1 ? 's' : '') . " and a new reward.";
-        
-        // Reset form fields
+        $this->message = "Successfully created {$this->quantity} voucher" . ($this->quantity > 1 ? 's' : '') . " and a new reward.";
         $this->reset([
-            'name', 'store_name', 'promo', 'cost', 'level_requirement',
+            'name', 'store_name', 'promo', 'cost', 'rank_requirement',
             'expiry_date', 'image', 'quantity'
         ]);
-        
-        // Refresh the parent component to show the new vouchers
         $this->dispatch('voucherCreated');
     }
 

@@ -50,7 +50,6 @@
                     <th class="py-3 px-6 text-left">Store</th>
                     <th class="py-3 px-6 text-left">Promo</th>
                     <th class="py-3 px-6 text-left">Points Cost</th>
-                    <th class="py-3 px-6 text-left">Level Req.</th>
                     <th class="py-3 px-6 text-left">Status</th>
                     <th class="py-3 px-6 text-left">Expiry</th>
                     <th class="py-3 px-6 text-left">Actions</th>
@@ -66,7 +65,7 @@
                             <div class="truncate max-w-[200px]">{{ $voucher->promo }}</div>
                         </td>
                         <td class="py-3 px-6">{{ $voucher->cost }}</td>
-                        <td class="py-3 px-6">{{ $voucher->level_requirement }}</td>
+                        <!-- Removed level requirement column -->
                         <td class="py-3 px-6">
                             <span class="px-2 py-1 rounded text-xs {{ 
                                 $voucher->availability === 'available' ? 'bg-green-200 text-green-800' : 

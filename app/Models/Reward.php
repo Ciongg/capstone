@@ -18,6 +18,7 @@ class Reward extends Model
         'type',
         'description',
         'image_path', // Uncommented to allow updating image
+        'rank_requirement',
     ];
 
     /**
