@@ -587,7 +587,8 @@ class AnswerSurvey extends Component
                     'title' => 'Survey Completed!',
                     'message' => 'Thank you for completing the survey.',
                     'points' => $this->survey->points_allocated,
-                    'surveyName' => $this->survey->title
+                    'surveyName' => $this->survey->title,
+                    'xp' => 100 // always 100 XP per survey
                 ]);
 
             } catch (\Illuminate\Validation\ValidationException $e) {
@@ -688,6 +689,12 @@ class AnswerSurvey extends Component
                         Log::error("Error saving user points for user ID: {$user->id}. Error: " . $e->getMessage());
                     }
                 }
+            }
+
+            // Award 100 XP to user after answering survey
+            if ($user) {
+                $xpResult = $user->addExperiencePoints(100); // always 100 XP per survey
+                Log::info("Awarded 100 XP to user ID: {$user->id}", ['xpResult' => $xpResult]);
             }
         });
     }

@@ -334,6 +334,23 @@ class FormBuilder extends Component
 
    public function publishSurvey()
    {
+       // Prevent publishing advanced survey if no demographic is set
+       if ($this->survey->type === 'advanced') {
+           if ($this->survey->is_institution_only) {
+               // Institution-only: require at least one institution tag
+               if ($this->survey->institutionTags()->count() < 1) {
+                   $this->dispatch('showErrorAlert', message: 'You must set at least one demographic (institution tag) before publishing an advanced survey.');
+                   return;
+               }
+           } else {
+               // Public: require at least one general tag
+               if ($this->survey->tags()->count() < 1) {
+                   $this->dispatch('showErrorAlert', message: 'You must set at least one demographic (general tag) before publishing an advanced survey.');
+                   return;
+               }
+           }
+       }
+
        // Check if the survey already has responses
        if ($this->hasResponses) {
            // If it has responses, set status to ongoing
@@ -343,7 +360,7 @@ class FormBuilder extends Component
            $this->survey->status = 'published';
        }
        $this->survey->save();
-      
+     
        $this->loadPages(); 
    }
 

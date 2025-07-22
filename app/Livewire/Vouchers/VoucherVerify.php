@@ -44,11 +44,35 @@ class VoucherVerify extends Component
         
         // Check if it's the first time being scanned
         if ($this->userVoucher->status === UserVoucher::STATUS_ACTIVE) {
+            // Check for expiry based on activation time (30 min window)
+            $now = \App\Services\TestTimeService::now();
+            if ($this->userVoucher->activated_at) {
+                $activatedAt = $this->userVoucher->activated_at;
+                if ($now->diffInMinutes($activatedAt) >= 30) {
+                    // Mark as expired
+                    $this->userVoucher->status = UserVoucher::STATUS_EXPIRED;
+                    $this->userVoucher->save();
+                    $this->voucher->availability = 'expired';
+                    $this->voucher->save();
+                    $this->valid = false;
+                    $this->message = 'Invalid! This voucher has expired (over 30 minutes since activation).';
+                    return;
+                }
+            }
+            // Check for voucher expiry date as well
+            if ($this->voucher->expiry_date && $now->gt($this->voucher->expiry_date)) {
+                $this->userVoucher->status = UserVoucher::STATUS_EXPIRED;
+                $this->userVoucher->save();
+                $this->voucher->availability = 'expired';
+                $this->voucher->save();
+                $this->valid = false;
+                $this->message = 'Invalid! This voucher has expired.';
+                return;
+            }
             // Mark as used on first visit
             $this->userVoucher->markAsUsed();
             $this->voucher->availability = 'used';
             $this->voucher->save();
-            
             $this->valid = true;
             $this->message = 'Valid! This voucher is real and has been marked as used.';
             $this->redeemed = true;

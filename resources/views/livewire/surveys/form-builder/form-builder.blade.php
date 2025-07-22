@@ -108,12 +108,7 @@
             <span class="block sm:inline">{{ session('success') }}</span>
         </div>
     @endif
-    @if (session()->has('error'))
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <strong class="font-bold">Error!</strong>
-            <span class="block sm:inline">{{ session('error') }}</span>
-        </div>
-    @endif
+    {{-- Error alerts for publish are now handled by SweetAlert2 --}}
     
     
     <!-- Sticky Survey Navbar - Always accessible -->
@@ -227,8 +222,17 @@
 </div>
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('livewire:initialized', () => {
+        Livewire.on('showErrorAlert', (data) => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'An error occurred.',
+                confirmButtonColor: '#e3342f',
+            });
+        });
         Livewire.on('clearSaveStatus', () => {
             setTimeout(() => {
                 Livewire.find('{{ $_instance->getId() }}').set('saveStatus', '');
