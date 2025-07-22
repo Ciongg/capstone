@@ -207,3 +207,19 @@
         </div>
     @endif
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('livewire:initialized', () => {
+        Livewire.on('voucher-expired-alert', () => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Voucher Expired',
+                text: 'This voucher has already expired.',
+                confirmButtonColor: '#3085d6',
+            });
+        });
+    });
+</script>
+@endpush

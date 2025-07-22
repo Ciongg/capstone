@@ -95,6 +95,7 @@ class ShowRedeemVoucher extends Component
                 $this->userVoucher->status = UserVoucher::STATUS_EXPIRED;
                 $this->userVoucher->save();
                 $this->userVoucher->refresh();
+                $this->dispatch('redeemVoucher'); // Refresh parent component
             }
             $this->timeRemaining = '00:00';
             $this->isExpired = true;

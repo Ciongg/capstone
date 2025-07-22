@@ -17,6 +17,20 @@ class VoucherIndex extends Component
 
     public function openRedeemModal($userVoucherId)
     {
+        $userVoucher = \App\Models\UserVoucher::with('voucher')->find($userVoucherId);
+        if ($userVoucher && $userVoucher->voucher && $userVoucher->voucher->expiry_date) {
+            $now = \App\Services\TestTimeService::now();
+            if ($now->greaterThanOrEqualTo($userVoucher->voucher->expiry_date)) {
+                // Mark as expired
+                $userVoucher->status = \App\Models\UserVoucher::STATUS_EXPIRED;
+                $userVoucher->save();
+                // Dispatch browser event for SweetAlert2
+                $this->dispatch('voucher-expired-alert');
+                // Refresh the component to update the list
+                $this->dispatch('$refresh');
+                return;
+            }
+        }
         $this->selectedVoucher = $userVoucherId;
         // Use dispatch to ensure the modal event is broadcasted
         $this->dispatch('open-modal', name: 'redeem-voucher-modal');
