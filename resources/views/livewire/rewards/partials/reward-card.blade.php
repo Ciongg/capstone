@@ -66,10 +66,13 @@
             $requiredRankPriority = $rankPriority[$requiredRank] ?? 1;
             $rankMet = $userRankPriority >= $requiredRankPriority;
         @endphp
+        @php
+            $isUnavailable = in_array($reward->status, ['unavailable', 'sold_out']);
+        @endphp
         <button 
             x-data="{ loading: false }"
             x-on:click="
-                if (!loading && {{ $rankMet ? 'true' : 'false' }}) {
+                if (!loading && {{ $rankMet && !$isUnavailable ? 'true' : 'false' }}) {
                     loading = true;
                     $wire.set('selectedRewardId', null).then(() => {
                         $wire.set('selectedRewardId', {{ $reward->id }});
@@ -81,9 +84,9 @@
                 }
             "
             class="w-full bg-[#03b8ff] hover:bg-[#0295d1] text-white font-medium py-2 px-4 rounded transition duration-200 
-                  {{ !$rankMet ? 'opacity-50 cursor-not-allowed' : '' }}
+                  {{ (!$rankMet || $isUnavailable) ? 'opacity-50 cursor-not-allowed' : '' }}
                   flex items-center justify-center min-h-[40px]"
-            {{ !$rankMet ? 'disabled' : '' }}>
+            {{ (!$rankMet || $isUnavailable) ? 'disabled' : '' }}>
             <!-- Loading Spinner -->
             <div x-show="loading" class="flex items-center">
                 <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -93,7 +96,13 @@
             </div>
             <!-- Default Button Text -->
             <div x-show="!loading">
-                @if(!$rankMet)
+                @if($isUnavailable)
+                    @if($reward->status === 'sold_out')
+                        Sold Out
+                    @else
+                        Unavailable
+                    @endif
+                @elseif(!$rankMet)
                     {{ ucfirst($requiredRank) }} rank only
                 @elseif(Auth::user() && Auth::user()->points >= $reward->cost)
                     @if($reward->quantity == 0 && $reward->quantity != -1)

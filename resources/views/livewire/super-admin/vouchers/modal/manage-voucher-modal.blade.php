@@ -89,15 +89,24 @@
                 <!-- Status -->
                 <div>
                     <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                        id="status"
-                        wire:model="status"
-                        class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-                    >
-                        <option value="available">Available</option>
-                        <option value="unavailable">Unavailable</option>
-                        <option value="sold_out">Sold Out</option>
-                    </select>
+                    <div class="flex items-center space-x-2">
+                        <select
+                            id="status"
+                            wire:model="status"
+                            class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                        >
+                            <option value="available">Available</option>
+                            <option value="unavailable">Unavailable</option>
+                            <option value="sold_out">Sold Out</option>
+                        </select>
+                        <button
+                            type="button"
+                            wire:click="updateReward"
+                            class="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium"
+                        >
+                            Update Status
+                        </button>
+                    </div>
                     @error('status') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
