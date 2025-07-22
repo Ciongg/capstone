@@ -856,7 +856,7 @@ class AnswerSurvey extends Component
                     ['parts' => [['text' => $geminiPrompt]]]
                 ],
                 'generationConfig' => [
-                    'maxOutputTokens' => 500,
+                    'maxOutputTokens' => 8912,
                     'temperature' => 0.1,
                     'topP' => 0.9,
                     'topK' => 40,
@@ -879,20 +879,183 @@ class AnswerSurvey extends Component
         }
     }
 
+    /**
+     * Translate a question and its choices/likert using DeepSeek API.
+     *
+     * @param string $questionText
+     * @param array $choices (optional)
+     * @param array $likertRows (optional)
+     * @param array $likertColumns (optional)
+     * @param string $targetLanguage
+     * @return array|null [ 'question' => ..., 'choices' => [...], 'likert_rows' => [...], 'likert_columns' => [...] ]
+     */
+    protected function translateQuestionWithAI($questionText, $choices = [], $likertRows = [], $likertColumns = [], $targetLanguage = 'Filipino')
+    {
+        $input = [
+            'question' => $questionText,
+        ];
+        if (!empty($choices)) {
+            $input['choices'] = array_values($choices);
+        }
+        if (!empty($likertRows)) {
+            $input['likert_rows'] = array_values($likertRows);
+        }
+        if (!empty($likertColumns)) {
+            $input['likert_columns'] = array_values($likertColumns);
+        }
+        $inputJson = json_encode($input, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        $prompt = "Translate the following question and its options to {$targetLanguage}. If the input text is already in the target language, return the input JSON unchanged. Return ONLY a valid JSON object with the same structure as the input, but with all text translated. Do NOT include any explanations or extra text.\n\nINPUT:\n{$inputJson}\n\nOUTPUT:";
+        $endpoint = rtrim(env('AZURE_DEEPSEEK_ENDPOINT'), '/');
+        $apiKey = env('AZURE_DEEPSEEK_KEY');
+        $modelName = "DeepSeek-R1-0528";
+        $apiVersion = "2024-05-01-preview";
+        $apiUrl = "{$endpoint}/openai/deployments/{$modelName}/chat/completions?api-version={$apiVersion}";
+        try {
+            Log::info('[Translation] Using AI: DeepSeek');
+            Log::info('[Translation] Q: ' . $questionText);
+            if (!empty($choices)) {
+                Log::info('[Translation] C: ' . json_encode($choices, JSON_UNESCAPED_UNICODE));
+            }
+            if (!empty($likertRows)) {
+                Log::info('[Translation] Likert Rows: ' . json_encode($likertRows, JSON_UNESCAPED_UNICODE));
+            }
+            if (!empty($likertColumns)) {
+                Log::info('[Translation] Likert Columns: ' . json_encode($likertColumns, JSON_UNESCAPED_UNICODE));
+            }
+            Log::info('[Translation] Translating...');
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'api-key' => $apiKey,
+            ])->timeout(15)->post($apiUrl, [
+                'messages' => [
+                    ['role' => 'system', 'content' => 'You are a professional translator.'],
+                    ['role' => 'user', 'content' => $prompt]
+                ],
+                'max_tokens' => 8912,
+                'temperature' => 0.1
+            ]);
+            if ($response->successful() && isset($response['choices'][0]['message']['content'])) {
+                $content = $response['choices'][0]['message']['content'];
+                Log::info('[Translation] Raw AI response: ' . mb_substr($content, 0, 1000));
+                // Try to extract JSON from the response
+                if (!empty($content)) {
+                    $json = null;
+                    // Try direct decode
+                    $json = json_decode($content, true);
+                    if (!$json) {
+                        // Try to extract first JSON object from text
+                        if (preg_match('/\{.*\}/s', $content, $matches)) {
+                            $json = json_decode($matches[0], true);
+                        }
+                    }
+                    if (is_array($json) && isset($json['question'])) {
+                        Log::info('[Translation] Parsed JSON: ' . json_encode($json, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                        return $json;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('DeepSeek translation error: ' . $e->getMessage());
+        }
+        Log::error('DeepSeek translation failed or returned invalid JSON.');
+        return null;
+    }
+
+    /**
+     * Translate a question and its choices/likert using Gemini API (fallback).
+     *
+     * @param string $questionText
+     * @param array $choices (optional)
+     * @param array $likertRows (optional)
+     * @param array $likertColumns (optional)
+     * @param string $targetLanguage
+     * @return array|null [ 'question' => ..., 'choices' => [...], 'likert_rows' => [...], 'likert_columns' => [...] ]
+     */
+    protected function translateQuestionWithGemini($questionText, $choices = [], $likertRows = [], $likertColumns = [], $targetLanguage = 'Filipino')
+    {
+        $input = [
+            'question' => $questionText,
+        ];
+        if (!empty($choices)) {
+            $input['choices'] = array_values($choices);
+        }
+        if (!empty($likertRows)) {
+            $input['likert_rows'] = array_values($likertRows);
+        }
+        if (!empty($likertColumns)) {
+            $input['likert_columns'] = array_values($likertColumns);
+        }
+        $inputJson = json_encode($input, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        $prompt = "Translate the following question and its options to {$targetLanguage}. If the input text is already in the target language, return the input JSON unchanged. Return ONLY a valid JSON object with the same structure as the input, but with all text translated. Do NOT include any explanations or extra text.\n\nINPUT:\n{$inputJson}\n\nOUTPUT:";
+        $apiKey = env('GEMINI_API_KEY');
+        try {
+            Log::info('[Translation] Using AI: Gemini');
+            Log::info('[Translation] Q: ' . $questionText);
+            if (!empty($choices)) {
+                Log::info('[Translation] C: ' . json_encode($choices, JSON_UNESCAPED_UNICODE));
+            }
+            if (!empty($likertRows)) {
+                Log::info('[Translation] Likert Rows: ' . json_encode($likertRows, JSON_UNESCAPED_UNICODE));
+            }
+            if (!empty($likertColumns)) {
+                Log::info('[Translation] Likert Columns: ' . json_encode($likertColumns, JSON_UNESCAPED_UNICODE));
+            }
+            Log::info('[Translation] Translating...');
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->timeout(15)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
+                'contents' => [
+                    ['parts' => [['text' => $prompt]]]
+                ],
+                'generationConfig' => [
+                    'maxOutputTokens' => 8912,
+                    'temperature' => 0.1,
+                    'topP' => 0.9,
+                    'topK' => 40,
+                ],
+            ]);
+            if ($response->successful()) {
+                $content = $response['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                Log::info('[Translation] Raw AI response: ' . mb_substr($content, 0, 1000));
+                if (!empty($content)) {
+                    $json = null;
+                    $json = json_decode($content, true);
+                    if (!$json) {
+                        if (preg_match('/\{.*\}/s', $content, $matches)) {
+                            $json = json_decode($matches[0], true);
+                        }
+                    }
+                    if (is_array($json) && isset($json['question'])) {
+                        Log::info('[Translation] Parsed JSON: ' . json_encode($json, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                        return $json;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Gemini translation error: ' . $e->getMessage());
+        }
+        Log::error('Gemini translation failed or returned invalid JSON.');
+        return null;
+    }
+
+    /**
+     * Livewire method to translate a question (and its choices/likert) and store the result.
+     *
+     * @param int $questionId
+     * @param string $language
+     */
     public function translateQuestion($questionId = null, $language = null)
     {
+        set_time_limit(60);
         if (is_array($questionId)) {
             $params = $questionId;
             $questionId = $params['questionId'] ?? null;
             $language = $params['language'] ?? null;
         }
-
         if (!$questionId || !$language) return;
-
         $this->translatingQuestions[$questionId] = true;
         $this->isLoading = true;
         $this->dispatch('$refresh');
-
         // Locate the question
         $question = null;
         foreach ($this->survey->pages as $page) {
@@ -902,73 +1065,27 @@ class AnswerSurvey extends Component
                 break;
             }
         }
-
         if (!$question) {
             $this->translatingQuestions[$questionId] = false;
             $this->isLoading = false;
             $this->dispatch('$refresh');
             return;
         }
-
-        if ($language === 'en') {
-            $this->translatedQuestions[$questionId] = null;
-            $this->translatedChoices[$questionId] = null;
-            $this->translatingQuestions[$questionId] = false;
-            $this->isLoading = false;
-            $this->dispatch('$refresh');
-            return;
-        }
-
-        $originalText = $question->question_text;
-        $textsToTranslate = ["Q: {$originalText}"];
-        $choiceMapping = [];
-        $likertMapping = [];
-        $hasChoices = false;
-        $hasLikert = false;
-
-        // Handle multiple choice and radio questions
+        // Prepare variables for translation
+        $choices = [];
+        $likertRows = [];
+        $likertColumns = [];
         if (in_array($question->question_type, ['multiple_choice', 'radio']) && $question->choices->count() > 0) {
-            $hasChoices = true;
-            foreach ($question->choices as $index => $choice) {
-                $choiceKey = "C{$index}";
-                $textsToTranslate[] = "{$choiceKey}: {$choice->choice_text}";
-                $choiceMapping[$choiceKey] = $choice->id;
+            foreach ($question->choices as $choice) {
+                $choices[] = $choice->choice_text;
             }
         }
-
-        // Handle Likert scale questions
         if ($question->question_type === 'likert') {
-            $hasLikert = true;
-            
-            // Get Likert rows (statements)
             $likertRows = $this->getLikertRows($question);
-            if (!empty($likertRows)) {
-                foreach ($likertRows as $rowIndex => $rowText) {
-                    $rowKey = "R{$rowIndex}";
-                    $textsToTranslate[] = "{$rowKey}: {$rowText}";
-                    $likertMapping['rows'][$rowKey] = $rowIndex;
-                }
-            }
-            
-            // Get Likert columns (scale options)
-            $likertColumns = [];
-            if (is_array($question->likert_columns)) {
-                $likertColumns = $question->likert_columns;
-            } else {
-                $likertColumns = json_decode($question->likert_columns, true) ?: [];
-            }
-            
-            if (!empty($likertColumns)) {
-                foreach ($likertColumns as $colIndex => $colText) {
-                    $colKey = "COL{$colIndex}";
-                    $textsToTranslate[] = "{$colKey}: {$colText}";
-                    $likertMapping['columns'][$colKey] = $colIndex;
-                }
-            }
+            $likertColumns = is_array($question->likert_columns)
+                ? $question->likert_columns
+                : (json_decode($question->likert_columns, true) ?: []);
         }
-
-        $textToTranslate = implode("\n", $textsToTranslate);
-
         $languageNames = [
             'tl' => 'Filipino',
             'zh-CN' => 'Simplified Chinese',
@@ -980,82 +1097,64 @@ class AnswerSurvey extends Component
             'ms' => 'Malay',
         ];
         $targetLanguage = $languageNames[$language] ?? $language;
-
-        $translatedText = null;
-
-        // Try DeepSeek first with timeout handling
-        try {
-            $translatedText = $this->translateWithDeepSeek($textToTranslate, $targetLanguage);
-        } catch (\Exception $e) {
-            Log::error('DeepSeek exception: ' . $e->getMessage());
-            // Continue to fallback instead of breaking
+        // If target language is English and question is in English, skip translation
+        if (($language === 'en' || $targetLanguage === 'English')) {
+            $this->translatedQuestions[$questionId] = null;
+            $this->translatedChoices[$questionId] = null;
+            $this->translatingQuestions[$questionId] = false;
+            $this->isLoading = false;
+            $this->dispatch('$refresh');
+            return;
         }
-
-        // Fallback to Gemini if DeepSeek failed with timeout handling
-        if (!$translatedText) {
-            try {
-                $translatedText = $this->translateWithGemini($textToTranslate, $targetLanguage);
-            } catch (\Exception $e) {
-                Log::error('Gemini exception: ' . $e->getMessage());
-                // Continue to incomplete translation instead of breaking
-            }
+        // Call DeepSeek translation first
+        $result = $this->translateQuestionWithAI($question->question_text, $choices, $likertRows, $likertColumns, $targetLanguage);
+        // If DeepSeek fails, try Gemini
+        if (!$result) {
+            $result = $this->translateQuestionWithGemini($question->question_text, $choices, $likertRows, $likertColumns, $targetLanguage);
         }
-
-        // Process output with improved multi-line handling
-        $translatedQuestion = null;
-        $translatedChoicesData = [];
-        $translatedLikertData = [];
-
-        if ($translatedText) {
-            // Remove "think" statements and trim the text
-            $translatedText = preg_replace('/<think>.*?<\/think>/s', '', $translatedText);
-            $translatedText = trim($translatedText);
-
-            $lines = explode("\n", $translatedText);
-            $currentSection = null;
-            $currentContent = [];
-            
-            foreach ($lines as $line) {
-                if (!is_string($line)) continue;
-                // Don't trim here to preserve leading spaces if needed
-                
-                // Check if this line starts a new section
-                if (preg_match('/^(Q|C\d+|R\d+|COL\d+):\s*(.*)$/', $line, $matches)) {
-                    // Save previous section if exists
-                    if ($currentSection !== null) {
-                        $this->saveTranslatedSection($currentSection, $currentContent, $translatedQuestion, $translatedChoicesData, $translatedLikertData, $choiceMapping, $likertMapping, $hasChoices, $hasLikert);
-                    }
-                    
-                    // Start new section
-                    $currentSection = $matches[1];
-                    $currentContent = [trim($matches[2])];
-                } else if ($currentSection !== null) {
-                    // Continue current section with multi-line content
-                    // Preserve the line even if it's empty to maintain spacing
-                    $currentContent[] = rtrim($line);
+        if ($result) {
+            $this->translatedQuestions[$questionId] = $result['question'] ?? null;
+            if (!empty($choices) && isset($result['choices']) && is_array($result['choices'])) {
+                // Map back to choice IDs
+                $translatedChoices = [];
+                foreach ($question->choices as $idx => $choice) {
+                    $translatedChoices[$choice->id] = $result['choices'][$idx] ?? $choice->choice_text;
                 }
+                $this->translatedChoices[$questionId] = $translatedChoices;
             }
-            
-            // Save the last section
-            if ($currentSection !== null) {
-                $this->saveTranslatedSection($currentSection, $currentContent, $translatedQuestion, $translatedChoicesData, $translatedLikertData, $choiceMapping, $likertMapping, $hasChoices, $hasLikert);
+            if ($question->question_type === 'likert') {
+                $translatedLikert = [
+                    'rows' => [],
+                    'columns' => [],
+                ];
+                if (isset($result['likert_rows']) && is_array($result['likert_rows'])) {
+                    foreach ($result['likert_rows'] as $idx => $rowText) {
+                        $translatedLikert['rows'][$idx] = $rowText;
+                    }
+                }
+                if (isset($result['likert_columns']) && is_array($result['likert_columns'])) {
+                    foreach ($result['likert_columns'] as $idx => $colText) {
+                        $translatedLikert['columns'][$idx] = $colText;
+                    }
+                }
+                $this->translatedChoices[$questionId] = $translatedLikert;
             }
+        } else {
+            $this->translatedQuestions[$questionId] = $question->question_text . ' (Translation failed)';
+            $this->translatedChoices[$questionId] = null;
         }
-
-        // Store results
-        $this->translatedQuestions[$questionId] = $translatedQuestion ?? $originalText . ' (Translation incomplete - timeout or error occurred)';
-        
-        if ($hasChoices) {
-            $this->translatedChoices[$questionId] = $translatedChoicesData;
-        }
-        
-        if ($hasLikert) {
-            $this->translatedChoices[$questionId] = $translatedLikertData;
-        }
-
-        // Always reset loading states even if translation fails
+        // Add a 1-second delay before allowing the next translation
+        sleep(1);
         $this->translatingQuestions[$questionId] = false;
         $this->isLoading = false;
+        $this->dispatch('$refresh');
+    }
+
+    // Add a method to revert translation for a question
+    public function revertTranslation($questionId)
+    {
+        $this->translatedQuestions[$questionId] = null;
+        $this->translatedChoices[$questionId] = null;
         $this->dispatch('$refresh');
     }
     
