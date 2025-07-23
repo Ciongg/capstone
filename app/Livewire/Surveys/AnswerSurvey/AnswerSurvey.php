@@ -696,6 +696,27 @@ class AnswerSurvey extends Component
                 $xpResult = $user->addExperiencePoints(100); // always 100 XP per survey
                 Log::info("Awarded 100 XP to user ID: {$user->id}", ['xpResult' => $xpResult]);
             }
+
+            // Notify survey creator if response limit is reached (and only once)
+            if ($this->survey->target_respondents) {
+                $currentResponseCount = Response::where('survey_id', $this->survey->id)->count();
+                if ($currentResponseCount == $this->survey->target_respondents) {
+                    // Only send if not already notified (check for existing message)
+                    $creatorId = $this->survey->user_id;
+                    $existing = \App\Models\InboxMessage::where('recipient_id', $creatorId)
+                        ->where('subject', 'Survey Completed')
+                        ->where('url', url('/surveys/create/' . $this->survey->id))
+                        ->first();
+                    if (!$existing) {
+                        \App\Models\InboxMessage::create([
+                            'recipient_id' => $creatorId,
+                            'subject' => 'Survey Completed',
+                            'message' => "Your survey '{$this->survey->title}' has reached its response limit of {$this->survey->target_respondents} respondents and is now complete.",
+                            'url' => url('/surveys/create/' . $this->survey->id),
+                        ]);
+                    }
+                }
+            }
         });
     }
     

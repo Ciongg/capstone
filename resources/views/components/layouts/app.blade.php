@@ -353,7 +353,7 @@
     <!-- End of Modal Sections -->
 
     <!-- Main Content Area -->
-    <main class="mx-auto bg-gray-50">
+    <main class="mx-auto bg-gray-50 min-h-screen">
         @yield('content') {{-- Blade directive to output the content of the current section --}}
     </main>
     <!-- End of Main Content Area -->

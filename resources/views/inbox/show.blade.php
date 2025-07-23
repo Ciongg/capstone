@@ -24,7 +24,7 @@
             </div>
             
             <div class="prose prose-sm sm:prose max-w-none">
-                {{ $message->message }}
+                {!! nl2br(e($message->message)) !!}
             </div>
             
             @if ($message->url)

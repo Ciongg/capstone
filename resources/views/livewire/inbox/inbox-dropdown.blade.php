@@ -52,7 +52,12 @@
                         <a 
                             href="{{ $message->url ?? route('inbox.show', $message->id) }}" 
                             class="block px-4 py-3 hover:bg-gray-50 border-b flex items-start {{ is_null($message->read_at) ? 'bg-blue-50' : '' }}"
-                            wire:click.prevent="markAsRead({{ $message->id }})"
+                            x-data
+                            @click.prevent="
+                                $wire.markAsRead({{ $message->id }}).then(() => {
+                                    window.location = '{{ $message->url ?? route('inbox.show', $message->id) }}';
+                                });
+                            "
                         >
                             <div class="flex-shrink-0 mr-3">
                                 <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white">
