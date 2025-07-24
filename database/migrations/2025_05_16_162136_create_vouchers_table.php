@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('vouchers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('reward_id')->constrained()->onDelete('cascade'); // Link to the parent reward
+            $table->foreignId('merchant_id')->nullable()->constrained('merchants')->nullOnDelete();
             $table->string('reference_no')->unique(); // Unique code for this specific voucher instance
             $table->string('store_name');
             $table->string('promo');

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Merchant;
 
 class Voucher extends Model
 {
@@ -19,6 +20,7 @@ class Voucher extends Model
         'cost',
         'expiry_date',
         'availability',
+        'merchant_id',
         'image_path',
     ];
 
@@ -29,6 +31,11 @@ class Voucher extends Model
     public function reward(): BelongsTo
     {
         return $this->belongsTo(Reward::class);
+    }
+
+    public function merchant()
+    {
+        return $this->belongsTo(Merchant::class);
     }
 
     

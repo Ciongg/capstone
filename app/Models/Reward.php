@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Merchant;
 
 class Reward extends Model
 {
@@ -19,6 +20,7 @@ class Reward extends Model
         'description',
         'image_path', // Uncommented to allow updating image
         'rank_requirement',
+        'merchant_id',
     ];
 
     /**
@@ -74,5 +76,10 @@ class Reward extends Model
     public function vouchers()
     {
         return $this->hasMany(Voucher::class);
+    }
+
+    public function merchant()
+    {
+        return $this->belongsTo(Merchant::class);
     }
 }

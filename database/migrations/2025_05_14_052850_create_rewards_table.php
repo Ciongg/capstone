@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('rewards', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('merchant_id')->nullable()->constrained('merchants')->nullOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
             $table->enum('status', ['available', 'unavailable', 'sold_out'])->default('available');

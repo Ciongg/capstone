@@ -109,6 +109,28 @@ class DatabaseSeeder extends Seeder
             TagSeeder::class,
             SurveyTopicSeeder::class, // Run this first
             SurveySeeder::class,      // Then run SurveySeeder
+            // Seed merchants before rewards and vouchers
+            // If MerchantSeeder exists, add it here. Otherwise, create merchants directly below.
+        ]);
+
+        // Create merchants if they don't exist (for voucher/reward association)
+        \App\Models\Merchant::firstOrCreate([
+            'name' => 'Coffee Company',
+        ], [
+            'merchant_code' => '1',
+        ]);
+        \App\Models\Merchant::firstOrCreate([
+            'name' => 'Milk Tea Company',
+        ], [
+            'merchant_code' => '2',
+        ]);
+        \App\Models\Merchant::firstOrCreate([
+            'name' => 'Chicken Company',
+        ], [
+            'merchant_code' => '3',
+        ]);
+
+        $this->call([
             RewardSeeder::class,      // Add the RewardSeeder to be run
             VoucherSeeder::class,     // Add VoucherSeeder
             TestResponseSeeder::class, // Add our new TestResponseSeeder

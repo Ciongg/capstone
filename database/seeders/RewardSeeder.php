@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Reward;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\File;
+use App\Models\Merchant;
 
 class RewardSeeder extends Seeder
 {
@@ -40,6 +41,11 @@ class RewardSeeder extends Seeder
             File::makeDirectory(storage_path('app/public/voucher-images'), 0755, true);
         }
 
+        // Fetch merchants for association
+        $coffeeMerchant = Merchant::where('name', 'Coffee Company')->first();
+        $milkTeaMerchant = Merchant::where('name', 'Milk Tea Company')->first();
+        $chickenMerchant = Merchant::where('name', 'Chicken Company')->first();
+
         // Define the voucher rewards and copy their images
         $voucherRewards = [
             [
@@ -50,6 +56,7 @@ class RewardSeeder extends Seeder
                 'quantity' => 20,
                 'type' => 'voucher',
                 'image_filename' => 'Coffee.jpg',
+                'merchant_id' => $coffeeMerchant ? $coffeeMerchant->id : null,
             ],
             [
                 'name' => '₱50 Gift Card',
@@ -59,6 +66,7 @@ class RewardSeeder extends Seeder
                 'quantity' => 15,
                 'type' => 'voucher',
                 'image_filename' => 'Milk-tea.jpg',
+                'merchant_id' => $milkTeaMerchant ? $milkTeaMerchant->id : null,
             ],
             [
                 'name' => 'Buy 1 Take 1 Chicken Meal',
@@ -68,6 +76,7 @@ class RewardSeeder extends Seeder
                 'quantity' => 10,
                 'type' => 'voucher',
                 'image_filename' => 'Chicken.jpg',
+                'merchant_id' => $chickenMerchant ? $chickenMerchant->id : null,
             ],
         ];
 
