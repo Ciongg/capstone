@@ -1,4 +1,10 @@
 <div>
+    @if($showSuccess)
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
+            <p>{{ $message }}</p>
+            
+        </div>
+    @else
     <div class="space-y-6">
         <div>
             <h3 class="text-lg font-semibold mb-2">Update Reward</h3>
@@ -73,6 +79,25 @@
                     @error('name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
+                <!-- Merchant Dropdown -->
+                <div>
+                    <label for="merchant_id" class="block text-sm font-medium text-gray-700 mb-1">Merchant</label>
+                    <select
+                        id="merchant_id"
+                        wire:model="merchant_id"
+                        class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                        required
+                    >
+                        <option value="">Select a merchant</option>
+                        @forelse($merchants as $merchant)
+                            <option value="{{ $merchant->id }}">{{ $merchant->name }}</option>
+                        @empty
+                            <option disabled>No merchants available</option>
+                        @endforelse
+                    </select>
+                    @error('merchant_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+
                 <!-- Description -->
                 <div>
                     <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -93,7 +118,7 @@
                         <select
                             id="status"
                             wire:model="status"
-                            class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                            class="w-130 border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                         >
                             <option value="available">Available</option>
                             <option value="unavailable">Unavailable</option>
@@ -224,6 +249,16 @@
                     >
                         Cancel
                     </button>
+                    @if($type == 'voucher' || $type == 'Voucher')
+                    <button
+                        type="button"
+                        x-data
+                        x-on:click="$wire.deleteReward()"
+                        class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md"
+                    >
+                        Delete
+                    </button>
+                    @endif
                     <button
                         type="submit"
                         class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md"
@@ -234,4 +269,9 @@
             </form>
         </div>
     </div>
+    @endif
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endpush

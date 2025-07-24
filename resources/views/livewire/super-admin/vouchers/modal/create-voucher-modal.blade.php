@@ -7,7 +7,7 @@
                     wire:click="closeModal"
                     class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
                 >
-                    Close
+                Create Another Voucher
                 </button>
             </div>
         </div>
@@ -66,17 +66,23 @@
                         </div>
                     </div>
 
-                    <!-- Store Name -->
+                    <!-- Merchant Dropdown -->
                     <div>
-                        <label for="store_name" class="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
-                        <input
-                            type="text"
-                            id="store_name"
-                            wire:model="store_name"
+                        <label for="merchant_id" class="block text-sm font-medium text-gray-700 mb-1">Merchant</label>
+                        <select
+                            id="merchant_id"
+                            wire:model="merchant_id"
                             class="w-full border-gray-300 rounded-md shadow-sm px-4 py-3 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-                            placeholder="Store or vendor name"
+                            required
                         >
-                        @error('store_name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                            <option value="">Select a merchant</option>
+                            @forelse($merchants as $merchant)
+                                <option value="{{ $merchant->id }}">{{ $merchant->name }}</option>
+                            @empty
+                                <option disabled>No merchants available</option>
+                            @endforelse
+                        </select>
+                        @error('merchant_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <!-- Voucher Name -->

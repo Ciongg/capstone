@@ -4,6 +4,7 @@ namespace App\Livewire\SuperAdmin\Vouchers\Modal;
 
 use App\Models\Reward;
 use App\Models\Voucher;
+use App\Models\Merchant;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
@@ -22,6 +23,7 @@ class ManageVoucherModal extends Component
     public $quantity;
     public $type;
     public $rank_requirement = 'silver';
+    public $merchant_id;
     
     public $image;
     public $currentImage;
@@ -34,6 +36,7 @@ class ManageVoucherModal extends Component
 
     protected $rules = [
         'name' => 'required|string|max:255',
+        'merchant_id' => 'required|exists:merchants,id',
         'description' => 'required|string',
         'status' => 'required|string|in:available,unavailable,sold_out',
         'cost' => 'required|integer|min:0',
@@ -61,6 +64,7 @@ class ManageVoucherModal extends Component
         $this->type = $reward->type;
         $this->currentImage = $reward->image_path;
         $this->rank_requirement = $reward->rank_requirement ?? 'silver';
+        $this->merchant_id = $reward->merchant_id;
         
         // Get voucher counts if this is a voucher type reward
         if ($this->type == 'Voucher' || $this->type == 'voucher') {
@@ -89,6 +93,7 @@ class ManageVoucherModal extends Component
             'cost' => $this->cost,
             'quantity' => $this->quantity,
             'rank_requirement' => $this->rank_requirement,
+            'merchant_id' => $this->merchant_id,
         ];
         
         // Process image if a new one was uploaded
@@ -161,7 +166,7 @@ class ManageVoucherModal extends Component
             $attempts++;
             
             // Generate unique reference number
-            $referenceNo = $this->generateUniqueReferenceNumber($sampleVoucher->store_name);
+            $referenceNo = $this->generateUniqueReferenceNumber($reward);
             
             // Check if reference number already exists
             if (Voucher::where('reference_no', $referenceNo)->exists()) {
@@ -172,12 +177,12 @@ class ManageVoucherModal extends Component
             $voucher = new Voucher();
             $voucher->reward_id = $reward->id;
             $voucher->reference_no = $referenceNo;
-            $voucher->store_name = $sampleVoucher->store_name;
             $voucher->promo = $reward->description;
             $voucher->cost = $reward->cost;
             $voucher->availability = 'available';
             $voucher->expiry_date = $sampleVoucher->expiry_date;
             $voucher->image_path = $reward->image_path;
+            $voucher->merchant_id = $reward->merchant_id;
             $voucher->save();
             
             $createdCount++;
@@ -194,9 +199,10 @@ class ManageVoucherModal extends Component
         ]);
     }
 
-    private function generateUniqueReferenceNumber($storeName)
+    private function generateUniqueReferenceNumber($reward)
     {
-        $prefix = Str::upper(Str::substr($storeName, 0, 2));
+        $merchant = $reward->merchant;
+        $prefix = $merchant ? Str::upper(Str::substr($merchant->name, 0, 2)) : 'XX';
         $random = Str::upper(Str::random(6));
         $timestamp = Str::substr(time(), -4);
         
@@ -234,11 +240,28 @@ class ManageVoucherModal extends Component
     
     public function closeModal()
     {
-        $this->dispatch('close-modal', ['name' => 'manage-voucher-modal']);
+        $this->dispatch('close-modal', ['name' => 'reward-modal-' . $this->rewardId]);
+    }
+
+    public function deleteReward()
+    {
+        $reward = Reward::findOrFail($this->rewardId);
+        // Delete all available vouchers for this reward
+        \App\Models\Voucher::where('reward_id', $reward->id)
+            ->where('availability', 'available')
+            ->delete();
+        $reward->delete();
+        $this->showSuccess = true;
+        $this->message = 'Reward deleted successfully.';
+        // Do not close the modal immediately
+        $this->dispatch('rewardDeleted');
     }
 
     public function render()
     {
-        return view('livewire.super-admin.vouchers.modal.manage-voucher-modal');
+        $merchants = Merchant::orderBy('name')->get();
+        return view('livewire.super-admin.vouchers.modal.manage-voucher-modal', [
+            'merchants' => $merchants,
+        ]);
     }
 }

@@ -56,7 +56,7 @@
                                 <div class="flex items-center mt-3">
                                     <div class="flex-shrink-0 h-16 w-16">
                                         @if($voucher->image_path)
-                                            <img src="{{ asset('storage/' . $voucher->image_path) }}" alt="{{ $voucher->store_name }}" class="h-16 w-16 object-cover rounded">
+                                            <img src="{{ asset('storage/' . $voucher->image_path) }}" alt="{{ $voucher->reward->merchant->name ?? '' }}" class="h-16 w-16 object-cover rounded">
                                         @else
                                             <div class="h-16 w-16 bg-gray-200 rounded flex items-center justify-center">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -66,7 +66,7 @@
                                         @endif
                                     </div>
                                     <div class="ml-4">
-                                        <h4 class="text-md font-bold">{{ $voucher->store_name }}</h4>
+                                        <h4 class="text-md font-bold">{{ $voucher->reward->merchant->name ?? '' }}</h4>
                                         <p class="text-sm text-gray-500">{{ $voucher->promo }}</p>
                                         <p class="text-xs text-gray-400 mt-1">Reference: {{ $voucher->reference_no }}</p>
                                         @if($voucher->expiry_date)

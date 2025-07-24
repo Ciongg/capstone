@@ -31,10 +31,14 @@
             </div>
         </div>
     @endif
+
     
-    <!-- Header with Create Button -->
-    <div class="mb-4 flex justify-between items-center">
-        <h3 class="text-lg font-semibold">Reward Inventory</h3>
+    <!-- Search and Create Button Row -->
+    <div class="mb-4 flex flex-col md:flex-row items-center justify-between gap-2">
+        <input type="text" 
+               wire:model.live.debounce.300ms="searchTerm" 
+               placeholder="Search rewards by name or description..." 
+               class="flex-1 w-full md:w-auto px-4 py-2 border rounded-lg md:mr-2 mb-2 md:mb-0">
         <button 
             x-data
             x-on:click="$dispatch('open-modal', { name: 'create-voucher-modal' })"
@@ -59,24 +63,16 @@
                 Voucher Rewards
             </button>
             <button wire:click="filterByType('system')" 
-                class="px-4 py-2 text-sm rounded {{ $typeFilter === 'system' ? 'bg-blue-600 text-white' : 'bg-gray-200' }}">
+            class="px-4 py-2 text-sm rounded {{ $typeFilter === 'system' ? 'bg-blue-600 text-white' : 'bg-gray-200' }}">
                 System Rewards
             </button>
         </div>
     </div>
     
-    <!-- Search Box -->
-    <div class="mb-4">
-        <input type="text" 
-               wire:model.live.debounce.300ms="searchTerm" 
-               placeholder="Search rewards by name or description..." 
-               class="w-full px-4 py-2 border rounded-lg">
-    </div>
-    
     <!-- Grid of Reward Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($rewards as $reward)
-            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col h-full">
                 <!-- Image for reward -->
                 <div class="relative w-full h-48 bg-gray-200 flex items-center justify-center">
                     @if(isset($reward->image_path) && $reward->image_path)
@@ -101,7 +97,7 @@
                     @endif
                 </div>
                 
-                <div class="p-6">
+                <div class="p-6 flex flex-col flex-grow min-h-[320px]">
                     <!-- Status Badge -->
                     <div class="flex justify-between items-center mb-4">
                         <span class="px-2 py-1 text-xs rounded {{ 
@@ -114,11 +110,13 @@
                             {{ $reward->type }}
                         </span>
                     </div>
-                    
+                    <!-- Merchant Name -->
+                    @if($reward->merchant)
+                        <div class="text-sm text-gray-500 mb-1">{{ $reward->merchant->name }}</div>
+                    @endif
                     <!-- Reward Details -->
                     <h3 class="text-lg font-bold mb-2 text-gray-900">{{ $reward->name }}</h3>
                     <p class="text-gray-600 mb-4 text-sm line-clamp-3">{{ $reward->description }}</p>
-                    
                     <!-- Stats Row -->
                     <div class="flex justify-between text-sm text-gray-500 mb-4">
                         <div>
@@ -128,20 +126,21 @@
                             <span class="font-medium">Quantity:</span> {{ $reward->quantity }}
                         </div>
                     </div>
-                    
-                    <!-- Update Button -->
-                    <button 
-                        x-data
-                        x-on:click="
-                            $wire.set('selectedRewardId', null).then(() => {
-                                $wire.set('selectedRewardId', {{ $reward->id }});
-                                $nextTick(() => $dispatch('open-modal', { name: 'manage-voucher-modal' }));
-                            })
-                        "
-                        class="w-full bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded font-medium"
-                    >
-                        Update Reward
-                    </button>
+                    <div class="mt-auto">
+                        <!-- Update Button -->
+                        <button 
+                            x-data
+                            x-on:click="
+                                $wire.set('selectedRewardId', null).then(() => {
+                                    $wire.set('selectedRewardId', {{ $reward->id }});
+                                    $nextTick(() => $dispatch('open-modal', { name: 'manage-voucher-modal' }));
+                                })
+                            "
+                            class="w-full bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded font-medium"
+                        >
+                            Update Reward
+                        </button>
+                    </div>
                 </div>
             </div>
         @empty

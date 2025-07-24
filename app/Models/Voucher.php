@@ -15,7 +15,6 @@ class Voucher extends Model
     protected $fillable = [
         'reward_id',
         'reference_no',
-        'store_name',
         'promo',
         'cost',
         'expiry_date',

@@ -18,11 +18,11 @@
                     
                     @if($voucherImagePath)
                         <img src="{{ $voucherImagePath }}" 
-                             alt="{{ $voucher->store_name }}" 
+                             alt="{{ $voucher->reward->merchant->name ?? '' }}" 
                              class="h-full w-full object-cover rounded-lg">
                     @elseif($rewardImagePath)
                         <img src="{{ $rewardImagePath }}" 
-                             alt="{{ $voucher->store_name }}" 
+                             alt="{{ $voucher->reward->merchant->name ?? '' }}" 
                              class="h-full w-full object-cover rounded-lg">
                     @else
                         {{-- Voucher Icon --}}
@@ -54,7 +54,7 @@
             <div class="w-full md:w-2/3">
                 <div class="space-y-3">
                     <div class="flex justify-between">
-                        <div class="text-xl font-bold">{{ $voucher->store_name }}</div>
+                        <div class="text-xl font-bold">{{ $voucher->reward->merchant->name ?? '' }}</div>
                         <span class="px-2 py-1 rounded text-xs {{ 
                             $voucher->availability === 'available' ? 'bg-green-200 text-green-800' : 
                             ($voucher->availability === 'used' ? 'bg-blue-200 text-blue-800' : 

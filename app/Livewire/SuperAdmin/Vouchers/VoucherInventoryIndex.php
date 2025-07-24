@@ -43,7 +43,6 @@ class VoucherInventoryIndex extends Component
         if ($this->searchTerm) {
             $query->where(function($q) {
                 $q->where('reference_no', 'like', '%' . $this->searchTerm . '%')
-                  ->orWhere('store_name', 'like', '%' . $this->searchTerm . '%')
                   ->orWhere('promo', 'like', '%' . $this->searchTerm . '%');
             });
         }

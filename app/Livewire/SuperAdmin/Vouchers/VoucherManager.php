@@ -25,6 +25,8 @@ class VoucherManager extends Component
         'vouchers-restocked' => 'handleVoucherRestocked',
         'reward-updated' => 'handleRewardUpdated',
         'reward-error' => 'handleRewardError',
+        'rewardDeleted' => 'handleRewardDeleted',
+        'voucherCreated' => 'handleVoucherCreated',
     ];
 
     public function filterByType($type)
@@ -53,6 +55,18 @@ class VoucherManager extends Component
     public function handleRewardError($data)
     {
         $this->errorMessage = $data['message'];
+    }
+
+    public function handleRewardDeleted()
+    {
+        $this->successMessage = 'Reward deleted successfully.';
+        $this->resetPage();
+    }
+
+    public function handleVoucherCreated()
+    {
+        $this->successMessage = 'Voucher created successfully.';
+        $this->resetPage();
     }
 
     public function clearMessages()

@@ -9,6 +9,7 @@ use App\Models\Reward;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use App\Models\Merchant;
 
 class CreateVoucherModal extends Component
 {
@@ -16,7 +17,7 @@ class CreateVoucherModal extends Component
 
     // Voucher properties
     public $name; 
-    public $store_name;
+    public $merchant_id;
     public $promo;
     public $cost;
     public $rank_requirement = 'silver';
@@ -30,7 +31,7 @@ class CreateVoucherModal extends Component
 
     protected $rules = [
         'name' => 'required|string|max:255',
-        'store_name' => 'required|string|max:255',
+        'merchant_id' => 'required|exists:merchants,id',
         'promo' => 'required|string|max:2000',
         'cost' => 'required|integer|min:0',
         'rank_requirement' => 'required|in:silver,gold,diamond',
@@ -65,6 +66,7 @@ class CreateVoucherModal extends Component
             'type' => 'voucher',
             'rank_requirement' => $this->rank_requirement,
             'image_path' => $imagePath,
+            'merchant_id' => $this->merchant_id,
         ]);
 
         // Parse expiry date
@@ -80,12 +82,12 @@ class CreateVoucherModal extends Component
             \App\Models\Voucher::create([
                 'reward_id' => $reward->id,
                 'reference_no' => $referenceNo,
-                'store_name' => $this->store_name,
                 'promo' => $this->promo,
                 'cost' => $this->cost,
                 'availability' => 'available',
                 'expiry_date' => $expiryDate,
                 'image_path' => $imagePath,
+                'merchant_id' => $this->merchant_id,
             ]);
         }
 
@@ -93,10 +95,11 @@ class CreateVoucherModal extends Component
         $this->showSuccess = true;
         $this->message = "Successfully created {$this->quantity} voucher" . ($this->quantity > 1 ? 's' : '') . " and a new reward.";
         $this->reset([
-            'name', 'store_name', 'promo', 'cost', 'rank_requirement',
-            'expiry_date', 'image', 'quantity'
+            'name', 'promo', 'cost', 'rank_requirement',
+            'expiry_date', 'image', 'quantity', 'merchant_id'
         ]);
         $this->dispatch('voucherCreated');
+       
     }
 
     /**
@@ -104,7 +107,8 @@ class CreateVoucherModal extends Component
      */
     private function generateUniqueReferenceNumber()
     {
-        $prefix = Str::upper(Str::substr($this->store_name, 0, 2));
+        $merchant = Merchant::find($this->merchant_id);
+        $prefix = $merchant ? Str::upper(Str::substr($merchant->name, 0, 2)) : 'XX';
         $random = Str::upper(Str::random(6));
         $timestamp = Str::substr(time(), -4);
         
@@ -119,6 +123,9 @@ class CreateVoucherModal extends Component
 
     public function render()
     {
-        return view('livewire.super-admin.vouchers.modal.create-voucher-modal');
+        $merchants = Merchant::orderBy('name')->get();
+        return view('livewire.super-admin.vouchers.modal.create-voucher-modal', [
+            'merchants' => $merchants,
+        ]);
     }
 }

@@ -14,7 +14,7 @@
                     <div class="flex items-center">
                         <div class="flex-shrink-0 h-20 w-20">
                             @if($userVoucher->voucher->image_path)
-                                <img src="{{ asset('storage/' . $userVoucher->voucher->image_path) }}" alt="{{ $userVoucher->voucher->store_name }}" class="h-20 w-20 object-cover rounded">
+                                <img src="{{ asset('storage/' . $userVoucher->voucher->image_path) }}" alt="{{ $userVoucher->voucher->reward->merchant->name ?? '' }}" class="h-20 w-20 object-cover rounded">
                             @else
                                 <div class="h-20 w-20 bg-gray-200 rounded flex items-center justify-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -24,7 +24,7 @@
                             @endif
                         </div>
                         <div class="ml-4">
-                            <h4 class="text-md font-bold">{{ $userVoucher->voucher->store_name }}</h4>
+                            <h4 class="text-md font-bold">{{ $userVoucher->voucher->reward->merchant->name ?? '' }}</h4>
                             <p class="text-sm text-gray-500">{{ $userVoucher->voucher->promo }}</p>
                             <p class="text-xs text-gray-400 mt-1">Reference: {{ $userVoucher->voucher->reference_no }}</p>
                             
@@ -94,14 +94,14 @@
                 {{-- Image, Store Name, Promo Name --}}
                 <div class="flex items-center mb-2">
                     @if($userVoucher->voucher->image_path)
-                        <img src="{{ asset('storage/' . $userVoucher->voucher->image_path) }}" alt="{{ $userVoucher->voucher->store_name }}" class="h-12 w-12 object-cover rounded mr-3">
+                        <img src="{{ asset('storage/' . $userVoucher->voucher->image_path) }}" alt="{{ $userVoucher->voucher->reward->merchant->name ?? '' }}" class="h-12 w-12 object-cover rounded mr-3">
                     @else
                         <div class="h-12 w-12 bg-gray-200 rounded flex items-center justify-center mr-3">
-                            <span class="text-gray-500 text-xs">{{ $userVoucher->voucher->store_name }}</span>
+                            <span class="text-gray-500 text-xs">{{ $userVoucher->voucher->reward->merchant->name ?? '' }}</span>
                         </div>
                     @endif
                     <div>
-                        <h4 class="text-lg font-semibold">{{ $userVoucher->voucher->store_name }}</h4>
+                        <h4 class="text-lg font-semibold">{{ $userVoucher->voucher->reward->merchant->name ?? '' }}</h4>
                         <p class="text-sm text-gray-600">{{ $userVoucher->voucher->promo }}</p>
                     </div>
                 </div>
@@ -152,7 +152,7 @@
                         <div class="mt-6 p-4 bg-white rounded-lg border border-gray-200">
                             <p class="text-sm font-medium text-gray-700">Voucher Details:</p>
                             <p class="text-xs text-gray-600 mt-1">Reference: {{ $userVoucher->voucher->reference_no }}</p>
-                            <p class="text-xs text-gray-600">Store: {{ $userVoucher->voucher->store_name }}</p>
+                            <p class="text-xs text-gray-600">Store: {{ $userVoucher->voucher->reward->merchant->name ?? '' }}</p>
                             <p class="text-xs text-gray-600">Promo: {{ $userVoucher->voucher->promo }}</p>
                         </div>
                     </div>
@@ -169,7 +169,7 @@
                         <div class="mt-6 p-4 bg-white rounded-lg border border-gray-200">
                             <p class="text-sm font-medium text-gray-700">Voucher Details:</p>
                             <p class="text-xs text-gray-600 mt-1">Reference: {{ $userVoucher->voucher->reference_no }}</p>
-                            <p class="text-xs text-gray-600">Store: {{ $userVoucher->voucher->store_name }}</p>
+                            <p class="text-xs text-gray-600">Store: {{ $userVoucher->voucher->reward->merchant->name ?? '' }}</p>
                             <p class="text-xs text-gray-600">Promo: {{ $userVoucher->voucher->promo }}</p>
                         </div>
                         

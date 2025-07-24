@@ -40,7 +40,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                                             </svg>
                                         @else
-                                            <span class="text-gray-500">{{ $userVoucher->voucher->store_name }}</span>
+                                            <span class="text-gray-500">{{ $userVoucher->voucher->reward->merchant->name ?? '' }}</span>
                                         @endif
                                     </div>
                                 @endif
@@ -49,7 +49,7 @@
                             <!-- Voucher details with min-width to prevent shrinking -->
                             <div class="p-4 flex-grow min-w-0">
                                 <div>
-                                    <h3 class="text-lg font-medium text-gray-900 truncate">{{ $userVoucher->voucher->store_name }}</h3>
+                                    <h3 class="text-lg font-medium text-gray-900 truncate">{{ $userVoucher->voucher->reward->merchant->name ?? '' }}</h3>
                                     <p class="mt-1 text-sm text-gray-500">{{ $userVoucher->voucher->promo }}</p>
                                     <div class="mt-2 flex flex-wrap gap-1">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mb-1 mr-1">
@@ -139,7 +139,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                                             </svg>
                                         @else
-                                            <span class="text-gray-500">{{ $userVoucher->voucher->store_name }}</span>
+                                            <span class="text-gray-500">{{ $userVoucher->voucher->reward->merchant->name ?? '' }}</span>
                                         @endif
                                     </div>
                                 @endif
@@ -149,7 +149,7 @@
                             <div class="p-4 flex-grow min-w-0 flex flex-col justify-between">
                                 <div>
                                     <div class="flex flex-wrap justify-between items-start gap-2">
-                                        <h3 class="text-lg font-medium text-gray-900">{{ $userVoucher->voucher->store_name }}</h3>
+                                        <h3 class="text-lg font-medium text-gray-900">{{ $userVoucher->voucher->reward->merchant->name ?? '' }}</h3>
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
                                             {{ $userVoucher->status === 'used' ? 'bg-gray-100 text-gray-800' : 
                                             ($userVoucher->status === 'expired' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') }}">

@@ -60,7 +60,7 @@
                     <tr class="border-b border-gray-200 hover:bg-gray-50">
                         <td class="py-3 px-6">{{ $voucher->id }}</td>
                         <td class="py-3 px-6">{{ $voucher->reference_no }}</td>
-                        <td class="py-3 px-6">{{ $voucher->store_name }}</td>
+                        <td class="py-3 px-6">{{ $voucher->reward->merchant->name ?? '' }}</td>
                         <td class="py-3 px-6">
                             <div class="truncate max-w-[200px]">{{ $voucher->promo }}</div>
                         </td>
