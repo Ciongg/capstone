@@ -134,6 +134,7 @@
                 >
                     About
                 </button>
+                @if($user->type !== 'respondent')
                 <button
                     class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
                     :class="tab === 'surveys' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
@@ -141,6 +142,7 @@
                 >
                     My Surveys
                 </button>
+                @endif
                 <button
                     class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
                     :class="tab === 'history' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
@@ -150,7 +152,7 @@
                 </button>
                 
                 {{-- Only show Institution Demographics tab for Institution Admins --}}
-                @if($user->type === 'institution_admin')
+                @if($user->type === 'institution_admin' && $user->institution_id)
                 <button
                     class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
                     :class="tab === 'institution_demographics' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
@@ -167,16 +169,18 @@
             <div x-show="tab === 'about'" class="w-full">
                 <livewire:profile.view-about :user="$user" />
             </div>
+            @if($user->type !== 'respondent')
             <div x-show="tab === 'surveys'" class="w-full">
                 <livewire:surveys.form-index :user="$user" />
             </div>
+            @endif
             <div x-show="tab === 'history'" class="w-full">
                 <livewire:profile.view-history :user="$user" />
             </div>
             
 
             {{-- Institution Demographics Tab Content - Only loaded for Institution Admins --}}
-            @if($user->type === 'institution_admin')
+            @if($user->type === 'institution_admin' && $user->institution_id)
             <div x-show="tab === 'institution_demographics'" class="w-full">
                 <livewire:profile.institution.set-institution-demographic :user="$user" />
             </div>

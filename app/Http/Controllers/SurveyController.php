@@ -13,79 +13,88 @@ use Illuminate\Contracts\View\View;
 
 class SurveyController extends Controller
 {
-    public function create(Request $request, $surveyId = null): View
+    public function create(Request $request, $surveyId = null)
     {
-        // If a specific survey ID is provided, show that survey
+        // Check if user has permission to create/edit surveys
+        $user = Auth::user();
+        
+        if (!in_array($user->type, ['researcher', 'institution_admin', 'super_admin'])) {
+            abort(403, 'You do not have permission to access this page.');
+        }
+        
+        // If a specific survey ID is provided, show that survey for editing
         if ($surveyId) {
-            $surveyModel = Survey::findOrFail($surveyId);
+            $surveyModel = Survey::find($surveyId);
             
-            // Check if the logged-in user owns this survey
-            if ($surveyModel->user_id !== Auth::id()) {
-                abort(403, 'Unauthorized');
+            // Check if survey exists
+            if (!$surveyModel) {
+                abort(404, 'The requested page could not be found.');
+            }
+            
+            // Check if the logged-in user owns this survey or is a super admin
+            if ($surveyModel->user_id !== Auth::id() && $user->type !== 'super_admin') {
+                abort(403, 'You do not have permission to access this page.');
             }
             
             return view('researcher.show-form-builder', ['survey' => $surveyModel]);
         }
         
-        // Fallback: If /surveys/create is hit directly without an ID (e.g. user types URL)
-        // This path will NOT use type/method from URL parameters anymore.
-        // It creates a very default 'basic' survey.
-        // The primary creation path is now through the modal and its Livewire component.
-        $surveyModel = Survey::create([
-            'user_id' => Auth::id(),
-            'title' => 'Untitled Survey (Default)',
-            'description' => null,
-            'status' => 'pending',
-            'type' => 'basic', 
-            'points_allocated' => 10, // Default points for a basic survey
-        ]);
-        
-        // Add a default page to the survey
-        $page = SurveyPage::create([
-            'survey_id' => $surveyModel->id,
-            'page_number' => 1,
-        ]);
-        
-        // Add a default question to the page
-        $question = SurveyQuestion::create([
-            'survey_id' => $surveyModel->id,
-            'survey_page_id' => $page->id,
-            'question_text' => 'Enter Question Title',
-            'question_type' => 'multiple_choice',
-            'order' => 1,
-            'required' => false,
-        ]);
-        
-        // Add default choices to the question
-        SurveyChoice::create([
-            'survey_question_id' => $question->id,
-            'choice_text' => 'Option 1',
-            'order' => 1,
-        ]);
-        
-        SurveyChoice::create([
-            'survey_question_id' => $question->id,
-            'choice_text' => 'Option 2',
-            'order' => 2,
-        ]);
-        
-        return view('researcher.show-form-builder', ['survey' => $surveyModel]);
+        // If no survey ID is provided, abort with 403 error
+        // Survey creation should only happen through the proper workflow (modals)
+        abort(403, 'You do not have permission to access this page.');
     }
 
     public function answer(Survey $survey)
     {
+        $user = Auth::user();
+        
+        // Check if the logged-in user is the owner of this survey
+        if ($survey->user_id === Auth::id()) {
+            abort(403, 'You do not have permission to access this page.');
+        }
+        
+        // Check if user has already answered this survey
+        $existingResponse = Response::where('survey_id', $survey->id)
+                                   ->where('user_id', $user->id)
+                                   ->first();
+        
+        if ($existingResponse) {
+            // User has already answered, show the "already answered" interface
+            return view('respondent.show-already-answered', compact('survey', 'existingResponse'));
+        }
+        
         $survey->load('pages.questions.choices');
         return view('respondent.show-answer-form', compact('survey'));
     }
 
     public function showAnswerForm(Survey $survey, $isPreview = false): View
     {
+        $user = Auth::user();
+        
+        // If this is a preview, check permissions
+        if ($isPreview) {
+            // Check if user has permission to preview surveys
+            if (!in_array($user->type, ['researcher', 'institution_admin', 'super_admin'])) {
+                abort(403, 'You do not have permission to access this page.');
+            }
+            
+            // Check if the logged-in user owns this survey or is a super admin
+            if ($survey->user_id !== Auth::id() && $user->type !== 'super_admin') {
+                abort(403, 'You do not have permission to access this page.');
+            }
+        }
+        
         // Pass the survey model and the isPreview flag to the view.
         // The view 'respondent.show-answer-form' will handle rendering the Livewire component.
         return view('respondent.show-answer-form', [
             'survey' => $survey,
             'isPreview' => (bool) $isPreview // Ensure it's boolean
         ]);
+    }
+
+    public function showAnswerFormRedirect()
+    {
+        abort(403, 'You do not have permission to access this page.');
     }
 
     public function showSurveys(): View
@@ -95,12 +104,42 @@ class SurveyController extends Controller
 
     public function showResponses($surveyId): View
     {
-        $survey = Survey::findOrFail($surveyId);
+        $user = Auth::user();
+        
+        // Check if user has permission to view survey responses
+        if (!in_array($user->type, ['researcher', 'institution_admin', 'super_admin'])) {
+            abort(403, 'You do not have permission to access this page.');
+        }
+        
+        $survey = Survey::find($surveyId);
+        
+        // Check if survey exists
+        if (!$survey) {
+            abort(404, 'The requested page could not be found.');
+        }
+        
+        // Check if the logged-in user owns this survey or is a super admin
+        if ($survey->user_id !== Auth::id() && $user->type !== 'super_admin') {
+            abort(403, 'You do not have permission to access this page.');
+        }
+        
         return view('researcher.show-form-responses', compact('survey'));
     }
 
     public function showIndividualResponses(Survey $survey): View
     {
+        $user = Auth::user();
+        
+        // Check if user has permission to view individual survey responses
+        if (!in_array($user->type, ['researcher', 'institution_admin', 'super_admin'])) {
+            abort(403, 'You do not have permission to access this page.');
+        }
+        
+        // Check if the logged-in user owns this survey or is a super admin
+        if ($survey->user_id !== Auth::id() && $user->type !== 'super_admin') {
+            abort(403, 'You do not have permission to access this page.');
+        }
+        
         return view('researcher.show-individual-responses', ['surveyId' => $survey->id]);
     }
 

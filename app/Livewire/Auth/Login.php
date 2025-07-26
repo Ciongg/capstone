@@ -150,6 +150,9 @@ class Login extends Component
 
     public function render()
     {
-        return view('livewire.auth.login');
+        // Get warning message from session if user was redirected from survey answer page
+        $warningMessage = session('warning_message');
+        
+        return view('livewire.auth.login', compact('warningMessage'));
     }
 }

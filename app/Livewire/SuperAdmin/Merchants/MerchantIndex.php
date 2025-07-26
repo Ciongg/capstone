@@ -5,6 +5,7 @@ namespace App\Livewire\SuperAdmin\Merchants;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Merchant;
+use Illuminate\Support\Facades\Auth;
 
 class MerchantIndex extends Component
 {
@@ -46,8 +47,25 @@ class MerchantIndex extends Component
         }
     }
 
+    public function mount()
+    {
+        // Check if user has permission to access merchant management
+        $user = Auth::user();
+        
+        if ($user->type !== 'super_admin') {
+            abort(403, 'Access denied. Only super administrators can manage merchants.');
+        }
+    }
+
     public function render()
     {
+        // Double-check permissions on every render
+        $user = Auth::user();
+        
+        if ($user->type !== 'super_admin') {
+            abort(403, 'Access denied. Only super administrators can manage merchants.');
+        }
+
         $query = Merchant::query();
 
         if ($this->searchTerm) {

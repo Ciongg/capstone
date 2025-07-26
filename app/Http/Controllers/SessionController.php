@@ -36,6 +36,13 @@ class SessionController extends Controller
 
     public function create()
     {
+        // Check if user was trying to access a survey answer page
+        $intendedUrl = session()->get('url.intended');
+        
+        if ($intendedUrl && str_contains($intendedUrl, '/surveys/answer/')) {
+            session()->flash('warning_message', 'You must be logged in to answer surveys. If you already have an account, please login below. If not, please register a new account.');
+        }
+        
         return view('auth.login');
     }
 

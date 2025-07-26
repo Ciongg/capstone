@@ -19,8 +19,20 @@ class SetInstitutionDemographic extends Component
 
     public function mount()
     {
+        // Security check: Only institution admins can access this component
+        $user = Auth::user();
+        
+        if (!$user || $user->type !== 'institution_admin') {
+            abort(403, 'Access denied. Only institution administrators can manage institution demographics.');
+        }
+        
         // Get the institution associated with the current admin user
-        $this->institution = Auth::user()->institution;
+        $this->institution = $user->institution;
+        
+        if (!$this->institution) {
+            abort(403, 'Access denied. You must be associated with an institution to manage demographics.');
+        }
+        
         $this->loadCategories();
         $this->newTagNames = ['']; // Initialize with one empty tag field
     }
@@ -39,6 +51,12 @@ class SetInstitutionDemographic extends Component
 
     public function addCategory()
     {
+        // Security check
+        $user = Auth::user();
+        if (!$user || $user->type !== 'institution_admin' || $user->institution_id !== $this->institution->id) {
+            abort(403, 'Access denied.');
+        }
+        
         $this->validate([
             'newCategoryName' => 'required|string|max:255',
             'newTagNames' => 'required|array|min:1',
@@ -129,6 +147,12 @@ class SetInstitutionDemographic extends Component
 
     public function deleteCategory($categoryId)
     {
+        // Security check
+        $user = Auth::user();
+        if (!$user || $user->type !== 'institution_admin' || $user->institution_id !== $this->institution->id) {
+            abort(403, 'Access denied.');
+        }
+        
         $category = InstitutionTagCategory::find($categoryId);
         if ($category && $category->institution_id == $this->institution->id) {
             // Delete all associated tags
@@ -181,6 +205,17 @@ class SetInstitutionDemographic extends Component
 
     public function render()
     {
+        // Double-check permissions on every render
+        $user = Auth::user();
+        
+        if (!$user || $user->type !== 'institution_admin') {
+            abort(403, 'Access denied. Only institution administrators can manage institution demographics.');
+        }
+        
+        if (!$this->institution || $this->institution->id !== $user->institution_id) {
+            abort(403, 'Access denied. You can only manage demographics for your own institution.');
+        }
+        
         return view('livewire.profile.institution.set-institution-demographic');
     }
 }

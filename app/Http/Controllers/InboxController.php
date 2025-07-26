@@ -21,9 +21,16 @@ class InboxController extends Controller
      */
     public function show($id)
     {
-        $message = InboxMessage::where('id', $id)
-            ->where('recipient_id', Auth::id())
-            ->firstOrFail();
+        $message = InboxMessage::where('id', $id)->first();
+        
+        if (!$message) {
+            abort(404, 'The requested page could not be found.');
+        }
+        
+        // Check if user owns this message
+        if ($message->recipient_id !== Auth::id()) {
+            abort(403, 'You do not have permission to access this page.');
+        }
         
         // Mark as read if not already
         if (!$message->read_at) {

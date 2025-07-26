@@ -8,17 +8,19 @@
                         <button 
                             x-on:click="tab = 'users'" 
                             :class="{ 'border-blue-500 text-blue-600': tab === 'users', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'users' }" 
-                            class="w-1/2 py-3 px-1 text-center border-b-2 font-medium text-sm"
+                            class="{{ !$isInstitutionAdmin ? 'w-1/2' : 'w-full' }} py-3 px-1 text-center border-b-2 font-medium text-sm"
                         >
                             User List
                         </button>
-                        <button 
-                            x-on:click="tab = 'merchants'" 
-                            :class="{ 'border-blue-500 text-blue-600': tab === 'merchants', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'merchants' }" 
-                            class="w-1/2 py-3 px-1 text-center border-b-2 font-medium text-sm"
-                        >
-                            Merchant List
-                        </button>
+                        @if(!$isInstitutionAdmin)
+                            <button 
+                                x-on:click="tab = 'merchants'" 
+                                :class="{ 'border-blue-500 text-blue-600': tab === 'merchants', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'merchants' }" 
+                                class="w-1/2 py-3 px-1 text-center border-b-2 font-medium text-sm"
+                            >
+                                Merchant List
+                            </button>
+                        @endif
                     </nav>
                     <div class="pt-4">
                         <!-- User List Tab -->
@@ -160,11 +162,13 @@
                                 {{ $users->links() }}
                             </div>
                         </div>
-                        <!-- Merchant List Tab -->
-                        <div x-show="tab === 'merchants'" x-cloak>
-                            <h2 class="text-2xl font-bold mb-4">Merchant Management</h2>
-                            @livewire('super-admin.merchants.merchant-index')
-                        </div>
+                        <!-- Merchant List Tab - Only for Super Admins -->
+                        @if(!$isInstitutionAdmin)
+                            <div x-show="tab === 'merchants'" x-cloak>
+                                <h2 class="text-2xl font-bold mb-4">Merchant Management</h2>
+                                @livewire('super-admin.merchants.merchant-index')
+                            </div>
+                        @endif
                     </div>
                 </div>
                 <!-- Modal for viewing user details -->

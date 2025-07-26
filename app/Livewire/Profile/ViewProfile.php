@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\User;
 use Livewire\WithFileUploads; // Add this
 use Illuminate\Support\Facades\Storage; // Add this
+use Illuminate\Support\Facades\Auth;
 
 class ViewProfile extends Component
 {
@@ -21,6 +22,13 @@ class ViewProfile extends Component
 
     public function mount(User $user)
     {
+        // Security check: Ensure user can only view their own profile
+        $currentUser = Auth::user();
+        
+        if (!$currentUser || $currentUser->id !== $user->id) {
+            abort(403, 'Access denied. You can only view your own profile.');
+        }
+        
         $this->user = $user;
     }
 
@@ -56,6 +64,13 @@ class ViewProfile extends Component
 
     public function render()
     {
+        // Double-check permissions on every render
+        $currentUser = Auth::user();
+        
+        if (!$currentUser || $currentUser->id !== $this->user->id) {
+            abort(403, 'Access denied. You can only view your own profile.');
+        }
+        
         return view('livewire.profile.view-profile');
     }
 }

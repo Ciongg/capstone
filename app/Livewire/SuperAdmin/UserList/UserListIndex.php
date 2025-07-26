@@ -27,6 +27,13 @@ class UserListIndex extends Component
     
     public function mount()
     {
+        // Check if user has permission to access user management
+        $user = Auth::user();
+        
+        if (!in_array($user->type, ['super_admin', 'institution_admin'])) {
+            abort(403, 'Access denied. Only administrators can manage users.');
+        }
+        
         // Determine if the current user is an institution admin
         $user = Auth::user();
         $this->isInstitutionAdmin = $user->type === 'institution_admin';
@@ -44,6 +51,13 @@ class UserListIndex extends Component
     
     public function render()
     {
+        // Double-check permissions on every render
+        $user = Auth::user();
+        
+        if (!in_array($user->type, ['super_admin', 'institution_admin'])) {
+            abort(403, 'Access denied. Only administrators can manage users.');
+        }
+        
         // Query builder for users
         $query = User::query();
         

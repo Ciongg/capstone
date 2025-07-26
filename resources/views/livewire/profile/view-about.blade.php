@@ -81,7 +81,8 @@
                 </div>
             </div>
             
-            <!-- False Reports Section -->
+            <!-- False Reports Section - Only for Researchers -->
+            @if($user->type === 'researcher')
             <div class="mb-6">
                 <h3 class="text-lg font-semibold mb-3 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -135,6 +136,7 @@
                     @endif
                 </div>
             </div>
+            @endif
             
             <!-- Reported Responses Section -->
             <div class="mb-6">
