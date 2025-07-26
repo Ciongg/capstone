@@ -18,10 +18,10 @@ return new class extends Migration
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
             // User metrics
-            $table->decimal('trust_score')->default(100);
-            $table->decimal('points')->default(0);
+            $table->decimal('trust_score', 10, 0)->default(100);
+            $table->decimal('points', 10, 0)->default(0);
             $table->integer('account_level')->default(0);
-            $table->decimal('experience_points')->default(0);
+            $table->decimal('experience_points', 10, 0)->default(0);
             $table->enum('rank', ['silver', 'gold', 'diamond'])->default('silver');
             $table->string('title')->nullable();
             // Time tracking

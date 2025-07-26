@@ -27,6 +27,8 @@ class SurveyQuestion extends Model
 
     protected $casts = [
         'required' => 'boolean',
+        'likert_columns' => 'json',
+        'likert_rows' => 'json',
         // 'limit_answers' => 'boolean', // Removed
         // 'likert_columns' => 'array',
         // 'likert_rows' => 'array',

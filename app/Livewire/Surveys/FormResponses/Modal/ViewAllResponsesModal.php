@@ -6,6 +6,7 @@ use App\Models\SurveyQuestion;
 use Livewire\Component;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class ViewAllResponsesModal extends Component
 {
@@ -234,7 +235,7 @@ class ViewAllResponsesModal extends Component
         
         $dateGroups = [];
         foreach ($dates as $date) {
-            $month = date('Y-m', strtotime($date));
+            $month = Carbon::parse($date)->format('Y-m');
             if (!isset($dateGroups[$month])) {
                 $dateGroups[$month] = 0;
             }
@@ -246,7 +247,7 @@ class ViewAllResponsesModal extends Component
         
         foreach ($dateGroups as $month => $count) {
             $percentage = round(($count / $totalDates) * 100);
-            $formattedMonth = date('F Y', strtotime($month . "-01"));
+            $formattedMonth = Carbon::parse($month . "-01")->format('F Y');
             $statements[] = "{$percentage}% ({$count}) selected dates in {$formattedMonth}";
         }
         

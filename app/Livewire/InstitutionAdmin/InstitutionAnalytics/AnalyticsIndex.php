@@ -106,14 +106,18 @@ class AnalyticsIndex extends Component
     
     private function getAvailableYears()
     {
-        // Get all unique years from survey created_at dates
-        $years = Survey::selectRaw("strftime('%Y', created_at) as year")
-            ->whereHas('user', function($query) {
+        // Get all unique years from survey created_at dates using Eloquent
+        $years = Survey::whereHas('user', function($query) {
                 $query->where('institution_id', $this->institution->id);
             })
-            ->groupBy(DB::raw("strftime('%Y', created_at)"))
-            ->orderBy('year', 'desc')
-            ->pluck('year')
+            ->get()
+            ->map(function($survey) {
+                return $survey->created_at ? $survey->created_at->format('Y') : null;
+            })
+            ->filter()
+            ->unique()
+            ->sortDesc()
+            ->values()
             ->toArray();
         
         // If no data, add current year
@@ -126,34 +130,42 @@ class AnalyticsIndex extends Component
     
     private function getPreferredTopics()
     {
-        return Survey::select('survey_topic_id', DB::raw('count(*) as count'))
-            ->whereHas('user', function($query) {
+        return Survey::whereHas('user', function($query) {
                 $query->where('institution_id', $this->institution->id);
             })
             ->whereNotNull('survey_topic_id')
-            ->groupBy('survey_topic_id')
-            ->orderByDesc('count')
-            ->limit(5)
             ->get()
+            ->groupBy('survey_topic_id')
+            ->map(function($group) {
+                return [
+                    'survey_topic_id' => $group->first()->survey_topic_id,
+                    'count' => $group->count()
+                ];
+            })
+            ->sortByDesc('count')
+            ->take(5)
             ->map(function($item) {
-                $topic = SurveyTopic::find($item->survey_topic_id);
+                $topic = SurveyTopic::find($item['survey_topic_id']);
                 return [
                     'name' => $topic ? $topic->name : 'Unknown',
-                    'count' => $item->count
+                    'count' => $item['count']
                 ];
-            });
+            })
+            ->values();
     }
     
     private function getRewardStats()
     {
-        // Get redemption counts by reward type for this institution's users
-        $rewardsByType = RewardRedemption::select('rewards.type', DB::raw('count(*) as count'))
-            ->join('rewards', 'reward_redemptions.reward_id', '=', 'rewards.id')
-            ->join('users', 'reward_redemptions.user_id', '=', 'users.id')
-            ->where('users.institution_id', $this->institution->id)
-            ->groupBy('rewards.type')
+        // Get redemption counts by reward type for this institution's users using Eloquent
+        $rewardsByType = RewardRedemption::with(['reward', 'user'])
+            ->whereHas('user', function($query) {
+                $query->where('institution_id', $this->institution->id);
+            })
             ->get()
-            ->pluck('count', 'type')
+            ->groupBy(function($redemption) {
+                return $redemption->reward->type ?? 'unknown';
+            })
+            ->map->count()
             ->toArray();
         
         // Ensure all types are represented
@@ -210,14 +222,19 @@ class AnalyticsIndex extends Component
     
     private function getTopResearchers()
     {
-        return User::select('users.id', 'users.first_name', 'users.last_name', DB::raw('COUNT(surveys.id) as survey_count'))
-            ->join('surveys', 'users.id', '=', 'surveys.user_id')
-            ->where('users.institution_id', $this->institution->id)
-            ->where('users.type', 'researcher')
-            ->groupBy('users.id', 'users.first_name', 'users.last_name')
-            ->orderByDesc('survey_count')
-            ->limit(5)
-            ->get();
+        return User::where('institution_id', $this->institution->id)
+            ->where('type', 'researcher')
+            ->with(['surveys' => function($query) {
+                $query->select('id', 'user_id');
+            }])
+            ->get()
+            ->map(function($user) {
+                $user->survey_count = $user->surveys->count();
+                return $user;
+            })
+            ->sortByDesc('survey_count')
+            ->take(5)
+            ->values();
     }
     
     private function calculateResponseRate()
