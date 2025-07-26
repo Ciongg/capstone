@@ -98,6 +98,24 @@
                             </button>
                         </div>
 
+                        <!-- OR Divider -->
+                        <div class="flex items-center my-4">
+                            <div class="flex-grow border-t border-gray-300"></div>
+                            <span class="mx-2 text-gray-500 text-sm">or</span>
+                            <div class="flex-grow border-t border-gray-300"></div>
+                        </div>
+
+                        <!-- Google Login Button -->
+                        <div class="mb-4">
+                            <a 
+                                href="{{ route('google.redirect') }}"
+                                class="w-full flex items-center justify-center py-3 px-6 rounded-lg transition font-medium bg-white border border-gray-300 hover:bg-gray-100 text-gray-800"
+                            >
+                                <img src="/images/icons/google.svg" alt="Google" class="h-5 w-5 mr-2 inline" />
+                                <span class="ml-2">Login with Google</span>
+                            </a>
+                        </div>
+
                         <div class="text-center pt-2">
                             <p class="text-gray-800 text-sm">
                                 Don't have an account? <a href="{{ route('register') }}" wire:navigate class="text-[#03b8ff] underline font-semibold">Sign Up</a>

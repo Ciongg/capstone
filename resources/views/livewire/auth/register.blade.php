@@ -179,6 +179,26 @@
                             </button>
                         </div>
 
+                        <!-- OR Divider -->
+                        <div class="flex items-center my-4">
+                            <div class="flex-grow border-t border-gray-300"></div>
+                            <span class="mx-2 text-gray-500 text-sm">or</span>
+                            <div class="flex-grow border-t border-gray-300"></div>
+                        </div>
+
+                        <!-- Google Register Button -->
+                        <div class="mb-4">
+                            <a 
+                                href="{{ route('google.redirect') }}"
+                                class="w-full flex items-center justify-center py-2 px-6 rounded-lg transition font-medium"
+                                :class="{ 'bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 cursor-pointer': checkboxChecked, 'bg-gray-200 text-gray-400 cursor-not-allowed': !checkboxChecked }"
+                                :style="'pointer-events:' + (checkboxChecked ? 'auto' : 'none')"
+                            >
+                                <img src="/images/icons/google.svg" alt="Google" class="h-5 w-5 mr-2 inline" />
+                                <span class="ml-2">Register with Google</span>
+                            </a>
+                        </div>
+
                         <div class="text-center">
                             <p class="text-gray-800 text-sm">
                                 Already have an account? <a href="{{ route('login') }}" wire:navigate class="text-[#03b8ff] underline font-semibold">Login</a>

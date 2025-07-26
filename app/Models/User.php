@@ -44,6 +44,7 @@ class User extends Authenticatable
         'profile_photo_path',
         'institution_id',
         'is_active',
+        'email_verified_at',
     ];
 
     /**

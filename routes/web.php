@@ -44,6 +44,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/surveys/answer/{survey}', [SurveyController::class, 'submit'])->name('surveys.submit');
 });
 
+// Google OAuth Signup
+Route::get('/auth/google/redirect', [\App\Http\Controllers\GoogleAuthController::class, 'redirect'])->name('google.redirect');
+Route::get('/auth/google/callback', [\App\Http\Controllers\GoogleAuthController::class, 'callback'])->name('google.callback');
+
 // ============================================================================
 // AUTHENTICATED ROUTES (Requires login)
 // ============================================================================

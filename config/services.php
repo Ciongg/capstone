@@ -41,4 +41,10 @@ return [
         'sender_email' => env('BREVO_SENDER_EMAIL'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_OAUTH_CLIENTID'),
+        'client_secret' => env('GOOGLE_OAUTH_SECRET'),
+        'redirect' => env('GOOGLE_OAUTH_REDIRECT'),
+    ],
+
 ];
