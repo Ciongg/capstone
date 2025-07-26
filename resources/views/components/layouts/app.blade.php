@@ -185,6 +185,7 @@
                                             class="absolute z-50 mt-2 bg-white border border-gray-200 rounded-md shadow-lg py-1 w-48"
                                             style="display: none;"
                                         >
+                                            <a href="/admin/analytics" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/analytics')) }} hover:bg-gray-100">Analytics</a>
                                             <a href="/admin/surveys" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/surveys*')) }} hover:bg-gray-100">Manage Surveys</a>
                                             <a href="/admin/reward-redemptions" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->routeIs('reward-redemptions.index')) }} hover:bg-gray-100">Manage Rewards</a>
                                             <a href="/admin/users" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/users*')) }} hover:bg-gray-100">Manage Users</a>
@@ -314,6 +315,7 @@
                         {{-- Super Admin: Manage Sub-menu --}}
                         <div class="border-t border-gray-200 pt-2 mt-2">
                             <p class="font-semibold text-gray-700 mb-2">Manage</p>
+                            <a href="/admin/analytics" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/analytics')) }} hover:text-[#03b8ff]">Analytics</a>
                             <a href="/admin/surveys" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/surveys*')) }} hover:text-[#03b8ff]">Manage Surveys</a>
                             <a href="/admin/reward-redemptions" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->routeIs('reward-redemptions.index')) }} hover:text-[#03b8ff]">Manage Rewards</a>
                             <a href="/admin/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/users*')) }} hover:text-[#03b8ff]">Manage Users</a>

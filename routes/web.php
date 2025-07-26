@@ -77,6 +77,7 @@ Route::middleware(['auth', 'role:institution_admin'])->group(function () {
 
 // Super Admin Routes
 Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/analytics', [SuperAdminController::class, 'analyticsIndex'])->name('analytics.index');
     Route::get('/reward-redemptions', [SuperAdminController::class, 'rewardIndex'])->name('reward-redemptions.index');
     Route::get('/users', [SuperAdminController::class, 'userIndex'])->name('users.index');
     Route::get('/surveys', [SuperAdminController::class, 'surveysIndex'])->name('surveys.index');
