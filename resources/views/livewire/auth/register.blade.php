@@ -166,7 +166,7 @@
                         </div>
 
                         <!-- Button -->
-                        <div class="mb-4">
+                        <div class="mb-4" x-data x-init="$watch('$wire.showOtpModal', value => { if (value) { $nextTick(() => $dispatch('open-modal', { name: 'otp-verification' })) } })">
                             <button 
                                 type="submit" 
                                 class="w-full py-2 px-6 rounded-lg transition"
@@ -189,4 +189,7 @@
             </div>
         </div>
     </div>
+
+    <!-- OTP Verification Modal -->
+    @include('livewire.auth.otp-verification-modal')
 </div>

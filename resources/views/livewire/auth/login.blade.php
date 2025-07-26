@@ -83,7 +83,7 @@
                         
                         <!-- Forgot password link - increased spacing -->
                         <div class="mb-4 text-right">
-                            <a href="#" class="text-[#03b8ff] underline text-sm">Forgot Password?</a>
+                            <button type="button" wire:click="$dispatch('open-modal', { name: 'forgot-password' })" class="text-[#03b8ff] underline text-sm">Forgot Password?</button>
                         </div>
 
                         <!-- Login Button - increased spacing -->
@@ -108,4 +108,7 @@
             </div>
         </div>
     </div>
+
+    <!-- Forgot Password Modal -->
+    <livewire:auth.forgot-password />
 </div>
