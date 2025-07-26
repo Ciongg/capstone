@@ -14,7 +14,7 @@ class CreateMerchantModal extends Component
 
     protected $rules = [
         'name' => 'required|string|max:255',
-        'merchant_code' => 'required|string|max:255|unique:merchants,merchant_code',
+        'merchant_code' => 'required|string|min:8|max:255|unique:merchants,merchant_code',
     ];
 
     public function createMerchant()
@@ -28,13 +28,13 @@ class CreateMerchantModal extends Component
 
         $this->dispatch('merchantCreated');
         $this->closeModal();
-        $this->reset(['name', 'merchant_code']);
     }
 
     public function closeModal()
     {
-        $this->dispatch('close-modal', ['name' => 'create-merchant-modal']);
-        $this->reset();
+        $this->dispatch('close-modal', name: 'create-merchant-modal');
+        $this->name = '';
+        $this->merchant_code = '';
     }
 
     public function render()

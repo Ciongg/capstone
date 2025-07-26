@@ -12,7 +12,7 @@
                class="flex-1 w-full md:w-auto px-4 py-2 border rounded-lg md:mr-2 mb-2 md:mb-0">
         <button
             x-data
-            x-on:click="$dispatch('open-modal', { name: 'create-merchant-modal' })"
+            x-on:click="$wire.openCreateModal(); $dispatch('open-modal', { name: 'create-merchant-modal' })"
             class="px-6 py-2 bg-[#03b8ff] hover:bg-[#0299d5] text-white font-bold rounded-lg shadow-md transition-all duration-200 flex items-center"
         >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -70,14 +70,14 @@
     <!-- Modal for creating merchant -->
     <x-modal name="create-merchant-modal" title="Create Merchant" focusable>
         <div class="p-6 relative min-h-[200px] flex flex-col">
-            <div wire:loading class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
-                <div class="flex flex-col items-center justify-center h-full">
+            <div wire:loading class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50">
+                <div class="mt-[160px] flex flex-col items-center justify-center h-full">
                     <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                     <p class="text-sm text-gray-600">Loading...</p>
                 </div>
             </div>
             <div wire:loading.remove class="flex-1">
-                @livewire('super-admin.merchants.modal.create-merchant-modal', key('create-merchant-modal'))
+                @livewire('super-admin.merchants.modal.create-merchant-modal', [], key('create-merchant-modal-' . $createModalKey))
             </div>
         </div>
     </x-modal>
@@ -85,15 +85,15 @@
     <!-- Modal for managing merchant -->
     <x-modal name="manage-merchant-modal" title="Manage Merchant" focusable>
         <div class="p-6 relative min-h-[200px] flex flex-col">
-            <div wire:loading class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
-                <div class="flex flex-col items-center justify-center h-full">
+            <div wire:loading class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50">
+                <div class="mt-[160px] flex flex-col items-center justify-center h-full">
                     <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                     <p class="text-sm text-gray-600">Loading...</p>
                 </div>
             </div>
             <div wire:loading.remove class="flex-1">
                 @if($selectedMerchantId)
-                    @livewire('super-admin.merchants.modal.manage-merchant-modal', ['merchantId' => $selectedMerchantId], key('manage-merchant-modal-' . $selectedMerchantId))
+                    @livewire('super-admin.merchants.modal.manage-merchant-modal', ['merchantId' => $selectedMerchantId], key('manage-merchant-modal-' . $selectedMerchantId . '-' . $manageModalKey))
                 @else
                     <p class="text-gray-500">No merchant selected.</p>
                 @endif

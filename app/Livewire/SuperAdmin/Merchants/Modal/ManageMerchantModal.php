@@ -15,7 +15,7 @@ class ManageMerchantModal extends Component
 
     protected $rules = [
         'name' => 'required|string|max:255',
-        'merchant_code' => 'required|string|max:255|unique:merchants,merchant_code,{{merchantId}}',
+        'merchant_code' => 'required|string|min:8|max:255|unique:merchants,merchant_code,{{merchantId}}',
     ];
 
     public function mount($merchantId)
@@ -35,7 +35,7 @@ class ManageMerchantModal extends Component
     {
         $this->validate([
             'name' => 'required|string|max:255',
-            'merchant_code' => 'required|string|max:255|unique:merchants,merchant_code,' . $this->merchantId,
+            'merchant_code' => 'required|string|min:8|max:255|unique:merchants,merchant_code,' . $this->merchantId,
         ]);
 
         $merchant = Merchant::findOrFail($this->merchantId);
@@ -53,6 +53,12 @@ class ManageMerchantModal extends Component
     public function deleteMerchant()
     {
         $merchant = Merchant::findOrFail($this->merchantId);
+        // Delete all available vouchers for this merchant
+        \App\Models\Voucher::where('merchant_id', $merchant->id)
+            ->where('availability', 'available')
+            ->delete();
+        // Delete all rewards for this merchant
+        \App\Models\Reward::where('merchant_id', $merchant->id)->delete();
         $merchant->delete();
         $this->dispatch('merchantDeleted');
         $this->closeModal();
@@ -60,7 +66,9 @@ class ManageMerchantModal extends Component
 
     public function closeModal()
     {
-        $this->dispatch('close-modal', ['name' => 'manage-merchant-modal']);
+        $this->dispatch('close-modal', name: 'manage-merchant-modal');
+        $this->name = '';
+        $this->merchant_code = '';
     }
 
     public function render()

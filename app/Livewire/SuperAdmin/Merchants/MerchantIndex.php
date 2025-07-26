@@ -12,6 +12,8 @@ class MerchantIndex extends Component
 
     public $searchTerm = '';
     public $selectedMerchantId = null;
+    public $createModalKey = 0;
+    public $manageModalKey = 0;
 
     protected $queryString = [
         'searchTerm' => ['except' => ''],
@@ -21,11 +23,27 @@ class MerchantIndex extends Component
         'merchantUpdated' => '$refresh',
         'merchantCreated' => '$refresh',
         'voucherCreated' => '$refresh',
+        'merchantDeleted' => '$refresh',
+        'refreshModal' => 'handleRefreshModal',
     ];
 
     public function updatedSearchTerm()
     {
         $this->resetPage();
+    }
+
+    public function openCreateModal()
+    {
+        $this->createModalKey = now()->timestamp;
+    }
+
+    public function handleRefreshModal($params)
+    {
+        if (($params['name'] ?? null) === 'create') {
+            $this->createModalKey++;
+        } elseif (($params['name'] ?? null) === 'manage') {
+            $this->manageModalKey++;
+        }
     }
 
     public function render()

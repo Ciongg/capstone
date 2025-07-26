@@ -7,7 +7,7 @@
             </p>
         </div>
         <div class="border-t border-gray-200 pt-4">
-            <form wire:submit.prevent="updateMerchant" class="space-y-4">
+            <form x-data="{ showUpdateConfirm: false, showDeleteConfirm: false }" wire:submit.prevent="updateMerchant" class="space-y-4">
                 <!-- Merchant Name -->
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Merchant Name</label>
@@ -44,13 +44,39 @@
                     <button
                         type="button"
                         x-data
-                        x-on:click="$wire.deleteMerchant()"
+                        x-on:click="Swal.fire({
+                            title: 'Are you sure?',
+                            text: 'Do you want to delete this merchant? This action cannot be undone.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            confirmButtonText: 'Yes, delete it!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $wire.deleteMerchant();
+                            }
+                        })"
                         class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md"
                     >
                         Delete
                     </button>
                     <button
-                        type="submit"
+                        type="button"
+                        x-data
+                        x-on:click="Swal.fire({
+                            title: 'Are you sure?',
+                            text: 'Do you want to update this merchant?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#aaa',
+                            confirmButtonText: 'Yes, update it!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $wire.updateMerchant();
+                            }
+                        })"
                         class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md"
                     >
                         Update Merchant
@@ -60,7 +86,6 @@
             @if($showSuccess)
                 <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mt-4 flex justify-between items-center" role="alert">
                     <p>{{ $message }}</p>
-                    <button wire:click="closeModal" class="ml-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Close</button>
                 </div>
             @endif
         </div>
