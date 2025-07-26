@@ -71,12 +71,18 @@
     document.addEventListener('livewire:initialized', () => {
         // Level-up event handler
         Livewire.on('level-up', (event) => {
+            console.log('Level-up event received:', event);
             const level = event[0].level;
             const rank = event[0].new_rank || event[0].rank;
             const oldRank = event[0].old_rank || null;
 
+            console.log('Level:', level, 'Rank:', rank, 'Old Rank:', oldRank);
+
             if (typeof level !== 'undefined' && typeof rank !== 'undefined') {
+                console.log('Calling showLevelUpAnimation...');
                 window.showLevelUpAnimation(level, rank, oldRank);
+            } else {
+                console.log('Invalid level-up data');
             }
         });
 
@@ -112,6 +118,8 @@
 
     // Main level-up animation function
     window.showLevelUpAnimation = window.showLevelUpAnimation || function(level, rank, oldRank) {
+        console.log('showLevelUpAnimation called with:', { level, rank, oldRank });
+        
         const formattedRank = rank.charAt(0).toUpperCase() + rank.slice(1);
         const formattedOldRank = oldRank ? oldRank.charAt(0).toUpperCase() + oldRank.slice(1) : null;
         const rankPromotion = oldRank && oldRank !== rank;
@@ -119,8 +127,28 @@
         const currentRankInfo = RANK_INFO[rank.toLowerCase()] || RANK_INFO.silver;
         const oldRankInfo = oldRank ? RANK_INFO[oldRank.toLowerCase()] : null;
         
-        // Fire confetti
-        fireConfetti();
+        // Fire confetti with higher z-index to appear over the modal
+        const commonSettings = {
+            particleCount: 120,
+            spread: 70,
+            startVelocity: 80,
+            zIndex: 10002, // Higher than the modal z-index
+            colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
+        };
+        
+        // Left side burst
+        confetti({
+            ...commonSettings,
+            origin: { x: -0.05, y: 1.1 },
+            angle: 55
+        });
+        
+        // Right side burst
+        confetti({
+            ...commonSettings,
+            origin: { x: 1.05, y: 1.1 },
+            angle: 125
+        });
         
         // Create HTML for level up section
         let htmlContent = `
@@ -171,150 +199,245 @@
             </div>
         `;
         
-        // Show the modal with streamlined options
-        Swal.fire({
-            html: htmlContent,
-           
-            showConfirmButton: true,
-            confirmButtonText: `<div class="confirm-button">🎊 AWESOME! 🎊</div>`,
-            confirmButtonColor: '#03b8ff',
-            width: '400px',
-            padding: '1em',
-            backdrop: `rgba(0,0,0,0.7)`,
-            allowOutsideClick: true,
-            allowEscapeKey: true,
-            timer: 12000,
-            timerProgressBar: true,
-            customClass: {
-                popup: 'level-up-popup',
-                confirmButton: 'level-up-confirm-btn'
-            },
-            didOpen: () => {
-                // Add styling
-                const style = document.createElement('style');
-                style.textContent = `
-                    .level-up-popup {
-                        border-radius: 15px !important;
-                        border: 2px solid #03b8ff !important;
-                        animation: fadeIn 0.4s;
-                    }
-                    .level-badge {
-                        background: linear-gradient(135deg, #03b8ff 0%, #0ea5e9 100%);
-                        color: white;
-                        padding: 10px 20px;
-                        border-radius: 30px;
-                        font-size: 1.8rem;
-                        font-weight: bold;
-                        margin: 15px auto;
-                        box-shadow: 0 4px 12px rgba(3, 184, 255, 0.3);
-                        display: inline-block;
-                    }
-                    .rank-badge-simple {
-                        background: ${currentRankInfo.gradient};
-                        color: ${rank.toLowerCase() === 'silver' ? '#333' : 'white'};
-                        padding: 10px 15px;
-                        border-radius: 20px;
-                        font-size: 1.2rem;
-                        font-weight: bold;
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 8px;
-                        margin: 15px 0;
-                    }
-                    .rank-promotion {
-                        margin-top: 20px;
-                        padding: 20px;
-                        background: white;
-                        border-radius: 12px;
-                        color: #333;
-                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                        border: 1px solid rgba(0, 0, 0, 0.05);
-                    }
-                    .rank-promotion h3 {
-                        font-size: 1.3rem;
-                        margin: 5px 0 15px;
-                        font-weight: bold;
-                        color: #333;
-                    }
-                    .rank-transition {
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        gap: 15px;
-                        margin: 15px 0;
-                    }
-                    .old-rank-badge {
-                        background: ${oldRankInfo ? oldRankInfo.gradient : RANK_INFO.silver.gradient};
-                        color: ${oldRank && oldRank.toLowerCase() === 'silver' ? '#333' : 'white'};
-                        padding: 8px 16px;
-                        border-radius: 20px;
-                        font-size: 1rem;
-                        font-weight: bold;
-                        min-width: 80px;
-                        text-align: center;
-                    }
-                    .new-rank-badge {
-                        background: ${currentRankInfo.gradient};
-                        color: ${rank.toLowerCase() === 'silver' ? '#333' : 'white'};
-                        padding: 8px 16px;
-                        border-radius: 20px;
-                        font-size: 1rem;
-                        font-weight: bold;
-                        min-width: 80px;
-                        text-align: center;
-                    }
-                    .arrow {
-                        font-size: 1.5rem;
-                        color: #666;
-                    }
-                    .rank-promotion p {
-                        font-size: 1rem;
-                        margin: 15px 0 0;
-                        color: #666;
-                    }
-                    .next-goal {
-                        margin-top: 15px;
-                    }
-                    .next-goal p {
-                        font-size: 1rem;
-                        color: #666;
-                        margin: 0;
-                    }
-                    .confirm-button {
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        gap: 8px; 
-                        font-size: 1rem;
-                    }
-                    .level-up-confirm-btn {
-                        border-radius: 20px !important;
-                        padding: 8px 20px !important;
-                        font-weight: bold !important;
-                    }
-                    @keyframes fadeIn {
-                        from { opacity: 0; transform: scale(0.8); }
-                        to { opacity: 1; transform: scale(1); }
-                    }
-                `;
-                document.head.appendChild(style);
-                
-                // Force close on backdrop click
-                const backdrop = document.querySelector('.swal2-container');
-                if (backdrop) {
-                    backdrop.addEventListener('click', function(e) {
-                        if (e.target === backdrop) Swal.close();
-                    });
-                }
-            },
-            willClose: () => {
-                // Clean up styles on close
-                document.querySelectorAll('style').forEach(style => {
-                    if (style.textContent.includes('level-up-popup')) {
-                        document.head.removeChild(style);
-                    }
-                });
+        // Create a custom modal instead of using SweetAlert to avoid conflicts
+        console.log('Creating custom level-up modal...');
+        
+        // Create modal container
+        const modalContainer = document.createElement('div');
+        modalContainer.className = 'level-up-modal-container';
+        modalContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            animation: none;
+        `;
+        
+        // Create modal content
+        const modalContent = document.createElement('div');
+        modalContent.className = 'level-up-modal-content';
+        modalContent.style.cssText = `
+            background: white;
+            border-radius: 15px;
+            border: 2px solid #03b8ff;
+            padding: 2em;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            transform: scale(0);
+            animation: fadeIn 0.4s 0.15s forwards;
+        `;
+        
+        modalContent.innerHTML = htmlContent + `
+            <button class="level-up-confirm-btn" style="
+                background: #03b8ff;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 20px;
+                font-weight: bold;
+                font-size: 1rem;
+                cursor: pointer;
+                margin-top: 20px;
+                margin-left:auto;
+                margin-right:auto;
+                display:block;
+                position: relative;
+                z-index: 2;
+                pointer-events: auto;
+            " onclick="window.closeModalSmoothly(this.closest('.level-up-modal-container'))">
+                🎊 AWESOME! 🎊
+            </button>
+        `;
+        
+        modalContainer.appendChild(modalContent);
+        document.body.appendChild(modalContainer);
+        
+        // Add click outside to close with smooth animation
+        modalContainer.addEventListener('click', (e) => {
+            if (e.target === modalContainer) {
+                window.closeModalSmoothly(modalContainer);
             }
         });
+        
+        // Add CSS styles for the custom modal
+        const style = document.createElement('style');
+        style.textContent = `
+            .level-up-modal-container {
+                position: fixed;
+                top: 0; left: 0; width: 100%; height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10001;
+                pointer-events: auto;
+            }
+            .level-up-modal-container::before {
+                content: '';
+                position: absolute;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.7);
+                z-index: 0;
+                pointer-events: auto;
+                animation: fadeOverlayIn 0.4s forwards;
+            }
+            .level-up-modal-container.closing::before {
+                animation: fadeOverlayOut 0.3s forwards;
+            }
+            .level-up-modal-content {
+                position: relative;
+                z-index: 1;
+                background: white !important;
+                opacity: 1 !important;
+            }
+            .level-up-confirm-btn {
+                background: #03b8ff;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 20px;
+                font-weight: bold;
+                font-size: 1rem;
+                cursor: pointer;
+                margin-top: 20px;
+                margin-left: auto;
+                margin-right: auto;
+                display: block;
+                position: relative;
+                z-index: 2;
+                pointer-events: auto;
+                transition: all 0.2s ease;
+            }
+            .level-up-confirm-btn:hover {
+                background: #0288cc !important;
+                transform: scale(1.05);
+                box-shadow: 0 4px 12px rgba(3, 184, 255, 0.4);
+            }
+            .level-up-confirm-btn:active {
+                transform: scale(0.98);
+            }
+            .level-badge {
+                background: linear-gradient(135deg, #03b8ff 0%, #0ea5e9 100%);
+                color: white;
+                padding: 10px 20px;
+                border-radius: 30px;
+                font-size: 1.8rem;
+                font-weight: bold;
+                margin: 15px auto;
+                box-shadow: 0 4px 12px rgba(3, 184, 255, 0.3);
+                display: inline-block;
+            }
+            .rank-badge-simple {
+                background: ${currentRankInfo.gradient};
+                color: ${rank.toLowerCase() === 'silver' ? '#333' : 'white'};
+                padding: 10px 15px;
+                border-radius: 20px;
+                font-size: 1.2rem;
+                font-weight: bold;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                margin: 15px 0;
+            }
+            .rank-promotion {
+                margin-top: 20px;
+                padding: 20px;
+                background: white;
+                border-radius: 12px;
+                color: #333;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                border: 1px solid rgba(0, 0, 0, 0.05);
+            }
+            .rank-promotion h3 {
+                font-size: 1.3rem;
+                margin: 5px 0 15px;
+                font-weight: bold;
+                color: #333;
+            }
+            .rank-transition {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 15px;
+                margin: 15px 0;
+            }
+            .old-rank-badge {
+                background: ${oldRankInfo ? oldRankInfo.gradient : RANK_INFO.silver.gradient};
+                color: ${oldRank && oldRank.toLowerCase() === 'silver' ? '#333' : 'white'};
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 1rem;
+                font-weight: bold;
+                min-width: 80px;
+                text-align: center;
+            }
+            .new-rank-badge {
+                background: ${currentRankInfo.gradient};
+                color: ${rank.toLowerCase() === 'silver' ? '#333' : 'white'};
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 1rem;
+                font-weight: bold;
+                min-width: 80px;
+                text-align: center;
+            }
+            .arrow {
+                font-size: 1.5rem;
+                color: #666;
+            }
+            .rank-promotion p {
+                font-size: 1rem;
+                margin: 15px 0 0;
+                color: #666;
+            }
+            .next-goal {
+                margin-top: 15px;
+            }
+            .next-goal p {
+                font-size: 1rem;
+                color: #666;
+                margin: 0;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: scale(0); }
+                to { opacity: 1; transform: scale(1); }
+            }
+            @keyframes fadeOut {
+                from { opacity: 1; transform: scale(1); }
+                to { opacity: 0; transform: scale(0); }
+            }
+            @keyframes fadeOverlayIn {
+                from { opacity: 0; }
+                to { opacity: 0.7; }
+            }
+            @keyframes fadeOverlayOut {
+                from { opacity: 0.7; }
+                to { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        console.log('Custom level-up modal created successfully!');
+    };
+
+    // Global function to close modal smoothly
+    window.closeModalSmoothly = function(container) {
+        container.classList.add('closing');
+        const card = container.querySelector('.level-up-modal-content');
+        if (card) {
+            card.style.animation = 'none';
+            card.style.animation = 'fadeOut 0.3s forwards';
+        }
+        setTimeout(() => {
+            container.remove();
+        }, 300);
     };
 </script>

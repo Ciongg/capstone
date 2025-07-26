@@ -695,6 +695,28 @@ class AnswerSurvey extends Component
             if ($user) {
                 $xpResult = $user->addExperiencePoints(100); // always 100 XP per survey
                 Log::info("Awarded 100 XP to user ID: {$user->id}", ['xpResult' => $xpResult]);
+                
+                // Check if user leveled up and dispatch event for animation
+                if (isset($xpResult['leveled_up']) && $xpResult['leveled_up']) {
+                    Log::info("User leveled up! Dispatching level-up event", [
+                        'user_id' => $user->id,
+                        'new_level' => $xpResult['new_level'],
+                        'new_rank' => $xpResult['new_rank'],
+                        'old_rank' => $xpResult['old_rank']
+                    ]);
+                    
+                    $this->dispatch('level-up', [
+                        'level' => $xpResult['new_level'],
+                        'rank' => $xpResult['new_rank'],
+                        'old_rank' => $xpResult['old_rank']
+                    ]);
+                } else {
+                    Log::info("User did not level up", [
+                        'user_id' => $user->id,
+                        'leveled_up' => $xpResult['leveled_up'] ?? false,
+                        'current_level' => $xpResult['new_level'] ?? 'unknown'
+                    ]);
+                }
             }
 
             // Notify survey creator if response limit is reached (and only once)
