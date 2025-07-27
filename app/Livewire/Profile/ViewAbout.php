@@ -8,8 +8,11 @@ use App\Models\TagCategory;
 use App\Models\Tag;
 use App\Models\InstitutionTagCategory;
 use App\Models\InstitutionTag;
+use App\Models\EmailVerification;
 use App\Services\TrustScoreService;
+use App\Services\BrevoService;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class ViewAbout extends Component
 {
@@ -30,7 +33,19 @@ class ViewAbout extends Component
     public $reportedResponseThresholdMet = false;
     public $falseReportPercentage = 0;
     public $reportedResponsePercentage = 0;
+
+    // OTP verification properties
+    public $otp_code = '';
+    public $showOtpModal = false;
+    public $pendingEmail = '';
+    public $showSuccess = false;
+    public $resendCooldown = false;
+    public $resendCooldownSeconds = 0;
     
+    protected $listeners = [
+        'refresh-about-view' => 'refreshAboutView',
+    ];
+
     private TrustScoreService $trustScoreService;
 
     public function boot(TrustScoreService $trustScoreService)
@@ -41,6 +56,7 @@ class ViewAbout extends Component
     public function mount()
     {
         $this->user = Auth::user();
+        $this->pendingEmail = $this->user->email;
         
         // Calculate potential trust score deductions using service
         $this->calculateTrustScoreDeductions();
@@ -85,6 +101,96 @@ class ViewAbout extends Component
         }
     }
 
+    protected function otpRules(): array
+    {
+        return [
+            'otp_code' => 'required|string|size:6',
+        ];
+    }
+
+    public function sendOtp()
+    {
+        $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        EmailVerification::updateOrCreate(
+            ['email' => $this->pendingEmail],
+            [
+                'otp_code' => $otpCode,
+                'expires_at' => Carbon::now()->addMinutes(10),
+            ]
+        );
+        $brevoService = new BrevoService();
+        $emailSent = $brevoService->sendOtpEmail($this->pendingEmail, $otpCode);
+        if (!$emailSent) {
+            session()->flash('error', 'Failed to send verification email. Please try again.');
+            return;
+        }
+        $this->dispatch('open-modal', name: 'otp-verification');
+        session()->flash('success', 'Verification code sent to your email!');
+    }
+
+    public function verifyOtp()
+    {
+        $this->validate($this->otpRules());
+        $emailVerification = EmailVerification::where('email', $this->pendingEmail)
+            ->where('otp_code', $this->otp_code)
+            ->first();
+        if (!$emailVerification || $emailVerification->isExpired()) {
+            $this->addError('otp_code', 'Invalid or expired verification code. Please try again.');
+            return;
+        }
+        // Mark user as verified
+        $this->user->email_verified_at = now();
+        $this->user->save();
+        $emailVerification->delete();
+        $this->showSuccess = true;
+        $this->dispatch('otp-verified-success');
+        $this->dispatch('refresh-profile-view');
+    }
+
+    public function resendOtp()
+    {
+        if ($this->resendCooldown) {
+            return;
+        }
+        if (empty($this->pendingEmail)) {
+            session()->flash('error', 'No pending email verification found.');
+            return;
+        }
+        $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        EmailVerification::updateOrCreate(
+            ['email' => $this->pendingEmail],
+            [
+                'otp_code' => $otpCode,
+                'expires_at' => Carbon::now()->addMinutes(10),
+            ]
+        );
+        $brevoService = new BrevoService();
+        $emailSent = $brevoService->sendOtpEmail($this->pendingEmail, $otpCode);
+        if ($emailSent) {
+            session()->flash('success', 'New verification code sent to your email!');
+            $this->startResendCooldown();
+        } else {
+            session()->flash('error', 'Failed to send verification email. Please try again.');
+        }
+    }
+
+    public function startResendCooldown()
+    {
+        $this->resendCooldown = true;
+        $this->resendCooldownSeconds = 60;
+        $this->dispatch('start-resend-cooldown');
+    }
+
+    public function decrementCooldown()
+    {
+        if ($this->resendCooldown && $this->resendCooldownSeconds > 0) {
+            $this->resendCooldownSeconds--;
+            if ($this->resendCooldownSeconds <= 0) {
+                $this->resendCooldown = false;
+            }
+        }
+    }
+
     /**
      * Calculate all trust score deductions for the current user
      */
@@ -105,6 +211,37 @@ class ViewAbout extends Component
         $this->reportedResponsePercentage = $reportedResponseCalc['percentage'];
         $this->reportedResponseThresholdMet = $reportedResponseCalc['threshold_met'];
         $this->reportedResponseDeduction = abs($reportedResponseCalc['penalty_amount']);
+    }
+
+    public function refreshAboutView()
+    {
+        $this->user = $this->user->fresh();
+        // Reload tag and institution data as in mount
+        $this->tagCategories = TagCategory::with('tags')->get();
+        $userTags = $this->user->tags()->pluck('tags.id')->toArray();
+        $this->selectedTags = [];
+        foreach ($this->tagCategories as $category) {
+            $categoryTags = $category->tags->pluck('id')->toArray();
+            $userTagsForCategory = array_intersect($userTags, $categoryTags);
+            if (!empty($userTagsForCategory)) {
+                $this->selectedTags[$category->id] = reset($userTagsForCategory);
+            }
+        }
+        $this->institutionTagCategories = [];
+        if ($this->user->institution_id) {
+            $this->institutionTagCategories = InstitutionTagCategory::where('institution_id', $this->user->institution_id)
+                ->with('tags')
+                ->get();
+            $userInstitutionTags = $this->user->institutionTags()->pluck('institution_tags.id')->toArray();
+            $this->selectedInstitutionTags = [];
+            foreach ($this->institutionTagCategories as $category) {
+                $categoryTags = $category->tags->pluck('id')->toArray();
+                $userTagsForCategory = array_intersect($userInstitutionTags, $categoryTags);
+                if (!empty($userTagsForCategory)) {
+                    $this->selectedInstitutionTags[$category->id] = reset($userTagsForCategory);
+                }
+            }
+        }
     }
 
     public function saveTags()

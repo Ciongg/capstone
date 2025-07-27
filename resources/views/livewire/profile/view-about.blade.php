@@ -1,12 +1,45 @@
 <div class="space-y-8">
-    <!-- Personal Information -->
+    <!-- Account Information -->
     <div class="bg-white rounded-xl shadow p-6">
-        <h2 class="text-xl font-bold mb-4">Personal Information</h2>
+        <h2 class="text-xl font-bold mb-4">Account Information</h2>
         <div class="space-y-2">
-            <div><span class="font-semibold">Name:</span> {{ $user->name }}</div>
-            <div><span class="font-semibold">Email:</span> {{ $user->email }}</div>
-            <div><span class="font-semibold">Type:</span> {{ ucfirst($user->type ?? 'User') }}</div>
+            <div><span class="font-semibold">Name:</span> {{ $user->name ?? 'N/A' }}</div>
+            <div><span class="font-semibold">Email:</span> {{ $user->email ?? 'N/A' }}
+                @if($user->email_verified_at)
+                    <span title="Verified" class="cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline w-5 h-5 text-green-500 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </span>
+                @else
+                    <span x-data x-on:click="$dispatch('open-modal', {name: 'otp-verification'})" class="inline-block align-middle cursor-pointer italic text-red-500 ml-1" title="Click to verify email">
+                        Not Verified (Click to verify)
+                    </span>
+                @endif
+            </div>
+            <div><span class="font-semibold">Phone Number:</span> {{ $user->phone_number ?? 'N/A' }}</div>
+            <div><span class="font-semibold">Type:</span> {{ ucfirst($user->type ?? 'Respondent') }}</div>
             <div><span class="font-semibold">Points:</span> {{ $user->points ?? 0 }}</div>
+            {{-- Rank Field --}}
+            <div>
+                <span class="font-semibold">Rank:</span>
+                <span class="ml-2">
+                    {{ ucfirst($user?->rank ?: 'silver') }}
+                    (
+                    @php
+                        $userLevel = $user->getLevel();
+                        $userExperience = $user->experience_points;
+                        $xpForNextLevel = $user->getXpRequiredForNextLevel();
+                    @endphp
+                    @if($userLevel && $userExperience !== null && $xpForNextLevel)
+                        {{ $userExperience }}/{{ $xpForNextLevel }}
+                    @else
+                        N/A
+                    @endif
+                    )
+                    
+                </span>
+            </div>
             <div class="flex items-center">
                 <span class="font-semibold mr-1">Trust Score:</span> {{ $user->trust_score ?? 0 }}/100
                 <!-- Question mark icon that triggers the trust score info modal -->
@@ -16,7 +49,7 @@
                     class="ml-2 text-blue-500 hover:text-blue-700"
                     title="Trust Score Information"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 cursor-pointer">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                     </svg>
                 </button>
@@ -27,7 +60,27 @@
     <!-- Demographic Tags -->
     <div class="bg-white rounded-xl shadow p-6">
         <h2 class="text-xl font-bold mb-4">Demographic Tags</h2>
-        <form wire:submit.prevent="saveTags" class="space-y-4">
+        
+        <form wire:submit.prevent="saveTags" class="space-y-4" x-data="{
+            confirmDemographicSave() {
+                Swal.fire({
+                    title: 'Confirm Demographic Update',
+                    html: '<div>Are you sure you want to update your demographic tags?<br><small>You will not be able to update them again for 6 months.</small></div>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, update',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#6b7280',
+                    reverseButtons: true,
+                    focusConfirm: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $wire.saveTags();
+                    }
+                });
+            }
+        }">
             @foreach($tagCategories as $category)
                 <div>
                     <label class="block font-semibold mb-1">{{ $category->name }}</label>
@@ -58,12 +111,42 @@
                     @endforeach
                 </div>
             @endif
-            
-            <button type="submit" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save Demographics</button>
+
+             <div class="mb-4">
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800 rounded">
+                <strong>Note:</strong> Once added or updated, you will not be able to change your demographic tags again for 6 months. This is to ensure data integrity.
+            </div>
+            </div>
+            <button 
+                type="button"
+                class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
+                style="width: 180px;" 
+                x-on:click="confirmDemographicSave()"
+                wire:loading.attr="disabled"
+            >
+                <span class="flex items-center">
+                    <span wire:loading.remove wire:target="saveTags">Save Demographics</span>
+                    <span wire:loading wire:target="saveTags" class="flex items-center ml-2">
+                        <svg class="animate-spin h-5 w-5 text-white mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        
+                    </span>
+                </span>
+            </button>
         </form>
+
+       
+
         @if (session()->has('tags_saved'))
-            <div class="text-green-600 mt-2">{{ session('tags_saved') }}</div>
+
+             <div class="mt-4 bg-green-50 border-l-4 border-green-400 p-3 text-sm text-green-800 rounded">
+                 {{ session('tags_saved') }}
+            </div>
+            
         @endif
+        
     </div>
 
     <!-- Trust Score Info Modal -->
@@ -202,4 +285,6 @@
             </div>
         </div>
     </x-modal>
+    {{-- OTP Verification Modal --}}
+    @include('livewire.auth.otp-verification-modal')
 </div>

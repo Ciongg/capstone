@@ -24,8 +24,10 @@
         @endif
     @endauth
 
+    
+
     {{-- Profile Information Container --}}
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden w-full mb-4">
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden w-full mb-4 mt-8">
         {{-- Banner Image --}}
         <div class="h-48 bg-[#03b8ff] relative w-full">
             {{-- Add a banner change option if needed --}}
@@ -40,18 +42,6 @@
                         {{-- Display current profile photo --}}
                         <img src="{{ $user->profile_photo_url }}" alt="{{ $user->name }}" 
                              class="w-full h-full rounded-full object-cover border-4 border-white shadow-md">
-
-                        {{-- Hidden file input triggered by the label --}}
-                        <input type="file" id="photo" class="hidden" wire:model="photo">
-
-                        {{-- Label acting as the edit button --}}
-                        <label for="photo" 
-                               class="absolute bottom-2 right-2 bg-blue-500 text-white rounded-full p-2 cursor-pointer hover:bg-blue-600 z-10 flex items-center justify-center" 
-                               title="Change Photo">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6-6m2 2l-6 6m-2 2h6v2H7v-2z"/>
-                            </svg>
-                        </label>
 
                         {{-- Loading indicator --}}
                         <div wire:loading wire:target="photo" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
@@ -83,16 +73,32 @@
                                 <div class="text-sm capitalize">{{ $user?->type ?? 'User' }}</div>
                                 {{-- Trust Score Display --}}
                                 <div class="flex items-center justify-center md:justify-start text-sm mt-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span class="text-gray-600">Trust Score: <span class="text-green-600 font-bold">{{ $user?->trust_score ?? 0 }}/100</span></span>
+                                    <span class="font-semibold mr-1">Trust Score:</span> {{ $user->trust_score ?? 0 }}/100
                                 </div>
                             </div>
+
+                            
                         </div>
 
                         {{-- Action buttons - right side on large screens, stacked below on small screens --}}
                         <div class="flex flex-col md:flex-row gap-3 items-center md:items-start">
+                            {{-- Edit Profile Button --}}
+                            <button
+                                x-data
+                                x-on:click="$dispatch('open-modal', {name: 'edit-profile-modal'})"
+                                class="flex items-center justify-center space-x-2 py-2 px-4 text-white bg-gray-400 hover:bg-gray-500 rounded-lg shadow-md transition-colors w-full md:w-40"
+                            >
+                                <svg class="w-5 h-5 mr-2" fill="white" viewBox="0 -0.5 21 21" xmlns="http://www.w3.org/2000/svg">
+                                    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                        <g id="Dribbble-Light-Preview" transform="translate(-419.000000, -359.000000)" fill="white">
+                                            <g id="icons" transform="translate(56.000000, 160.000000)">
+                                                <path d="M384,209.210475 L384,219 L363,219 L363,199.42095 L373.5,199.42095 L373.5,201.378855 L365.1,201.378855 L365.1,217.042095 L381.9,217.042095 L381.9,209.210475 L384,209.210475 Z M370.35,209.51395 L378.7731,201.64513 L380.4048,203.643172 L371.88195,212.147332 L370.35,212.147332 L370.35,209.51395 Z M368.25,214.105237 L372.7818,214.105237 L383.18415,203.64513 L378.8298,199 L368.25,208.687714 L368.25,214.105237 Z" id="edit_cover-[#1481]"/>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </svg>
+                                <span class="font-semibold">Edit Profile</span>
+                            </button>
                             {{-- Help Request Button --}}
                             <button
                                 x-data
@@ -115,11 +121,20 @@
                                     <span class="font-semibold">Logout</span>
                                 </button>
                             </form>
+
+                            
                         </div>
                     </div>
                 </div>
             </div>
+            
         </div>
+        {{-- Success message for profile update --}}
+    @if (session()->has('profile_saved'))
+        <div class="bg-green-50 border-l-4 border-green-400 p-3 ml-4 mr-4 text-sm text-green-800 rounded mb-4">
+            {{ session('profile_saved') }}
+        </div>
+    @endif
     </div>
 
     {{-- Dynamic Content Container with Tabs --}}
@@ -191,5 +206,9 @@
     {{-- Support Request Modal --}}
     <x-modal name="create-support-request-modal" title="Support Request">
         <livewire:support-requests.create-support-request-modal />
+    </x-modal>
+    {{-- Edit Profile Modal --}}
+    <x-modal name="edit-profile-modal" title="Edit Profile">
+        @livewire('profile.modal.edit-profile-modal', ['user' => $user], key('edit-profile-modal-' . $user->id))
     </x-modal>
 </div>

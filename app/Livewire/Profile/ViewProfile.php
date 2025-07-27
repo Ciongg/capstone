@@ -15,6 +15,8 @@ class ViewProfile extends Component
     public User $user;
     public $photo; // Property for the file upload
 
+    protected $listeners = ['profileSaved' => 'onProfileSaved'];
+
     // Validation rules for the photo
     protected $rules = [
         'photo' => 'nullable|image|max:2048', // Max 2MB, adjust as needed
@@ -30,6 +32,11 @@ class ViewProfile extends Component
         }
         
         $this->user = $user;
+    }
+
+    public function refreshProfileView()
+    {
+        $this->user = $this->user->fresh();
     }
 
     // This method runs automatically when the 'photo' property is updated
@@ -60,6 +67,12 @@ class ViewProfile extends Component
             // Optionally dispatch an event if other components need to know
             // $this->dispatch('profilePhotoUpdated'); 
         }
+    }
+
+    public function onProfileSaved()
+    {
+        session()->flash('profile_saved', 'Your profile has been updated successfully.');
+        // Optionally reload user data here
     }
 
     public function render()
