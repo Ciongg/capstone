@@ -74,8 +74,17 @@ class SurveyController extends Controller
         $user = Auth::user();
 
         if ($isPreview) {
-            // Only allow super_admin to preview any, others only their own
-            if ($user->type !== 'super_admin' && $survey->user_id !== $user->id) {
+            // Only allow super_admin to preview any survey
+            // Institution admin can preview surveys owned by users in their institution
+            // Others only their own
+            $surveyOwner = $survey->user;
+            if ($user->type === 'super_admin') {
+                // allow
+            } elseif ($user->type === 'institution_admin') {
+                if (!$surveyOwner || $surveyOwner->institution_id !== $user->institution_id) {
+                    abort(403, 'You do not have permission to access this page.');
+                }
+            } elseif ($survey->user_id !== $user->id) {
                 abort(403, 'You do not have permission to access this page.');
             }
         }
@@ -100,11 +109,7 @@ class SurveyController extends Controller
     {
         $user = Auth::user();
 
-        // Only allow super_admin, researcher, respondent
-        if (!in_array($user->type, ['researcher', 'institution_admin', 'super_admin', 'respondent'])) {
-            abort(403, 'You do not have permission to access this page.');
-        }
-
+        // Only allow owner of the survey
         $survey = Survey::find($surveyId);
 
         // Check if survey exists
@@ -112,8 +117,7 @@ class SurveyController extends Controller
             abort(404, 'The requested page could not be found.');
         }
 
-        // Only super_admin can access all, others only their own
-        if ($user->type !== 'super_admin' && $survey->user_id !== $user->id) {
+        if ($survey->user_id !== $user->id) {
             abort(403, 'You do not have permission to access this page.');
         }
 
@@ -124,13 +128,8 @@ class SurveyController extends Controller
     {
         $user = Auth::user();
 
-        // Only allow super_admin, researcher, respondent
-        if (!in_array($user->type, ['researcher', 'institution_admin', 'super_admin', 'respondent'])) {
-            abort(403, 'You do not have permission to access this page.');
-        }
-
-        // Only super_admin can access all, others only their own
-        if ($user->type !== 'super_admin' && $survey->user_id !== $user->id) {
+        // Only allow owner of the survey
+        if ($survey->user_id !== $user->id) {
             abort(403, 'You do not have permission to access this page.');
         }
 
@@ -143,4 +142,5 @@ class SurveyController extends Controller
     }
 
 }
-   
+
+ 
