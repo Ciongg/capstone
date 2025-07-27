@@ -84,6 +84,16 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::factory()->create([
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'email' => 'johndoe@nu.edu.ph',
+            'password' => Hash::make('password123'),
+            'type' => 'researcher',
+            'institution_id' => $nationalUniversity ? $nationalUniversity->id : null,
+            'is_active' => true,
+        ]);
+
+        User::factory()->create([
             'first_name' => 'Super',
             'last_name' => 'Admin',
             'email' => 'superadmin@example.com',

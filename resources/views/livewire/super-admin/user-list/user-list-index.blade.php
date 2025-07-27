@@ -8,7 +8,7 @@
                         <button 
                             x-on:click="tab = 'users'" 
                             :class="{ 'border-blue-500 text-blue-600': tab === 'users', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'users' }" 
-                            class="{{ !$isInstitutionAdmin ? 'w-1/2' : 'w-full' }} py-3 px-1 text-center border-b-2 font-medium text-sm"
+                            class="{{ !$isInstitutionAdmin ? 'w-1/3' : 'w-full' }} py-3 px-1 text-center border-b-2 font-medium text-sm"
                         >
                             User List
                         </button>
@@ -16,9 +16,16 @@
                             <button 
                                 x-on:click="tab = 'merchants'" 
                                 :class="{ 'border-blue-500 text-blue-600': tab === 'merchants', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'merchants' }" 
-                                class="w-1/2 py-3 px-1 text-center border-b-2 font-medium text-sm"
+                                class="w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm"
                             >
                                 Merchant List
+                            </button>
+                            <button 
+                                x-on:click="tab = 'institutions'" 
+                                :class="{ 'border-blue-500 text-blue-600': tab === 'institutions', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'institutions' }" 
+                                class="w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm"
+                            >
+                                Institution List
                             </button>
                         @endif
                     </nav>
@@ -167,6 +174,10 @@
                             <div x-show="tab === 'merchants'" x-cloak>
                                 <h2 class="text-2xl font-bold mb-4">Merchant Management</h2>
                                 @livewire('super-admin.merchants.merchant-index')
+                            </div>
+                            <div x-show="tab === 'institutions'" x-cloak>
+                                <h2 class="text-2xl font-bold mb-4">Institution Management</h2>
+                                @livewire('super-admin.institutions.institution-index')
                             </div>
                         @endif
                     </div>

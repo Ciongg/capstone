@@ -110,7 +110,26 @@
                 </div>
             </div>
         @empty
-            <div class="col-span-full text-center text-gray-500 mt-8">You have not created any surveys yet.</div>
+            <div class="col-span-full text-center text-gray-500 mt-8">
+                @if(auth()->user()->institution_id)
+                    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded mb-4 max-w-xl mx-auto">
+                        <div class="font-semibold text-blue-700 mb-2">You haven't created any surveys yet.</div>
+                        <div class="text-sm text-blue-800">
+                            Start by clicking the "Create Survey" button found in the navigation bar.
+                        </div>
+                    </div>
+                @else
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded mb-4 max-w-xl mx-auto">
+                        <div class="font-semibold text-yellow-700 mb-2">You are currently unable to create surveys.</div>
+                        <div class="text-sm text-yellow-800">
+                            Your account must be registered under an academic institution's official domain (e.g., <span class="font-mono">@adamson.edu.ph</span>), and that institution must be supported within our system.
+                        </div>
+                    </div>
+                    <div class="mt-2 text-gray-500 text-sm">
+                        If you believe this is an error, please contact support or your institution administrator.
+                    </div>
+                @endif
+            </div>
         @endforelse
     </div>
 </div>

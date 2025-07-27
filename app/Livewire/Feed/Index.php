@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 use App\Services\TestTimeService;
 class Index extends Component
 {
+    public $accountUpgrade;
+    public $accountDowngrade;
 
     //filtering openable filtering system 
 
@@ -57,6 +59,9 @@ class Index extends Component
     
     public function mount()
     {
+        $this->accountUpgrade = session('account-upgrade');
+        $this->accountDowngrade = session('account-downgrade');
+
         $this->loadSurveys();
     }
     

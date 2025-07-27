@@ -101,7 +101,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
 });
 
 // Researcher and Institution Admin Routes (can also be accessed by super_admin)
-Route::middleware(['auth', 'role:researcher,institution_admin,super_admin'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     // Survey creation and management routes
     Route::get('/surveys/create', [SurveyController::class, 'create'])->name('surveys.create.redirect');
     Route::get('/surveys/create/{survey}', [SurveyController::class, 'create'])->name('surveys.create')->missing(function () {

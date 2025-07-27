@@ -1,4 +1,4 @@
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="mt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- New Layout: User Stats and Points Display -->
     <div class="bg-white p-6"> 
         <div class="flex flex-col md:flex-row items-center md:items-start justify-between md:space-x-8">

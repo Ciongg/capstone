@@ -1,7 +1,6 @@
 <div class="py-6" x-data="{ tab: 'available' }">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-2xl font-semibold text-gray-600 mb-6">My Vouchers</h2>
-
+        <h1 class="text-3xl font-semibold text-gray-600 mb-4">My Vouchers</h1>
         <!-- Tab Navigation -->
         <div class="border-b border-gray-200 mb-6">
             <div class="flex -mb-px w-full">

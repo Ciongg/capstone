@@ -1,8 +1,9 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" x-data="{ tab: 'about' }">
     {{-- Status warnings - keep these at the very top --}}
+
     @auth
         @if(Auth::user()->hasInvalidInstitution())
-            <div class="bg-orange-100 border-b border-orange-400 text-orange-700 px-4 py-3 relative mb-6 rounded-xl shadow" role="alert">
+            <div class="mt-4 bg-orange-100 border-b border-orange-400 text-orange-700 px-4 py-3 relative mb-6 rounded-xl shadow" role="alert">
                 <div class="flex items-center">
                     <svg class="h-6 w-6 text-orange-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -13,7 +14,7 @@
         @endif
 
         @if(Auth::user()->isDowngradedResearcher())
-            <div class="bg-yellow-100 border-b border-yellow-400 text-yellow-700 px-4 py-3 relative mb-6 rounded-xl shadow" role="alert">
+            <div class="mt-4 bg-yellow-100 border-b border-yellow-400 text-yellow-700 px-4 py-3 relative mb-6 rounded-xl shadow" role="alert">
                 <div class="flex items-center">
                     <svg class="h-6 w-6 text-yellow-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -149,7 +150,7 @@
                 >
                     About
                 </button>
-                @if($user->type !== 'respondent')
+                {{-- Remove the condition so all users see My Surveys tab --}}
                 <button
                     class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
                     :class="tab === 'surveys' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
@@ -157,7 +158,6 @@
                 >
                     My Surveys
                 </button>
-                @endif
                 <button
                     class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
                     :class="tab === 'history' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
@@ -184,11 +184,10 @@
             <div x-show="tab === 'about'" class="w-full">
                 <livewire:profile.view-about :user="$user" />
             </div>
-            @if($user->type !== 'respondent')
+            {{-- Remove the condition so all users see My Surveys tab content --}}
             <div x-show="tab === 'surveys'" class="w-full">
                 <livewire:surveys.form-index :user="$user" />
             </div>
-            @endif
             <div x-show="tab === 'history'" class="w-full">
                 <livewire:profile.view-history :user="$user" />
             </div>
@@ -212,3 +211,4 @@
         @livewire('profile.modal.edit-profile-modal', ['user' => $user], key('edit-profile-modal-' . $user->id))
     </x-modal>
 </div>
+
