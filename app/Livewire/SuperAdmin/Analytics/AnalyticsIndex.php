@@ -136,4 +136,4 @@ class AnalyticsIndex extends Component
     {
         return view('livewire.super-admin.analytics.analytics-index');
     }
-} 
+}

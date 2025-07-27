@@ -16,4 +16,10 @@ class InstitutionAdminController extends Controller
         // Use the same view as super admin
         return view('super-admin.users-index');
     }
+
+    public function surveysIndex()
+    {
+        // Render the Livewire component for institution user surveys
+        return view('institution-admin.show-institution-surveys');
+    }
 }

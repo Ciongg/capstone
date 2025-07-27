@@ -5,7 +5,9 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-lg font-semibold mb-2">Total Surveys</h2>
-            <p class="text-3xl">{{ $surveyCount }}</p>
+            <p class="text-3xl">
+                {{ $surveyCount > 0 ? $surveyCount : 0 }}
+            </p>
             <p class="text-gray-500 text-sm mt-2">Created by all users</p>
         </div>
         <div class="bg-white rounded-lg shadow p-6">
@@ -20,7 +22,9 @@
         </div>
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-lg font-semibold mb-2">Surveys per Researcher</h2>
-            <p class="text-3xl">{{ $userCount > 0 ? number_format($surveyCount / max(1, $userCount), 1) : 0 }}</p>
+            <p class="text-3xl">
+                {{ $userCount > 0 && $surveyCount > 0 ? number_format($surveyCount / max(1, $userCount), 1) : 0 }}
+            </p>
             <p class="text-gray-500 text-sm mt-2">Average productivity</p>
         </div>
     </div>
@@ -204,4 +208,4 @@
             initializeCharts();
         });
     </script>
-</div> 
+</div>

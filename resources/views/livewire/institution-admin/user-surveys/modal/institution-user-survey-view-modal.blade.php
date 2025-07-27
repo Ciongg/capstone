@@ -15,12 +15,12 @@
                     <p class="text-sm text-gray-500">Created by: {{ $survey->user->name ?? 'Unknown' }}</p>
                 </div>
                 <span class="px-3 py-1 rounded-full text-sm {{ 
-                    $survey->trashed() ? 'bg-gray-400 text-white' :
+                    $survey->is_deactivated ? 'bg-gray-400 text-white' :
                     ($survey->status === 'pending' ? 'bg-yellow-200 text-yellow-800' : 
                     ($survey->status === 'published' ? 'bg-green-200 text-green-800' : 
                     ($survey->status === 'ongoing' ? 'bg-purple-200 text-purple-800' : 'bg-gray-200 text-gray-800'))) 
                 }}">
-                    {{ $survey->trashed() ? 'Archived' : ucfirst($survey->status) }}
+                    {{ $survey->is_deactivated ? 'Deactivated' : ucfirst($survey->status) }}
                 </span>
             </div>
             
@@ -162,11 +162,9 @@
                             <p><span class="text-gray-600">Last Updated:</span> {{ $survey->updated_at->format('M d, Y') }}</p>
                         </div>
                         
-                        <!-- Replace Status Timeline with Survey Tags -->
+                        <!-- Survey Tags -->
                         <div class="space-y-2">
                             <h4 class="font-semibold">Survey Tags</h4>
-                            
-                            <!-- Regular Tags -->
                             <div class="mb-3">
                                 <p class="text-gray-600 mb-1">General Tags:</p>
                                 <div class="flex flex-wrap gap-1">
@@ -179,8 +177,6 @@
                                     @endforelse
                                 </div>
                             </div>
-                            
-                            <!-- Institution Tags -->
                             <div>
                                 <p class="text-gray-600 mb-1">Institution Tags:</p>
                                 <div class="flex flex-wrap gap-1">
@@ -196,95 +192,48 @@
                         </div>
                     </div>
                     
-                    <!-- Action Buttons Section - Move from Info tab to here -->
+                    <!-- Action Buttons Section - Only Lock/Unlock -->
                     <div class="mt-8 border-t border-gray-200 pt-6">
                         <h4 class="font-semibold mb-4">Survey Actions</h4>
-                        <!-- Move the Lock/Unlock and Archive buttons here with the same side-by-side layout -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @if(!$survey->trashed())
-                                <!-- Lock/Unlock Button -->
-                                <div class="{{ !$survey->is_locked ? 'md:col-span-2' : '' }}">
-                                    @if(!$survey->is_locked)
-                                        <!-- Show input field for lock reason when survey is unlocked -->
-                                        <div class="mb-3">
-                                            <label for="lockReason" class="block text-sm font-medium text-gray-700 mb-1">
-                                                Reason for locking:
-                                            </label>
-                                            <input 
-                                                type="text" 
-                                                id="lockReason"
-                                                wire:model="lockReason"
-                                                placeholder="Enter reason for locking the survey"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            >
-                                        </div>
-                                    @endif
-                                    
-                                    <button 
-                                        type="button"
-                                        wire:click.prevent="toggleLockStatus"
-                                        wire:loading.attr="disabled"
-                                        class="w-full py-2 rounded {{ 
-                                            $survey->is_locked 
-                                                ? 'bg-green-500 hover:bg-green-600 text-white' 
-                                                : 'bg-red-500 hover:bg-red-600 text-white'
-                                        }}"
-                                    >
-                                        <span wire:loading.inline wire:target="toggleLockStatus" class="inline-block">
-                                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Processing...
-                                        </span>
-                                        <span wire:loading.remove wire:target="toggleLockStatus">
-                                            {{ $survey->is_locked ? 'Unlock Survey' : 'Lock Survey' }}
-                                        </span>
-                                    </button>
-                                </div>
-                                
-                                <!-- Archive Button (soft delete) -->
-                                <div class="{{ !$survey->is_locked ? 'md:col-span-2' : '' }}">
-                                    <button 
-                                        type="button"
-                                        wire:click.prevent="archiveSurvey"
-                                        wire:loading.attr="disabled"
-                                        class="w-full py-2 rounded bg-gray-500 hover:bg-gray-600 text-white"
-                                    >
-                                        <span wire:loading.inline wire:target="archiveSurvey" class="inline-block">
-                                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Processing...
-                                        </span>
-                                        <span wire:loading.remove wire:target="archiveSurvey">
-                                            Archive Survey
-                                        </span>
-                                    </button>
-                                </div>
-                            @else
-                                <!-- Restore Button (for archived surveys) -->
-                                <div class="col-span-full">
-                                    <button 
-                                        type="button"
-                                        wire:click.prevent="restoreSurvey"
-                                        wire:loading.attr="disabled"
-                                        class="w-full py-2 rounded bg-blue-500 hover:bg-blue-600 text-white"
-                                    >
-                                        <span wire:loading.inline wire:target="restoreSurvey" class="inline-block">
-                                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Processing...
-                                        </span>
-                                        <span wire:loading.remove wire:target="restoreSurvey">
-                                            Restore Survey
-                                        </span>
-                                    </button>
-                                </div>
-                            @endif
+                        <div class="grid grid-cols-1 gap-4">
+                            <!-- Lock/Unlock Button -->
+                            <div>
+                                @if(!$survey->is_locked)
+                                    <div class="mb-3">
+                                        <label for="lockReason" class="block text-sm font-medium text-gray-700 mb-1">
+                                            Reason for locking:
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            id="lockReason"
+                                            wire:model="lockReason"
+                                            placeholder="Enter reason for locking the survey"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                    </div>
+                                @endif
+                                <button 
+                                    type="button"
+                                    wire:click.prevent="toggleLockStatus"
+                                    wire:loading.attr="disabled"
+                                    class="w-full py-2 rounded {{ 
+                                        $survey->is_locked 
+                                            ? 'bg-green-500 hover:bg-green-600 text-white' 
+                                            : 'bg-red-500 hover:bg-red-600 text-white'
+                                    }}"
+                                >
+                                    <span wire:loading.inline wire:target="toggleLockStatus" class="inline-block">
+                                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Processing...
+                                    </span>
+                                    <span wire:loading.remove wire:target="toggleLockStatus">
+                                        {{ $survey->is_locked ? 'Unlock Survey' : 'Lock Survey' }}
+                                    </span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -299,17 +248,14 @@
              x-transition:leave="transition ease-in duration-100"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             @click="fullscreenImageSrc = null"  {{-- Click background to close --}}
-             @keydown.escape.window="fullscreenImageSrc = null" {{-- Press Escape to close --}}
+             @click="fullscreenImageSrc = null"
+             @keydown.escape.window="fullscreenImageSrc = null"
              class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 cursor-pointer"
-             style="display: none;"> {{-- Add display:none to prevent flash on load --}}
-            
+             style="display: none;">
             <img :src="fullscreenImageSrc" 
                  alt="Fullscreen Survey Image" 
                  class="max-w-full max-h-full object-contain"
-                 @click.stop> {{-- Prevent closing when clicking the image itself --}}
-                      
-            {{-- Larger, easier-to-tap close button for mobile --}}
+                 @click.stop>
             <button @click="fullscreenImageSrc = null" 
                     class="cursor-pointer absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-white text-4xl sm:text-3xl font-bold leading-none rounded-full hover:bg-black hover:bg-opacity-25 focus:outline-none">
                 &times;

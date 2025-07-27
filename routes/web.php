@@ -82,6 +82,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'role:institution_admin'])->group(function () {
     Route::get('/institution/analytics', [InstitutionAdminController::class, 'analyticsIndex'])->name('institution.analytics');
     Route::get('/institution/users', [InstitutionAdminController::class, 'usersIndex'])->name('institution.users');
+    Route::get('/institution/surveys', [InstitutionAdminController::class, 'surveysIndex'])->name('institution.surveys');
 });
 
 // Super Admin Routes

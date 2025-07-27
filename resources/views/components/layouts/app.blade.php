@@ -157,6 +157,7 @@
                                             >
                                                 <a href="/institution/analytics" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('institution/analytics')) }} hover:bg-gray-100">Analytics</a>
                                                 <a href="/institution/users" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('institution/users')) }} hover:bg-gray-100">Users</a>
+                                                <a href="/institution/surveys" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('institution/surveys')) }} hover:bg-gray-100">Surveys</a>
                                             </div>
                                         </div>
                                     @else
@@ -279,7 +280,7 @@
                     
                     {{-- Mobile Menu Links: Authenticated Users (Common) --}}
                     <a href="/feed" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->routeIs('feed.index')) }} hover:text-[#03b8ff]">Feed</a>
-                    <a href="/rewards" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->routeIs('rewards.index')) }} hover:text-[#03b8ff]">Redeem</a>
+                    <a href="/rewards" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->routeIs('rewards.index')) }} hover:text-[#03b8ff">Redeem</a>
                     <a href="/vouchers" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->routeIs('vouchers.index')) }} hover:text-[#03b8ff]">Vouchers</a>
                     
                     {{-- Mobile Menu Links: Role Specific --}}
@@ -305,6 +306,7 @@
                             <p class="font-semibold text-gray-700 mb-2">Institution</p>
                             <a href="/institution/analytics" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/analytics')) }} hover:text-[#03b8ff]">Analytics</a>
                             <a href="/institution/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/users')) }} hover:text-[#03b8ff]">Users</a>
+                            <a href="/institution/surveys" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/surveys')) }} hover:text-[#03b8ff]">Surveys</a>
                         </div>
                         @else
                             {{-- Disabled links (if institution is invalid) --}}

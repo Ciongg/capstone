@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Livewire\SuperAdmin\UserSurveys\Modal;
+namespace App\Livewire\InstitutionAdmin\UserSurveys\Modal;
 
 use App\Models\Survey;
 use Livewire\Component;
 
-class UserSurveyViewModal extends Component
+class InstitutionUserSurveyViewModal extends Component
 {
     public $survey = null;
     public $surveyId;
@@ -82,6 +82,6 @@ class UserSurveyViewModal extends Component
     
     public function render()
     {
-        return view('livewire.super-admin.user-surveys.modal.user-survey-view-modal');
+        return view('livewire.institution-admin.user-surveys.modal.institution-user-survey-view-modal');
     }
 }

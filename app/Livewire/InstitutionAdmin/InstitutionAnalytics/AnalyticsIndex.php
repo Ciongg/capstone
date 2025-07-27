@@ -38,31 +38,6 @@ class AnalyticsIndex extends Component
         // Set default selected year to current year
         $this->selectedYear = Carbon::now()->year;
         
-        // Check if we have any survey data for debugging
-        $hasData = Survey::whereHas('user', function($query) {
-            $query->where('institution_id', $this->institution->id);
-        })->exists();
-        
-        // If no data, create a dummy survey for testing
-        if (!$hasData && app()->environment('local')) {
-            // This is just for testing - you can remove this in production
-            $researcherUser = User::where('institution_id', $this->institution->id)
-                ->where('type', 'researcher')
-                ->first();
-                
-            if ($researcherUser) {
-                Survey::create([
-                    'user_id' => $researcherUser->id,
-                    'title' => 'Test Survey',
-                    'description' => 'This is a test survey created for debugging',
-                    'status' => 'published',
-                    'type' => 'basic',
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
-            }
-        }
-        
         // Get available years for the dropdown
         $this->availableYears = $this->getAvailableYears();
         
