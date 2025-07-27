@@ -273,8 +273,8 @@ class ViewAllResponsesModal extends Component
             . "ANALYSIS REQUEST:\n{$prompt}\n\n"
             . "Provide DIRECT analysis (no thinking process):";
 
-        $endpoint = rtrim(env('AZURE_DEEPSEEK_ENDPOINT'), '/');
-        $apiKey = env('AZURE_DEEPSEEK_KEY');
+        $endpoint = rtrim(config('services.deepseek.endpoint'), '/');
+        $apiKey = config('services.deepseek.api_key');
         $modelName = "DeepSeek-R1-0528";
         $apiVersion = "2024-05-01-preview";
 
@@ -433,7 +433,7 @@ class ViewAllResponsesModal extends Component
      */
     protected function generateSummaryWithGemini($prompt)
     {
-        $apiKey = env('GEMINI_API_KEY');
+        $apiKey = config('services.gemini.key');
 
         try {
             $response = Http::withHeaders([

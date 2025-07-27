@@ -840,8 +840,8 @@ class AnswerSurvey extends Component
             . "TEXT TO TRANSLATE:\n{$textToTranslate}\n\n"
             . "Provide PURE {$targetLanguage} translation (no mixed languages):";
 
-        $endpoint = rtrim(env('AZURE_DEEPSEEK_ENDPOINT'), '/');
-        $apiKey = env('AZURE_DEEPSEEK_KEY');
+        $endpoint = rtrim(config('services.deepseek.endpoint'), '/');
+        $apiKey = config('services.deepseek.api_key');
         $modelName = "DeepSeek-R1-0528";
         $apiVersion = "2024-05-01-preview";
 
@@ -889,7 +889,7 @@ class AnswerSurvey extends Component
      */
     protected function translateWithGemini($textToTranslate, $targetLanguage)
     {
-        $apiKey = env('GEMINI_API_KEY');
+        $apiKey = config('services.gemini.key');
         $geminiPrompt = "Translate this survey content from English to {$targetLanguage}. Follow these rules:\n\n"
             . "FORMAT: Keep exact prefixes (Q:, C0:, C1:, etc.) - one item per line\n"
             . "STYLE: Use formal, clear language for survey respondents\n"
@@ -955,8 +955,8 @@ class AnswerSurvey extends Component
         }
         $inputJson = json_encode($input, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         $prompt = "Translate the following question and its options to {$targetLanguage}. If the input text is already in the target language, return the input JSON unchanged. Return ONLY a valid JSON object with the same structure as the input, but with all text translated. Do NOT include any explanations or extra text.\n\nINPUT:\n{$inputJson}\n\nOUTPUT:";
-        $endpoint = rtrim(env('AZURE_DEEPSEEK_ENDPOINT'), '/');
-        $apiKey = env('AZURE_DEEPSEEK_KEY');
+        $endpoint = rtrim(config('services.deepseek.endpoint'), '/');
+        $apiKey = config('services.deepseek.api_key');
         $modelName = "DeepSeek-R1-0528";
         $apiVersion = "2024-05-01-preview";
         $apiUrl = "{$endpoint}/openai/deployments/{$modelName}/chat/completions?api-version={$apiVersion}";
@@ -1037,7 +1037,7 @@ class AnswerSurvey extends Component
         }
         $inputJson = json_encode($input, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         $prompt = "Translate the following question and its options to {$targetLanguage}. If the input text is already in the target language, return the input JSON unchanged. Return ONLY a valid JSON object with the same structure as the input, but with all text translated. Do NOT include any explanations or extra text.\n\nINPUT:\n{$inputJson}\n\nOUTPUT:";
-        $apiKey = env('GEMINI_API_KEY');
+        $apiKey = config('services.gemini.key');
         try {
             Log::info('[Translation] Using AI: Gemini');
             Log::info('[Translation] Q: ' . $questionText);

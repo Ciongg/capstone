@@ -114,17 +114,4 @@
             <strong>Note:</strong> Once updated, you will not be able to change your profile information again for 6 months. This is to ensure data integrity.
         </div>
     </div>
-    @if (session()->has('profile_saved'))
-        <div class="text-green-600 mt-2">{{ session('profile_saved') }}</div>
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: 'Your changes have been made.',
-                    confirmButtonColor: '#10b981'
-                });
-            });
-        </script>
-    @endif
 </form>

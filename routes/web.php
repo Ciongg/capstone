@@ -15,6 +15,11 @@ use App\Http\Controllers\InboxController;
 // ============================================================================
 // PUBLIC ROUTES (No authentication required)
 // ============================================================================
+
+
+
+
+
 Route::get('/', function () {
     return view('welcome');
 })->name('welcome');

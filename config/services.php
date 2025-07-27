@@ -47,4 +47,14 @@ return [
         'redirect' => env('GOOGLE_OAUTH_REDIRECT'),
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+    ],
+
+    'deepseek' => [
+        'endpoint' => env('AZURE_DEEPSEEK_ENDPOINT'),
+        'api_key' => env('AZURE_DEEPSEEK_KEY'),
+    ],
+
+
 ];
