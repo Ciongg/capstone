@@ -433,7 +433,7 @@ class ViewAllResponsesModal extends Component
      */
     protected function generateSummaryWithGemini($prompt)
     {
-        $apiKey = config('services.gemini.key');
+        $apiKey = config('services.gemini.api_key');
 
         try {
             $response = Http::withHeaders([

@@ -900,7 +900,8 @@ class AnswerSurvey extends Component
      */
     protected function translateWithGemini($textToTranslate, $targetLanguage)
     {
-        $apiKey = config('services.gemini.key');
+        // Use the correct configuration key
+        $apiKey = config('services.gemini_api_key');
         $geminiPrompt = "Translate this survey content from English to {$targetLanguage}. Follow these rules:\n\n"
             . "FORMAT: Keep exact prefixes (Q:, C0:, C1:, etc.) - one item per line\n"
             . "STYLE: Use formal, clear language for survey respondents\n"
@@ -909,33 +910,42 @@ class AnswerSurvey extends Component
             . "TEXT:\n{$textToTranslate}\n\n"
             . "Provide verified {$targetLanguage} translation:";
 
+        $endpoint = rtrim(config('services.deepseek.endpoint'), '/');
+        $apiKey = config('services.deepseek.api_key');
+        $modelName = "DeepSeek-R1-0528";
+        $apiVersion = "2024-05-01-preview";
+
+        $apiUrl = "{$endpoint}/openai/deployments/{$modelName}/chat/completions?api-version={$apiVersion}";
+
+        Log::info("Calling DeepSeek at: {$apiUrl}");
+
         try {
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
-            ])->timeout(30)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
-                'contents' => [
-                    ['parts' => [['text' => $geminiPrompt]]]
+                'api-key' => $apiKey,
+            ])->timeout(30)->post($apiUrl, [
+                'messages' => [
+                    ['role' => 'system', 'content' => 'You are a professional translator.'],
+                    ['role' => 'user', 'content' => $geminiPrompt]
                 ],
-                'generationConfig' => [
-                    'maxOutputTokens' => 8912,
-                    'temperature' => 0.1,
-                    'topP' => 0.9,
-                    'topK' => 40,
-                ],
+                'max_tokens' => 2048,
+                'temperature' => 0.1
             ]);
 
-            if ($response->successful()) {
-                Log::info('Gemini translation successful.');
-                return $response['candidates'][0]['content']['parts'][0]['text'] ?? null;
+            if ($response->successful() && isset($response['choices'][0]['message']['content'])) {
+                $translatedText = $response['choices'][0]['message']['content'];
+                Log::info('DeepSeek translation successful.');
+                Log::info('Translated text: ' . $translatedText);
+                return $translatedText;
             } else {
-                Log::error('Gemini translation failed: ' . $response->body());
+                Log::error('DeepSeek translation failed: ' . $response->body());
                 return null;
             }
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::error('Gemini timeout or connection error: ' . $e->getMessage());
+            Log::error('DeepSeek timeout or connection error: ' . $e->getMessage());
             return null;
         } catch (\Exception $e) {
-            Log::error('Gemini unexpected error: ' . $e->getMessage());
+            Log::error('DeepSeek unexpected error: ' . $e->getMessage());
             return null;
         }
     }
@@ -1036,24 +1046,28 @@ class AnswerSurvey extends Component
             $input['likert_columns'] = array_values($likertColumns);
         }
         $inputJson = json_encode($input, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-        $prompt = "Translate the following question and its options to {$targetLanguage}. If the input text is already in the target language, return the input JSON unchanged. Return ONLY a valid JSON object with the same structure as the input, but with all text translated. Do NOT include any explanations or extra text.\n\nINPUT:\n{$inputJson}\n\nOUTPUT:";
-        $apiKey = config('services.gemini.key');
+        
+        // Enhanced prompt with explicit JSON formatting instructions
+        $prompt = "Translate the following JSON object from English to {$targetLanguage}. You MUST return ONLY a valid JSON object with NO additional text.\n\n" .
+            "CRITICAL RULES:\n" .
+            "1. Return ONLY valid parseable JSON\n" .
+            "2. Keep the exact same JSON structure and property names\n" .
+            "3. Only translate the text values, not the keys\n" .
+            "4. Do not add ANY explanations, markdown formatting, or code blocks\n" .
+            "5. If the input is already in {$targetLanguage}, return it unchanged\n\n" .
+            "INPUT JSON:\n{$inputJson}\n\n" .
+            "ONLY RETURN THE TRANSLATED JSON:";
+    
+        // Use the correct configuration key
+        $apiKey = config('services.gemini.api_key');
+    
         try {
             Log::info('[Translation] Using AI: Gemini');
-            Log::info('[Translation] Q: ' . $questionText);
-            if (!empty($choices)) {
-                Log::info('[Translation] C: ' . json_encode($choices, JSON_UNESCAPED_UNICODE));
-            }
-            if (!empty($likertRows)) {
-                Log::info('[Translation] Likert Rows: ' . json_encode($likertRows, JSON_UNESCAPED_UNICODE));
-            }
-            if (!empty($likertColumns)) {
-                Log::info('[Translation] Likert Columns: ' . json_encode($likertColumns, JSON_UNESCAPED_UNICODE));
-            }
-            Log::info('[Translation] Translating...');
+            Log::info('[Translation] Input JSON: ' . mb_substr($inputJson, 0, 500) . '...');
+            
             $response = \Illuminate\Support\Facades\Http::withHeaders([
                 'Content-Type' => 'application/json',
-            ])->timeout(15)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
+            ])->timeout(20)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
                 'contents' => [
                     ['parts' => [['text' => $prompt]]]
                 ],
@@ -1063,20 +1077,70 @@ class AnswerSurvey extends Component
                     'topP' => 0.9,
                     'topK' => 40,
                 ],
+                'safetySettings' => [
+                    ['category' => 'HARM_CATEGORY_HARASSMENT', 'threshold' => 'BLOCK_NONE'],
+                    ['category' => 'HARM_CATEGORY_HATE_SPEECH', 'threshold' => 'BLOCK_NONE'],
+                    ['category' => 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'threshold' => 'BLOCK_NONE'],
+                    ['category' => 'HARM_CATEGORY_DANGEROUS_CONTENT', 'threshold' => 'BLOCK_NONE']
+                ]
             ]);
-            if ($response->successful()) {
+            
+            if ($response->successful() && isset($response['candidates'][0]['content']['parts'][0]['text'])) {
                 $content = $response['candidates'][0]['content']['parts'][0]['text'] ?? null;
-                Log::info('[Translation] Raw AI response: ' . mb_substr($content, 0, 1000));
-                $json = $this->extractJsonFromResponse($content);
+                
+                // Log full raw response to understand what's being returned
+                Log::info('[Translation] Raw Gemini response: ' . $content);
+                
+                // Try enhanced JSON extraction for Gemini
+                $json = $this->extractJsonFromGeminiResponse($content);
+                
                 if ($json) {
-                    Log::info('[Translation] Parsed JSON: ' . json_encode($json, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                    Log::info('[Translation] Successfully parsed JSON from Gemini');
                     return $json;
+                } else {
+                    Log::error('[Translation] Failed to parse JSON from Gemini response');
+                    Log::error('[Translation] Response content: ' . mb_substr($content, 0, 1000));
                 }
+            } else {
+                // Log detailed API error
+                $errorDetails = $response->json() ?? 'No details available';
+                Log::error('[Translation] Gemini API error: ' . json_encode($errorDetails));
             }
         } catch (\Exception $e) {
             Log::error('Gemini translation error: ' . $e->getMessage());
+            Log::error('Gemini exception trace: ' . $e->getTraceAsString());
         }
+        
         Log::error('Gemini translation failed or returned invalid JSON.');
+        return null;
+    }
+
+    /**
+     * Enhanced JSON extraction specifically for Gemini responses
+     * 
+     * @param string $response
+     * @return array|null
+     */
+    private function extractJsonFromGeminiResponse($response)
+    {
+        // Remove any markdown code block formatting
+        $response = preg_replace('/```(?:json)?\s*({.*?})\s*```/s', '$1', $response);
+        
+        // Try to parse the cleaned response
+        $data = json_decode($response, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+            return $data;
+        }
+        
+        // If direct parsing fails, try to extract JSON from the response text
+        if (preg_match('/\{(?:[^{}]|(?R))*\}/s', $response, $matches)) {
+            $jsonCandidate = $matches[0];
+            $data = json_decode($jsonCandidate, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+                return $data;
+            }
+        }
+        
         return null;
     }
 
@@ -1239,6 +1303,41 @@ class AnswerSurvey extends Component
         }
     }
     
+    /**
+     * Extract JSON object from AI response text
+     *
+     * @param string $response
+     * @return array|null
+     */
+    private function extractJsonFromResponse($response)
+    {
+        // Try to parse the response directly
+        $data = json_decode($response, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+            return $data;
+        }
+        
+        // If direct parsing fails, try to extract JSON from the response text
+        if (preg_match('/\{(?:[^{}]|(?R))*\}/s', $response, $matches)) {
+            $jsonCandidate = $matches[0];
+            $data = json_decode($jsonCandidate, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+                return $data;
+            }
+        }
+        
+        // Try alternate extraction for code blocks
+        if (preg_match('/```(?:json)?\s*({.*?})\s*```/s', $response, $matches)) {
+            $jsonCandidate = $matches[1];
+            $data = json_decode($jsonCandidate, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+                return $data;
+            }
+        }
+        
+        return null;
+    }
+
     /**
      * Render the component
      */
