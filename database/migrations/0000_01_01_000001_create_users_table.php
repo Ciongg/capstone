@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('last_name');
             $table->string('email')->unique();
             $table->string('phone_number')->unique()->nullable();
-            $table->boolean('is_active');
+            $table->boolean('is_active')->default(true);
             $table->softDeletes();
             
             $table->decimal('points', 10, 0)->default(0);
@@ -33,6 +33,7 @@ return new class extends Migration
             $table->string('profile_photo_path', 2048)->nullable(); 
             $table->rememberToken();
             $table->timestamps();
+            $table->timestamp('last_active_at')->nullable(); // Add this line
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

@@ -45,6 +45,7 @@ class User extends Authenticatable
         'institution_id',
         'is_active',
         'email_verified_at',
+        'last_active_at', // Add this line
     ];
 
     /**
@@ -76,6 +77,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_active_at' => 'datetime', // Fix typo here
         ];
     }
 

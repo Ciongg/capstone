@@ -99,7 +99,7 @@
                             <span class="font-bold">Joined:</span> {{ $user->created_at->format('M d, Y h:i A') }}
                         </div>
                         <div>
-                            <span class="font-bold">Last Updated:</span> {{ $user->updated_at->format('M d, Y h:i A') }}
+                            <span class="font-bold">Last Active At:</span> {{ $user->last_active_at->format('M d, Y h:i A') }}
                         </div>
                         
                         @if($user->trashed())
@@ -192,7 +192,7 @@
                                 type="button"
                                 wire:click.prevent="restoreUser"
                                 wire:loading.attr="disabled"
-                                class="w-full py-2 rounded bg-blue-500 hover:bg-blue-600 text-white"
+                                class="w-full py-2 rounded bg-green-500 hover:bg-green-600 text-white"
                             >
                                 <span wire:loading.inline wire:target="restoreUser" class="inline-block">
                                     <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckUserRole::class,
         ]);
+
+        // Only append to web group so it runs after authentication
+        $middleware->web(\App\Http\Middleware\UpdateLastActiveAt::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -987,21 +987,10 @@ class AnswerSurvey extends Component
             if ($response->successful() && isset($response['choices'][0]['message']['content'])) {
                 $content = $response['choices'][0]['message']['content'];
                 Log::info('[Translation] Raw AI response: ' . mb_substr($content, 0, 1000));
-                // Try to extract JSON from the response
-                if (!empty($content)) {
-                    $json = null;
-                    // Try direct decode
-                    $json = json_decode($content, true);
-                    if (!$json) {
-                        // Try to extract first JSON object from text
-                        if (preg_match('/\{.*\}/s', $content, $matches)) {
-                            $json = json_decode($matches[0], true);
-                        }
-                    }
-                    if (is_array($json) && isset($json['question'])) {
-                        Log::info('[Translation] Parsed JSON: ' . json_encode($json, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-                        return $json;
-                    }
+                $json = $this->extractJsonFromResponse($content);
+                if ($json) {
+                    Log::info('[Translation] Parsed JSON: ' . json_encode($json, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                    return $json;
                 }
             }
         } catch (\Exception $e) {
@@ -1067,18 +1056,10 @@ class AnswerSurvey extends Component
             if ($response->successful()) {
                 $content = $response['candidates'][0]['content']['parts'][0]['text'] ?? null;
                 Log::info('[Translation] Raw AI response: ' . mb_substr($content, 0, 1000));
-                if (!empty($content)) {
-                    $json = null;
-                    $json = json_decode($content, true);
-                    if (!$json) {
-                        if (preg_match('/\{.*\}/s', $content, $matches)) {
-                            $json = json_decode($matches[0], true);
-                        }
-                    }
-                    if (is_array($json) && isset($json['question'])) {
-                        Log::info('[Translation] Parsed JSON: ' . json_encode($json, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-                        return $json;
-                    }
+                $json = $this->extractJsonFromResponse($content);
+                if ($json) {
+                    Log::info('[Translation] Parsed JSON: ' . json_encode($json, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                    return $json;
                 }
             }
         } catch (\Exception $e) {
@@ -1156,11 +1137,10 @@ class AnswerSurvey extends Component
             $this->dispatch('$refresh');
             return;
         }
-        // Call DeepSeek translation first
-        $result = $this->translateQuestionWithAI($question->question_text, $choices, $likertRows, $likertColumns, $targetLanguage);
-        // If DeepSeek fails, try Gemini
+        // Try Gemini first, then DeepSeek as fallback
+        $result = $this->translateQuestionWithGemini($question->question_text, $choices, $likertRows, $likertColumns, $targetLanguage);
         if (!$result) {
-            $result = $this->translateQuestionWithGemini($question->question_text, $choices, $likertRows, $likertColumns, $targetLanguage);
+            $result = $this->translateQuestionWithAI($question->question_text, $choices, $likertRows, $likertColumns, $targetLanguage);
         }
         if ($result) {
             $this->translatedQuestions[$questionId] = $result['question'] ?? null;
@@ -1251,3 +1231,4 @@ class AnswerSurvey extends Component
         ]);
     }
 }
+        

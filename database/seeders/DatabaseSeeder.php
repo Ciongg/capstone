@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             'type' => 'researcher',
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
             'is_active' => true, // Add is_active flag
+            'last_active_at' => now(), 
         ]);
 
         User::factory()->create([
@@ -41,6 +42,7 @@ class DatabaseSeeder extends Seeder
             'type' => 'researcher',
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
             'is_active' => true, // Add is_active flag
+            'last_active_at' => now(), 
         ]);
 
         User::factory()->create([
@@ -51,6 +53,7 @@ class DatabaseSeeder extends Seeder
             'type' => 'researcher',
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
             'is_active' => true, // Add is_active flag
+            'last_active_at' => now(), 
         ]);
 
         User::factory()->create([
@@ -61,6 +64,7 @@ class DatabaseSeeder extends Seeder
             'type' => 'researcher',
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
             'is_active' => true, // Add is_active flag
+            'last_active_at' => now(), 
         ]);
 
         User::factory()->create([
@@ -71,6 +75,7 @@ class DatabaseSeeder extends Seeder
             'type' => 'institution_admin',
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
             'is_active' => true, // Add is_active flag
+            'last_active_at' => now(), 
         ]);
 
         User::factory()->create([
@@ -81,6 +86,7 @@ class DatabaseSeeder extends Seeder
             'type' => 'institution_admin',
             'institution_id' => $nationalUniversity ? $nationalUniversity->id : null,
             'is_active' => true, // Add is_active flag
+            'last_active_at' => now(), 
         ]);
 
         User::factory()->create([
@@ -91,6 +97,7 @@ class DatabaseSeeder extends Seeder
             'type' => 'researcher',
             'institution_id' => $nationalUniversity ? $nationalUniversity->id : null,
             'is_active' => true,
+            'last_active_at' => now(), 
         ]);
 
         User::factory()->create([
@@ -101,6 +108,7 @@ class DatabaseSeeder extends Seeder
             'type' => 'super_admin',
             'institution_id' => null,
             'is_active' => true, // Add is_active flag
+            'last_active_at' => now(), 
         ]);
 
         User::factory()->create([
@@ -111,6 +119,7 @@ class DatabaseSeeder extends Seeder
             'type' => 'respondent',
             'institution_id' => null,
             'is_active' => true, // Add is_active flag
+            'last_active_at' => now(), 
         ]);
 
         // Updated seeder order - SurveyTopicSeeder before SurveySeeder
