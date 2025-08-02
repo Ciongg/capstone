@@ -25,11 +25,12 @@ class SurveyController extends Controller
         }
 
         if ($surveyId) {
-            $surveyModel = Survey::find($surveyId);
+            // Find survey by UUID instead of ID
+            $surveyModel = Survey::where('uuid', $surveyId)->first();
 
             // Check if survey exists
             if (!$surveyModel) {
-                abort(404, 'The requested page could not be found.');
+                abort(404, 'The requested survey could not be found.');
             }
 
             // Only super_admin can access all, others only their own
@@ -148,11 +149,12 @@ class SurveyController extends Controller
         $user = Auth::user();
 
         // Only allow owner of the survey
-        $survey = Survey::find($surveyId);
+        // Find survey by UUID instead of ID
+        $survey = Survey::where('uuid', $surveyId)->first();
 
         // Check if survey exists
         if (!$survey) {
-            abort(404, 'The requested page could not be found.');
+            abort(404, 'The requested survey could not be found.');
         }
 
         if ($survey->user_id !== $user->id) {

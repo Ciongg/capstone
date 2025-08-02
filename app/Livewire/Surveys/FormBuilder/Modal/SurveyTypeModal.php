@@ -101,7 +101,7 @@ class SurveyTypeModal extends Component
         }
 
         $this->dispatch('close-modal');
-        return redirect()->route('surveys.create', ['survey' => $surveyModel->id]);
+        return redirect()->route('surveys.create', ['survey' => $surveyModel->uuid]);
     }
 
     private function createDefaultSurvey(Survey $survey)

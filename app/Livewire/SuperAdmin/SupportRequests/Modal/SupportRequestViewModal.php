@@ -53,7 +53,8 @@ class SupportRequestViewModal extends Component
                 $this->relatedItem = Survey::find($this->supportRequest->related_id);
                 $this->relatedItemTitle = $this->relatedItem ? $this->relatedItem->title : 'Survey not found';
             } elseif ($this->supportRequest->request_type === 'report_appeal' && $this->supportRequest->related_model === 'Report') {
-                $this->relatedItem = Report::with(['survey', 'reporter', 'respondent'])->find($this->supportRequest->related_id);
+                // Update to find report by UUID for better security
+                $this->relatedItem = Report::with(['survey', 'reporter', 'respondent'])->where('uuid', $this->supportRequest->related_id)->first();
                 $this->relatedItemTitle = $this->relatedItem ? ($this->relatedItem->survey->title ?? 'Unknown Survey') : 'Report not found';
             }
         }
@@ -140,7 +141,7 @@ class SupportRequestViewModal extends Component
                                         InboxMessage::create([
                                             'recipient_id' => $respondent->id,
                                             'subject' => 'Points Restored After Successful Appeal',
-                                            'message' => "Your appeal for Report #{$report->id} has been approved.{$pointsMessage}\n\n" . 
+                                            'message' => "Your appeal for Report #{$report->uuid} has been approved.{$pointsMessage}\n\n" . 
                                                 ($report->trust_score_deduction ? "Your trust score has also been restored by {$deductionAmount} points." : "No trust score adjustment was needed."),
                                             'read_at' => null
                                         ]);
@@ -186,7 +187,7 @@ class SupportRequestViewModal extends Component
                                     InboxMessage::create([
                                         'recipient_id' => $reporter->id,
                                         'subject' => 'Report Reviewed and Dismissed',
-                                        'message' => "Your report (ID #{$report->id}) has been reviewed and determined to be invalid. 
+                                        'message' => "Your report (ID: {$report->uuid}) has been reviewed and determined to be invalid. 
 
 You now have {$dismissedReportsCount} false " . ($dismissedReportsCount == 1 ? "report" : "reports") . " on your account.
 
@@ -216,7 +217,7 @@ Please ensure all reports are legitimate to avoid future penalties. Multiple fal
                                     InboxMessage::create([
                                         'recipient_id' => $report->respondent_id,
                                         'subject' => 'Appeal Rejected - Points Permanently Deducted',
-                                        'message' => "Your appeal for Report #{$report->id} has been rejected. The {$report->points_deducted} points that were deducted will not be restored. The trust score deduction also remains in effect.",
+                                        'message' => "Your appeal for Report #{$report->uuid} has been rejected. The {$report->points_deducted} points that were deducted will not be restored. The trust score deduction also remains in effect.",
                                         'read_at' => null
                                     ]);
                                 }

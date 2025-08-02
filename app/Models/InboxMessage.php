@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasUuid;
 
 class InboxMessage extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuid;
     
     protected $fillable = [
-
+        'uuid',
         'recipient_id',
         'subject',
         'message',

@@ -43,10 +43,10 @@ Route::get('/voucher/verify/{reference_no}', [VoucherController::class, 'verify'
 
 // Survey answering routes (require authentication)
 Route::middleware('auth')->group(function () {
-    Route::get('/surveys/answer/{survey}', [SurveyController::class, 'answer'])->name('surveys.answer')->missing(function () {
+    Route::get('/surveys/answer/{survey:uuid}', [SurveyController::class, 'answer'])->name('surveys.answer')->missing(function () {
         abort(404, 'The requested page could not be found.');
     });
-    Route::post('/surveys/answer/{survey}', [SurveyController::class, 'submit'])->name('surveys.submit');
+    Route::post('/surveys/answer/{survey:uuid}', [SurveyController::class, 'submit'])->name('surveys.submit');
 });
 
 // Google OAuth Signup
@@ -65,13 +65,13 @@ Route::middleware('auth')->group(function () {
 
     // Inbox Routes
     Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
-    Route::get('/inbox/{message}', [InboxController::class, 'show'])->name('inbox.show')->missing(function () {
+    Route::get('/inbox/{message:uuid}', [InboxController::class, 'show'])->name('inbox.show')->missing(function () {
         abort(404, 'The requested page could not be found.');
     });
     Route::post('/inbox/test', [InboxController::class, 'sendTestMessage'])->name('inbox.test');
 
     // Survey management routes (for researchers)
-    Route::get('/surveys/{survey}/responses/{response}/view', [SurveyController::class, 'showOwnResponse'])->name('surveys.responses.view');
+    Route::get('/surveys/{survey:uuid}/responses/{response:uuid}/view', [SurveyController::class, 'showOwnResponse'])->name('surveys.responses.view');
 });
 
 // ============================================================================
@@ -95,27 +95,27 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::get('/reports', [SuperAdminController::class, 'reportsIndex'])->name('reports.index');
     
     // User management routes
-    Route::get('/users/{user}/profile', [SuperAdminController::class, 'userProfile'])->name('users.profile')->withTrashed();
-    Route::put('/users/{user}/toggle-status', [SuperAdminController::class, 'toggleUserStatus'])->name('users.toggle-status');
-    Route::delete('/users/{user}/archive', [SuperAdminController::class, 'archiveUser'])->name('users.archive');
-    Route::put('/users/{user}/restore', [SuperAdminController::class, 'restoreUser'])->name('users.restore')->withTrashed();
+    Route::get('/users/{user:uuid}/profile', [SuperAdminController::class, 'userProfile'])->name('users.profile')->withTrashed();
+    Route::put('/users/{user:uuid}/toggle-status', [SuperAdminController::class, 'toggleUserStatus'])->name('users.toggle-status');
+    Route::delete('/users/{user:uuid}/archive', [SuperAdminController::class, 'archiveUser'])->name('users.archive');
+    Route::put('/users/{user:uuid}/restore', [SuperAdminController::class, 'restoreUser'])->name('users.restore')->withTrashed();
 });
 
 // Researcher and Institution Admin Routes (can also be accessed by super_admin)
 Route::middleware(['auth'])->group(function () {
     // Survey creation and management routes
     Route::get('/surveys/create', [SurveyController::class, 'create'])->name('surveys.create.redirect');
-    Route::get('/surveys/create/{survey}', [SurveyController::class, 'create'])->name('surveys.create')->missing(function () {
+    Route::get('/surveys/create/{survey:uuid}', [SurveyController::class, 'create'])->name('surveys.create')->missing(function () {
         abort(404, 'The requested page could not be found.');
     });
     Route::get('/surveys/preview', [SurveyController::class, 'showAnswerFormRedirect'])->name('surveys.preview.redirect');
-    Route::get('/surveys/{survey}/preview', [SurveyController::class, 'showAnswerForm'])->name('surveys.preview')->defaults('isPreview', true)->missing(function () {
+    Route::get('/surveys/{survey:uuid}/preview', [SurveyController::class, 'showAnswerForm'])->name('surveys.preview')->defaults('isPreview', true)->missing(function () {
         abort(404, 'The requested page could not be found.');
     });
-    Route::get('/surveys/{survey}/responses', [SurveyController::class, 'showResponses'])->name('surveys.responses')->missing(function () {
+    Route::get('/surveys/{survey:uuid}/responses', [SurveyController::class, 'showResponses'])->name('surveys.responses')->missing(function () {
         abort(404, 'The requested page could not be found.');
     });
-    Route::get('/surveys/{survey}/responses/individual', [SurveyController::class, 'showIndividualResponses'])->name('surveys.responses.individual')->missing(function () {
+    Route::get('/surveys/{survey:uuid}/responses/individual', [SurveyController::class, 'showIndividualResponses'])->name('surveys.responses.individual')->missing(function () {
         abort(404, 'The requested page could not be found.');
     });
 });

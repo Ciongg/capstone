@@ -565,7 +565,7 @@ class AnswerSurvey extends Component
                     }
                     
                     // Otherwise redirect to form builder
-                    return redirect()->route('surveys.create', ['survey' => $this->survey->id]);
+                    return redirect()->route('surveys.create', ['survey' => $this->survey->uuid]);
                 }
 
                 // Validate survey availability (end date, response limits, etc.)

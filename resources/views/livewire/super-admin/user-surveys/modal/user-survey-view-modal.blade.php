@@ -156,7 +156,7 @@
                         <!-- Basic settings values listed as read-only -->
                         <div class="space-y-2">
                             <h4 class="font-semibold">Form Settings</h4>
-                            <p><span class="text-gray-600">Survey ID:</span> {{ $survey->id }}</p>
+                            <p><span class="text-gray-600">Survey UUID:</span> {{ $survey->uuid }}</p>
                             <p><span class="text-gray-600">Survey Type:</span> {{ ucfirst($survey->type) }}</p>
                             <p><span class="text-gray-600">Institution Only:</span> {{ $survey->is_institution_only ? 'Yes' : 'No' }}</p>
                             <p><span class="text-gray-600">Last Updated:</span> {{ $survey->updated_at->format('M d, Y') }}</p>

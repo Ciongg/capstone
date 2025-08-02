@@ -106,7 +106,7 @@
                                 @elseif($supportRequest->request_type === 'report_appeal')
                                     <div class="flex flex-col sm:flex-row sm:items-center">
                                         <span class="font-medium text-blue-700 w-32 mb-1 sm:mb-0">Report ID:</span>
-                                        <span class="text-blue-900">{{ $supportRequest->related_id }}</span>
+                                        <span class="text-blue-900">{{ $relatedItem->uuid ?? $supportRequest->related_id }}</span>
                                     </div>
                                     @if($relatedItemTitle)
                                         <div class="flex flex-col sm:flex-row sm:items-start">
@@ -134,7 +134,7 @@
                                                 View Survey Responses
                                             </a>
                                         @elseif($supportRequest->request_type === 'report_appeal')
-                                            <a href="{{ route('surveys.responses.view', ['survey' => $relatedItem->survey_id, 'response' => $relatedItem->response_id]) }}" 
+                                            <a href="{{ route('surveys.responses.view', ['survey' => $relatedItem->survey->uuid, 'response' => $relatedItem->response->uuid]) }}" 
                                                target="_blank"
                                                class="inline-flex items-center text-blue-600 hover:text-blue-800 underline text-sm">
                                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

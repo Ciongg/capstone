@@ -36,7 +36,7 @@ class CreateSupportRequestModal extends Component
         if (in_array($this->request_type, ['survey_lock_appeal', 'report_appeal'])) {
             $rules['related_id'] = [
                 'required',
-                'numeric',
+                'string', // Changed from numeric to string for UUIDs
                 function ($attribute, $value, $fail) {
                     if ($this->request_type === 'survey_lock_appeal') {
                         if (!$this->validateSurveyOwnership($value)) {
@@ -62,9 +62,9 @@ class CreateSupportRequestModal extends Component
     /**
      * Validate that the survey belongs to the authenticated user
      */
-    private function validateSurveyOwnership($surveyId)
+    private function validateSurveyOwnership($surveyUuid)
     {
-        return Survey::where('id', $surveyId)
+        return Survey::where('uuid', $surveyUuid)
             ->where('user_id', auth()->id())
             ->exists();
     }
@@ -72,9 +72,9 @@ class CreateSupportRequestModal extends Component
     /**
      * Validate that the survey is actually locked
      */
-    private function validateSurveyIsLocked($surveyId)
+    private function validateSurveyIsLocked($surveyUuid)
     {
-        return Survey::where('id', $surveyId)
+        return Survey::where('uuid', $surveyUuid)
             ->where('is_locked', true)
             ->exists();
     }
@@ -82,9 +82,9 @@ class CreateSupportRequestModal extends Component
     /**
      * Validate that the report exists, user is the respondent, and can be appealed
      */
-    private function validateReportAppeal($reportId)
+    private function validateReportAppeal($reportUuid)
     {
-        $report = Report::where('id', $reportId)
+        $report = Report::where('uuid', $reportUuid)
             ->where('respondent_id', auth()->id())
             ->first();
 
@@ -115,9 +115,9 @@ class CreateSupportRequestModal extends Component
     /**
      * Validate that the report exists and the user is the respondent
      */
-    private function validateReportRespondent($reportId)
+    private function validateReportRespondent($reportUuid)
     {
-        return Report::where('id', $reportId)
+        return Report::where('uuid', $reportUuid)
             ->where('respondent_id', auth()->id())
             ->exists();
     }
@@ -129,7 +129,7 @@ class CreateSupportRequestModal extends Component
             'related_id.required' => $this->request_type === 'survey_lock_appeal' 
                 ? 'Survey ID is required for survey lock appeals.'
                 : 'Report ID is required for report appeals.',
-            'related_id.numeric' => 'The ID must be a valid number.',
+            'related_id.string' => 'The ID must be a valid identifier.',
         ];
     }
 
@@ -147,20 +147,21 @@ class CreateSupportRequestModal extends Component
                 $relatedModel = 'Report';
             }
 
-            // Create the support request
+            // Create the support request - using UUID as related_id
             $supportRequest = SupportRequest::create([
                 'user_id' => auth()->id(),
                 'subject' => $this->subject,
                 'description' => $this->description,
                 'request_type' => $this->request_type,
                 'status' => $this->status,
-                'related_id' => $this->related_id,
+                'related_id' => $this->related_id, // This is now a UUID string
                 'related_model' => $relatedModel,
             ]);
 
             // If this is a report appeal, update the report status
             if ($this->request_type === 'report_appeal' && $this->related_id) {
-                $report = Report::find($this->related_id);
+                // Find report by UUID instead of ID
+                $report = Report::where('uuid', $this->related_id)->first();
                 if ($report && $report->canBeAppealed()) {
                     $report->markAsUnderAppeal();
                 }

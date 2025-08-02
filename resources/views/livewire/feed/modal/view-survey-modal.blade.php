@@ -170,7 +170,7 @@
                 </button>
             @else
                 <!-- Unlocked survey -->
-                <a href="{{ route('surveys.answer', $survey->id) }}"
+                <a href="{{ route('surveys.answer', $survey->uuid) }}"
                    class="w-full sm:w-auto text-center px-4 sm:px-6 py-3 sm:py-2 bg-[#03b8ff] text-white font-bold rounded-lg hover:bg-[#0295d1] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 text-sm sm:text-base">
                     Answer Survey
                 </a>

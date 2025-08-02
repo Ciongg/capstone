@@ -3,6 +3,7 @@
 namespace App\Livewire\SuperAdmin\UserSurveys\Modal;
 
 use App\Models\Survey;
+use App\Models\InboxMessage;
 use Livewire\Component;
 
 class UserSurveyViewModal extends Component
@@ -31,18 +32,51 @@ class UserSurveyViewModal extends Component
             return;
         }
         
+        $wasPreviouslyLocked = $this->survey->is_locked;
+        
         // Update lock status
         $this->survey->is_locked = !$this->survey->is_locked;
-        
-        // If locking, ensure lock reason is provided
-        if ($this->survey->is_locked && !empty($this->lockReason)) {
-            $this->survey->lock_reason = $this->lockReason;
+
+        // If locking, update the lock reason and always send notification
+        if ($this->survey->is_locked) {
+            // Update lock reason if provided
+            if (!empty($this->lockReason)) {
+                $this->survey->lock_reason = $this->lockReason;
+            }
+            
+            // Always send notification to survey owner when locking
+            if ($this->survey->user_id) {
+                $reasonText = !empty($this->lockReason) 
+                    ? "Reason: {$this->lockReason}\n\n" 
+                    : "No specific reason was provided.\n\n";
+                    
+                InboxMessage::create([
+                    'recipient_id' => $this->survey->user_id,
+                    'subject' => 'Your Survey Has Been Locked',
+                    'message' => "Your survey '{$this->survey->title}' has been locked by an administrator.\n\n".
+                                 $reasonText.
+                                 "If you believe this lock was made in error, you can appeal this decision by submitting a support request through your Profile > Help Request section.\n\n".
+                                 "Please include the Survey UUID: {$this->survey->uuid} in your appeal.",
+                    'read_at' => null
+                ]);
+            }
         }
 
         // If unlocking, clear lock reason
         if (!$this->survey->is_locked) {
             $this->survey->lock_reason = null;
             $this->lockReason = '';
+            
+            // Always send notification when unlocking
+            if ($this->survey->user_id) {
+                InboxMessage::create([
+                    'recipient_id' => $this->survey->user_id,
+                    'subject' => 'Your Survey Has Been Unlocked',
+                    'message' => "Good news! Your survey '{$this->survey->title}' has been unlocked by an administrator and is now accessible again.",
+                    'url' => "/surveys/create/{$this->survey->uuid}",
+                    'read_at' => null
+                ]);
+            }
         }
 
         $this->survey->save();

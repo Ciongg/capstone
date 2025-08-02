@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\InboxMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class InboxController extends Controller
 {
@@ -21,15 +22,15 @@ class InboxController extends Controller
      */
     public function show($id)
     {
-        $message = InboxMessage::where('id', $id)->first();
+        $message = InboxMessage::where('uuid', $id)->first();
         
         if (!$message) {
-            abort(404, 'The requested page could not be found.');
+            abort(404, 'The requested message could not be found.');
         }
         
         // Check if user owns this message
         if ($message->recipient_id !== Auth::id()) {
-            abort(403, 'You do not have permission to access this page.');
+            abort(403, 'You do not have permission to access this message.');
         }
         
         // Mark as read if not already
@@ -52,6 +53,7 @@ class InboxController extends Controller
         ]);
         
         InboxMessage::create([
+            'uuid' => (string) Str::uuid(), // Explicitly set UUID
             'recipient_id' => Auth::id(),
             'subject' => $request->subject,
             'message' => $request->message,

@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Traits\HasUuid;
 
 class Report extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuid;
 
     /**
      * The attributes that are mass assignable.
@@ -16,6 +17,7 @@ class Report extends Model
      * @var array
      */
     protected $fillable = [
+        'uuid',
         'survey_id',
         'response_id',
         'reporter_id',

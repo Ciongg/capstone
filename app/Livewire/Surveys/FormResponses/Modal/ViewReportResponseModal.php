@@ -208,8 +208,7 @@ class ViewReportResponseModal extends Component
                     InboxMessage::create([
                         'recipient_id' => $this->response->user_id,
                         'subject' => 'Your Survey Response Has Been Reported',
-                        'message' => "Your response to the survey '{$surveyTitle}' has been reported for: {$reasonText}.\n\nReport ID: #{$report->id}\n\n{$deductionMessage}{$pointsMessage}{$thresholdMessage}\n\nIf you believe this report was made in error, you can appeal this decision by submitting a support request through your Profile > Help Request section. Please include the Report ID #{$report->id} in your appeal.",
-                        'related_url' => '/profile',
+                        'message' => "Your response to the survey '{$surveyTitle}' has been reported for: {$reasonText}.\n\nReport UUID: {$report->uuid}\n\n{$deductionMessage}{$pointsMessage}{$thresholdMessage}\n\nIf you believe this report was made in error, you can appeal this decision by submitting a support request through your Profile > Help Request section. \n\n Please include the Report UUID: {$report->uuid} in your appeal.",
                         'read_at' => null
                     ]);
                 }

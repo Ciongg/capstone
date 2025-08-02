@@ -25,7 +25,7 @@
                     </div>
                 </div>
                 @if($response->survey)
-                    <a href="{{ route('surveys.responses.view', ['survey' => $response->survey->id, 'response' => $response->id]) }}" 
+                    <a href="{{ route('surveys.responses.view', ['survey' => $response->survey->uuid, 'response' => $response->uuid]) }}" 
                        class="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm font-medium transition-colors">
                         View Answer
                     </a>

@@ -2,7 +2,7 @@
     <div class="max-w-7xl mx-auto space-y-6 sm:space-y-10 px-2 sm:px-4">
 
         <div class="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-            <a href="{{ route('surveys.create', $survey->id) }}"
+            <a href="{{ route('surveys.create', $survey->uuid) }}"
                class="px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg shadow hover:bg-gray-200 flex items-center justify-center text-sm sm:text-base"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -14,7 +14,7 @@
         
             {{-- View Individual Responses Button - Only show if there are responses --}}
             @if($survey->responses()->count() > 0)
-                <a href="{{ route('surveys.responses.individual', $survey->id) }}"
+                <a href="{{ route('surveys.responses.individual', $survey->uuid) }}"
                    class="px-3 sm:px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center text-sm sm:text-base"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
@@ -56,15 +56,14 @@
                 <h3 class="text-lg font-medium text-gray-900 mb-2">No Responses Yet</h3>
                 <p class="text-gray-500 mb-6">This survey hasn't received any responses yet. Share the survey link to start collecting responses.</p>
                 <div class="flex justify-center space-x-4">
-                    <a href="{{ route('surveys.create', $survey->id) }}" 
+                    <a href="{{ route('surveys.create', $survey->uuid) }}" 
                        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                         Back to Editor
                     </a>
                 </div>
             </div>
         @else
-            {{-- Add after the summary containers --}}
-            <div class="flex justify-end mb-4">
+            {{-- <div class="flex justify-end mb-4">
                 <button
                     wire:click="clearAllAISummaries"
                     class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 font-semibold"
@@ -72,7 +71,7 @@
                 >
                     Clear All AI Summaries
                 </button>
-            </div>
+            </div> --}}
 
             @php
                 $colors = ['#60a5fa', '#fbbf24', '#34d399', '#f87171', '#a78bfa', '#f472b6', '#facc15', '#38bdf8'];

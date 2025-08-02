@@ -5,7 +5,7 @@
         @forelse($surveys as $survey)
             <div class="bg-white shadow-lg rounded-lg overflow-hidden flex flex-col">
                 {{-- Survey Image --}}
-                <a href="{{ route('surveys.create', $survey->id) }}" class="block w-full h-36">
+                <a href="{{ route('surveys.create', $survey->uuid) }}" class="block w-full h-36">
                     @if($survey->image_path)
                         <img src="{{ asset('storage/' . $survey->image_path) }}"
                              alt="Survey image for {{ $survey->title }}"
@@ -20,7 +20,7 @@
                 {{-- Survey Content --}}
                 <div class="p-3 flex-grow">
                     <h3 class="text-base font-semibold mb-1 text-gray-800 hover:text-blue-600 transition duration-150 ease-in-out">
-                        <a href="{{ route('surveys.create', $survey->id) }}">{{ $survey->title }}</a>
+                        <a href="{{ route('surveys.create', $survey->uuid) }}">{{ $survey->title }}</a>
                     </h3>
                     <p class="text-gray-600 text-sm mb-2 truncate" title="{{ $survey->description }}">
                         {{ $survey->description ?? 'No description available.' }}
@@ -66,7 +66,7 @@
                     {{-- Actions --}}
                     <div class="mt-3 flex justify-between items-center">
                         {{-- Open Button --}}
-                        <a href="{{ route('surveys.create', $survey->id) }}"
+                        <a href="{{ route('surveys.create', $survey->uuid) }}"
                            class="px-2.5 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
                             Open
                         </a>

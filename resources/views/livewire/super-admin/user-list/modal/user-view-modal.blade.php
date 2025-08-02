@@ -16,7 +16,7 @@
             <!-- User Information -->
             <h3 class="text-lg font-semibold text-center">{{ $user->name }}</h3>
             <p class="text-sm text-gray-500 text-center">{{ $user->email }}</p>
-            <p class="text-xs text-gray-400 text-center mb-2">ID: {{ $user->id }}</p>
+            <p class="text-xs text-gray-400 text-center mb-2">UUID: {{ $user->uuid }}</p>
             
             <!-- Role and Status side by side -->
             <div class="flex space-x-3 mt-1">
@@ -59,6 +59,10 @@
                 <!-- User Info Tab -->
                 <div x-show="tab === 'info'" x-cloak>
                     <div class="space-y-3">
+                        <div>
+                            <span class="font-bold">UUID:</span> 
+                            {{ $user->uuid ?? 'Not available' }}
+                        </div>
                         <div>
                             <span class="font-bold">Phone Number:</span> 
                             {{ $user->phone_number ?? 'Not provided' }}

@@ -81,17 +81,17 @@
                             <span class="text-red-500">*</span>
                         </label>
                         <input
-                            type="number"
+                            type="text"
                             id="related_id"
                             wire:model="related_id"
                             class="w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 bg-white focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-25 transition-all duration-200"
-                            placeholder="{{ $request_type == 'survey_lock_appeal' ? 'Enter your survey ID' : 'Enter the report ID from your inbox message' }}"
+                            placeholder="{{ $request_type == 'survey_lock_appeal' ? 'Enter your survey ID (UUID)' : 'Enter the report ID (UUID) from your inbox message' }}"
                         >
                         <p class="mt-2 text-xs text-blue-700">
                             @if($request_type == 'survey_lock_appeal')
-                                This must be a survey that you own.
+                                This must be a survey that you own. The UUID can be found in the survey URL.
                             @else
-                                This must be a report where you are the reported user. Note: You cannot appeal a report that is already under appeal or has been resolved.
+                                This must be a report where you are the reported user. The UUID is included in the notification you received.
                             @endif
                         </p>
                         @error('related_id') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -121,7 +121,7 @@
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            Submitting...
+                            
                         </span>
                     </button>
                 </div>

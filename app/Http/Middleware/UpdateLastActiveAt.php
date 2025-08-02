@@ -24,19 +24,19 @@ class UpdateLastActiveAt
             $currentTime = Carbon::parse(TestTimeService::now());
             $lastActive = $user->last_active_at; // Use directly, already Carbon
 
-            Log::info('UpdateLastActiveAt: authenticated', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-            ]);
+            // Log::info('UpdateLastActiveAt: authenticated', [
+            //     'user_id' => $user->id,
+            //     'email' => $user->email,
+            // ]);
 
             $diff = $lastActive ? abs($currentTime->diffInSeconds($lastActive)) : null;
 
             if (!$lastActive || $diff >= 10) {
                 $user->forceFill(['last_active_at' => $currentTime])->save();
-                Log::info('last_active_at updated for user', [
-                    'user_id' => $user->id,
-                    'time' => $currentTime,
-                ]);
+                // Log::info('last_active_at updated for user', [
+                //     'user_id' => $user->id,
+                //     'time' => $currentTime,
+                // ]);
             } else {
                 Log::info('last_active_at NOT updated (cooldown)', [
                     'user_id' => $user->id,

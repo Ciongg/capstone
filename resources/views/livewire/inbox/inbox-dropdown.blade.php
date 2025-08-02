@@ -50,12 +50,12 @@
                 <div class="max-h-80 overflow-y-auto">
                     @forelse($messages as $message)
                         <a 
-                            href="{{ $message->url ?? route('inbox.show', $message->id) }}" 
+                            href="{{ $message->url ?? route('inbox.show', $message->uuid) }}" 
                             class="block px-4 py-3 hover:bg-gray-50 border-b flex items-start {{ is_null($message->read_at) ? 'bg-blue-50' : '' }}"
                             x-data
                             @click.prevent="
                                 $wire.markAsRead({{ $message->id }}).then(() => {
-                                    window.location = '{{ $message->url ?? route('inbox.show', $message->id) }}';
+                                    window.location = '{{ $message->url ?? route('inbox.show', $message->uuid) }}';
                                 });
                             "
                         >

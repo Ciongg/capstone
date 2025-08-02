@@ -40,6 +40,9 @@
                     <span class="font-bold">Reporter:</span> {{ $report->reporter->name ?? 'Unknown User' }}
                 </div>
                 <div class="mb-2">
+                    <span class="font-bold">Report UUID:</span> <span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{{ $report->uuid ?? 'Unknown' }}</span>
+                </div>
+                <div class="mb-2">
                     <span class="font-bold">Respondent:</span> {{ $report->respondent->name ?? 'Unknown User' }}
                 </div>
                
@@ -83,7 +86,7 @@
                                 <div class="space-y-1 text-sm">
                                     <div><span class="font-medium">Name:</span> {{ $report->reporter->name ?? 'Unknown' }}</div>
                                     <div><span class="font-medium">Email:</span> {{ $report->reporter->email ?? 'Unknown' }}</div>
-                                    <div><span class="font-medium">ID:</span> {{ $report->reporter_id }}</div>
+                                    <div><span class="font-medium">UUID:</span> {{ $report->reporter->uuid ?? 'Unknown' }}</div>
                                 </div>
                             </div>
                             <div class="bg-red-50 p-4 rounded-lg">
@@ -91,7 +94,7 @@
                                 <div class="space-y-1 text-sm">
                                     <div><span class="font-medium">Name:</span> {{ $report->respondent->name ?? 'Unknown' }}</div>
                                     <div><span class="font-medium">Email:</span> {{ $report->respondent->email ?? 'Unknown' }}</div>
-                                    <div><span class="font-medium">ID:</span> {{ $report->respondent_id }}</div>
+                                    <div><span class="font-medium">UUID:</span> {{ $report->respondent->uuid ?? 'Unknown' }}</div>
                                 </div>
                             </div>
                         </div>
@@ -105,8 +108,8 @@
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                 <div><span class="font-medium">Survey:</span> {{ $report->survey->title ?? 'Unknown' }}</div>
-                                <div><span class="font-medium">Survey ID:</span> {{ $report->survey_id }}</div>
-                                <div><span class="font-medium">Response ID:</span> {{ $report->response_id }}</div>
+                                <div><span class="font-medium">Survey UUID:</span> {{ $report->survey->uuid ?? 'Unknown' }}</div>
+                                <div><span class="font-medium">Response UUID:</span> {{ $report->response->uuid ?? 'Unknown' }}</div>
                                 <div><span class="font-medium">Report Status:</span> 
                                     <span class="px-2 py-1 rounded text-xs {{ 
                                         $report->status === 'unappealed' ? 'bg-yellow-200 text-yellow-800' : 
@@ -206,7 +209,7 @@
                     
                     <div>
                         <div class="flex space-x-2">
-                            <a href="{{ route('surveys.responses.view', ['survey' => $report->survey_id, 'response' => $report->response_id]) }}" 
+                            <a href="{{ route('surveys.responses.view', ['survey' => $report->survey->uuid, 'response' => $report->response->uuid]) }}" 
                                target="_blank"
                                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">
                                 View Full Response
