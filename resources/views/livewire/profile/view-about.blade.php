@@ -59,13 +59,20 @@
 
     <!-- Demographic Tags -->
     <div class="bg-white rounded-xl shadow p-6">
-        <h2 class="text-xl font-bold mb-4">Demographic Tags</h2>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold">Demographic Tags</h2>
+            @if($canUpdateDemographics)
+                <span class="text-green-500 text-sm font-medium">Available for update</span>
+            @else
+                <span class="text-red-500 text-sm font-medium italic">{{ $timeUntilUpdateText }}</span>
+            @endif
+        </div>
         
         <form wire:submit.prevent="saveTags" class="space-y-4" x-data="{
             confirmDemographicSave() {
                 Swal.fire({
                     title: 'Confirm Demographic Update',
-                    html: '<div>Are you sure you want to update your demographic tags?<br><small>You will not be able to update them again for 6 months.</small></div>',
+                    html: '<div>Are you sure you want to update your demographic tags?<br><small>You will not be able to update them again for 4 months.</small></div>',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Yes, update',
@@ -84,7 +91,9 @@
             @foreach($tagCategories as $category)
                 <div>
                     <label class="block font-semibold mb-1">{{ $category->name }}</label>
-                    <select wire:model.defer="selectedTags.{{ $category->id }}" class="w-full border rounded px-3 py-2">
+                    <select wire:model.defer="selectedTags.{{ $category->id }}" 
+                            class="w-full border rounded px-3 py-2 @if(!$canUpdateDemographics) bg-gray-100 @endif" 
+                            {{ !$canUpdateDemographics ? 'disabled' : '' }}>
                         <option value="">Select {{ $category->name }}</option>
                         @foreach($category->tags as $tag)
                             <option value="{{ $tag->id }}">{{ $tag->name }}</option>
@@ -101,7 +110,9 @@
                     @foreach($institutionTagCategories as $category)
                         <div class="mb-4">
                             <label class="block font-semibold mb-1">{{ $category->name }}</label>
-                            <select wire:model.defer="selectedInstitutionTags.{{ $category->id }}" class="w-full border rounded px-3 py-2">
+                            <select wire:model.defer="selectedInstitutionTags.{{ $category->id }}" 
+                                    class="w-full border rounded px-3 py-2 @if(!$canUpdateDemographics) bg-gray-100 @endif"
+                                    {{ !$canUpdateDemographics ? 'disabled' : '' }}>
                                 <option value="">Select {{ $category->name }}</option>
                                 @foreach($category->tags as $tag)
                                     <option value="{{ $tag->id }}">{{ $tag->name }}</option>
@@ -112,17 +123,19 @@
                 </div>
             @endif
 
-             <div class="mb-4">
-            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800 rounded">
-                <strong>Note:</strong> Once added or updated, you will not be able to change your demographic tags again for 6 months. This is to ensure data integrity.
+            <div class="mb-4">
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800 rounded">
+                    <strong>Note:</strong> Once added or updated, you will not be able to change your demographic tags again for 4 months. This is to ensure data integrity.
+                </div>
             </div>
-            </div>
+            
             <button 
                 type="button"
-                class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
+                class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center @if(!$canUpdateDemographics) opacity-50 cursor-not-allowed @endif"
                 style="width: 180px;" 
                 x-on:click="confirmDemographicSave()"
                 wire:loading.attr="disabled"
+                {{ !$canUpdateDemographics ? 'disabled' : '' }}
             >
                 <span class="flex items-center">
                     <span wire:loading.remove wire:target="saveTags">Save Demographics</span>
@@ -131,22 +144,22 @@
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                         </svg>
-                        
                     </span>
                 </span>
             </button>
         </form>
 
-       
-
         @if (session()->has('tags_saved'))
-
-             <div class="mt-4 bg-green-50 border-l-4 border-green-400 p-3 text-sm text-green-800 rounded">
-                 {{ session('tags_saved') }}
+            <div class="mt-4 bg-green-50 border-l-4 border-green-400 p-3 text-sm text-green-800 rounded">
+                {{ session('tags_saved') }}
             </div>
-            
         @endif
         
+        @if (session()->has('error'))
+            <div class="mt-4 bg-red-50 border-l-4 border-red-400 p-3 text-sm text-red-800 rounded">
+                {{ session('error') }}
+            </div>
+        @endif
     </div>
 
     <!-- Trust Score Info Modal -->

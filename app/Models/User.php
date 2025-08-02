@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use App\Services\UserExperienceService;
+use App\Services\TestTimeService;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -46,6 +47,7 @@ class User extends Authenticatable
         'is_active',
         'email_verified_at',
         'last_active_at', // Add this line
+        'demographic_tags_updated_at', // Add this new field
     ];
 
     /**
@@ -78,6 +80,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'last_active_at' => 'datetime', // Fix typo here
+            'demographic_tags_updated_at' => 'datetime', // Add this new cast
         ];
     }
 
@@ -248,5 +251,41 @@ public function getXpRequiredForNextLevel(): int
     public function vouchers(): BelongsToMany
     {
         return $this->belongsToMany(Voucher::class, 'user_vouchers')->withTimestamps()->withPivot('status', 'used_at', 'reward_redemption_id');
+    }
+    
+    /**
+     * Check if the user can update their demographic tags
+     * 
+     * @return bool
+     */
+    public function canUpdateDemographicTags(): bool
+    {
+        // If user has never updated demographics, they can update them
+        if (!$this->demographic_tags_updated_at) {
+            return true;
+        }
+        
+        // Define the cooldown period in days (4 months)
+        $cooldownDays = 120;
+        
+        // Check if the cooldown period has passed
+        return $this->demographic_tags_updated_at->addDays($cooldownDays)->isPast(TestTimeService::now());
+    }
+    
+    /**
+     * Get days until demographic tags can be updated again
+     * 
+     * @return int
+     */
+    public function getDaysUntilDemographicTagsUpdateAvailable(): int
+    {
+        if ($this->canUpdateDemographicTags()) {
+            return 0;
+        }
+        
+        $cooldownDays = 120;
+        $nextUpdateDate = $this->demographic_tags_updated_at->addDays($cooldownDays);
+        
+        return TestTimeService::now()->diffInDays($nextUpdateDate, false);
     }
 }

@@ -34,6 +34,7 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
             $table->timestamp('last_active_at')->nullable(); // Add this line
+            $table->timestamp('demographic_tags_updated_at')->nullable(); // Add this line
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

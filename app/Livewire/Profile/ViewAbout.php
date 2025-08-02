@@ -13,6 +13,7 @@ use App\Services\TrustScoreService;
 use App\Services\BrevoService;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Services\TestTimeService;
 
 class ViewAbout extends Component
 {
@@ -21,6 +22,14 @@ class ViewAbout extends Component
     public $selectedInstitutionTags = [];
     public $tagCategories;
     public $institutionTagCategories = [];
+    
+    // Add these properties
+    public $canUpdateDemographics = false;
+    public $daysUntilDemographicsUpdateAvailable = 0;
+    public $hoursUntilDemographicsUpdateAvailable = 0;
+    public $minutesUntilDemographicsUpdateAvailable = 0;
+    public $timeUntilUpdateText = '';
+    public $demographicUpdateCooldownDays = 120; // Update to 4 months (120 days)
     
     // Trust score deduction info
     public $falseReportPenalty = 0;
@@ -57,6 +66,10 @@ class ViewAbout extends Component
     {
         $this->user = Auth::user();
         $this->pendingEmail = $this->user->email;
+        
+        // Check if the user can update demographics
+        $this->canUpdateDemographics = $this->user->canUpdateDemographicTags();
+        $this->calculateTimeUntilUpdate();
         
         // Calculate potential trust score deductions using service
         $this->calculateTrustScoreDeductions();
@@ -101,6 +114,51 @@ class ViewAbout extends Component
         }
     }
 
+    /**
+     * Calculate time until demographic update is available in a more human-readable format
+     */
+    protected function calculateTimeUntilUpdate()
+    {
+        if ($this->canUpdateDemographics) {
+            $this->timeUntilUpdateText = 'Available now';
+            return;
+        }
+
+        $cooldownDays = 120;
+        $nextUpdateDate = $this->user->demographic_tags_updated_at->addDays($cooldownDays);
+        $now = TestTimeService::now();
+        
+        // Check if we're very close to the target time (less than 30 seconds away)
+        if ($now->diffInSeconds($nextUpdateDate, false) < 30) {
+            $this->canUpdateDemographics = true;
+            $this->timeUntilUpdateText = 'Available now';
+            return;
+        }
+        
+        // Calculate time differences and round to integers
+        $this->daysUntilDemographicsUpdateAvailable = (int) floor($now->diffInDays($nextUpdateDate, false));
+        $this->hoursUntilDemographicsUpdateAvailable = (int) floor($now->diffInHours($nextUpdateDate, false) % 24);
+        $this->minutesUntilDemographicsUpdateAvailable = (int) floor($now->diffInMinutes($nextUpdateDate, false) % 60);
+        
+        // Create human-readable text with proper rounding
+        if ($this->daysUntilDemographicsUpdateAvailable > 0) {
+            $this->timeUntilUpdateText = "Available in {$this->daysUntilDemographicsUpdateAvailable} " . 
+                ($this->daysUntilDemographicsUpdateAvailable == 1 ? 'day' : 'days');
+        } elseif ($now->diffInHours($nextUpdateDate, false) > 0) {
+            $hours = (int) floor($now->diffInHours($nextUpdateDate, false));
+            $this->timeUntilUpdateText = "Available in {$hours} " . ($hours == 1 ? 'hour' : 'hours');
+        } else {
+            // If we're less than 1 minute away, just show "Available now"
+            if ($now->diffInMinutes($nextUpdateDate, false) < 1) {
+                $this->canUpdateDemographics = true;
+                $this->timeUntilUpdateText = 'Available now';
+            } else {
+                $minutes = max(1, (int) ceil($now->diffInMinutes($nextUpdateDate, false)));
+                $this->timeUntilUpdateText = "Available in {$minutes} " . ($minutes == 1 ? 'minute' : 'minutes');
+            }
+        }
+    }
+    
     protected function otpRules(): array
     {
         return [
@@ -115,7 +173,7 @@ class ViewAbout extends Component
             ['email' => $this->pendingEmail],
             [
                 'otp_code' => $otpCode,
-                'expires_at' => Carbon::now()->addMinutes(10),
+                'expires_at' => TestTimeService::now()->addMinutes(10),
             ]
         );
         $brevoService = new BrevoService();
@@ -139,7 +197,7 @@ class ViewAbout extends Component
             return;
         }
         // Mark user as verified
-        $this->user->email_verified_at = now();
+        $this->user->email_verified_at = TestTimeService::now();
         $this->user->save();
         $emailVerification->delete();
         $this->showSuccess = true;
@@ -161,7 +219,7 @@ class ViewAbout extends Component
             ['email' => $this->pendingEmail],
             [
                 'otp_code' => $otpCode,
-                'expires_at' => Carbon::now()->addMinutes(10),
+                'expires_at' => TestTimeService::now()->addMinutes(10),
             ]
         );
         $brevoService = new BrevoService();
@@ -216,6 +274,11 @@ class ViewAbout extends Component
     public function refreshAboutView()
     {
         $this->user = $this->user->fresh();
+        
+        // Update demographic update status
+        $this->canUpdateDemographics = $this->user->canUpdateDemographicTags();
+        $this->calculateTimeUntilUpdate();
+        
         // Reload tag and institution data as in mount
         $this->tagCategories = TagCategory::with('tags')->get();
         $userTags = $this->user->tags()->pluck('tags.id')->toArray();
@@ -246,6 +309,13 @@ class ViewAbout extends Component
 
     public function saveTags()
     {
+        // Check if user can update tags
+        if (!$this->canUpdateDemographics) {
+            session()->flash('error', 'You cannot update your demographic information at this time. Please try again in ' . 
+                $this->daysUntilDemographicsUpdateAvailable . ' days.');
+            return;
+        }
+        
         // Process regular tags
         $tagsToSync = [];
         foreach ($this->selectedTags as $categoryId => $tagId) {
@@ -278,7 +348,16 @@ class ViewAbout extends Component
             $this->user->institutionTags()->sync($institutionTagsToSync);
         }
         
-        session()->flash('tags_saved', 'Your demographic information has been updated successfully!');
+        // Update the demographic_tags_updated_at timestamp
+        $this->user->demographic_tags_updated_at = TestTimeService::now();
+        $this->user->save();
+        
+        // Update local properties
+        $this->canUpdateDemographics = $this->user->canUpdateDemographicTags();
+        $this->daysUntilDemographicsUpdateAvailable = $this->user->getDaysUntilDemographicTagsUpdateAvailable();
+        
+        session()->flash('tags_saved', 'Your demographic information has been updated successfully! You can update it again in ' . 
+            $this->demographicUpdateCooldownDays . ' days.');
     }
 
     public function render()
@@ -293,7 +372,10 @@ class ViewAbout extends Component
             'falseReportThresholdMet' => $this->falseReportThresholdMet,
             'reportedResponseThresholdMet' => $this->reportedResponseThresholdMet,
             'falseReportPercentage' => $this->falseReportPercentage,
-            'reportedResponsePercentage' => $this->reportedResponsePercentage
+            'reportedResponsePercentage' => $this->reportedResponsePercentage,
+            'canUpdateDemographics' => $this->canUpdateDemographics,
+            'daysUntilDemographicsUpdateAvailable' => $this->daysUntilDemographicsUpdateAvailable,
+            'timeUntilUpdateText' => $this->timeUntilUpdateText,
         ]);
     }
 }
