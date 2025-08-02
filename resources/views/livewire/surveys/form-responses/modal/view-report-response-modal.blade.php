@@ -1,11 +1,11 @@
 <div>
     @if($showSuccess)
-        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
+        <div class="{{ $isError ? 'bg-red-100 border-l-4 border-red-500 text-red-700' : 'bg-green-100 border-l-4 border-green-500 text-green-700' }} p-4 mb-4" role="alert">
             <p>{{ $message }}</p>
             <div class="mt-4 flex justify-end">
                 <button
                     wire:click="closeModal"
-                    class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                    class="{{ $isError ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600' }} px-4 py-2 text-white rounded"
                 >
                     Close
                 </button>
@@ -50,7 +50,7 @@
                     </div>
                     <div class="flex flex-col">
                         <span class="font-medium mb-1">Details:</span>
-                        <div class="bg-white p-2 border rounded text-gray-700">{{ $details }}</div>
+                        <div class="bg-white p-2 border rounded text-gray-700 whitespace-normal break-words max-h-40 overflow-y-auto">{{ $details }}</div>
                     </div>
                 </div>
             </div>

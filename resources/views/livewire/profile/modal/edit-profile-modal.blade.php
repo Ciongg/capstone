@@ -2,7 +2,7 @@
     confirmProfileSave() {
         Swal.fire({
             title: 'Confirm Profile Update',
-            html: '<div>Are you sure you want to update your profile?<br><small>Once updated, you will not be able to change your profile information again for 6 months.</small></div>',
+            html: '<div>Are you sure you want to update your profile?<br><small>Once updated, you will not be able to change your profile information again for 4 months.</small></div>',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Yes, update',
@@ -18,13 +18,20 @@
         });
     }
 }">
-    <h2 class="text-xl font-semibold mb-4">Edit Profile</h2>
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold">Edit Profile</h2>
+        @if($canUpdateProfile)
+            <span class="text-green-500 text-sm font-medium">Available for update</span>
+        @else
+            <span class="text-red-500 text-sm font-medium italic">{{ $timeUntilUpdateText }}</span>
+        @endif
+    </div>
 
     <!-- Profile Photo Upload (styled like survey banner image upload) -->
     <div>
         <label class="block font-semibold mb-2 text-center">Profile Photo</label>
         <div class="flex flex-col items-center justify-center w-full">
-            <label for="profile-photo" class="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+            <label for="profile-photo" class="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 @if(!$canUpdateProfile) opacity-50 cursor-not-allowed @endif">
                 <div class="flex flex-col items-center justify-center pt-5 pb-6">
                     <!-- Icon -->
                     <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
@@ -38,7 +45,8 @@
                        class="hidden"
                        wire:model.defer="photo"
                        accept="image/*"
-                       @change="fileName = $event.target.files[0] ? $event.target.files[0].name : ''" />
+                       @change="fileName = $event.target.files[0] ? $event.target.files[0].name : ''"
+                       @if(!$canUpdateProfile) disabled @endif />
             </label>
             <div wire:loading wire:target="photo" class="text-sm text-gray-500 mt-1">Uploading...</div>
             <!-- Image Preview -->
@@ -64,21 +72,30 @@
     <!-- First Name -->
     <div>
         <label for="first_name" class="block font-semibold mb-1">First Name</label>
-        <input type="text" id="first_name" wire:model.defer="first_name" class="w-full border rounded px-3 py-2" placeholder="e.g. John" />
+        <input type="text" id="first_name" wire:model.defer="first_name" 
+               class="w-full border rounded px-3 py-2 @if(!$canUpdateProfile) bg-gray-100 cursor-not-allowed @endif" 
+               placeholder="e.g. John" 
+               @if(!$canUpdateProfile) disabled @endif />
         @error('first_name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
     </div>
 
     <!-- Last Name -->
     <div>
         <label for="last_name" class="block font-semibold mb-1">Last Name</label>
-        <input type="text" id="last_name" wire:model.defer="last_name" class="w-full border rounded px-3 py-2" placeholder="e.g. Doe" />
+        <input type="text" id="last_name" wire:model.defer="last_name" 
+               class="w-full border rounded px-3 py-2 @if(!$canUpdateProfile) bg-gray-100 cursor-not-allowed @endif" 
+               placeholder="e.g. Doe" 
+               @if(!$canUpdateProfile) disabled @endif />
         @error('last_name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
     </div>
 
     <!-- Phone Number -->
     <div>
         <label for="phone_number" class="block font-semibold mb-1">Phone Number</label>
-        <input type="text" id="phone_number" wire:model.defer="phone_number" class="w-full border rounded px-3 py-2" placeholder="e.g. 09691590326" inputmode="numeric" pattern="[0-9]*"  maxlength="11" />
+        <input type="text" id="phone_number" wire:model.defer="phone_number" 
+               class="w-full border rounded px-3 py-2 @if(!$canUpdateProfile) bg-gray-100 cursor-not-allowed @endif" 
+               placeholder="e.g. 09691590326" inputmode="numeric" pattern="[0-9]*" maxlength="11" 
+               @if(!$canUpdateProfile) disabled @endif />
         @error('phone_number') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
         @if($errors->has('phone_number') && strlen($phone_number ?? '') < 11)
             <span class="text-red-500 text-sm">Phone number must be exactly 11 digits.</span>
@@ -91,13 +108,21 @@
         <input type="email" id="email" value="{{ $email }}" class="w-full border rounded px-3 py-2 bg-gray-100 cursor-not-allowed" disabled />
     </div>
 
+    <!-- Error Message Display -->
+    @if (session()->has('error'))
+        <div class="bg-red-50 border-l-4 border-red-400 p-3 text-sm text-red-800 rounded">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <!-- Save Button -->
     <button 
         type="button"
-        class="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 w-full flex items-center justify-center"
+        class="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 w-full flex items-center justify-center @if(!$canUpdateProfile) opacity-50 cursor-not-allowed @endif"
         x-on:click="confirmProfileSave()"
         wire:loading.attr="disabled"
         style="min-width: 180px;"
+        @if(!$canUpdateProfile) disabled @endif
     >
         <span class="flex items-center justify-center w-full">
             <span wire:loading.remove wire:target="save">Save Changes</span>
@@ -111,7 +136,7 @@
     </button>
     <div class="mt-2">
         <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800 rounded">
-            <strong>Note:</strong> Once updated, you will not be able to change your profile information again for 6 months. This is to ensure data integrity.
+            <strong>Note:</strong> Once updated, you will not be able to change your profile information again for 4 months. This is to ensure data integrity.
         </div>
     </div>
 </form>

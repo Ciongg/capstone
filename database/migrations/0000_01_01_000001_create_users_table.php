@@ -36,6 +36,7 @@ return new class extends Migration
             $table->timestamps();
             $table->timestamp('last_active_at')->nullable(); // Add this line
             $table->timestamp('demographic_tags_updated_at')->nullable(); // Add this line
+            $table->timestamp('profile_updated_at')->nullable(); // Add this line for profile update tracking
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

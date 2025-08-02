@@ -36,6 +36,7 @@ class ViewReportResponseModal extends Component
     public $showConfirmation = false; // New property for confirmation screen
     public $questions = [];
     public $selectedQuestionText = ''; // For displaying question text in confirmation
+    public $isError = false; // New property to track error state
     
 
     public function boot(TrustScoreService $trustScoreService)
@@ -97,6 +98,32 @@ class ViewReportResponseModal extends Component
     public function confirmReport(TrustScoreService $trustScoreService)
     {
         try {
+            // First check if this specific response has already been reported
+            $existingReport = Report::where('response_id', $this->response->id)->exists();
+            
+            if ($existingReport) {
+                $this->showConfirmation = false;
+                $this->showSuccess = true;
+                $this->isError = true;
+                $this->message = "This response has already been reported. Duplicate reports are not allowed.";
+                return;
+            }
+            
+            // Next, check if the same user (respondent) has already been reported by the current user
+            if ($this->response->user_id) {
+                $existingUserReport = Report::where('respondent_id', $this->response->user_id)
+                    ->where('reporter_id', auth()->id())
+                    ->exists();
+                    
+                if ($existingUserReport) {
+                    $this->showConfirmation = false;
+                    $this->showSuccess = true;
+                    $this->isError = true;
+                    $this->message = "You have already reported this user. Multiple reports against the same user are not allowed.";
+                    return;
+                }
+            }
+            
             DB::transaction(function () {
                 // Validate that the question exists if provided
                 $validatedQuestionId = null;
@@ -217,7 +244,8 @@ class ViewReportResponseModal extends Component
             // Success - update UI state
             $this->showConfirmation = false;
             $this->showSuccess = true;
-            $this->message = "Response has been reported successfully.";
+            $this->isError = false; // Make sure it's marked as success
+            $this->message = "Response has been reported successfully. Keep in mind that this action cannot be undone. The reported user has been notified of this report and they may appeal if they believe it was made in error.";
             
             // Notify parent component to refresh the current response
             $this->dispatch('responseReported');
@@ -229,10 +257,9 @@ class ViewReportResponseModal extends Component
             
         } catch (\Exception $e) {
             $this->showConfirmation = false;
+            $this->showSuccess = true; // Show the modal
+            $this->isError = true; // Mark as error for styling
             $this->message = "We encountered an error while processing your report: " . $e->getMessage();
-            
-            // Show error message in UI
-            $this->dispatch('show-error', ['message' => $this->message]);
         }
     }
     
@@ -269,7 +296,8 @@ class ViewReportResponseModal extends Component
             'message',
             'showSuccess',
             'showConfirmation',
-            'selectedQuestionText'
+            'selectedQuestionText',
+            'isError' // Reset error state
         ]);
         
         // Reset validation errors

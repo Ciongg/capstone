@@ -198,10 +198,10 @@ class CreateSupportRequestModal extends Component
             'message'
         ]);
         
-        // Reset validation errors
+        // Reset valida ion errors
         $this->resetValidation();
         
-        $this->dispatch('close-modal', name: 'create-support-request-modal');
+
     }
 
     public function render()

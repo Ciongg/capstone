@@ -8,7 +8,7 @@
                     wire:click="closeModal"
                     class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm"
                 >
-                    Close
+                    Send Another Request
                 </button>
             </div>
         </div>

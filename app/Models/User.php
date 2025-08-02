@@ -50,6 +50,7 @@ class User extends Authenticatable
         'email_verified_at',
         'last_active_at', // Add this line
         'demographic_tags_updated_at', // Add this new field
+        'profile_updated_at', // Add this new field
     ];
 
     /**
@@ -83,6 +84,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'last_active_at' => 'datetime', // Fix typo here
             'demographic_tags_updated_at' => 'datetime', // Add this new cast
+            'profile_updated_at' => 'datetime', // Add this new cast
         ];
     }
 
@@ -287,6 +289,42 @@ public function getXpRequiredForNextLevel(): int
         
         $cooldownDays = 120;
         $nextUpdateDate = $this->demographic_tags_updated_at->addDays($cooldownDays);
+        
+        return TestTimeService::now()->diffInDays($nextUpdateDate, false);
+    }
+    
+    /**
+     * Check if the user can update their profile
+     * 
+     * @return bool
+     */
+    public function canUpdateProfile(): bool
+    {
+        // If user has never updated profile, they can update it
+        if (!$this->profile_updated_at) {
+            return true;
+        }
+        
+        // Define the cooldown period in days (120 days = 4 months)
+        $cooldownDays = 120;
+        
+        // Check if the cooldown period has passed
+        return $this->profile_updated_at->addDays($cooldownDays)->isPast(TestTimeService::now());
+    }
+    
+    /**
+     * Get days until profile can be updated again
+     * 
+     * @return int
+     */
+    public function getDaysUntilProfileUpdateAvailable(): int
+    {
+        if ($this->canUpdateProfile()) {
+            return 0;
+        }
+        
+        $cooldownDays = 120;
+        $nextUpdateDate = $this->profile_updated_at->addDays($cooldownDays);
         
         return TestTimeService::now()->diffInDays($nextUpdateDate, false);
     }
