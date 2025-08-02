@@ -167,6 +167,11 @@
                                     @endif
                                 @elseif(Auth::user()->isSuperAdmin())
                                     {{-- Super Admin: Manage Dropdown Menu --}}
+                                    <button 
+                                        x-data
+                                        x-on:click="$dispatch('open-modal', {name: 'select-survey-type'})"
+                                        class="{{ $navLinkClass(request()->is('surveys/create*')) }} hover:text-[#03b8ff] hover:underline"
+                                    >Create Survey</button>
                                     <div x-data="{ open: false }" class="relative" @click.outside="open = false">
                                         <button 
                                             @click="open = !open" 
@@ -314,6 +319,13 @@
                             <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Institution</span>
                         @endif
                     @elseif(Auth::user()->isSuperAdmin())
+                        {{-- Super Admin: Create Survey Button --}}
+                        <button 
+                            x-data
+                            @click="mobileMenuOpen = false; $dispatch('open-modal', {name: 'select-survey-type'})"
+                            class="{{ $navLinkClass(request()->is('surveys/create*')) }} hover:text-[#03b8ff] text-left"
+                        >Create Survey</button>
+                        
                         {{-- Super Admin: Manage Sub-menu --}}
                         <div class="border-t border-gray-200 pt-2 mt-2">
                             <p class="font-semibold text-gray-700 mb-2">Manage</p>

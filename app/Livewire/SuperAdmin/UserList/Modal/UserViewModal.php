@@ -165,7 +165,7 @@ class UserViewModal extends Component
                     'type' => 'survey_response',
                     'action' => 'Answered Survey',
                     'details' => $response->survey ? $response->survey->title : 'Unknown Survey',
-                    'created_at' => $response->created_at, // This is already a Carbon instance
+                    'created_at' => $response->created_at,
                 ];
             });
             
@@ -181,7 +181,7 @@ class UserViewModal extends Component
                     'details' => $redemption->reward ? 
                         "{$redemption->reward->name} ({$redemption->reward->type}) - {$redemption->points_spent} points" : 
                         "Unknown Reward - {$redemption->points_spent} points",
-                    'created_at' => $redemption->created_at, // This is already a Carbon instance
+                    'created_at' => $redemption->created_at,
                     'status' => $redemption->status,
                 ];
             });
@@ -195,12 +195,93 @@ class UserViewModal extends Component
                     'type' => 'survey_created',
                     'action' => 'Created Survey',
                     'details' => "{$survey->title} ({$survey->status})",
-                    'created_at' => $survey->created_at, // This is already a Carbon instance
+                    'created_at' => $survey->created_at,
+                ];
+            });
+    
+        // NEW: Get demographic updates
+        $demographicUpdates = [];
+        if ($this->user->demographic_tags_updated_at) {
+            $demographicUpdates[] = [
+                'id' => 'demographic_' . $this->user->id,
+                'type' => 'demographic_update',
+                'action' => 'Updated Demographics',
+                'details' => 'User updated their demographic information',
+                'created_at' => $this->user->demographic_tags_updated_at,
+            ];
+        }
+        
+        // NEW: Get reports received
+        $reportsReceived = \App\Models\Report::where('respondent_id', $this->user->id)
+            ->with(['survey:id,title', 'reporter:id,first_name,last_name'])
+            ->get()
+            ->map(function ($report) {
+                return [
+                    'id' => 'report_received_' . $report->id,
+                    'type' => 'report_received',
+                    'action' => 'Was Reported',
+                    'details' => "Reported by {$report->reporter->name} on survey: {$report->survey->title} - {$report->reason}",
+                    'created_at' => $report->created_at,
+                    'status' => $report->status
+                ];
+            });
+        
+        // NEW: Get reports made
+        $reportsMade = \App\Models\Report::where('reporter_id', $this->user->id)
+            ->with(['survey:id,title', 'respondent:id,first_name,last_name'])
+            ->get()
+            ->map(function ($report) {
+                $respondentName = $report->respondent ? $report->respondent->name : 'Unknown User';
+                return [
+                    'id' => 'report_made_' . $report->id,
+                    'type' => 'report_made',
+                    'action' => 'Reported User',
+                    'details' => "Reported {$respondentName} on survey: {$report->survey->title} - {$report->reason}",
+                    'created_at' => $report->created_at,
+                    'status' => $report->status
+                ];
+            });
+        
+        // NEW: Get vouchers redeemed/activated
+        $vouchers = \App\Models\UserVoucher::where('user_id', $this->user->id)
+            ->with(['voucher.reward:id,name'])
+            ->get()
+            ->map(function ($userVoucher) {
+                $actionType = '';
+                $timestamp = $userVoucher->created_at;
+                
+                if ($userVoucher->status === 'used' && $userVoucher->used_at) {
+                    $actionType = 'Used';
+                    $timestamp = $userVoucher->used_at;
+                } elseif ($userVoucher->status === 'active' && $userVoucher->activated_at) {
+                    $actionType = 'Activated';
+                    $timestamp = $userVoucher->activated_at;
+                } else {
+                    $actionType = 'Acquired';
+                }
+                
+                $voucherName = $userVoucher->voucher && $userVoucher->voucher->reward ? 
+                    $userVoucher->voucher->reward->name : 'Unknown Voucher';
+                
+                return [
+                    'id' => 'voucher_' . $userVoucher->id,
+                    'type' => 'voucher_activity',
+                    'action' => $actionType . ' Voucher',
+                    'details' => "{$voucherName} - Status: {$userVoucher->status}",
+                    'created_at' => $timestamp,
                 ];
             });
             
         // Combine all activities
-        $allActivities = collect([...$responses, ...$redemptions, ...$surveys])
+        $allActivities = collect([
+            ...$responses, 
+            ...$redemptions, 
+            ...$surveys, 
+            ...$demographicUpdates,
+            ...$reportsReceived,
+            ...$reportsMade,
+            ...$vouchers
+        ])
             ->sortByDesc('created_at')
             ->values()
             ->toArray();

@@ -522,21 +522,29 @@ class AnswerSurvey extends Component
     {
         // Handle navigation to next page
         if ($this->navAction === 'next') {
-            // Check if current page has questions before validating
-            if ($this->survey->pages->has($this->currentPage) && 
-                $this->survey->pages[$this->currentPage]->questions->count() > 0) {
-                // Validate only the current page
-                $this->validate($this->getValidationRules(), $this->getValidationMessages());
-            }
+            try {
+                // Check if current page has questions before validating
+                if ($this->survey->pages->has($this->currentPage) && 
+                    $this->survey->pages[$this->currentPage]->questions->count() > 0) {
+                    // Validate only the current page
+                    $this->validate($this->getValidationRules(), $this->getValidationMessages());
+                }
 
-            // If there are more pages, advance to the next one
-            if ($this->currentPage < $this->survey->pages->count() - 1) {
-                $this->currentPage++;
-                $this->dispatch('pageChanged');
-            } else {
-                // If we're on the last page, change to submit mode
-                $this->navAction = 'submit';
-                $this->submit();
+                // If there are more pages, advance to the next one
+                if ($this->currentPage < $this->survey->pages->count() - 1) {
+                    $this->currentPage++;
+                    $this->dispatch('pageChanged');
+                } else {
+                    // If we're on the last page, change to submit mode
+                    $this->navAction = 'submit';
+                    $this->submit();
+                }
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                // Dispatch event for SweetAlert notification
+                $this->dispatch('showValidationAlert');
+                
+                // Re-throw to show inline errors
+                throw $e;
             }
             return;
         }
@@ -592,6 +600,9 @@ class AnswerSurvey extends Component
                 ]);
 
             } catch (\Illuminate\Validation\ValidationException $e) {
+                // Dispatch event for SweetAlert notification
+                $this->dispatch('showValidationAlert');
+                
                 // Re-throw validation exceptions to show form errors
                 throw $e;
             } catch (\Exception $e) {
@@ -1218,6 +1229,17 @@ class AnswerSurvey extends Component
     }
 
     /**
+     * Navigate to the previous page
+     */
+    public function goToPreviousPage()
+    {
+        if ($this->currentPage > 0) {
+            $this->currentPage--;
+            $this->dispatch('pageChanged');
+        }
+    }
+    
+    /**
      * Render the component
      */
     public function render()
@@ -1231,4 +1253,4 @@ class AnswerSurvey extends Component
         ]);
     }
 }
-        
+

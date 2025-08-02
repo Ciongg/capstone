@@ -111,7 +111,7 @@
             </div>
         @empty
             <div class="col-span-full text-center text-gray-500 mt-8">
-                @if(auth()->user()->institution_id)
+                @if(auth()->user()->institution_id || auth()->user()->isSuperAdmin())
                     <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded mb-4 max-w-xl mx-auto">
                         <div class="font-semibold text-blue-700 mb-2">You haven't created any surveys yet.</div>
                         <div class="text-sm text-blue-800">

@@ -10,6 +10,8 @@ use App\Models\SurveyPage;
 use App\Models\SurveyQuestion;
 use App\Models\SurveyChoice;
 use Illuminate\Contracts\View\View;
+use Carbon\Carbon;
+use App\Services\TestTimeService;
 
 class SurveyController extends Controller
 {
@@ -52,7 +54,43 @@ class SurveyController extends Controller
         
         // Check if the logged-in user is the owner of this survey
         if ($survey->user_id === Auth::id()) {
-            abort(403, 'You do not have permission to access this page.');
+            abort(403, 'You cannot answer your own survey.');
+        }
+        
+        // Check if survey is locked by admin
+        if ($survey->isLocked()) {
+            abort(403, 'This survey has been locked by an administrator.');
+        }
+        
+        // Check if survey is expired - using TestTimeService for consistency
+        if ($survey->end_date && TestTimeService::now()->gt($survey->end_date)) {
+            abort(403, 'This survey has expired and is no longer accepting responses.');
+        }
+        
+        // Check if target respondents reached
+        if ($survey->target_respondents && $survey->responses()->count() >= $survey->target_respondents) {
+            abort(403, 'This survey has reached its maximum number of responses.');
+        }
+        
+        // Check for demographic matching if it's an advanced survey
+        if ($survey->type === 'advanced') {
+            $userTagIds = $user->tags()->pluck('tags.id')->toArray();
+            $surveyTagIds = $survey->tags()->pluck('tags.id')->toArray();
+            
+            // If the survey has tags but user doesn't match any of them
+            if (!empty($surveyTagIds) && empty(array_intersect($userTagIds, $surveyTagIds))) {
+                abort(403, 'You do not meet the demographic requirements for this advanced survey.');
+            }
+            
+            // Check institution tags if survey is institution only
+            if ($survey->is_institution_only) {
+                $userInstitutionTagIds = $user->institutionTags()->pluck('institution_tags.id')->toArray();
+                $surveyInstitutionTagIds = $survey->institutionTags()->pluck('institution_tags.id')->toArray();
+                
+                if (!empty($surveyInstitutionTagIds) && empty(array_intersect($userInstitutionTagIds, $surveyInstitutionTagIds))) {
+                    abort(403, 'This survey is restricted to specific institutions that you are not a part of.');
+                }
+            }
         }
         
         // Check if user has already answered this survey
@@ -143,4 +181,3 @@ class SurveyController extends Controller
 
 }
 
- 

@@ -233,11 +233,39 @@
                 confirmButtonColor: '#e3342f',
             });
         });
+        
         Livewire.on('clearSaveStatus', () => {
             setTimeout(() => {
                 Livewire.find('{{ $_instance->getId() }}').set('saveStatus', '');
             }, 2000);
         });
+        
+        // Add event listener for delete confirmation
+        document.addEventListener('confirmDelete', (event) => {
+            const { type, id, action } = event.detail;
+            
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This will delete the page and all its questions. This action cannot be undone!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Call the Livewire method to perform deletion
+                    if (type) {
+                        Livewire.find('{{ $_instance->getId() }}')[action](type, id);
+                    } else {
+                        Livewire.find('{{ $_instance->getId() }}')[action](id);
+                    }
+                    // Success modal removed as requested
+                }
+            });
+        });
     });
 </script>
 @endpush
+    

@@ -1,6 +1,9 @@
 <button
-    onclick="confirm('{{ $confirmMessage }}') || event.stopImmediatePropagation()"
-    wire:click.stop="@if(isset($type)){{ $action }}('{{ $type }}', {{ $id }})@else{{ $action }}({{ $id }})@endif"
+    @if($context === 'page' || (isset($questionType) && $questionType === 'page'))
+        wire:click.prevent="$dispatch('confirmDelete', { type: '{{ isset($type) ? $type : 'page' }}', id: {{ $id }}, action: '{{ $action }}' })"
+    @else
+        wire:click.stop="@if(isset($type)){{ $action }}('{{ $type }}', {{ $id }})@else{{ $action }}({{ $id }})@endif"
+    @endif
     class="p-1.5 text-red-500 hover:text-red-600 focus:outline-none flex items-center justify-center"
     title="{{ $context === 'page' ? 'Delete Page' : 'Remove Question' }}"
     wire:loading.attr="disabled"

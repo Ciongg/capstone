@@ -121,10 +121,24 @@
 
                     <!-- Action Buttons -->
                     <div class="mt-6 space-y-3">
-                        <!-- Save Trust Score Button -->
+                        <!-- Save Trust Score Button - Only shown for active users -->
+                        @if($user->is_active)
                         <button 
                             type="button"
-                            wire:click.prevent="saveTrustScore"
+                            x-data
+                            x-on:click="Swal.fire({
+                                title: 'Are you sure?',
+                                text: 'Do you want to save the changes made?',
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonColor: '#3085d6',
+                                cancelButtonColor: '#aaa',
+                                confirmButtonText: 'Yes, save it!'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $wire.saveTrustScore();
+                                }
+                            })"
                             wire:loading.attr="disabled"
                             class="w-full py-2 rounded bg-blue-500 hover:bg-blue-600 text-white"
                         >
@@ -139,12 +153,26 @@
                                 Save Changes
                             </span>
                         </button>
+                        @endif
                         
                         @if(!$user->trashed())
                             <!-- Active/Inactive Toggle Button (only for non-archived users) -->
                             <button 
                                 type="button"
-                                wire:click.prevent="toggleActiveStatus"
+                                x-data
+                                x-on:click="Swal.fire({
+                                    title: 'Are you sure?',
+                                    text: '{{ $user->is_active ? 'Do you want to deactivate this user?' : 'Do you want to activate this user?' }}',
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '{{ $user->is_active ? '#d33' : '#3085d6' }}',
+                                    cancelButtonColor: '#aaa',
+                                    confirmButtonText: '{{ $user->is_active ? 'Yes, deactivate!' : 'Yes, activate!' }}'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        $wire.toggleActiveStatus();
+                                    }
+                                })"
                                 wire:loading.attr="disabled"
                                 class="w-full py-2 rounded {{ 
                                     $user->is_active 
@@ -169,7 +197,20 @@
                             @if(auth()->user()->type !== 'institution_admin')
                             <button 
                                 type="button"
-                                wire:click.prevent="archiveUser"
+                                x-data
+                                x-on:click="Swal.fire({
+                                    title: 'Are you sure?',
+                                    text: 'Do you want to archive this user? This action can be reversed later.',
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#d33',
+                                    cancelButtonColor: '#3085d6',
+                                    confirmButtonText: 'Yes, archive it!'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        $wire.archiveUser();
+                                    }
+                                })"
                                 wire:loading.attr="disabled"
                                 class="w-full py-2 rounded bg-gray-500 hover:bg-gray-600 text-white"
                                 {{ $user->id === auth()->id() ? 'disabled' : '' }}
@@ -190,7 +231,20 @@
                             <!-- Restore Button (for archived users) -->
                             <button 
                                 type="button"
-                                wire:click.prevent="restoreUser"
+                                x-data
+                                x-on:click="Swal.fire({
+                                    title: 'Are you sure?',
+                                    text: 'Do you want to restore this archived user?',
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#3085d6',
+                                    cancelButtonColor: '#aaa',
+                                    confirmButtonText: 'Yes, restore it!'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        $wire.restoreUser();
+                                    }
+                                })"
                                 wire:loading.attr="disabled"
                                 class="w-full py-2 rounded bg-green-500 hover:bg-green-600 text-white"
                             >
@@ -224,16 +278,22 @@
                             @forelse($activities as $activity)
                                 <div class="border-l-2 
                                     {{ $activity['type'] === 'survey_response' ? 'border-blue-500' : 
-                                       ($activity['type'] === 'reward_redemption' ? 'border-green-500' : 'border-purple-500') }} 
+                                       ($activity['type'] === 'reward_redemption' ? 'border-green-500' : 
+                                       ($activity['type'] === 'survey_created' ? 'border-purple-500' : 
+                                       ($activity['type'] === 'demographic_update' ? 'border-teal-500' : 
+                                       ($activity['type'] === 'report_received' ? 'border-red-500' : 
+                                       ($activity['type'] === 'report_made' ? 'border-orange-500' : 
+                                       ($activity['type'] === 'voucher_activity' ? 'border-indigo-500' : 'border-gray-500')))))) }} 
                                     pl-3 py-2 mb-2">
                                     <p class="text-sm">
                                         <span class="font-medium">
                                             {{ $activity['action'] }}
-                                            @if($activity['type'] === 'reward_redemption')
+                                            @if(isset($activity['status']) && in_array($activity['type'], ['reward_redemption', 'report_received', 'report_made']))
                                                 <span class="px-2 py-0.5 rounded-full text-xs 
-                                                    {{ $activity['status'] === 'completed' ? 'bg-green-100 text-green-800' : 
-                                                       ($activity['status'] === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                                    {{ ucfirst($activity['status']) }}
+                                                    {{ $activity['status'] === 'completed' || $activity['status'] === 'confirmed' ? 'bg-green-100 text-green-800' : 
+                                                       ($activity['status'] === 'pending' || $activity['status'] === 'under_appeal' ? 'bg-yellow-100 text-yellow-800' : 
+                                                       ($activity['status'] === 'rejected' || $activity['status'] === 'dismissed' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')) }}">
+                                                    {{ ucfirst(str_replace('_', ' ', $activity['status'])) }}
                                                 </span>
                                             @endif
                                         </span> - 
@@ -247,6 +307,7 @@
                         </div>
                     </div>
                 </div>
+                
             </div>
         </div>
     @else
@@ -258,3 +319,7 @@
         </div>
     @endif
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endpush

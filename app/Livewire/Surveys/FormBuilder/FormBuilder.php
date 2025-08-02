@@ -334,6 +334,23 @@ class FormBuilder extends Component
 
    public function publishSurvey()
    {
+       // Validate: at least 1 page
+       if ($this->pages->isEmpty()) {
+           $this->dispatch('showErrorAlert', message: 'You must have at least 1 page in your survey before publishing.');
+           return;
+       }
+
+       // Validate: at least 6 questions total
+       $totalQuestions = 0;
+       foreach ($this->pages as $page) {
+           $totalQuestions += $page->questions->count();
+       }
+       
+       if ($totalQuestions < 6) {
+           $this->dispatch('showErrorAlert', message: 'Your survey must have at least 6 questions before publishing.');
+           return;
+       }
+
        // Prevent publishing advanced survey if no demographic is set
        if ($this->survey->type === 'advanced') {
            if ($this->survey->is_institution_only) {

@@ -20,7 +20,6 @@
             <button
                 x-show="selectedQuestionId === {{ $question->id }}" x-cloak
                 wire:click="removeItem('choice', {{ $choice->id }})"
-                wire:confirm="Are you sure you want to remove this choice?"
                 type="button"
                 class="text-red-500 hover:text-red-700 flex items-center"
                 aria-label="Remove choice"
@@ -93,7 +92,6 @@
             <button
                 x-show="selectedQuestionId === {{ $question->id }}" x-cloak
                 wire:click="removeItem('choice', {{ $otherChoice->id }})"
-                wire:confirm="Are you sure you want to remove the &quot;Other&quot; option?"
                 type="button"
                 class="text-red-500 hover:text-red-700 flex items-center"
                 aria-label="Remove 'Other' option"

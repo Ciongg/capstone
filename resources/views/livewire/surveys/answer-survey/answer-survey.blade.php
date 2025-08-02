@@ -65,11 +65,12 @@
                             </div>
                         @endforeach
 
-                        {{-- Navigation buttons --}}
+                        {{-- Navigation buttons - pass loading targets for spinners --}}
                         @include('livewire.surveys.answer-survey.partials.navigation-buttons', [
                             'isFirstPage' => $loop->first,
                             'isLastPage' => $loop->last,
-                            'currentPage' => $pageIndex
+                            'currentPage' => $pageIndex,
+                            'wireTarget' => 'submit'
                         ])
                     </div>
                 @endforeach
@@ -81,6 +82,20 @@
 @push('scripts')
 <script>
     document.addEventListener('livewire:initialized', () => {
+        // Listen for validation errors event
+        Livewire.on('showValidationAlert', () => {
+            Swal.fire({
+                title: 'Missing Required Fields',
+                text: 'Please complete all required fields before proceeding.',
+                icon: 'warning',
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'OK',
+                customClass: {
+                    confirmButton: 'px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded'
+                }
+            });
+        });
+        
         // Handle successful survey submission
         Livewire.on('surveySubmitted', (eventData) => {
             // Extract data from the event (this is the key fix)
