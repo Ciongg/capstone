@@ -54,7 +54,7 @@
                                 <div class="mb-4">
                                     <input type="text" 
                                            wire:model.live.debounce.300ms="searchTerm" 
-                                           placeholder="Search users by name or email..." 
+                                           placeholder="Search users by UUID or email..." 
                                            class="w-full px-4 py-2 border rounded-lg">
                                 </div>
                                 <div class="flex flex-wrap gap-4">
@@ -85,20 +85,20 @@
                                         </button>
                                         <button wire:click="filterByType('respondent')" 
                                             class="px-4 py-2 text-sm rounded {{ $typeFilter === 'respondent' ? 'bg-purple-600 text-white' : 'bg-gray-200' }}">
-                                            Respondents
+                                            Respondents ({{ $respondentCount }})
                                         </button>
                                         <button wire:click="filterByType('researcher')" 
                                             class="px-4 py-2 text-sm rounded {{ $typeFilter === 'researcher' ? 'bg-yellow-600 text-white' : 'bg-gray-200' }}">
-                                            Researchers
+                                            Researchers ({{ $researcherCount }})
                                         </button>
                                         <button wire:click="filterByType('institution_admin')" 
                                             class="px-4 py-2 text-sm rounded {{ $typeFilter === 'institution_admin' ? 'bg-indigo-600 text-white' : 'bg-gray-200' }}">
-                                            Institution Admins
+                                            Institution Admins ({{ $institutionAdminCount }})
                                         </button>
                                         @if(!$isInstitutionAdmin)
                                             <button wire:click="filterByType('super_admin')" 
                                                 class="px-4 py-2 text-sm rounded {{ $typeFilter === 'super_admin' ? 'bg-pink-600 text-white' : 'bg-gray-200' }}">
-                                                Super Admins
+                                                Super Admins ({{ $superAdminCount }})
                                             </button>
                                         @endif
                                     </div>

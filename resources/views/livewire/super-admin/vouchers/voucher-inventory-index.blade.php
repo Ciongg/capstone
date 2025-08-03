@@ -8,7 +8,7 @@
     <div class="mb-4">
         <input type="text" 
                wire:model.live.debounce.300ms="searchTerm" 
-               placeholder="Search vouchers by reference, store name or promo..." 
+               placeholder="Search by reference number, store name, or promo name..." 
                class="w-full px-4 py-2 border rounded-lg">
     </div>
     

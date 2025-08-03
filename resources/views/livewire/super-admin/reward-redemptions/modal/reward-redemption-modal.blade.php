@@ -46,6 +46,9 @@
                         <span class="font-bold">ID:</span> {{ $redemption->id }}
                     </div>
                     <div>
+                        <span class="font-bold">User UUID:</span> {{ $redemption->user->uuid }}
+                    </div>
+                    <div>
                         <span class="font-bold">User:</span> {{ $redemption->user->name }}
                     </div>
                     <div>
@@ -73,36 +76,46 @@
                     </div>
                 </div>
 
-                <!-- Status Update Buttons -->
+                <!-- Status Update Section -->
                 <div class="mt-6">
-                    <div class="flex space-x-3">
-                        <button 
-                            wire:click="updateStatus('completed')"
-                            wire:loading.attr="disabled"
-                            class="px-3 py-1 rounded bg-green-500 hover:bg-green-600 text-white"
-                        >
-                            <span wire:loading.inline wire:target="updateStatus('completed')">Processing...</span>
-                            <span wire:loading.remove wire:target="updateStatus('completed')">Completed</span>
-                        </button>
-                        
-                        <button 
-                            wire:click="updateStatus('pending')"
-                            wire:loading.attr="disabled"
-                            class="px-3 py-1 rounded bg-yellow-500 hover:bg-yellow-600 text-white"
-                        >
-                            <span wire:loading.inline wire:target="updateStatus('pending')">Processing...</span>
-                            <span wire:loading.remove wire:target="updateStatus('pending')">Pending</span>
-                        </button>
-                        
-                        <button 
-                            wire:click="updateStatus('rejected')"
-                            wire:loading.attr="disabled"
-                            class="px-3 py-1 rounded bg-red-500 hover:bg-red-600 text-white"
-                        >
-                            <span wire:loading.inline wire:target="updateStatus('rejected')">Processing...</span>
-                            <span wire:loading.remove wire:target="updateStatus('rejected')">Reject</span>
-                        </button>
+                    <div class="text-sm mb-2 text-gray-600">
+                        Update redemption status:
                     </div>
+
+                    <form wire:submit.prevent="updateStatus" class="flex items-center space-x-3">
+                        <select
+                            wire:model="selectedStatus"
+                            class="w-full md:w-auto border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                        >
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        
+                        <button 
+                            type="button"
+                            x-data="{}"
+                            x-on:click="
+                                const status = $wire.selectedStatus;
+                                Swal.fire({
+                                    title: 'Update Redemption Status?',
+                                    text: 'Are you sure you want to change the status to ' + status + '?',
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#3085d6',
+                                    cancelButtonColor: '#aaa',
+                                    confirmButtonText: 'Yes, update it!'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        $wire.updateStatus(status);
+                                    }
+                                })
+                            "
+                            class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md"
+                        >
+                            Update Redemption
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -115,3 +128,7 @@
         </div>
     @endif
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endpush

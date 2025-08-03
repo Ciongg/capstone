@@ -1,4 +1,4 @@
-<div>
+<div x-data="{ fullscreenImageSrc: null }">
     <!-- Status explanation notice -->
     <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
         <p><strong>Note:</strong> This section allows you to manage all rewards in the system. Update reward details or adjust inventory levels.</p>
@@ -37,7 +37,7 @@
     <div class="mb-4 flex flex-col md:flex-row items-center justify-between gap-2">
         <input type="text" 
                wire:model.live.debounce.300ms="searchTerm" 
-               placeholder="Search rewards by name or description..." 
+               placeholder="Search by reward name or company name..." 
                class="flex-1 w-full md:w-auto px-4 py-2 border rounded-lg md:mr-2 mb-2 md:mb-0">
         <button 
             x-data
@@ -76,7 +76,12 @@
                 <!-- Image for reward -->
                 <div class="relative w-full h-48 bg-gray-200 flex items-center justify-center">
                     @if(isset($reward->image_path) && $reward->image_path)
-                        <img src="{{ asset('storage/' . $reward->image_path) }}" alt="{{ $reward->name }}" class="h-full w-full object-cover">
+                        @php $imageUrl = asset('storage/' . $reward->image_path); @endphp
+                        <img src="{{ $imageUrl }}" 
+                             alt="{{ $reward->name }}" 
+                             class="h-full w-full object-cover cursor-pointer"
+                             @click="fullscreenImageSrc = '{{ $imageUrl }}'"
+                             style="cursor: pointer;">
                     @else
                         @if($reward->type == 'system')
                             {{-- System Reward Icon --}}
@@ -189,4 +194,29 @@
             </div>
         </div>
     </x-modal>
+
+    <!-- Fullscreen Image Overlay -->
+    <div x-show="fullscreenImageSrc"
+         x-transition:enter="transition ease-out duration-100"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="fullscreenImageSrc = null"  {{-- Click background to close --}}
+         @keydown.escape.window="fullscreenImageSrc = null" {{-- Press Escape to close --}}
+         class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 cursor-pointer"
+         style="display: none;"> {{-- Add display:none to prevent flash on load --}}
+        
+        <img :src="fullscreenImageSrc" 
+             alt="Fullscreen Reward Image" 
+             class="max-w-full max-h-full object-contain"
+             @click.stop> {{-- Prevent closing when clicking the image itself --}}
+                  
+        {{-- Larger, easier-to-tap close button for mobile --}}
+        <button @click="fullscreenImageSrc = null" 
+                class="cursor-pointer absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-white text-4xl sm:text-3xl font-bold leading-none rounded-full hover:bg-black hover:bg-opacity-25 focus:outline-none">
+            &times;
+        </button>
+    </div>
 </div>

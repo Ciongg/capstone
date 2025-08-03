@@ -92,49 +92,47 @@
                     @endif
                 </div>
 
-                <!-- Status Update Buttons -->
+                <!-- Status Update Section -->
                 <div class="mt-6">
                     <div class="text-sm mb-2 text-gray-600">
                         Update voucher status:
                     </div>
 
-                    <div class="flex space-x-3">
-                        <button 
-                            wire:click="updateStatus('available')"
-                            wire:loading.attr="disabled"
-                            class="px-3 py-1 rounded bg-green-500 hover:bg-green-600 text-white"
+                    <form wire:submit.prevent="updateVoucher" class="flex items-center space-x-3">
+                        <select
+                            wire:model="selectedStatus"
+                            class="w-full md:w-auto border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                         >
-                            <span wire:loading.inline wire:target="updateStatus('available')">Processing...</span>
-                            <span wire:loading.remove wire:target="updateStatus('available')">Available</span>
-                        </button>
+                            <option value="available">Available</option>
+                            <option value="used">Used</option>
+                            <option value="expired">Expired</option>
+                            <option value="unavailable">Unavailable</option>
+                        </select>
                         
                         <button 
-                            wire:click="updateStatus('used')"
-                            wire:loading.attr="disabled"
-                            class="px-3 py-1 rounded bg-blue-500 hover:bg-blue-600 text-white"
+                            type="button"
+                            x-data="{}"
+                            x-on:click="
+                                const status = $wire.selectedStatus;
+                                Swal.fire({
+                                    title: 'Update Voucher Status?',
+                                    text: 'Are you sure you want to change the status to ' + status + '?',
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#3085d6',
+                                    cancelButtonColor: '#aaa',
+                                    confirmButtonText: 'Yes, update it!'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        $wire.updateVoucher();
+                                    }
+                                })
+                            "
+                            class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md"
                         >
-                            <span wire:loading.inline wire:target="updateStatus('used')">Processing...</span>
-                            <span wire:loading.remove wire:target="updateStatus('used')">Mark Used</span>
+                            Update Voucher
                         </button>
-                        
-                        <button 
-                            wire:click="updateStatus('expired')"
-                            wire:loading.attr="disabled"
-                            class="px-3 py-1 rounded bg-red-500 hover:bg-red-600 text-white"
-                        >
-                            <span wire:loading.inline wire:target="updateStatus('expired')">Processing...</span>
-                            <span wire:loading.remove wire:target="updateStatus('expired')">Mark Expired</span>
-                        </button>
-                        
-                        <button 
-                            wire:click="updateStatus('unavailable')"
-                            wire:loading.attr="disabled"
-                            class="px-3 py-1 rounded bg-gray-500 hover:bg-gray-600 text-white"
-                        >
-                            <span wire:loading.inline wire:target="updateStatus('unavailable')">Processing...</span>
-                            <span wire:loading.remove wire:target="updateStatus('unavailable')">Unavailable</span>
-                        </button>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -147,3 +145,8 @@
         </div>
     @endif
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endpush
+

@@ -169,7 +169,21 @@
 
                     <div class="pt-4 flex justify-end">
                         <button
-                            type="submit"
+                            type="button"
+                            x-data
+                            x-on:click="Swal.fire({
+                                title: 'Create Voucher?',
+                                text: 'Are you sure you want to create this voucher?',
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonColor: '#03b8ff',
+                                cancelButtonColor: '#aaa',
+                                confirmButtonText: 'Yes, create it!'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $wire.createVoucher();
+                                }
+                            })"
                             class="px-6 py-2 bg-[#03b8ff] hover:bg-[#0299d5] text-white font-bold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#03b8ff]"
                         >
                             Create Voucher
@@ -180,3 +194,7 @@
         </div>
     @endif
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endpush

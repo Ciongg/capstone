@@ -92,7 +92,6 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::get('/users', [SuperAdminController::class, 'userIndex'])->name('users.index');
     Route::get('/surveys', [SuperAdminController::class, 'surveysIndex'])->name('surveys.index');
     Route::get('/requests', [SuperAdminController::class, 'supportRequestsIndex'])->name('support-requests.index');
-    Route::get('/reports', [SuperAdminController::class, 'reportsIndex'])->name('reports.index');
     
     // User management routes
     Route::get('/users/{user:uuid}/profile', [SuperAdminController::class, 'userProfile'])->name('users.profile')->withTrashed();

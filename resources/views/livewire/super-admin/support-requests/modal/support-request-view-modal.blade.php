@@ -17,7 +17,7 @@
                 </span>
             </div>
             
-            <!-- Request Type and Timing -->
+            <!-- Request Type and Timing - Add Request ID and User UUID -->
             <div class="mt-4 flex flex-wrap justify-between">
                 <div class="flex items-center mb-2">
                     <span class="font-bold mr-2">Type:</span>
@@ -31,7 +31,13 @@
                     </span>
                 </div>
                 <div class="mb-2">
+                    <span class="font-bold">Request ID:</span> {{ $supportRequest->id }}
+                </div>
+                <div class="mb-2">
                     <span class="font-bold">Submitted:</span> {{ $supportRequest->created_at->format('M d, Y h:i A') }}
+                </div>
+                <div class="mb-2">
+                    <span class="font-bold">User UUID:</span> {{ $supportRequest->user->uuid ?? 'Unknown' }}
                 </div>
                 @if($supportRequest->resolved_at)
                 <div class="mb-2">
@@ -209,7 +215,21 @@
 
                             <div class="flex justify-end pt-4">
                                 <button 
-                                    type="submit"
+                                    type="button"
+                                    x-data
+                                    x-on:click="Swal.fire({
+                                        title: 'Save Changes?',
+                                        text: 'Are you sure you want to update this support request?',
+                                        icon: 'question',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '#3085d6',
+                                        cancelButtonColor: '#aaa',
+                                        confirmButtonText: 'Yes, save changes!'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            $wire.updateRequest();
+                                        }
+                                    })"
                                     class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                 >
                                     Save Changes
@@ -229,3 +249,7 @@
         </div>
     @endif
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endpush

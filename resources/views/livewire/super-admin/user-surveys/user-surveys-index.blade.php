@@ -16,7 +16,7 @@
                     <div class="mb-4">
                         <input type="text" 
                                wire:model.live.debounce.300ms="searchTerm" 
-                               placeholder="Search surveys by title or description..." 
+                               placeholder="Search by title or UUID..." 
                                class="w-full px-4 py-2 border rounded-lg">
                     </div>
                     
@@ -52,12 +52,24 @@
                                 All Types
                             </button>
                             <button wire:click="filterByType('basic')" 
-                                class="px-4 py-2 text-sm rounded {{ $typeFilter === 'basic' ? 'bg-indigo-600 text-white' : 'bg-gray-200' }}">
-                                Basic
+                                class="px-4 py-2 text-sm rounded {{ $typeFilter === 'basic' ? 'bg-blue-600 text-white' : 'bg-gray-200' }}">
+                                Basic ({{ $basicCount }})
                             </button>
                             <button wire:click="filterByType('advanced')" 
-                                class="px-4 py-2 text-sm rounded {{ $typeFilter === 'advanced' ? 'bg-pink-600 text-white' : 'bg-gray-200' }}">
-                                Advanced
+                                class="px-4 py-2 text-sm rounded {{ $typeFilter === 'advanced' ? 'bg-purple-600 text-white' : 'bg-gray-200' }}">
+                                Advanced ({{ $advancedCount }})
+                            </button>
+                        </div>
+
+                        <!-- Institution Filter Button -->
+                        <div class="flex space-x-2">
+                            <button wire:click="filterByInstitution('all')" 
+                                class="px-4 py-2 text-sm rounded {{ $institutionFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200' }}">
+                                All Access
+                            </button>
+                            <button wire:click="filterByInstitution('institution')" 
+                                class="px-4 py-2 text-sm rounded {{ $institutionFilter === 'institution' ? 'bg-yellow-600 text-white' : 'bg-gray-200' }}">
+                                Institution Only ({{ $institutionCount }})
                             </button>
                         </div>
                     </div>
@@ -86,7 +98,7 @@
                                     </td>
                                     <td class="py-3 px-6">
                                         <span class="px-2 py-1 rounded text-xs {{ 
-                                            $survey->type === 'basic' ? 'bg-indigo-200 text-indigo-800' : 'bg-pink-200 text-pink-800' }}">
+                                            $survey->type === 'basic' ? 'bg-indigo-200 text-indigo-800' : 'bg-purple-200 text-purple-800' }}">
                                             {{ ucfirst($survey->type) }}
                                         </span>
                                     </td>

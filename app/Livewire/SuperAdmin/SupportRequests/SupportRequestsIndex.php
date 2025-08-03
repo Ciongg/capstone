@@ -45,11 +45,13 @@ class SupportRequestsIndex extends Component
         $query = SupportRequest::query()
             ->with('user');
 
-        // Apply search filter
+        // Apply search filter - only search by subject or user UUID
         if ($this->searchTerm) {
             $query->where(function($q) {
                 $q->where('subject', 'like', '%' . $this->searchTerm . '%')
-                  ->orWhere('description', 'like', '%' . $this->searchTerm . '%');
+                  ->orWhereHas('user', function($userQuery) {
+                      $userQuery->where('uuid', 'like', '%' . $this->searchTerm . '%');
+                  });
             });
         }
 
@@ -69,6 +71,13 @@ class SupportRequestsIndex extends Component
         $resolvedCount = SupportRequest::where('status', 'resolved')->count();
         $rejectedCount = SupportRequest::where('status', 'rejected')->count();
 
+        // Get count for each request type
+        $lockAppealCount = SupportRequest::where('request_type', 'survey_lock_appeal')->count();
+        $reportAppealCount = SupportRequest::where('request_type', 'report_appeal')->count();
+        $accountIssueCount = SupportRequest::where('request_type', 'account_issue')->count();
+        $surveyQuestionCount = SupportRequest::where('request_type', 'survey_question')->count();
+        $otherCount = SupportRequest::where('request_type', 'other')->count();
+
         $supportRequests = $query->orderBy('created_at', 'desc')->paginate(10);
 
         return view('livewire.super-admin.support-requests.support-requests-index', [
@@ -77,6 +86,11 @@ class SupportRequestsIndex extends Component
             'inProgressCount' => $inProgressCount,
             'resolvedCount' => $resolvedCount,
             'rejectedCount' => $rejectedCount,
+            'lockAppealCount' => $lockAppealCount,
+            'reportAppealCount' => $reportAppealCount,
+            'accountIssueCount' => $accountIssueCount,
+            'surveyQuestionCount' => $surveyQuestionCount,
+            'otherCount' => $otherCount,
         ]);
     }
 }

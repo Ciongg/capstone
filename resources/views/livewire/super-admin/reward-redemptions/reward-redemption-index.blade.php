@@ -11,24 +11,29 @@
                 @endif
                 
                 <!-- Tab Navigation - Added Manage Rewards tab -->
-                <div class="border-b border-gray-200 mb-6" x-data="{ tab: 'redemptions' }">
+                <div class="border-b border-gray-200 mb-6" x-data="{ 
+                    tab: window.location.hash ? window.location.hash.substring(1) : 'redemptions',
+                    updateHash() {
+                        window.location.hash = this.tab;
+                    }
+                }">
                     <nav class="flex -mb-px">
                         <button 
-                            x-on:click="tab = 'manage'" 
+                            x-on:click="tab = 'manage'; updateHash()" 
                             :class="{ 'border-blue-500 text-blue-600': tab === 'manage', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'manage' }" 
                             class="w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm"
                         >
                             Manage Rewards
                         </button>
                         <button 
-                            x-on:click="tab = 'vouchers'" 
+                            x-on:click="tab = 'vouchers'; updateHash()" 
                             :class="{ 'border-blue-500 text-blue-600': tab === 'vouchers', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'vouchers' }" 
                             class="w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm"
                         >
                             Voucher Inventory
                         </button>
                         <button 
-                            x-on:click="tab = 'redemptions'" 
+                            x-on:click="tab = 'redemptions'; updateHash()" 
                             :class="{ 'border-blue-500 text-blue-600': tab === 'redemptions', 'border-transparent text-gray-500 hover:text-gray-700': tab !== 'redemptions' }" 
                             class="w-1/3 py-3 px-1 text-center border-b-2 font-medium text-sm"
                         >
@@ -50,6 +55,14 @@
                                 <p><strong>Note:</strong> System and voucher rewards are automatically marked as completed.</p>
                             </div>
                             
+                            <!-- Search Box -->
+                            <div class="mb-4">
+                                <input type="text" 
+                                    wire:model.live.debounce.300ms="searchTerm" 
+                                    placeholder="Search by user UUID or reward name..." 
+                                    class="w-full px-4 py-2 border rounded-lg">
+                            </div>
+                            
                             <!-- Status Filter Buttons -->
                             <div class="mb-4 flex space-x-2">
                                 <button wire:click="filterByStatus('all')" 
@@ -58,15 +71,15 @@
                                 </button>
                                 <button wire:click="filterByStatus('pending')" 
                                     class="px-4 py-2 text-sm rounded {{ $statusFilter === 'pending' ? 'bg-yellow-600 text-white' : 'bg-gray-200' }}">
-                                    Pending
+                                    Pending ({{ $pendingCount }})
                                 </button>
                                 <button wire:click="filterByStatus('completed')" 
                                     class="px-4 py-2 text-sm rounded {{ $statusFilter === 'completed' ? 'bg-green-600 text-white' : 'bg-gray-200' }}">
-                                    Completed
+                                    Completed ({{ $completedCount }})
                                 </button>
                                 <button wire:click="filterByStatus('rejected')" 
                                     class="px-4 py-2 text-sm rounded {{ $statusFilter === 'rejected' ? 'bg-red-600 text-white' : 'bg-gray-200' }}">
-                                    Rejected
+                                    Rejected ({{ $rejectedCount }})
                                 </button>
                             </div>
                             

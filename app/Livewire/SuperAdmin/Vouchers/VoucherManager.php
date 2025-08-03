@@ -84,7 +84,9 @@ class VoucherManager extends Component
             ->when($this->searchTerm, function ($query) {
                 $query->where(function ($subQuery) {
                     $subQuery->where('name', 'like', '%' . $this->searchTerm . '%')
-                            ->orWhere('description', 'like', '%' . $this->searchTerm . '%');
+                            ->orWhereHas('merchant', function($merchantQuery) {
+                                $merchantQuery->where('name', 'like', '%' . $this->searchTerm . '%');
+                            });
                 });
             })
             ->orderBy('created_at', 'desc')

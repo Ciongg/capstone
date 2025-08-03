@@ -14,6 +14,7 @@ class ReportIndex extends Component
     public $reasonFilter = 'all';
     public $selectedReportId = null;
 
+
     public function filterByReason($reason)
     {
         $this->reasonFilter = $reason;
@@ -35,16 +36,15 @@ class ReportIndex extends Component
             $query->where('reason', $this->reasonFilter);
         }
 
-        // Apply search filter
+        // Apply search filter - search by survey title or respondent UUID
         if ($this->searchTerm) {
             $query->where(function($q) {
-                $q->where('details', 'like', '%' . $this->searchTerm . '%')
-                  ->orWhereHas('survey', function($sq) {
-                      $sq->where('title', 'like', '%' . $this->searchTerm . '%');
-                  })
-                  ->orWhereHas('reporter', function($rq) {
-                      $rq->where('name', 'like', '%' . $this->searchTerm . '%');
-                  });
+                $q->whereHas('survey', function($sq) {
+                    $sq->where('title', 'like', '%' . $this->searchTerm . '%');
+                })
+                ->orWhereHas('respondent', function($rq) {
+                    $rq->where('uuid', 'like', '%' . $this->searchTerm . '%');
+                });
             });
         }
 
@@ -53,8 +53,22 @@ class ReportIndex extends Component
 
     public function render()
     {
+        // Get count for each reason type
+        $inappropriateCount = Report::where('reason', 'inappropriate_content')->count();
+        $spamCount = Report::where('reason', 'spam')->count();
+        $offensiveCount = Report::where('reason', 'offensive')->count();
+        $suspiciousCount = Report::where('reason', 'suspicious')->count();
+        $duplicateCount = Report::where('reason', 'duplicate')->count();
+        $otherCount = Report::where('reason', 'other')->count();
+
         return view('livewire.super-admin.reports.report-index', [
-            'reports' => $this->reports
+            'reports' => $this->reports,
+            'inappropriateCount' => $inappropriateCount,
+            'spamCount' => $spamCount,
+            'offensiveCount' => $offensiveCount,
+            'suspiciousCount' => $suspiciousCount,
+            'duplicateCount' => $duplicateCount,
+            'otherCount' => $otherCount,
         ]);
     }
 }

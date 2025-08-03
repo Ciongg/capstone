@@ -11,6 +11,7 @@ class ViewVoucherModal extends Component
     public $voucherId;
     public $voucher;
     public $availability;
+    public $selectedStatus;
     
     // Add the hook for when voucherId is updated
     public function updated($property)
@@ -34,32 +35,33 @@ class ViewVoucherModal extends Component
             $this->voucher = Voucher::with('reward')->find($this->voucherId);
             if ($this->voucher) {
                 $this->availability = $this->voucher->availability;
+                $this->selectedStatus = $this->voucher->availability;
             }
         }
     }
     
     public function updateStatus($status)
     {
-        $this->availability = $status;
+        $this->selectedStatus = $status;
         $this->updateVoucher();
     }
     
     public function updateVoucher()
     {
         $this->validate([
-            'availability' => 'required|in:available,unavailable,expired,used',
+            'selectedStatus' => 'required|in:available,unavailable,expired,used',
         ]);
         
         if (!$this->voucher) {
             return;
         }
         
-        $this->voucher->availability = $this->availability;
+        $this->voucher->availability = $this->selectedStatus;
         $this->voucher->save();
         
         // Dispatch events to update UI and notify parent components
         $this->dispatch('notify', [
-            'message' => "Voucher status updated to " . ucfirst($this->availability),
+            'message' => "Voucher status updated to " . ucfirst($this->selectedStatus),
             'type' => 'success'
         ]);
         

@@ -126,7 +126,20 @@
                         </select>
                         <button
                             type="button"
-                            wire:click="updateReward"
+                            x-data
+                            x-on:click="Swal.fire({
+                                title: 'Update Status?',
+                                text: 'Are you sure you want to update the status of this reward?',
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonColor: '#03b8ff',
+                                cancelButtonColor: '#aaa',
+                                confirmButtonText: 'Yes, update it!'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $wire.updateReward();
+                                }
+                            })"
                             class="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium"
                         >
                             Update Status
@@ -199,7 +212,20 @@
                                     >
                                     <button
                                         type="button"
-                                        wire:click="restockVouchers"
+                                        x-data
+                                        x-on:click="Swal.fire({
+                                            title: 'Add Voucher Stock?',
+                                            text: 'Are you sure you want to add ' + $wire.restockQuantity + ' new vouchers to the inventory?',
+                                            icon: 'question',
+                                            showCancelButton: true,
+                                            confirmButtonColor: '#10b981',
+                                            cancelButtonColor: '#aaa',
+                                            confirmButtonText: 'Yes, add stock!'
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                $wire.restockVouchers();
+                                            }
+                                        })"
                                         class="ml-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm font-medium whitespace-nowrap"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -253,14 +279,40 @@
                     <button
                         type="button"
                         x-data
-                        x-on:click="$wire.deleteReward()"
+                        x-on:click="Swal.fire({
+                            title: 'Delete Voucher?',
+                            text: 'Are you sure you want to delete this voucher? This action cannot be undone.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#aaa',
+                            confirmButtonText: 'Yes, delete it!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $wire.deleteReward();
+                            }
+                        })"
                         class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md"
                     >
                         Delete
                     </button>
                     @endif
                     <button
-                        type="submit"
+                        type="button"
+                        x-data
+                        x-on:click="Swal.fire({
+                            title: 'Update Reward?',
+                            text: 'Are you sure you want to update this reward?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#03b8ff',
+                            cancelButtonColor: '#aaa',
+                            confirmButtonText: 'Yes, update it!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $wire.updateReward();
+                            }
+                        })"
                         class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md"
                     >
                         Update Reward

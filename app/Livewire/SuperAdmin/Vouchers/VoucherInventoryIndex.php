@@ -39,11 +39,15 @@ class VoucherInventoryIndex extends Component
         $query = Voucher::query()
             ->with('reward');
         
-        // Apply search filter
+        // Apply search filter - properly include store name search
         if ($this->searchTerm) {
             $query->where(function($q) {
                 $q->where('reference_no', 'like', '%' . $this->searchTerm . '%')
-                  ->orWhere('promo', 'like', '%' . $this->searchTerm . '%');
+                  ->orWhere('promo', 'like', '%' . $this->searchTerm . '%')
+                  // Add search through the relationship to merchant name
+                  ->orWhereHas('reward.merchant', function($merchantQuery) {
+                      $merchantQuery->where('name', 'like', '%' . $this->searchTerm . '%');
+                  });
             });
         }
         

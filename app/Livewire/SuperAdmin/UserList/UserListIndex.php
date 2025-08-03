@@ -21,6 +21,12 @@ class UserListIndex extends Component
     public $institutionId = null;
     public $institutionName = null;
     
+    // Add count properties for each user type
+    public $respondentCount = 0;
+    public $researcherCount = 0;
+    public $institutionAdminCount = 0;
+    public $superAdminCount = 0;
+    
     protected $listeners = [
         'userStatusUpdated' => '$refresh',
     ];
@@ -61,16 +67,24 @@ class UserListIndex extends Component
         // Query builder for users
         $query = User::query();
         
+        // Base query for counting - respect the same trash state as main query
+        $countQuery = User::query();
+        if ($this->statusFilter === 'archived') {
+            $countQuery->onlyTrashed();
+        } elseif ($this->statusFilter === 'all') {
+            $countQuery->withTrashed();
+        }
+        
         // If institution admin, only show users from their institution
         if ($this->isInstitutionAdmin && $this->institutionId) {
             $query->where('institution_id', $this->institutionId);
+            $countQuery->where('institution_id', $this->institutionId);
         }
         
-        // Apply search filter if provided
-        if ($this->searchTerm) {
-            $query->where(function($q) {
-                $q->where('first_name', 'like', '%' . $this->searchTerm . '%')
-                  ->orWhere('last_name', 'like', '%' . $this->searchTerm . '%')
+        // Apply search filter - only search by UUID or email
+        if (!empty($this->searchTerm)) {
+            $query->where(function ($q) {
+                $q->where('uuid', 'like', '%' . $this->searchTerm . '%')
                   ->orWhere('email', 'like', '%' . $this->searchTerm . '%');
             });
         }
@@ -101,27 +115,40 @@ class UserListIndex extends Component
             ->paginate(10);
         
         // Count queries with appropriate filters
-        $activeCountQuery = User::where('is_active', true)->whereNull('deleted_at');
-        $inactiveCountQuery = User::where('is_active', false)->whereNull('deleted_at');
-        $archivedCountQuery = User::onlyTrashed();
+        $activeCountQuery = clone $countQuery;
+        $activeCountQuery->where('is_active', true)->whereNull('deleted_at');
         
-        // Apply institution filter to counts if needed
+        $inactiveCountQuery = clone $countQuery;
+        $inactiveCountQuery->where('is_active', false)->whereNull('deleted_at');
+        
+        $archivedCountQuery = clone $countQuery;
+        $archivedCountQuery->onlyTrashed();
+        
+        // Create a separate base query for counts that always excludes archived users
+        $typeCountQuery = User::query()->whereNull('deleted_at');
+        
+        // If institution admin, only show users from their institution
         if ($this->isInstitutionAdmin && $this->institutionId) {
-            $activeCountQuery->where('institution_id', $this->institutionId);
-            $inactiveCountQuery->where('institution_id', $this->institutionId);
-            $archivedCountQuery->where('institution_id', $this->institutionId);
+            $typeCountQuery->where('institution_id', $this->institutionId);
         }
-            
+        
+        // Assign the counts to the class properties (fix: was calculating but not assigning)
+        $this->respondentCount = (clone $typeCountQuery)->where('type', 'respondent')->count();
+        $this->researcherCount = (clone $typeCountQuery)->where('type', 'researcher')->count();
+        $this->institutionAdminCount = (clone $typeCountQuery)->where('type', 'institution_admin')->count();
+        $this->superAdminCount = (clone $typeCountQuery)->where('type', 'super_admin')->count();
+        
         return view('livewire.super-admin.user-list.user-list-index', [
             'users' => $users,
             'activeCount' => $activeCountQuery->count(),
             'inactiveCount' => $inactiveCountQuery->count(),
             'archivedCount' => $archivedCountQuery->count(),
+            // We don't need to pass these counts since they're now class properties
             'isInstitutionAdmin' => $this->isInstitutionAdmin,
             'institutionName' => $this->institutionName,
         ]);
     }
-
+    
     public function filterByStatus($status)
     {
         $this->statusFilter = $status;
@@ -139,3 +166,6 @@ class UserListIndex extends Component
         $this->resetPage();
     }
 }
+    
+    
+   

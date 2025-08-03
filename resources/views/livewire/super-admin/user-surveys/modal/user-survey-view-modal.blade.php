@@ -222,7 +222,20 @@
                                     
                                     <button 
                                         type="button"
-                                        wire:click.prevent="toggleLockStatus"
+                                        x-data
+                                        x-on:click="Swal.fire({
+                                            title: 'Are you sure?',
+                                            text: '{{ $survey->is_locked ? 'Do you want to unlock this survey?' : 'Do you want to lock this survey?' }}',
+                                            icon: 'question',
+                                            showCancelButton: true,
+                                            confirmButtonColor: '{{ $survey->is_locked ? '#3085d6' : '#d33' }}',
+                                            cancelButtonColor: '#aaa',
+                                            confirmButtonText: '{{ $survey->is_locked ? 'Yes, unlock it!' : 'Yes, lock it!' }}'
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                $wire.toggleLockStatus();
+                                            }
+                                        })"
                                         wire:loading.attr="disabled"
                                         class="w-full py-2 rounded {{ 
                                             $survey->is_locked 
@@ -247,7 +260,20 @@
                                 <div class="{{ !$survey->is_locked ? 'md:col-span-2' : '' }}">
                                     <button 
                                         type="button"
-                                        wire:click.prevent="archiveSurvey"
+                                        x-data
+                                        x-on:click="Swal.fire({
+                                            title: 'Are you sure?',
+                                            text: 'Do you want to archive this survey? This action can be reversed later.',
+                                            icon: 'warning',
+                                            showCancelButton: true,
+                                            confirmButtonColor: '#d33',
+                                            cancelButtonColor: '#3085d6',
+                                            confirmButtonText: 'Yes, archive it!'
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                $wire.archiveSurvey();
+                                            }
+                                        })"
                                         wire:loading.attr="disabled"
                                         class="w-full py-2 rounded bg-gray-500 hover:bg-gray-600 text-white"
                                     >
@@ -268,7 +294,20 @@
                                 <div class="col-span-full">
                                     <button 
                                         type="button"
-                                        wire:click.prevent="restoreSurvey"
+                                        x-data
+                                        x-on:click="Swal.fire({
+                                            title: 'Are you sure?',
+                                            text: 'Do you want to restore this archived survey?',
+                                            icon: 'question',
+                                            showCancelButton: true,
+                                            confirmButtonColor: '#3085d6',
+                                            cancelButtonColor: '#aaa',
+                                            confirmButtonText: 'Yes, restore it!'
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                $wire.restoreSurvey();
+                                            }
+                                        })"
                                         wire:loading.attr="disabled"
                                         class="w-full py-2 rounded bg-blue-500 hover:bg-blue-600 text-white"
                                     >
@@ -324,3 +363,7 @@
         </div>
     @endif
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endpush
