@@ -13,8 +13,6 @@ class VoucherManager extends Component
     public $typeFilter = 'all';
     public $searchTerm = '';
     public $selectedRewardId = null;
-    public $successMessage = '';
-    public $errorMessage = '';
 
     protected $queryString = [
         'typeFilter' => ['except' => 'all'],
@@ -22,57 +20,22 @@ class VoucherManager extends Component
     ];
 
     protected $listeners = [
-        'vouchers-restocked' => 'handleVoucherRestocked',
-        'reward-updated' => 'handleRewardUpdated',
-        'reward-error' => 'handleRewardError',
-        'rewardDeleted' => 'handleRewardDeleted',
-        'voucherCreated' => 'handleVoucherCreated',
+        'vouchers-restocked' => '$refresh',
+        'reward-updated' => '$refresh',
+        'reward-error' => '$refresh',
+        'rewardDeleted' => '$refresh',
+        'voucherCreated' => '$refresh',
     ];
 
     public function filterByType($type)
     {
         $this->typeFilter = $type;
-        $this->resetPage();
+        $this->$refresh();
     }
 
     public function updatedSearchTerm()
     {
-        $this->resetPage();
-    }
-
-    public function handleVoucherRestocked($data)
-    {
-        $this->successMessage = $data['message'];
-        $this->resetPage();
-    }
-
-    public function handleRewardUpdated($data)
-    {
-        $this->successMessage = $data['message'];
-        $this->resetPage();
-    }
-
-    public function handleRewardError($data)
-    {
-        $this->errorMessage = $data['message'];
-    }
-
-    public function handleRewardDeleted()
-    {
-        $this->successMessage = 'Reward deleted successfully.';
-        $this->resetPage();
-    }
-
-    public function handleVoucherCreated()
-    {
-        $this->successMessage = 'Voucher created successfully.';
-        $this->resetPage();
-    }
-
-    public function clearMessages()
-    {
-        $this->successMessage = '';
-        $this->errorMessage = '';
+        $this->$refresh();
     }
 
     public function render()

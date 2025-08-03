@@ -23,7 +23,7 @@ class RewardSeeder extends Seeder
                 'cost' => 500,
                 'quantity' => -1, // -1 means infinite
                 'type' => 'system',
-                'image_path' => null,
+                'image_filename' => 'surveyBoost.svg', // Change to image_filename
             ],
             [
                 'name' => 'Experience Level Increase',
@@ -32,7 +32,7 @@ class RewardSeeder extends Seeder
                 'cost' => 10,
                 'quantity' => -1,
                 'type' => 'system',
-                'image_path' => null,
+                'image_filename' => 'levelUp.svg', // Change to image_filename
             ],
         ];
 
@@ -40,6 +40,23 @@ class RewardSeeder extends Seeder
         if (!File::isDirectory(storage_path('app/public/voucher-images'))) {
             File::makeDirectory(storage_path('app/public/voucher-images'), 0755, true);
         }
+        
+        // Ensure storage/app/public/reward-images exists for system rewards
+        if (!File::isDirectory(storage_path('app/public/reward-images'))) {
+            File::makeDirectory(storage_path('app/public/reward-images'), 0755, true);
+        }
+
+        // Copy system reward images
+        foreach ($systemRewards as &$reward) {
+            $sourcePath = public_path('images/rewards/' . $reward['image_filename']);
+            $destPath = storage_path('app/public/reward-images/' . $reward['image_filename']);
+            if (File::exists($sourcePath) && !File::exists($destPath)) {
+                File::copy($sourcePath, $destPath);
+            }
+            $reward['image_path'] = 'reward-images/' . $reward['image_filename'];
+            unset($reward['image_filename']);
+        }
+        unset($reward);
 
         // Fetch merchants for association
         $coffeeMerchant = Merchant::where('name', 'Coffee Company')->first();

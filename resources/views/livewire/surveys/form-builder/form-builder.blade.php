@@ -123,10 +123,10 @@
         />
     </x-modal>
 
-    <!-- Wrapper for survey content - disabled when survey is locked or ongoing -->
+    <!-- Wrapper for survey content - disabled when survey is locked or ongoing/finished -->
     <div @class([
         'relative', // Always relative
-        'opacity-50 pointer-events-none select-none' => $survey->is_locked || $survey->status === 'ongoing', // Disabled when locked or ongoing
+        'opacity-50 pointer-events-none select-none' => $survey->is_locked || $survey->status === 'ongoing' || $survey->status === 'finished', // Disabled when locked, ongoing, or finished
     ])>
         @if($survey->is_locked)
             <!-- Overlay message for locked surveys -->
@@ -142,6 +142,15 @@
                 <div class="bg-white/80 p-6 rounded-lg shadow-lg border-2 border-amber-300 max-w-lg text-center">
                     <h3 class="text-xl font-bold text-amber-600">Survey Ongoing</h3>
                     <p class="mt-2 text-gray-700">This survey has received responses and cannot be edited.</p>
+                    <p class="mt-1 text-sm text-gray-600">View responses using the buttons in the navbar above.</p>
+                </div>
+            </div>
+        @elseif($survey->status === 'finished')
+            <!-- Overlay message for finished surveys -->
+            <div class="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+                <div class="bg-white/80 p-6 rounded-lg shadow-lg border-2 border-green-300 max-w-lg text-center">
+                    <h3 class="text-xl font-bold text-green-600">Survey Finished</h3>
+                    <p class="mt-2 text-gray-700">This survey has been completed and cannot be edited.</p>
                     <p class="mt-1 text-sm text-gray-600">View responses using the buttons in the navbar above.</p>
                 </div>
             </div>
@@ -268,4 +277,4 @@
     });
 </script>
 @endpush
-    
+

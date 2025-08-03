@@ -377,7 +377,21 @@ class Index extends Component
         $now = TestTimeService::now();
         
         return $surveys->each(function ($survey) use ($now) {
-            $survey->is_expired_locked = $survey->end_date && $now->gt($survey->end_date);
+            $isExpired = $survey->end_date && $now->gt($survey->end_date);
+            $survey->is_expired_locked = $isExpired;
+            
+            // Update database status to 'finished' if survey is expired and not already finished
+            if ($isExpired && $survey->status !== 'finished') {
+                // Get a fresh instance of the survey to update
+                $surveyToUpdate = Survey::find($survey->id);
+                if ($surveyToUpdate) {
+                    $surveyToUpdate->status = 'finished';
+                    $surveyToUpdate->save();
+                    
+                    // Update the current instance's status to match the database
+                    $survey->status = 'finished';
+                }
+            }
         });
     }
 

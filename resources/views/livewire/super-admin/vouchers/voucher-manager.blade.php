@@ -4,35 +4,6 @@
         <p><strong>Note:</strong> This section allows you to manage all rewards in the system. Update reward details or adjust inventory levels.</p>
     </div>
     
-    <!-- Success Message -->
-    @if($successMessage)
-        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => { show = false; $wire.clearMessages() }, 5000)">
-            <div class="flex justify-between items-center">
-                <p>{{ $successMessage }}</p>
-                <button @click="show = false; $wire.clearMessages()" class="text-green-700 hover:text-green-900">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    @endif
-    
-    <!-- Error Message -->
-    @if($errorMessage)
-        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => { show = false; $wire.clearMessages() }, 5000)">
-            <div class="flex justify-between items-center">
-                <p>{{ $errorMessage }}</p>
-                <button @click="show = false; $wire.clearMessages()" class="text-red-700 hover:text-red-900">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    @endif
-
-    
     <!-- Search and Create Button Row -->
     <div class="mb-4 flex flex-col md:flex-row items-center justify-between gap-2">
         <input type="text" 
@@ -220,3 +191,4 @@
         </button>
     </div>
 </div>
+          

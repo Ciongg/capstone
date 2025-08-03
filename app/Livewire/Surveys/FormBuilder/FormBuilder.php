@@ -340,14 +340,15 @@ class FormBuilder extends Component
            return;
        }
 
-       // Validate: at least 6 questions total
-       $totalQuestions = 0;
+       // Validate: at least 6 REQUIRED questions total
+       $totalRequiredQuestions = 0;
        foreach ($this->pages as $page) {
-           $totalQuestions += $page->questions->count();
+           // Only count questions where required = true
+           $totalRequiredQuestions += $page->questions->where('required', true)->count();
        }
        
-       if ($totalQuestions < 6) {
-           $this->dispatch('showErrorAlert', message: 'Your survey must have at least 6 questions before publishing.');
+       if ($totalRequiredQuestions < 6) {
+           $this->dispatch('showErrorAlert', message: 'Your survey must have at least 6 required questions before publishing. Please mark at least ' . (6 - $totalRequiredQuestions) . ' more questions as required.');
            return;
        }
 

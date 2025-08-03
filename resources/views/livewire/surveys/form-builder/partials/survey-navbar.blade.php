@@ -99,8 +99,8 @@
             @endif
 
 
-            {{-- Delete All Button - Only show when NOT ongoing --}}
-            @if($survey->status !== 'ongoing')
+            {{-- Delete All Button - Only show when NOT ongoing or finished --}}
+            @if($survey->status !== 'ongoing' && $survey->status !== 'finished')
                 <button
                     type="button"
                     x-on:click="confirmReset()"
@@ -115,8 +115,8 @@
                 </button>
             @endif
 
-            {{-- Survey Settings Button - Only show when NOT ongoing --}}
-            @if($survey->status !== 'ongoing')
+            {{-- Survey Settings Button - Only show when NOT ongoing or finished --}}
+            @if($survey->status !== 'ongoing' && $survey->status !== 'finished')
                 <button
                     x-data
                     x-on:click="$dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'})"
@@ -231,8 +231,8 @@
                         </button>
                     @endif
 
-                    {{-- Delete All Button - Only show when NOT ongoing --}}
-                    @if($survey->status !== 'ongoing')
+                    {{-- Delete All Button - Only show when NOT ongoing or finished --}}
+                    @if($survey->status !== 'ongoing' && $survey->status !== 'finished')
                         <button
                             type="button"
                             x-on:click="open = false; confirmReset()"
@@ -246,8 +246,8 @@
                         </button>
                     @endif
 
-                    {{-- Settings Button - Only show when NOT ongoing --}}
-                    @if($survey->status !== 'ongoing')
+                    {{-- Settings Button - Only show when NOT ongoing or finished --}}
+                    @if($survey->status !== 'ongoing' && $survey->status !== 'finished')
                         <button
                             x-data
                             x-on:click="open = false; $dispatch('open-modal', {name : 'survey-settings-modal-{{ $survey->id }}'})"

@@ -214,7 +214,20 @@
                                 @endif
                                 <button 
                                     type="button"
-                                    wire:click.prevent="toggleLockStatus"
+                                    x-data
+                                    x-on:click="Swal.fire({
+                                        title: 'Are you sure?',
+                                        text: '{{ $survey->is_locked ? 'Do you want to unlock this survey?' : 'Do you want to lock this survey?' }}',
+                                        icon: 'question',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '{{ $survey->is_locked ? '#3085d6' : '#d33' }}',
+                                        cancelButtonColor: '#aaa',
+                                        confirmButtonText: '{{ $survey->is_locked ? 'Yes, unlock it!' : 'Yes, lock it!' }}'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            $wire.toggleLockStatus();
+                                        }
+                                    })"
                                     wire:loading.attr="disabled"
                                     class="w-full py-2 rounded {{ 
                                         $survey->is_locked 
@@ -270,3 +283,7 @@
         </div>
     @endif
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endpush

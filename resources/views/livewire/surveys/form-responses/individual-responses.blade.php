@@ -11,7 +11,7 @@
                     {{-- Back and Go To Respondent container --}}
                     <div class="flex items-center space-x-2">
                         {{-- Back button to return to all responses view --}}
-                        <a href="{{ route('surveys.responses', $survey->id) }}"
+                        <a href="{{ route('surveys.responses', $survey->uuid) }}"
                            class="px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg shadow hover:bg-gray-200 flex items-center text-sm sm:text-base"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -31,9 +31,6 @@ class ManageVoucherModal extends Component
     public $totalVouchers;
     public $restockQuantity = 1;
     
-    public $showSuccess = false;
-    public $message = '';
-
     protected $rules = [
         'name' => 'required|string|max:255',
         'merchant_id' => 'required|exists:merchants,id',
@@ -85,48 +82,50 @@ class ManageVoucherModal extends Component
     {
         $this->validate();
         
-        $reward = Reward::findOrFail($this->rewardId);
-        $data = [
-            'name' => $this->name,
-            'description' => $this->description,
-            'status' => $this->status,
-            'cost' => $this->cost,
-            'quantity' => $this->quantity,
-            'rank_requirement' => $this->rank_requirement,
-            'merchant_id' => $this->merchant_id,
-        ];
-        
-        // Process image if a new one was uploaded
-        if ($this->image) {
-            // Delete old image if it exists
-            if ($reward->image_path && Storage::disk('public')->exists($reward->image_path)) {
-                Storage::disk('public')->delete($reward->image_path);
+        // Use a transaction to batch all DB operations together
+        \DB::transaction(function() {
+            $reward = Reward::findOrFail($this->rewardId);
+            $data = [
+                'name' => $this->name,
+                'description' => $this->description,
+                'status' => $this->status,
+                'cost' => $this->cost,
+                'quantity' => $this->quantity,
+                'rank_requirement' => $this->rank_requirement,
+                'merchant_id' => $this->merchant_id,
+            ];
+            
+            // Process image if a new one was uploaded
+            if ($this->image) {
+                // Delete old image if it exists
+                if ($reward->image_path && Storage::disk('public')->exists($reward->image_path)) {
+                    Storage::disk('public')->delete($reward->image_path);
+                }
+                
+                // Store new image
+                $imagePath = $this->image->store('reward-images', 'public');
+                $data['image_path'] = $imagePath;
+                $this->currentImage = $imagePath;
             }
             
-            // Store new image
-            $imagePath = $this->image->store('reward-images', 'public');
-            $data['image_path'] = $imagePath;
-            $this->currentImage = $imagePath;
-        }
+            $reward->update($data);
+            
+            // If this is a voucher reward, also update all related vouchers
+            if ($reward->type == 'voucher' || $reward->type == 'Voucher') {
+                Voucher::where('reward_id', $reward->id)
+                    ->update([
+                        'cost' => $reward->cost,
+                        'promo' => $reward->description,
+                        'image_path' => $reward->image_path,
+                    ]);
+            }
+        });
         
-        $reward->update($data);
-        
-        // If this is a voucher reward, also update all related vouchers
-        if ($reward->type == 'voucher' || $reward->type == 'Voucher') {
-            Voucher::where('reward_id', $reward->id)
-                ->update([
-                    'cost' => $reward->cost,
-                    'promo' => $reward->description,
-                    'image_path' => $reward->image_path,
-                ]);
-        }
-        
-        // Close modal and notify parent of update
+        // Dispatch event without message content
         $this->dispatch('reward-updated', [
-            'message' => 'Reward updated successfully.',
-            'rewardId' => $this->rewardId
+            'rewardId' => $this->rewardId,
+            'closeModal' => true
         ]);
-        $this->closeModal();
     }
     
     public function restockVouchers()
@@ -188,13 +187,18 @@ class ManageVoucherModal extends Component
             $createdCount++;
         }
         
-        // Update available vouchers count in the reward and sync the reward quantity
-        $this->refreshVoucherCounts();
-        $this->updateRewardQuantity($reward);
+        // Do all updates in a single transaction to avoid multiple renders
+        \DB::transaction(function() use ($reward, $createdCount) {
+            // Update available vouchers count in the reward and sync the reward quantity
+            $this->refreshVoucherCounts();
+            $this->updateRewardQuantity($reward);
+            
+            // Update local state manually to avoid another render
+            $this->restockQuantity = 1;
+        });
         
-        // Notify the parent component and close the modal
+        // Dispatch event without message content
         $this->dispatch('vouchers-restocked', [
-            'message' => "Successfully added {$createdCount} new vouchers.",
             'rewardId' => $this->rewardId
         ]);
     }
@@ -246,17 +250,39 @@ class ManageVoucherModal extends Component
     public function deleteReward()
     {
         $reward = Reward::findOrFail($this->rewardId);
-        // Delete all available vouchers for this reward
-        \App\Models\Voucher::where('reward_id', $reward->id)
-            ->where('availability', 'available')
-            ->delete();
-        $reward->delete();
-        $this->showSuccess = true;
-        $this->message = 'Reward deleted successfully.';
-        // Do not close the modal immediately
+        
+        // Use a transaction to batch DB operations
+        \DB::transaction(function() use ($reward) {
+            // Delete all available vouchers for this reward
+            \App\Models\Voucher::where('reward_id', $reward->id)
+                ->where('availability', 'available')
+                ->delete();
+            $reward->delete();
+        });
+        
+        // Single dispatch without message
         $this->dispatch('rewardDeleted');
+        
+        // Also dispatch to refresh the reward redemption index if needed
+        $this->dispatch('redemptionStatusUpdated');
     }
 
+    // Add this method to control when the component updates
+    public function dehydrate()
+    {
+        // This will execute right before Livewire sends the response back to the browser
+        // We can use it to debounce any pending updates
+    }
+    
+
+    
+    // Override the hydrate method to reset state
+    public function hydrate()
+    {
+        // Clear any pending rerenders that might cause flashing
+        $this->skipNextRender = false;
+    }
+    
     public function render()
     {
         $merchants = Merchant::orderBy('name')->get();

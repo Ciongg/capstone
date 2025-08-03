@@ -734,6 +734,13 @@ class AnswerSurvey extends Component
             if ($this->survey->target_respondents) {
                 $currentResponseCount = Response::where('survey_id', $this->survey->id)->count();
                 if ($currentResponseCount == $this->survey->target_respondents) {
+                    // Update survey status to finished when target is reached
+                    if (in_array($this->survey->status, ['published', 'ongoing'])) {
+                        $this->survey->status = 'finished';
+                        $this->survey->save();
+                        
+                    }
+                    
                     // Only send if not already notified (check for existing message)
                     $creatorId = $this->survey->user_id;
                     $existing = \App\Models\InboxMessage::where('recipient_id', $creatorId)

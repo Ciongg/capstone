@@ -25,6 +25,10 @@ class RewardRedemptionIndex extends Component
     
     protected $listeners = [
         'redemptionStatusUpdated' => '$refresh',
+        'reward-updated' => '$refresh',
+        'vouchers-restocked' => '$refresh',
+        'rewardDeleted' => '$refresh',
+        'voucherStatusUpdated' => '$refresh'
     ];
     
     protected $queryString = [

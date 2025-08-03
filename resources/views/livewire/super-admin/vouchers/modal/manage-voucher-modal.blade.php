@@ -1,10 +1,5 @@
 <div>
-    @if($showSuccess)
-        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
-            <p>{{ $message }}</p>
-            
-        </div>
-    @else
+
     <div class="space-y-6">
         <div>
             <h3 class="text-lg font-semibold mb-2">Update Reward</h3>
@@ -321,7 +316,6 @@
             </form>
         </div>
     </div>
-    @endif
 </div>
 
 @push('scripts')
