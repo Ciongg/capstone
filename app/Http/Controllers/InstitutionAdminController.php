@@ -22,4 +22,10 @@ class InstitutionAdminController extends Controller
         // Render the Livewire component for institution user surveys
         return view('institution-admin.show-institution-surveys');
     }
+
+    public function announcementIndex()
+    {
+        // Render the Livewire component for institution announcements
+        return view('institution-admin.show-announcements');
+    }
 }

@@ -1,7 +1,7 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" 
      x-data="{ 
          fullscreenImageSrc: null,
-         isFetchingMore: false, // Local flag to prevent multiple calls
+         isFetchingMore: false,
          isScrolledToBottom() {
              // Use document.documentElement.scrollHeight for total page height
              // and window.pageYOffset for scroll position for better reliability.
@@ -23,8 +23,13 @@
                 });
             }
         });
+        
+        // Auto-open announcement carousel if not seen and announcements exist
+        $nextTick(() => {
+            $dispatch('open-modal', { name: 'announcement-carousel-modal' });
+        });
      ">
-   
+
     {{--hides the scrollwheel in the topics bar--}}
     <style>
         .scrollbar-hide::-webkit-scrollbar {
@@ -125,6 +130,11 @@
             &times;
         </button>
     </div>
-</div>
 
+    <!-- Standard Announcement Modal -->
+    <x-modal name="announcement-carousel-modal" title="Announcements" focusable>
+        @livewire('super-admin.announcements.modal.announcement-carousel')
+    </x-modal>
+</div>
+                  
 

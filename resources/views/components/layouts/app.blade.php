@@ -158,6 +158,7 @@
                                                 <a href="/institution/analytics" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('institution/analytics')) }} hover:bg-gray-100">Analytics</a>
                                                 <a href="/institution/users" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('institution/users')) }} hover:bg-gray-100">Users</a>
                                                 <a href="/institution/surveys" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('institution/surveys')) }} hover:bg-gray-100">Surveys</a>
+                                                <a href="/institution/announcements" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('institution/announcements')) }} hover:bg-gray-100">Announcements</a>
                                             </div>
                                         </div>
                                     @else
@@ -193,6 +194,7 @@
                                         >
                                             <a href="/admin/analytics" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/analytics')) }} hover:bg-gray-100">Analytics</a>
                                             <a href="/admin/surveys" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/surveys*')) }} hover:bg-gray-100">Manage Surveys</a>
+                                            <a href="/admin/announcements" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/announcements')) }} hover:bg-gray-100">Manage Announcements</a>
                                             <a href="/admin/reward-redemptions" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->routeIs('admin.reward-redemptions.index')) }} hover:bg-gray-100">Manage Rewards</a>
                                             <a href="/admin/users" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/users*')) }} hover:bg-gray-100">Manage Users</a>
                                             <a href="/admin/requests" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/requests')) }} hover:bg-gray-100">Manage Support Request &</a>
@@ -311,6 +313,7 @@
                             <a href="/institution/analytics" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/analytics')) }} hover:text-[#03b8ff]">Analytics</a>
                             <a href="/institution/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/users')) }} hover:text-[#03b8ff]">Users</a>
                             <a href="/institution/surveys" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/surveys')) }} hover:text-[#03b8ff]">Surveys</a>
+                            <a href="/institution/announcements" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/announcements')) }} hover:text-[#03b8ff]">Announcements</a>
                         </div>
                         @else
                             {{-- Disabled links (if institution is invalid) --}}
@@ -330,6 +333,7 @@
                             <p class="font-semibold text-gray-700 mb-2">Manage</p>
                             <a href="/admin/analytics" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/analytics')) }} hover:text-[#03b8ff]">Analytics</a>
                             <a href="/admin/surveys" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/surveys*')) }} hover:text-[#03b8ff]">Manage Surveys</a>
+                            <a href="/admin/announcements" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/announcements')) }} hover:text-[#03b8ff]">Manage Announcements</a>
                             <a href="/admin/reward-redemptions" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->routeIs('admin.reward-redemptions.index')) }} hover:text-[#03b8ff]">Manage Rewards</a>
                             <a href="/admin/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/users*')) }} hover:text-[#03b8ff]">Manage Users</a>
                             <a href="/admin/requests" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/requests')) }} hover:text-[#03b8ff]">Manage Support Request</a>

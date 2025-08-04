@@ -11,6 +11,7 @@ use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\InstitutionAdminController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\InboxController; 
+use App\Http\Controllers\AnnouncementController;
 
 // ============================================================================
 // PUBLIC ROUTES (No authentication required)
@@ -83,6 +84,9 @@ Route::middleware(['auth', 'role:institution_admin'])->group(function () {
     Route::get('/institution/analytics', [InstitutionAdminController::class, 'analyticsIndex'])->name('institution.analytics');
     Route::get('/institution/users', [InstitutionAdminController::class, 'usersIndex'])->name('institution.users');
     Route::get('/institution/surveys', [InstitutionAdminController::class, 'surveysIndex'])->name('institution.surveys');
+    
+    // Institution admin announcement management
+    Route::get('/institution/announcements', [InstitutionAdminController::class, 'announcementIndex'])->name('institution.announcements');
 });
 
 // Super Admin Routes
@@ -92,6 +96,9 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::get('/users', [SuperAdminController::class, 'userIndex'])->name('users.index');
     Route::get('/surveys', [SuperAdminController::class, 'surveysIndex'])->name('surveys.index');
     Route::get('/requests', [SuperAdminController::class, 'supportRequestsIndex'])->name('support-requests.index');
+    
+    // Super admin announcement management
+    Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
     
     // User management routes
     Route::get('/users/{user:uuid}/profile', [SuperAdminController::class, 'userProfile'])->name('users.profile')->withTrashed();
