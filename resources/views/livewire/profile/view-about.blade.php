@@ -68,7 +68,7 @@
             @endif
         </div>
         
-        <form wire:submit.prevent="saveTags" class="space-y-4" x-data="{
+        <form wire:submit.prevent="saveDemographicTags" class="space-y-4" x-data="{
             confirmDemographicSave() {
                 Swal.fire({
                     title: 'Confirm Demographic Update',
@@ -83,7 +83,7 @@
                     focusConfirm: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        $wire.saveTags();
+                        $wire.saveDemographicTags();
                     }
                 });
             }
@@ -101,27 +101,6 @@
                     </select>
                 </div>
             @endforeach
-            
-            <!-- Institution Demographic Tags - Only shown if user belongs to an institution -->
-            @if(count($institutionTagCategories) > 0)
-                <div class="mt-6 pt-6 border-t border-gray-200">
-                    <h3 class="text-lg font-bold mb-4">{{ $user->institution->name ?? 'Institution' }} Demographics</h3>
-                    
-                    @foreach($institutionTagCategories as $category)
-                        <div class="mb-4">
-                            <label class="block font-semibold mb-1">{{ $category->name }}</label>
-                            <select wire:model.defer="selectedInstitutionTags.{{ $category->id }}" 
-                                    class="w-full border rounded px-3 py-2 @if(!$canUpdateDemographics) bg-gray-100 @endif"
-                                    {{ !$canUpdateDemographics ? 'disabled' : '' }}>
-                                <option value="">Select {{ $category->name }}</option>
-                                @foreach($category->tags as $tag)
-                                    <option value="{{ $tag->id }}">{{ $tag->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
 
             <div class="mb-4">
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800 rounded">
@@ -138,8 +117,8 @@
                 {{ !$canUpdateDemographics ? 'disabled' : '' }}
             >
                 <span class="flex items-center">
-                    <span wire:loading.remove wire:target="saveTags">Save Demographics</span>
-                    <span wire:loading wire:target="saveTags" class="flex items-center ml-2">
+                    <span wire:loading.remove wire:target="saveDemographicTags">Save Demographics</span>
+                    <span wire:loading wire:target="saveDemographicTags" class="flex items-center ml-2">
                         <svg class="animate-spin h-5 w-5 text-white mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -148,6 +127,80 @@
                 </span>
             </button>
         </form>
+            
+        <!-- Institution Demographic Tags - Only shown if user belongs to an institution -->
+        @if(count($institutionTagCategories) > 0)
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold">{{ $user->institution->name ?? 'Institution' }} Demographics</h3>
+                    @if($canUpdateInstitutionDemographics)
+                        <span class="text-green-500 text-sm font-medium">Available for update</span>
+                    @else
+                        <span class="text-red-500 text-sm font-medium italic">{{ $timeUntilInstitutionUpdateText }}</span>
+                    @endif
+                </div>
+                
+                <form wire:submit.prevent="saveInstitutionDemographicTags" class="space-y-4" x-data="{
+                    confirmInstitutionDemographicSave() {
+                        Swal.fire({
+                            title: 'Confirm Institution Demographic Update',
+                            html: '<div>Are you sure you want to update your institution demographic tags?<br><small>You will not be able to update them again for 4 months.</small></div>',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, update',
+                            cancelButtonText: 'Cancel',
+                            confirmButtonColor: '#10b981',
+                            cancelButtonColor: '#6b7280',
+                            reverseButtons: true,
+                            focusConfirm: false
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $wire.saveInstitutionDemographicTags();
+                            }
+                        });
+                    }
+                }">
+                    @foreach($institutionTagCategories as $category)
+                        <div class="mb-4">
+                            <label class="block font-semibold mb-1">{{ $category->name }}</label>
+                            <select wire:model.defer="selectedInstitutionTags.{{ $category->id }}" 
+                                    class="w-full border rounded px-3 py-2 @if(!$canUpdateInstitutionDemographics) bg-gray-100 @endif"
+                                    {{ !$canUpdateInstitutionDemographics ? 'disabled' : '' }}>
+                                <option value="">Select {{ $category->name }}</option>
+                                @foreach($category->tags as $tag)
+                                    <option value="{{ $tag->id }}">{{ $tag->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endforeach
+                
+                    <div class="mb-4">
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800 rounded">
+                            <strong>Note:</strong> Once added or updated, you will not be able to change your institution demographic tags again for 4 months. This is to ensure data integrity.
+                        </div>
+                    </div>
+                    
+                    <button 
+                        type="button"
+                        class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center @if(!$canUpdateInstitutionDemographics) opacity-50 cursor-not-allowed @endif"
+                        style="width: 240px;" 
+                        x-on:click="confirmInstitutionDemographicSave()"
+                        wire:loading.attr="disabled"
+                        {{ !$canUpdateInstitutionDemographics ? 'disabled' : '' }}
+                    >
+                        <span class="flex items-center">
+                            <span wire:loading.remove wire:target="saveInstitutionDemographicTags">Save Institution Demographics</span>
+                            <span wire:loading wire:target="saveInstitutionDemographicTags" class="flex items-center ml-2">
+                                <svg class="animate-spin h-5 w-5 text-white mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                            </span>
+                        </span>
+                    </button>
+                </form>
+            </div>
+        @endif
 
         @if (session()->has('tags_saved'))
             <div class="mt-4 bg-green-50 border-l-4 border-green-400 p-3 text-sm text-green-800 rounded">

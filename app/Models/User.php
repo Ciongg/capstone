@@ -50,6 +50,7 @@ class User extends Authenticatable
         'email_verified_at',
         'last_active_at', // Add this line
         'demographic_tags_updated_at', // Add this new field
+        'institution_demographic_tags_updated_at', // Add this field to fillable
         'profile_updated_at', // Add this new field
     ];
 
@@ -84,6 +85,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'last_active_at' => 'datetime', // Fix typo here
             'demographic_tags_updated_at' => 'datetime', // Add this new cast
+            'institution_demographic_tags_updated_at' => 'datetime', // Add this cast
             'profile_updated_at' => 'datetime', // Add this new cast
         ];
     }
@@ -327,5 +329,37 @@ public function getXpRequiredForNextLevel(): int
         $nextUpdateDate = $this->profile_updated_at->addDays($cooldownDays);
         
         return TestTimeService::now()->diffInDays($nextUpdateDate, false);
+    }
+    
+    // Add these methods to your User model
+
+    /**
+     * Check if user can update institution demographic tags
+     */
+    public function canUpdateInstitutionDemographicTags(): bool
+    {
+        // If the user has never updated institution demographic tags, they can update them
+        if (!$this->institution_demographic_tags_updated_at) {
+            return true;
+        }
+        
+        // Otherwise, check if the cooldown period has passed (120 days)
+        $cooldownDays = 120;
+        $nextUpdateDate = $this->institution_demographic_tags_updated_at->addDays($cooldownDays);
+        return TestTimeService::now()->gte($nextUpdateDate);
+    }
+
+    /**
+     * Get days until institution demographic tags update is available
+     */
+    public function getDaysUntilInstitutionDemographicTagsUpdateAvailable(): int
+    {
+        if ($this->canUpdateInstitutionDemographicTags()) {
+            return 0;
+        }
+        
+        $cooldownDays = 120;
+        $nextUpdateDate = $this->institution_demographic_tags_updated_at->addDays($cooldownDays);
+        return max(0, TestTimeService::now()->diffInDays($nextUpdateDate, false));
     }
 }

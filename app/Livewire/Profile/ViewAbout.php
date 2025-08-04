@@ -51,6 +51,11 @@ class ViewAbout extends Component
     public $resendCooldown = false;
     public $resendCooldownSeconds = 0;
     
+    // Add these properties for institution demographics
+    public $canUpdateInstitutionDemographics = false;
+    public $daysUntilInstitutionDemographicsUpdateAvailable = 0;
+    public $timeUntilInstitutionUpdateText = '';
+    
     protected $listeners = [
         'refresh-about-view' => 'refreshAboutView',
     ];
@@ -70,6 +75,10 @@ class ViewAbout extends Component
         // Check if the user can update demographics
         $this->canUpdateDemographics = $this->user->canUpdateDemographicTags();
         $this->calculateTimeUntilUpdate();
+        
+        // Check if the user can update institution demographics
+        $this->canUpdateInstitutionDemographics = $this->user->canUpdateInstitutionDemographicTags();
+        $this->calculateTimeUntilInstitutionUpdate();
         
         // Calculate potential trust score deductions using service
         $this->calculateTrustScoreDeductions();
@@ -155,6 +164,47 @@ class ViewAbout extends Component
             } else {
                 $minutes = max(1, (int) ceil($now->diffInMinutes($nextUpdateDate, false)));
                 $this->timeUntilUpdateText = "Available in {$minutes} " . ($minutes == 1 ? 'minute' : 'minutes');
+            }
+        }
+    }
+    
+    /**
+     * Calculate time until institution demographic update is available
+     */
+    protected function calculateTimeUntilInstitutionUpdate()
+    {
+        if ($this->canUpdateInstitutionDemographics) {
+            $this->timeUntilInstitutionUpdateText = 'Available now';
+            return;
+        }
+
+        $cooldownDays = 120;
+        $nextUpdateDate = $this->user->institution_demographic_tags_updated_at->addDays($cooldownDays);
+        $now = TestTimeService::now();
+        
+        // Check if we're very close to the target time (less than 30 seconds away)
+        if ($now->diffInSeconds($nextUpdateDate, false) < 30) {
+            $this->canUpdateInstitutionDemographics = true;
+            $this->timeUntilInstitutionUpdateText = 'Available now';
+            return;
+        }
+        
+        // Calculate time differences and create text similar to regular demographics
+        if ($now->diffInDays($nextUpdateDate, false) > 0) {
+            $days = (int) floor($now->diffInDays($nextUpdateDate, false));
+            $this->timeUntilInstitutionUpdateText = "Available in {$days} " . 
+                ($days == 1 ? 'day' : 'days');
+        } elseif ($now->diffInHours($nextUpdateDate, false) > 0) {
+            $hours = (int) floor($now->diffInHours($nextUpdateDate, false));
+            $this->timeUntilInstitutionUpdateText = "Available in {$hours} " . ($hours == 1 ? 'hour' : 'hours');
+        } else {
+            // If we're less than 1 minute away, just show "Available now"
+            if ($now->diffInMinutes($nextUpdateDate, false) < 1) {
+                $this->canUpdateInstitutionDemographics = true;
+                $this->timeUntilInstitutionUpdateText = 'Available now';
+            } else {
+                $minutes = max(1, (int) ceil($now->diffInMinutes($nextUpdateDate, false)));
+                $this->timeUntilInstitutionUpdateText = "Available in {$minutes} " . ($minutes == 1 ? 'minute' : 'minutes');
             }
         }
     }
@@ -279,6 +329,10 @@ class ViewAbout extends Component
         $this->canUpdateDemographics = $this->user->canUpdateDemographicTags();
         $this->calculateTimeUntilUpdate();
         
+        // Update institution demographic update status
+        $this->canUpdateInstitutionDemographics = $this->user->canUpdateInstitutionDemographicTags();
+        $this->calculateTimeUntilInstitutionUpdate();
+        
         // Reload tag and institution data as in mount
         $this->tagCategories = TagCategory::with('tags')->get();
         $userTags = $this->user->tags()->pluck('tags.id')->toArray();
@@ -307,7 +361,10 @@ class ViewAbout extends Component
         }
     }
 
-    public function saveTags()
+    /**
+     * Save regular demographic tags
+     */
+    public function saveDemographicTags()
     {
         // Check if user can update tags
         if (!$this->canUpdateDemographics) {
@@ -331,32 +388,59 @@ class ViewAbout extends Component
         // Sync regular tags
         $this->user->tags()->sync($tagsToSync);
         
-        // Process institution tags if applicable
-        if ($this->user->institution_id && !empty($this->selectedInstitutionTags)) {
-            $institutionTagsToSync = [];
-            foreach ($this->selectedInstitutionTags as $categoryId => $tagId) {
-                if (!empty($tagId)) {
-                    // Get tag name for denormalization
-                    $tag = InstitutionTag::find($tagId);
-                    if ($tag) {
-                        $institutionTagsToSync[$tagId] = ['tag_name' => $tag->name];
-                    }
-                }
-            }
-            
-            // Sync institution tags
-            $this->user->institutionTags()->sync($institutionTagsToSync);
-        }
-        
         // Update the demographic_tags_updated_at timestamp
         $this->user->demographic_tags_updated_at = TestTimeService::now();
         $this->user->save();
         
         // Update local properties
         $this->canUpdateDemographics = $this->user->canUpdateDemographicTags();
-        $this->daysUntilDemographicsUpdateAvailable = $this->user->getDaysUntilDemographicTagsUpdateAvailable();
+        $this->calculateTimeUntilUpdate();
         
         session()->flash('tags_saved', 'Your demographic information has been updated successfully! You can update it again in ' . 
+            $this->demographicUpdateCooldownDays . ' days.');
+    }
+
+    /**
+     * Save institution demographic tags
+     */
+    public function saveInstitutionDemographicTags()
+    {
+        // Check if user belongs to an institution
+        if (!$this->user->institution_id) {
+            session()->flash('error', 'You do not belong to any institution.');
+            return;
+        }
+        
+        // Check if user can update institution tags
+        if (!$this->canUpdateInstitutionDemographics) {
+            session()->flash('error', 'You cannot update your institution demographic information at this time.');
+            return;
+        }
+        
+        // Process institution tags
+        $institutionTagsToSync = [];
+        foreach ($this->selectedInstitutionTags as $categoryId => $tagId) {
+            if (!empty($tagId)) {
+                // Get tag name for denormalization
+                $tag = InstitutionTag::find($tagId);
+                if ($tag) {
+                    $institutionTagsToSync[$tagId] = ['tag_name' => $tag->name];
+                }
+            }
+        }
+        
+        // Sync institution tags
+        $this->user->institutionTags()->sync($institutionTagsToSync);
+        
+        // Update the institution_demographic_tags_updated_at timestamp
+        $this->user->institution_demographic_tags_updated_at = TestTimeService::now();
+        $this->user->save();
+        
+        // Update local properties
+        $this->canUpdateInstitutionDemographics = $this->user->canUpdateInstitutionDemographicTags();
+        $this->calculateTimeUntilInstitutionUpdate();
+        
+        session()->flash('tags_saved', 'Your institution demographic information has been updated successfully! You can update it again in ' . 
             $this->demographicUpdateCooldownDays . ' days.');
     }
 
@@ -376,6 +460,8 @@ class ViewAbout extends Component
             'canUpdateDemographics' => $this->canUpdateDemographics,
             'daysUntilDemographicsUpdateAvailable' => $this->daysUntilDemographicsUpdateAvailable,
             'timeUntilUpdateText' => $this->timeUntilUpdateText,
+            'canUpdateInstitutionDemographics' => $this->canUpdateInstitutionDemographics,
+            'timeUntilInstitutionUpdateText' => $this->timeUntilInstitutionUpdateText,
         ]);
     }
 }
