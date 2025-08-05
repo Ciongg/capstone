@@ -62,6 +62,12 @@ class SurveyController extends Controller
         if ($survey->isLocked()) {
             abort(403, 'This survey has been locked by an administrator.');
         }
+
+        // Check if survey is not started yet - using TestTimeService for consistency
+        if ($survey->start_date && TestTimeService::now()->lt($survey->start_date)) {
+            $start = \Carbon\Carbon::parse($survey->start_date)->format('M j, Y g:i A');
+            abort(403, "This survey will start accepting responses on $start.");
+        }
         
         // Check if survey is expired - using TestTimeService for consistency
         if ($survey->end_date && TestTimeService::now()->gt($survey->end_date)) {

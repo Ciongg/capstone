@@ -136,13 +136,19 @@ class SurveySettingsModal extends Component
     public function saveSurveyInformation()
     {
         try {
-            // Add validation rules with more specific time validation
-            $this->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'nullable|string',
+            // Create validation rules array
+            $validationRules = [
+                'title' => 'required|string|max:256',
+                'description' => 'nullable|string|max:2046',
                 'type' => 'required|in:basic,advanced',
-                'target_respondents' => 'nullable|integer|min:1',
-                'start_date' => [
+                'target_respondents' => 'nullable|integer|min:1|max:1000',
+                'survey_topic_id' => 'nullable|exists:survey_topic,id',
+                'banner_image' => 'nullable|image|max:2048', // 2MB max
+            ];
+            
+            // Only validate start_date if survey is NOT published yet
+            if ($this->survey->status === 'pending') {
+                $validationRules['start_date'] = [
                     'nullable',
                     'date',
                     function ($attribute, $value, $fail) {
@@ -153,49 +159,101 @@ class SurveySettingsModal extends Component
                                 
                                 if ($startDate->lt($minAllowedTime)) {
                                     $fail('The start date must be at least 5 minutes in the future.');
-                                }
-                            } catch (\Exception $e) {
-                                $fail('Please provide a valid date and time.');
                             }
+                        } catch (\Exception $e) {
+                            $fail('Please provide a valid date and time.');
                         }
                     }
-                ],
-                'end_date' => [
-                    'nullable',
-                    'date',
-                    function ($attribute, $value, $fail) {
-                        if ($value && $this->start_date) {
-                            try {
-                                $startDate = Carbon::createFromFormat('Y-m-d\TH:i', $this->start_date, 'Asia/Manila');
-                                $endDate = Carbon::createFromFormat('Y-m-d\TH:i', $value, 'Asia/Manila');
-                                
-                                if ($endDate->lte($startDate)) {
-                                    $fail('The end date must be after the start date.');
-                                }
-                            } catch (\Exception $e) {
-                                $fail('Please provide a valid date and time.');
+                    }
+                ];
+            }
+            
+            // Always validate end_date, but with different rules based on start_date and status
+            $validationRules['end_date'] = [
+                'nullable',
+                'date',
+                function ($attribute, $value, $fail) {
+                    if (!$value) return; // Skip if no end date
+                    
+                    try {
+                        $endDate = Carbon::createFromFormat('Y-m-d\TH:i', $value, 'Asia/Manila');
+                        
+                        // Check if survey already published - then only compare with now
+                        if (in_array($this->survey->status, ['published', 'ongoing'])) {
+                            $minAllowedTime = Carbon::now('Asia/Manila');
+                            if ($endDate->lt($minAllowedTime)) {
+                                $fail('The end date must be in the future.');
                             }
-                        } elseif ($value && !$this->start_date) {
-                            try {
-                                // If no start date but has end date, end date must be at least 5 minutes in future
-                                $endDate = Carbon::createFromFormat('Y-m-d\TH:i', $value, 'Asia/Manila');
-                                $minAllowedTime = Carbon::now('Asia/Manila')->addMinutes(5);
-                                
-                                if ($endDate->lt($minAllowedTime)) {
-                                    $fail('The end date must be at least 5 minutes in the future.');
-                                }
-                            } catch (\Exception $e) {
-                                $fail('Please provide a valid date and time.');
+                        } 
+                        // Survey pending and has start date - check against start date
+                        elseif ($this->start_date) {
+                            $startDate = Carbon::createFromFormat('Y-m-d\TH:i', $this->start_date, 'Asia/Manila');
+                            if ($endDate->lte($startDate)) {
+                                $fail('The end date must be after the start date.');
+                            }
+                        } 
+                        // Survey pending, no start date - check against now + 5 min
+                        else {
+                            $minAllowedTime = Carbon::now('Asia/Manila')->addMinutes(5);
+                            if ($endDate->lt($minAllowedTime)) {
+                                $fail('The end date must be at least 5 minutes in the future.');
                             }
                         }
+                    } catch (\Exception $e) {
+                        $fail('Please provide a valid date and time.');
                     }
-                ],
-                'survey_topic_id' => 'nullable|exists:survey_topic,id',
-                'banner_image' => 'nullable|image|max:2048', // 2MB max
-            ], [
+                }
+            ];
+            
+            // Run validation
+            $this->validate($validationRules, [
                 'start_date.date' => 'Please provide a valid date and time.',
                 'end_date.date' => 'Please provide a valid date and time.',
             ]);
+
+            // Special validation for surveys with start date - only for pending surveys
+            if ($this->start_date && $this->survey->status === 'pending') {
+                // Force a fresh load of the survey with all relationships to ensure accurate counts
+                $this->survey->load(['pages.questions']);
+                
+                // Validate: at least 1 page
+                if ($this->survey->pages->isEmpty()) {
+                    $this->dispatch('showErrorAlert', message: 'You must have at least 1 page in your survey before setting a start date.');
+                    return;
+                }
+
+                // Validate: at least 6 REQUIRED questions total
+                $totalRequiredQuestions = 0;
+                foreach ($this->survey->pages as $page) {
+                    // Only count questions where required = true
+                    $totalRequiredQuestions += $page->questions->where('required', true)->count();
+                }
+                
+                if ($totalRequiredQuestions < 6) {
+                    $this->dispatch('showErrorAlert', message: 'Your survey must have at least 6 required questions before setting a start date. Please mark at least ' . (6 - $totalRequiredQuestions) . ' more questions as required.');
+                    return;
+                }
+
+                // Prevent setting start date for advanced survey if no demographic is set
+                if ($this->type === 'advanced') {
+                    // Force a refresh of tag relationships
+                    $this->survey->load(['tags', 'institutionTags']);
+                    
+                    if ($this->isInstitutionOnly) {
+                        // Institution-only: require at least one institution tag
+                        if ($this->survey->institutionTags->isEmpty()) {
+                            $this->dispatch('showErrorAlert', message: 'You must set at least one demographic (institution tag) before setting a start date for an advanced survey.');
+                            return;
+                        }
+                    } else {
+                        // Public: require at least one general tag
+                        if ($this->survey->tags->isEmpty()) {
+                            $this->dispatch('showErrorAlert', message: 'You must set at least one demographic (general tag) before setting a start date for an advanced survey.');
+                            return;
+                        }
+                    }
+                }
+            }
 
             // If validation passes, proceed with saving
             if ($this->survey) {
@@ -208,8 +266,14 @@ class SurveySettingsModal extends Component
                     $this->survey->image_path = $path;
                 }
 
-                // Convert datetime-local format to proper datetime for database with timezone
-                $startDate = $this->start_date ? Carbon::createFromFormat('Y-m-d\TH:i', $this->start_date, 'Asia/Manila') : null;
+                // When survey is published, preserve the original start_date
+                if (in_array($this->survey->status, ['published', 'ongoing'])) {
+                    // Don't update start_date if already published
+                    $startDate = $this->survey->start_date;
+                } else {
+                    $startDate = $this->start_date ? Carbon::createFromFormat('Y-m-d\TH:i', $this->start_date, 'Asia/Manila') : null;
+                }
+                
                 $endDate = $this->end_date ? Carbon::createFromFormat('Y-m-d\TH:i', $this->end_date, 'Asia/Manila') : null;
 
                 // Save other fields
@@ -243,7 +307,7 @@ class SurveySettingsModal extends Component
 
                 // Dispatch events only on successful save - use save status with custom message
                 $this->dispatch('setSaveStatus', status: 'saved', message: 'New settings saved!')->to(FormBuilder::class);
-            $this->dispatch('surveySettingsUpdated', surveyId: $surveyId)->to(FormBuilder::class);
+                $this->dispatch('surveySettingsUpdated', surveyId: $surveyId)->to(FormBuilder::class);
                 $this->dispatch('surveyTitleUpdated', title: $this->title)->to(FormBuilder::class);
                 $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
             }
@@ -351,11 +415,15 @@ class SurveySettingsModal extends Component
         $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
     }
 
+    // Helper method to show error alerts with SweetAlert2
+    private function showErrorAlert($message)
+    {
+        $this->dispatch('showErrorAlert', message: $message);
+    }
+
     public function render()
     {
         return view('livewire.surveys.form-builder.modal.survey-settings-modal');
     }
 }
-
-
 

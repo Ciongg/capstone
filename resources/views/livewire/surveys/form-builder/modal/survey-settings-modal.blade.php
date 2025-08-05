@@ -1,4 +1,4 @@
-<div x-data="{ tab: 'info' }" class="space-y-4 p-4">
+<div x-data="{ tab: 'info', isDisabled: @js(in_array($survey->status, ['ongoing', 'finished'])) }" class="space-y-4 p-4">
 
     <!-- Tab Buttons -->
     <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mb-4 w-full">
@@ -56,6 +56,7 @@
                         id="institution-only-{{ $survey->id }}" 
                         wire:model.defer="isInstitutionOnly"
                         class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                        x-bind:disabled="isDisabled"
                     >
                     <label for="institution-only-{{ $survey->id }}" class="ml-2 text-sm font-medium text-gray-900">
                         Make this survey institution-only
@@ -76,6 +77,7 @@
                         id="announce-on-publish-{{ $survey->id }}" 
                         wire:model.defer="isAnnounced"
                         class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                        x-bind:disabled="isDisabled"
                     >
                     <label for="announce-on-publish-{{ $survey->id }}" class="ml-2 text-sm font-medium text-blue-900">
                         Create an announcement on publish
@@ -98,13 +100,16 @@
                         </svg>
                     </div>
                 </div>
-                <button 
-                    type="button" 
-                    x-on:click="$dispatch('open-modal', {name : 'survey-boost-modal-{{ $survey->id }}'})"
-                    class="px-4 py-2 bg-[#03b8ff] hover:bg-[#0295d1] text-white font-medium rounded transition duration-200 text-sm w-full sm:w-auto"
-                >
-                    Allocate Points
-                </button>
+                {{-- Only show Allocate Points button if not ongoing or finished --}}
+                <template x-if="!isDisabled">
+                    <button 
+                        type="button" 
+                        x-on:click="$dispatch('open-modal', {name : 'survey-boost-modal-{{ $survey->id }}'})"
+                        class="px-4 py-2 bg-[#03b8ff] hover:bg-[#0295d1] text-white font-medium rounded transition duration-200 text-sm w-full sm:w-auto"
+                    >
+                        Allocate Points
+                    </button>
+                </template>
             </div>
             
             <div class="text-xs text-gray-500 mb-4">
@@ -119,7 +124,8 @@
                 <label class="block font-semibold mb-2 text-center">Survey Banner Image</label>
                 <div class="flex flex-col items-center justify-center w-full">
                     {{-- Custom styled label acting as the input area --}}
-                    <label for="banner-{{ $survey->id }}" class="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                    <label for="banner-{{ $survey->id }}" class="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+                          x-bind:class="{ 'opacity-50 cursor-not-allowed': isDisabled }">
                         <div class="flex flex-col items-center justify-center pt-5 pb-6">
                             {{-- Icon --}}
                             <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
@@ -135,7 +141,8 @@
                                class="hidden"
                                wire:model.defer="banner_image"
                                accept="image/*"
-                               @change="fileName = $event.target.files[0] ? $event.target.files[0].name : ''" />
+                               @change="fileName = $event.target.files[0] ? $event.target.files[0].name : ''"
+                               x-bind:disabled="isDisabled" />
                     </label>
 
                     {{-- Loading Indicator --}}
@@ -160,31 +167,45 @@
             <!-- Survey Title -->
             <div>
                 <label for="survey-title-{{ $survey->id }}" class="block font-semibold mb-1">Survey Title</label>
-                <input type="text" id="survey-title-{{ $survey->id }}" wire:model.defer="title" class="w-full border rounded px-3 py-2" />
+                <input type="text" id="survey-title-{{ $survey->id }}" wire:model.defer="title" class="w-full border rounded px-3 py-2" x-bind:disabled="isDisabled" />
                 @error('title') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
             <!-- Survey Description -->
             <div>
                 <label for="survey-description-{{ $survey->id }}" class="block font-semibold mb-1">Survey Description</label>
-                <textarea id="survey-description-{{ $survey->id }}" wire:model.defer="description" class="w-full border rounded px-3 py-2" rows="3"></textarea>
+                <textarea id="survey-description-{{ $survey->id }}" wire:model.defer="description" class="w-full border rounded px-3 py-2" rows="3" x-bind:disabled="isDisabled"></textarea>
                 @error('description') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
             <!-- Survey Type -->
             <div>
                 <label for="survey-type-{{ $survey->id }}" class="block font-semibold mb-1">Survey Type</label>
-                <select id="survey-type-{{ $survey->id }}" wire:model.defer="type" class="w-full border rounded px-3 py-2">
+                <select id="survey-type-{{ $survey->id }}" wire:model.defer="type" class="w-full border rounded px-3 py-2" x-bind:disabled="isDisabled">
                     <option value="basic">Basic Survey</option>
                     <option value="advanced">Advanced Survey</option>
                 </select>
                 @error('type') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
-
+            
+            <div>
+                <label class="block font-semibold mb-1">Target Respondents</label>
+                <input 
+                    type="number" 
+                    wire:model.defer="target_respondents" 
+                    class="w-full border rounded px-3 py-2" 
+                    min="1" 
+                    max="1000" 
+                    step="1"
+                    x-bind:disabled="isDisabled" 
+                />
+                @error('target_respondents') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+            </div>
+            
             <!-- Survey Topic -->
             <div>
                 <label for="survey-topic-{{ $survey->id }}" class="block font-semibold mb-1">Survey Topic</label>
-                <select id="survey-topic-{{ $survey->id }}" wire:model.defer="survey_topic_id" class="w-full border rounded px-3 py-2">
+                <select id="survey-topic-{{ $survey->id }}" wire:model.defer="survey_topic_id" class="w-full border rounded px-3 py-2" x-bind:disabled="isDisabled">
                     <option value="">Select a Topic</option>
                     @foreach($topics as $topic)
                         <option value="{{ $topic->id }}">{{ $topic->name }}</option>
@@ -193,11 +214,6 @@
                 @error('survey_topic_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
-            <div>
-                <label class="block font-semibold mb-1">Target Respondents</label>
-                <input type="number" wire:model.defer="target_respondents" class="w-full border rounded px-3 py-2" min="1" />
-            </div>
-            
             <!-- Date Inputs - Fixed to use Livewire models -->
             <div x-data="{
                 currentTime: new Date().toISOString().slice(0, 16),
@@ -219,17 +235,33 @@
                 }
             }" x-init="$nextTick(() => updateEndDateConstraints())">
                 <div class="mb-4">
-                    <label class="block font-semibold mb-1">Start Date</label>
-                    <input 
-                        type="datetime-local" 
-                        wire:model.defer="start_date"
-                        x-ref="startDateInput"
-                        class="w-full border rounded px-3 py-2"
-                        x-init="$el.min = currentTime; $el.setAttribute('min', currentTime);"
-                        :min="currentTime"
-                        @input="updateEndDateConstraints()"
-                        @change="updateEndDateConstraints()"
-                    />
+                    <label class="block font-semibold mb-1">Start Date <span class="text-sm text-gray-500 italic">(Make sure all settings are complete before setting this. Once saved, the survey will auto-open on the start date.)</span></label> 
+                    <div class="flex flex-col space-y-2">
+                        <input 
+                            type="datetime-local" 
+                            wire:model.defer="start_date"
+                            x-ref="startDateInput"
+                            class="w-full border rounded px-3 py-2"
+                            x-init="$el.min = currentTime; $el.setAttribute('min', currentTime);"
+                            :min="currentTime"
+                            @input="updateEndDateConstraints()"
+                            @change="updateEndDateConstraints()"
+                            x-bind:disabled="isDisabled || @js($survey->status === 'published' || $survey->status === 'ongoing')"
+                        />
+                        @if($survey->status === 'pending')
+                        <div class="text-amber-600 text-xs flex items-start">
+                            <span>
+                               The survey will auto-publish on the start date.
+                               Must have 1 page, 6 required questions, and valid demographics for advanced surveys to enable saving.
+                            </span>
+                        </div>
+                        @endif
+                        @if($survey->status === 'published' || $survey->status === 'ongoing')
+                            <div class="text-blue-600 text-xs">
+                                Start date cannot be modified for published surveys.
+                            </div>
+                        @endif
+                    </div>
                     @error('start_date') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                 </div>
                 
@@ -244,16 +276,26 @@
                             const startInput = $refs.startDateInput;
                             $el.min = (startInput && startInput.value) ? startInput.value : currentTime; 
                         })"
+                        x-bind:disabled="isDisabled"
                     />
                     @error('end_date') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                 </div>
             </div>
             
-            {{-- Save Button for Information --}}
-            <button type="submit" class="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                <span wire:loading.remove wire:target="saveSurveyInformation">Save Information</span>
-                <span wire:loading wire:target="saveSurveyInformation">Saving...</span>
-            </button>
+            {{-- Save Button for Information - Only show when not ongoing or finished --}}
+            <div x-show="!isDisabled">
+                <button type="submit" class="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                    <span wire:loading.remove wire:target="saveSurveyInformation">Save Information</span>
+                    <span wire:loading wire:target="saveSurveyInformation">Saving...</span>
+                </button>
+            </div>
+            
+            {{-- Read-only message for ongoing/finished surveys --}}
+            <div x-show="isDisabled" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-sm text-yellow-700">
+                    This survey is {{ $survey->status }} and cannot be edited. You can view the settings but not modify them.
+                </p>
+            </div>
         </form>
     </div>
 
@@ -272,6 +314,7 @@
                                     value="{{ $tag->id }}" 
                                     wire:model.live="selectedSurveyTags.{{ $category->id }}" 
                                     class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                    x-bind:disabled="isDisabled"
                                 >
                                 <label for="survey-tag-{{ $tag->id }}" class="ml-2 text-sm font-medium text-gray-700">
                                     {{ $tag->name }}
@@ -281,10 +324,21 @@
                     </div>
                 </div>
             @endforeach
-            <button type="submit" class="mt-6 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-medium">
-                <span wire:loading.remove wire:target="saveSurveyTags">Save Demographics</span>
-                <span wire:loading wire:target="saveSurveyTags">Saving...</span>
-            </button>
+            
+            {{-- Save Button for Demographics - Only show when not ongoing or finished --}}
+            <div x-show="!isDisabled">
+                <button type="submit" class="mt-6 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-medium">
+                    <span wire:loading.remove wire:target="saveSurveyTags">Save Demographics</span>
+                    <span wire:loading wire:target="saveSurveyTags">Saving...</span>
+                </button>
+            </div>
+            
+            {{-- Read-only message for ongoing/finished surveys --}}
+            <div x-show="isDisabled" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-sm text-yellow-700">
+                    This survey is {{ $survey->status }} and cannot be edited. You can view the demographic settings but not modify them.
+                </p>
+            </div>
         </form>
     </div>
 
@@ -335,6 +389,7 @@
                                         value="{{ $tag->id }}" 
                                         wire:model.live="selectedInstitutionTags.{{ $category->id }}" 
                                         class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                        x-bind:disabled="isDisabled"
                                     >
                                     <label for="institution-tag-{{ $tag->id }}" class="ml-2 text-sm font-medium text-gray-700">
                                         {{ $tag->name }}
@@ -345,10 +400,20 @@
                     </div>
                 @endforeach
                 
-                <button type="submit" class="mt-6 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-medium">
-                    <span wire:loading.remove wire:target="saveInstitutionTags">Save Institution Demographics</span>
-                    <span wire:loading wire:target="saveInstitutionTags">Saving...</span>
-                </button>
+                {{-- Save Button for Institution Demographics - Only show when not ongoing or finished --}}
+                <div x-show="!isDisabled">
+                    <button type="submit" class="mt-6 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-medium">
+                        <span wire:loading.remove wire:target="saveInstitutionTags">Save Institution Demographics</span>
+                        <span wire:loading wire:target="saveInstitutionTags">Saving...</span>
+                    </button>
+                </div>
+                
+                {{-- Read-only message for ongoing/finished surveys --}}
+                <div x-show="isDisabled" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-sm text-yellow-700">
+                        This survey is {{ $survey->status }} and cannot be edited. You can view the institution demographic settings but not modify them.
+                    </p>
+                </div>
             @endif
         </form>
     </div>
@@ -376,4 +441,19 @@
     <x-modal name="survey-boost-modal-{{ $survey->id }}" title="Survey Boost Allocation">
         @livewire('surveys.form-builder.modal.survey-boost-modal', ['survey' => $survey], key('survey-boost-modal-' . $survey->id))
     </x-modal>
+
+    <!-- SweetAlert2 event listener for validation errors -->
+    <script>
+        document.addEventListener('livewire:initialized', () => {
+            Livewire.on('showErrorAlert', (data) => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: data.message || 'An error occurred.',
+                    confirmButtonColor: '#e3342f',
+                });
+            });
+        });
+    </script>
+
 </div>

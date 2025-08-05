@@ -18,15 +18,24 @@ class ViewSurveyModal extends Component
         $this->survey = Survey::with(['responses'])->findOrFail($surveyId);
 
         // Skip if already locked
-        if (isset($this->survey->is_demographic_locked) && isset($this->survey->is_institution_locked) && isset($this->survey->is_expired_locked) && isset($this->survey->is_response_limit_locked)) {
+        if (isset($this->survey->is_demographic_locked) && isset($this->survey->is_institution_locked) && isset($this->survey->is_expired_locked) && isset($this->survey->is_response_limit_locked) && isset($this->survey->is_not_started_locked)) {
             return;
         }
 
         $user = Auth::user();
         $userInstitutionId = $user?->institution_id;
+        
+        $now = \App\Services\TestTimeService::now();
+
+        // Not Started Lock - Check if start date is in the future
+        if ($this->survey->start_date && $this->survey->start_date > $now) {
+            $this->survey->is_not_started_locked = true;
+        } else {
+            $this->survey->is_not_started_locked = false;
+        }
 
         // Expiration Lock - Use TestTimeService consistently
-        if ($this->survey->end_date && $this->survey->end_date < \App\Services\TestTimeService::now()) {
+        if ($this->survey->end_date && $this->survey->end_date < $now) {
             $this->survey->is_expired_locked = true;
         } else {
             $this->survey->is_expired_locked = false;

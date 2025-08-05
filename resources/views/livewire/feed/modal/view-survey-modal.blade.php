@@ -124,7 +124,18 @@
 
         <!-- Answer Button -->
         <div class="flex justify-center sm:justify-end flex-shrink-0">
-            @if($survey->is_expired_locked ?? false)
+            @if($survey->is_not_started_locked ?? false)
+                <!-- Locked due to survey not started yet -->
+                <button 
+                    class="flex items-center w-full sm:w-auto justify-center px-4 sm:px-6 py-3 sm:py-2 bg-gray-300 text-gray-600 font-semibold rounded-lg cursor-not-allowed text-sm sm:text-base"
+                    disabled
+                >
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Survey Not Started Yet
+                </button>
+            @elseif($survey->is_expired_locked ?? false)
                 <!-- Locked due to expiration -->
                 <button 
                     class="flex items-center w-full sm:w-auto justify-center px-4 sm:px-6 py-3 sm:py-2 bg-gray-300 text-gray-600 font-semibold rounded-lg cursor-not-allowed text-sm sm:text-base"

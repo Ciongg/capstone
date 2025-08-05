@@ -20,7 +20,7 @@ return new class extends Migration
             $table->enum('status', ['pending', 'published', 'ongoing', 'finished'])->default('pending');
             $table->enum('type', ['basic', 'advanced'])->default('basic');
             $table->foreignId('survey_topic_id')->nullable()->constrained('survey_topic')->nullOnDelete();
-
+            
             // Survey Settings
             $table->boolean('is_institution_only')->default(false);
             $table->boolean('is_locked')->default(false); // Added for lock/unlock functionality

@@ -395,7 +395,18 @@ class Index extends Component
         });
     }
 
-    // Load surveys based on filters - Modified to handle response limit and expiration locks
+    // Add a new helper method to mark surveys that haven't started yet
+    private function markNotStartedSurveys($surveys)
+    {
+        $now = TestTimeService::now();
+        
+        return $surveys->each(function ($survey) use ($now) {
+            $isNotStarted = $survey->start_date && $now->lt($survey->start_date);
+            $survey->is_not_started_locked = $isNotStarted;
+        });
+    }
+
+    // Load surveys based on filters - Add not started check
     protected function loadSurveys($append = false)
     {
         // Get authenticated user
@@ -455,6 +466,7 @@ class Index extends Component
         $combinedSurveys = $this->markLockedInstitutionSurveys($combinedSurveys, $user, $userInstitutionId);
         $combinedSurveys = $this->markExpiredSurveys($combinedSurveys);
         $combinedSurveys = $this->markResponseLimitReachedSurveys($combinedSurveys);
+        $combinedSurveys = $this->markNotStartedSurveys($combinedSurveys); // Add the new check
         
         // STEP 5: Apply answerable only filter if enabled
         if ($this->activeFilters['answerableOnly']) {
@@ -462,7 +474,8 @@ class Index extends Component
                 return !$survey->is_demographic_locked 
                     && !$survey->is_institution_locked 
                     && !$survey->is_expired_locked 
-                    && !$survey->is_response_limit_locked;
+                    && !$survey->is_response_limit_locked
+                    && !$survey->is_not_started_locked; // Add the new condition
             });
         }
         
