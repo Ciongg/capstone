@@ -88,7 +88,12 @@
                 </div>
                 
                 <!-- Target Audience - Enhanced Version -->
-                <div>
+                <div x-data="{
+                        targetAudience: @entangle('targetAudience').defer,
+                        showInstitutionDropdown: @js(auth()->user()->hasRole('super_admin')) && @entangle('targetAudience').defer === 'institution_specific'
+                    }" 
+                    x-init="$watch('targetAudience', value => { showInstitutionDropdown = value === 'institution_specific' })"
+                >
                     <label class="block text-sm font-medium text-gray-700 mb-2">Target Audience</label>
                     <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg w-full">
                         <div class="space-y-3">
@@ -100,6 +105,7 @@
                                     wire:model.live="targetAudience" 
                                     value="public"
                                     class="w-5 h-5 text-blue-600 rounded-full focus:ring-blue-500"
+                                    x-model="targetAudience"
                                 >
                                 <label for="audience-public" class="ml-2 text-sm font-medium text-gray-900">
                                     Public (All Users)
@@ -119,6 +125,7 @@
                                     wire:model.live="targetAudience" 
                                     value="institution_specific"
                                     class="w-5 h-5 text-blue-600 rounded-full focus:ring-blue-500"
+                                    x-model="targetAudience"
                                 >
                                 <label for="audience-institution" class="ml-2 text-sm font-medium text-gray-900">
                                     Institution Specific
@@ -130,27 +137,25 @@
                         </div>
                     </div>
                     @error('targetAudience') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+
+                    <!-- Institution Selection (only when institution_specific is selected and user is super_admin) -->
+                    @if(auth()->user()->hasRole('super_admin'))
+                        <div x-show="showInstitutionDropdown" x-transition>
+                            <label for="institutionId" class="block text-sm font-medium text-gray-700 mb-1">Institution</label>
+                            <select
+                                id="institutionId"
+                                wire:model="institutionId"
+                                class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                            >
+                                <option value="">Select Institution</option>
+                                @foreach($institutions as $institution)
+                                    <option value="{{ $institution->id }}">{{ $institution->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('institutionId') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                    @endif
                 </div>
-                
-                <!-- Institution Selection (only when institution_specific is selected) -->
-                @if(auth()->user()->hasRole('super_admin'))
-                <div x-data="{ show: '{{ $targetAudience }}' === 'institution_specific' }" 
-                     x-show="show"
-                     @update-target-audience.window="show = $event.detail === 'institution_specific'">
-                    <label for="institutionId" class="block text-sm font-medium text-gray-700 mb-1">Institution</label>
-                    <select
-                        id="institutionId"
-                        wire:model="institutionId"
-                        class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-                    >
-                        <option value="">Select Institution</option>
-                        @foreach($institutions as $institution)
-                            <option value="{{ $institution->id }}">{{ $institution->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('institutionId') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                </div>
-                @endif
                 
                 <!-- Active Status - Yellow Style Version -->
                 <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg w-full">
@@ -200,6 +205,7 @@
                             class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                             @input="updateEndDateConstraints()"
                             @change="updateEndDateConstraints()"
+                            value="{{ old('start_date', $start_date ? \Carbon\Carbon::parse($start_date)->format('Y-m-d\TH:i') : '') }}"
                         />
                         <p class="text-xs text-gray-500 mt-1">If not set, announcement will be active immediately when marked active.</p>
                         @error('start_date') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -214,6 +220,7 @@
                             wire:model="end_date"
                             x-ref="endDateInput"
                             class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                            value="{{ old('end_date', $end_date ? \Carbon\Carbon::parse($end_date)->format('Y-m-d\TH:i') : '') }}"
                         />
                         <p class="text-xs text-gray-500 mt-1">If not set, announcement will remain active indefinitely.</p>
                         @error('end_date') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -257,4 +264,5 @@
 </div>
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 @endpush

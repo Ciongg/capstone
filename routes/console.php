@@ -13,3 +13,4 @@ Artisan::command('inspire', function () {
 
 
 Schedule::command('app:handle-inactive-users')->daily();
+Schedule::command('app:handle-announcement-dates')->everyThirtyMinutes();

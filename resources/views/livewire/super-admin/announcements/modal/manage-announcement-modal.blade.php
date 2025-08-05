@@ -184,19 +184,21 @@
                         }
                     }
                 }" x-init="$nextTick(() => updateEndDateConstraints())">
-                    <!-- Start Date -->
+                    <!-- Start Date (disabled) -->
                     <div class="mb-4">
-                        <label for="start_date" class="block text-sm font-medium text-gray-700 mb-1">Start Date (Optional)</label>
+                        <label for="start_date" class="block text-sm font-medium text-gray-700 mb-1">
+                            Start Date <span class="text-xs text-gray-500">(settable only on creation)</span>
+                        </label>
                         <input 
                             type="datetime-local" 
                             id="start_date"
                             wire:model="start_date"
                             x-ref="startDateInput"
-                            class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                            class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 bg-gray-100 cursor-not-allowed"
                             @input="updateEndDateConstraints()"
                             @change="updateEndDateConstraints()"
+                            disabled
                         />
-                        <p class="text-xs text-gray-500 mt-1">If not set, announcement will be active immediately when marked active.</p>
                         @error('start_date') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     

@@ -82,18 +82,20 @@ class AnnouncementsIndex extends Component
     {
         $user = auth()->user();
         $query = Announcement::query();
-        
-        // Apply search filter
+
+        // Apply search filter (grouped for correct logic)
         if (!empty($this->search)) {
-            $query->where('title', 'like', '%' . $this->search . '%')
+            $query->where(function($q) {
+                $q->where('title', 'like', '%' . $this->search . '%')
                   ->orWhere('description', 'like', '%' . $this->search . '%');
+            });
         }
-        
+
         // Apply audience filter
         if ($this->audienceFilter !== 'all') {
             $query->where('target_audience', $this->audienceFilter);
         }
-        
+
         // Filter by user's permissions
         if (!$user->hasRole('super_admin')) {
             $query->where(function($q) use ($user) {
@@ -104,10 +106,10 @@ class AnnouncementsIndex extends Component
                   });
             });
         }
-        
+
         // Order by created_at date instead of order field
         $announcements = $query->orderBy('created_at', 'desc')->paginate(10);
-        
+
         return view('livewire.super-admin.announcements.announcements-index', [
             'announcements' => $announcements,
             'institutions' => Institution::all(),
