@@ -215,6 +215,20 @@
                         <p class="text-xs text-gray-500 mt-1">If not set, announcement will remain active indefinitely.</p>
                         @error('end_date') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
+                    
+                    <!-- URL Field (Optional) -->
+                    <div>
+                        <label for="url" class="block text-sm font-medium text-gray-700 mb-1">Redirect URL (Optional)</label>
+                        <input 
+                            type="url" 
+                            id="url"
+                            wire:model="url"
+                            class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                            placeholder="https://example.com"
+                        />
+                        <p class="text-xs text-gray-500 mt-1">If set, clicking the announcement will redirect to this URL.</p>
+                        @error('url') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
                 </div>
                 
                 <!-- Actions -->

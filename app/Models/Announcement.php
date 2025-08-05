@@ -18,8 +18,10 @@ class Announcement extends Model
         'target_audience',
         'institution_id',
         'active',
+        'url', // Add this to fillable
         'start_date',
-        'end_date'
+        'end_date',
+        'survey_id', // Add survey_id to fillable
     ];
 
     protected $casts = [
@@ -40,6 +42,14 @@ class Announcement extends Model
     public function institution()
     {
         return $this->belongsTo(Institution::class);
+    }
+
+    /**
+     * Get the survey associated with this announcement
+     */
+    public function survey()
+    {
+        return $this->belongsTo(Survey::class);
     }
 
     public function scopeActive($query)

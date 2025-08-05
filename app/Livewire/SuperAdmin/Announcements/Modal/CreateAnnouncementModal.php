@@ -19,6 +19,7 @@ class CreateAnnouncementModal extends Component
     public $active = true;
     public $start_date;
     public $end_date;
+    public $url; // Add URL property
     
     protected $rules = [
         'title' => 'required|string|max:255',
@@ -29,6 +30,7 @@ class CreateAnnouncementModal extends Component
         'active' => 'boolean',
         'start_date' => 'nullable|date',
         'end_date' => 'nullable|date|after_or_equal:start_date',
+        'url' => 'nullable|url', // Add URL validation
     ];
     
     public function save()
@@ -71,6 +73,7 @@ class CreateAnnouncementModal extends Component
             'active' => $this->active,
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
+            'url' => $this->url, // Add URL to the create data
         ];
 
         // Add debugging for create data

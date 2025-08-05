@@ -106,4 +106,12 @@ class Survey extends Model
     {
         return $this->isLocked();
     }
+
+    /**
+     * Get the announcements for this survey
+     */
+    public function announcements()
+    {
+        return $this->hasMany(Announcement::class);
+    }
 }

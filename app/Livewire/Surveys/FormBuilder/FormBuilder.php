@@ -378,16 +378,88 @@ class FormBuilder extends Component
            $this->survey->status = 'published';
        }
        $this->survey->save();
-     
+       
+       // Create announcement if is_announced is true
+       if ($this->survey->is_announced) {
+           $this->createSurveyAnnouncement();
+       }
+   
        $this->loadPages(); 
    }
 
+   /**
+    * Create an announcement for the published survey
+    */
+   private function createSurveyAnnouncement()
+   {
+       try {
+           $user = auth()->user();
+           
+           // Always use the current user's institution_id for the announcement
+           $institutionId = $user->institution_id;
+           
+           // Determine target audience based on survey setting
+           $targetAudience = $this->survey->is_institution_only ? 'institution_specific' : 'public';
+           
+           // Copy survey image to announcements folder if it exists
+           $announcementImagePath = null;
+           if ($this->survey->image_path) {
+               // Get the original file extension
+               $originalPath = $this->survey->image_path;
+               $extension = pathinfo($originalPath, PATHINFO_EXTENSION);
+               
+               // Create new filename for announcement
+               $newFileName = 'survey_' . $this->survey->uuid . '_announcement.' . $extension;
+               $newPath = 'announcements/' . $newFileName;
+               
+               // Copy the file
+               if (\Storage::disk('public')->exists($originalPath)) {
+                   \Storage::disk('public')->copy($originalPath, $newPath);
+                   $announcementImagePath = $newPath;
+               }
+           }
+           
+           // Create the announcement with survey_id to maintain relationship
+           \App\Models\Announcement::create([
+               'title' => $this->survey->title,
+               'description' => $this->survey->description ?: 'A new survey has been published. Click to participate!',
+               'image_path' => $announcementImagePath,
+               'target_audience' => $targetAudience,
+               'institution_id' => $institutionId,
+               'active' => true,
+               'url' => route('surveys.answer', ['survey' => $this->survey->uuid]),
+               'start_date' => now(),
+               'end_date' => $this->survey->end_date,
+               'survey_id' => $this->survey->id, // Link to the survey
+           ]);
+           
+           \Log::info('Survey announcement created successfully', [
+               'survey_id' => $this->survey->id,
+               'survey_uuid' => $this->survey->uuid,
+               'target_audience' => $targetAudience,
+               'institution_id' => $institutionId
+           ]);
+           
+       } catch (\Exception $e) {
+           \Log::error('Failed to create survey announcement', [
+               'survey_id' => $this->survey->id,
+               'error' => $e->getMessage()
+           ]);
+           
+           // Don't fail the survey publishing if announcement creation fails
+           // Just log the error and continue
+       }
+   }
+   
    public function unpublishSurvey()
    {
        // Unpublishing always sets it back to pending
        $this->survey->status = 'pending';
        $this->survey->save();
-     
+       
+       // Delete any related announcements
+       \App\Models\Announcement::where('survey_id', $this->survey->id)->delete();
+  
        $this->loadPages(); 
    }
 

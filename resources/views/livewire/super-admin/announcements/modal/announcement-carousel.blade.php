@@ -19,6 +19,14 @@
             if (!text) return false;
             const words = text.trim().split(/\s+/);
             return words.length > wordLimit;
+        },
+
+        resetExpandedDescriptions() {
+            for (const key in this.expandedDescriptions) {
+                if (Object.prototype.hasOwnProperty.call(this.expandedDescriptions, key)) {
+                    this.expandedDescriptions[key] = false;
+                }
+            }
         }
     }">
         @if(count($announcements) > 0)
@@ -29,14 +37,22 @@
                     <!-- Navigation Buttons - Only show on hover of the container -->
                     @if(count($announcements) > 1)
                         <div class="absolute top-1/2 w-full px-4 z-10 flex items-center justify-between -translate-y-1/2 pointer-events-none">
-                            <button @click="activeSlide = (activeSlide - 1 + slides) % slides"
-                                    class="p-2 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70 focus:outline-none transition-all duration-200 pointer-events-auto opacity-0 group-hover:opacity-100">
+                            <button 
+                                @click="
+                                    activeSlide = (activeSlide - 1 + slides) % slides;
+                                    resetExpandedDescriptions();
+                                "
+                                class="p-2 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70 focus:outline-none transition-all duration-200 pointer-events-auto opacity-0 group-hover:opacity-100">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                                 </svg>
                             </button>
-                            <button @click="activeSlide = (activeSlide + 1) % slides"
-                                    class="p-2 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70 focus:outline-none transition-all duration-200 pointer-events-auto opacity-0 group-hover:opacity-100">
+                            <button 
+                                @click="
+                                    activeSlide = (activeSlide + 1) % slides;
+                                    resetExpandedDescriptions();
+                                "
+                                class="p-2 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70 focus:outline-none transition-all duration-200 pointer-events-auto opacity-0 group-hover:opacity-100">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                                 </svg>
@@ -50,13 +66,28 @@
                         @foreach($announcements as $index => $announcement)
                         <div class="w-full flex-shrink-0">
                             @if($announcement->image_path)
-                                <div class="relative pb-[56.25%] cursor-pointer"
-                                     @click="fullscreenImageSrc = '{{ asset('storage/' . $announcement->image_path) }}'">
-                                    <img src="{{ asset('storage/' . $announcement->image_path) }}" 
-                                         alt="{{ $announcement->title }}" 
-                                         class="absolute inset-0 w-full h-full object-contain bg-gray-100">
-                                    <!-- Title Overlay - positioned at bottom 40% of image -->
-                                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 via-black/30 to-transparent" 
+                                {{-- ...existing image logic... --}}
+                                <div class="relative pb-[56.25%]">
+                                    @if($announcement->url)
+                                        <a href="{{ $announcement->url }}" target="_blank" rel="noopener noreferrer" class="block absolute inset-0">
+                                            <img src="{{ asset('storage/' . $announcement->image_path) }}" 
+                                                alt="{{ $announcement->title }}" 
+                                                class="w-full h-full object-contain bg-gray-100">
+                                            <div class="absolute top-2 right-2 bg-black bg-opacity-50 rounded-full p-1.5" title="Opens external link">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                            </div>
+                                        </a>
+                                    @else
+                                        <div class="cursor-pointer absolute inset-0"
+                                            @click="fullscreenImageSrc = '{{ asset('storage/' . $announcement->image_path) }}'">
+                                            <img src="{{ asset('storage/' . $announcement->image_path) }}" 
+                                                alt="{{ $announcement->title }}" 
+                                                class="w-full h-full object-contain bg-gray-100">
+                                        </div>
+                                    @endif
+                                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 via-black/30 to-transparent pointer-events-none" 
                                          style="height: 40%;">
                                         <div class="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-start h-full">
                                             <h3 class="text-white font-bold text-lg sm:text-xl leading-tight drop-shadow-lg">
@@ -66,48 +97,38 @@
                                     </div>
                                 </div>
                             @else
-                                <!-- No image: fixed aspect ratio container, with proper text handling -->
-                                <div class="relative w-full" style="aspect-ratio: 16/9;">
-                                    <div 
-                                        class="absolute inset-0 flex flex-col bg-gray-50 border border-gray-200 rounded-lg px-16 py-8 text-center transition-all duration-300"
-                                        x-data="{
-                                            fullText: {{ json_encode($announcement->description ?? '') }},
-                                            needsMore: false,
-                                            expanded: false
-                                        }"
-                                        x-init="needsMore = needsTruncation(fullText, wordLimit); $watch('expanded', val => expandedDescriptions[{{ $index }}] = val); expanded = expandedDescriptions[{{ $index }}] ?? false"
-                                    >
-                                        <!-- Fixed title at top -->
-                                        <h3 class="text-2xl font-bold text-gray-800 mb-4 w-full text-center flex-shrink-0">{{ $announcement->title }}</h3>
-                                        
-                                        @if($announcement->description)
-                                            <!-- Description container with proper flex layout -->
-                                            <div class="flex-1 flex flex-col min-h-0 items-center justify-center" :class="expanded ? 'justify-start' : 'justify-center'">
-                                                <!-- Text content with better overflow handling -->
-                                                <div class="w-full" :class="expanded ? 'flex-1 overflow-y-auto' : 'flex-none'">
-                                                    <div 
-                                                        class="text-base text-gray-600 leading-relaxed text-left mx-auto transition-all duration-300"
-                                                        :class="expanded ? '' : 'line-clamp-4'"
-                                                        style="white-space: pre-line; word-wrap: break-word;"
-                                                        x-text="expanded ? fullText.trim() : truncateText(fullText, wordLimit)"
-                                                    >
-                                                    </div>
+                                <!-- No image: fixed aspect ratio container, scrollable content, clickable if url -->
+                                @if($announcement->url)
+                                    <a href="{{ $announcement->url }}" target="_blank" rel="noopener noreferrer"
+                                       class="relative w-full bg-gray-50 border border-gray-200 rounded-lg block"
+                                       style="display: block; aspect-ratio: 16/9; min-height: 0; text-decoration: none;">
+                                        <div class="absolute inset-0 flex flex-col px-8 py-8 text-center overflow-y-auto">
+                                            <h3 class="text-2xl font-bold text-gray-800 mb-4 w-full text-center flex-shrink-0">{{ $announcement->title }}</h3>
+                                            @if($announcement->description)
+                                                <div class="text-base text-gray-600 leading-relaxed text-left mx-auto flex-1" style="white-space: pre-line; word-wrap: break-word;">
+                                                    {{ $announcement->description }}
                                                 </div>
-                                                
-                                                <!-- View More button - fixed at bottom -->
-                                                <div class="flex justify-center mt-3 flex-shrink-0">
-                                                    <button 
-                                                        x-show="needsMore"
-                                                        @click="expanded = !expanded"
-                                                        class="text-blue-600 hover:text-blue-800 text-sm font-medium focus:outline-none px-3 py-1 rounded-md hover:bg-blue-50"
-                                                        x-text="expanded ? 'View Less' : 'View More'">
-                                                        View More
-                                                    </button>
-                                                </div>
+                                            @endif
+                                            <div class="absolute top-2 right-2 bg-black bg-opacity-50 rounded-full p-1.5" title="Opens external link">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
                                             </div>
-                                        @endif
+                                        </div>
+                                    </a>
+                                @else
+                                    <div class="relative w-full bg-gray-50 border border-gray-200 rounded-lg"
+                                         style="aspect-ratio: 16/9; min-height: 0;">
+                                        <div class="absolute inset-0 flex flex-col px-8 py-8 text-center overflow-y-auto">
+                                            <h3 class="text-2xl font-bold text-gray-800 mb-4 w-full text-center flex-shrink-0">{{ $announcement->title }}</h3>
+                                            @if($announcement->description)
+                                                <div class="text-base text-gray-600 leading-relaxed text-left mx-auto flex-1" style="white-space: pre-line; word-wrap: break-word;">
+                                                    {{ $announcement->description }}
+                                                </div>
+                                            @endif
+                                        </div>
                                     </div>
-                                </div>
+                                @endif
                             @endif
                         </div>
                         @endforeach
@@ -123,7 +144,6 @@
                         <div class="w-full flex-shrink-0 p-6 bg-white">
                             @if($announcement->image_path && $announcement->description)
                                 <div class="text-sm text-gray-600 leading-relaxed">
-                                    <!-- Description with word-based truncation -->
                                     <div x-data="{ 
                                         fullText: {{ json_encode($announcement->description) }},
                                         needsMore: false
@@ -131,7 +151,6 @@
                                         <pre class="whitespace-pre-wrap font-sans" 
                                              x-text="expandedDescriptions[{{ $index }}] ? fullText : truncateText(fullText, wordLimit)">
                                         </pre>
-                                        <!-- View More/Less button - only show if needed -->
                                         <button 
                                             x-show="needsMore"
                                             x-on:click="expandedDescriptions[{{ $index }}] = !expandedDescriptions[{{ $index }}]"
@@ -180,7 +199,6 @@
                      class="max-w-full max-h-full object-contain"
                      @click.stop="">
                           
-                <!-- Close button -->
                 <button @click="fullscreenImageSrc = null" 
                         class="cursor-pointer absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-white text-4xl sm:text-3xl font-bold leading-none rounded-full hover:bg-black hover:bg-opacity-25 focus:outline-none">
                     &times;

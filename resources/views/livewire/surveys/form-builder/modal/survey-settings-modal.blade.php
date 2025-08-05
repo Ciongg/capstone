@@ -11,10 +11,10 @@
             Survey Information
         </button>
         <button
-            type="button"
-            :class="{
-                'bg-blue-500 text-white': tab === 'demographics',
-                'bg-gray-200 text-gray-700': tab !== 'demographics',
+        type="button"
+        :class="{
+            'bg-blue-500 text-white': tab === 'demographics',
+            'bg-gray-200 text-gray-700': tab !== 'demographics',
                 'opacity-50 cursor-not-allowed': isInstitutionOnly
             }"
             class="px-4 py-2 rounded font-semibold focus:outline-none w-full sm:w-auto"
@@ -23,8 +23,9 @@
             x-data="{ isInstitutionOnly: @js($isInstitutionOnly) }"
             title="Standard demographics are only available for public surveys"
         >
-            Survey Demographics
-        </button>
+        Survey Demographics
+    </button>
+    @if(!auth()->user()->isSuperAdmin())
         <button
             type="button"
             :class="{
@@ -40,12 +41,14 @@
         >
             Institution Demographics
         </button>
+        @endif
     </div>
     <!-- Survey Information Tab -->
     <div x-show="tab === 'info'" x-cloak>
         <form wire:submit.prevent="saveSurveyInformation" class="space-y-4" x-data="{ fileName: '' }">
             
             <!-- Institution-Only Checkbox -->
+            @if(!auth()->user()->isSuperAdmin())
             <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg w-full">
                 <div class="flex items-center">
                     <input 
@@ -62,6 +65,27 @@
                     Institution-only surveys are only visible to members of your institution.
                 </p>
             </div>
+            @endif
+            
+            <!-- Announce on Publish Checkbox (Blue) - Only for researcher, institution admin, or super admin -->
+            @if(auth()->user()->isInstitutionAdmin() || auth()->user()->isSuperAdmin())
+            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg w-full">
+                <div class="flex items-center">
+                    <input 
+                        type="checkbox" 
+                        id="announce-on-publish-{{ $survey->id }}" 
+                        wire:model.defer="isAnnounced"
+                        class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    >
+                    <label for="announce-on-publish-{{ $survey->id }}" class="ml-2 text-sm font-medium text-blue-900">
+                        Create an announcement on publish
+                    </label>
+                </div>
+                <p class="mt-1 text-xs text-blue-600">
+                    If checked, an announcement will be created when this survey is published.
+                </p>
+            </div>
+            @endif
 
             <!-- Points Allocated Section - Reorganized for mobile -->
             <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">

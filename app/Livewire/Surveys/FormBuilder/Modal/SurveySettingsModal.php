@@ -30,6 +30,7 @@ class SurveySettingsModal extends Component
     public $description;
     public $type; // Add property for survey type
     public $isInstitutionOnly; // Property for institution-only checkbox
+    public $isAnnounced; // <-- Add this property
 
     // Add these properties for institution demographics
     public $institutionTagCategories = [];
@@ -62,6 +63,7 @@ class SurveySettingsModal extends Component
             
         // Ensure we're using the actual database value
         $this->isInstitutionOnly = (bool)$survey->is_institution_only;
+        $this->isAnnounced = (bool)$survey->is_announced; // <-- Initialize from model
         $this->survey_topic_id = $survey->survey_topic_id;
         $this->topics = SurveyTopic::all();
 
@@ -220,6 +222,7 @@ class SurveySettingsModal extends Component
                 // Use the calculated points instead of just base points
                 $this->survey->points_allocated = $this->getPointsForType($this->type);
                 $this->survey->is_institution_only = $this->isInstitutionOnly;
+                $this->survey->is_announced = $this->isAnnounced; // <-- Save to model
                 $this->survey->survey_topic_id = $this->survey_topic_id;
                 $this->survey->save();
 

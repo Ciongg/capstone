@@ -17,9 +17,12 @@ return new class extends Migration
             $table->enum('target_audience', ['public', 'institution_specific']);
             $table->foreignId('institution_id')->nullable()->constrained()->nullOnDelete();
             $table->boolean('active')->default(true);
-             $table->timestamp('start_date')->nullable();
+            $table->string('url')->nullable();
+            $table->timestamp('start_date')->nullable();
             $table->timestamp('end_date')->nullable();
             $table->timestamps();
+
+            $table->foreignId('survey_id')->nullable()->constrained()->nullOnDelete();
         });
     }
 

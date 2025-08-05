@@ -22,6 +22,7 @@ class ManageAnnouncementModal extends Component
     public $active;
     public $start_date;
     public $end_date;
+    public $url; // <-- Add this property
     
     protected $rules = [
         'title' => 'required|string|max:255',
@@ -32,6 +33,7 @@ class ManageAnnouncementModal extends Component
         'active' => 'boolean',
         'start_date' => 'nullable|date',
         'end_date' => 'nullable|date|after_or_equal:start_date',
+        'url' => 'nullable|url', // <-- Add validation
     ];
     
     public function mount($announcementId)
@@ -53,6 +55,7 @@ class ManageAnnouncementModal extends Component
             $this->active = $announcement->active;
             $this->start_date = $announcement->start_date ? $announcement->start_date->format('Y-m-d\TH:i') : null;
             $this->end_date = $announcement->end_date ? $announcement->end_date->format('Y-m-d\TH:i') : null;
+            $this->url = $announcement->url; // <-- Load url
         }
     }
     
@@ -103,6 +106,7 @@ class ManageAnnouncementModal extends Component
             'active' => $this->active,
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
+            'url' => $this->url, // <-- Save url
         ];
 
         // Add debugging for update data
