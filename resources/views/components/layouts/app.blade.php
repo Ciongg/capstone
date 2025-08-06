@@ -368,10 +368,24 @@
     <x-modal name="support-request-modal" title="Support Request">
         <livewire:support-requests.create-support-request-modal />
     </x-modal>
+    
+    {{-- Announcement Carousel Modal - now available site-wide --}}
+    <x-modal name="announcement-carousel-modal" title="Announcements" focusable>
+        @livewire('super-admin.announcements.modal.announcement-carousel')
+    </x-modal>
     <!-- End of Modal Sections -->
 
     <!-- Main Content Area -->
-    <main class="mx-auto bg-gray-50 min-h-screen">
+    <main class="mx-auto bg-gray-50 min-h-screen" x-data="{}" x-init="
+        // Check if announcement has been shown in this tab session
+        $nextTick(() => {
+            if (!sessionStorage.getItem('announcementShown')) {
+                $dispatch('open-modal', { name: 'announcement-carousel-modal' });
+                // Mark as shown for this tab session
+                sessionStorage.setItem('announcementShown', 'true');
+            }
+        });
+    ">
         @yield('content') {{-- Blade directive to output the content of the current section --}}
     </main>
     <!-- End of Main Content Area -->
@@ -380,6 +394,48 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> {{-- Chart.js library --}}
     @stack('scripts') {{-- Blade directive to push scripts from child views --}}
     @livewireScripts <!-- Required Livewire scripts -->
+    
+    <!-- Survey Creation Success Modal Event Listener -->
+    <script>
+        document.addEventListener('livewire:initialized', () => {
+            Livewire.on('survey-created-success', (eventData) => {
+                let surveyData = {};
+                let uuid = null;
+
+                // Direct access if eventData is the object itself
+                if (eventData && typeof eventData === 'object' && eventData.uuid) {
+                    surveyData = eventData;
+                    uuid = eventData.uuid;
+                }
+                // Common Livewire event format: array with object as first element
+                else if (Array.isArray(eventData) && eventData.length > 0 && eventData[0].uuid) {
+                    surveyData = eventData[0];
+                    uuid = eventData[0].uuid;
+                }
+
+                const title = surveyData.title || 'Untitled';
+                const type = surveyData.type || 'new';
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Survey Created Successfully!',
+                    text: `Your ${type} survey "${title}" has been created and is ready for editing.`,
+                    confirmButtonText: 'Go to Survey Editor',
+                    confirmButtonColor: '#03b8ff',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (uuid) {
+                            window.location.href = `/surveys/create/${uuid}`;
+                        } else {
+                            window.location.href = '/feed';
+                        }
+                    }
+                });
+            });
+        });
+    </script>
     <!-- End of Additional Scripts Section -->
 
     <!-- XP Test Control Panel (Only visible for authenticated users) -->
@@ -426,3 +482,4 @@
 </html>
 </body>
 </html>
+         

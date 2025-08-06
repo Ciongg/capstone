@@ -34,6 +34,10 @@ return new class extends Migration
             $table->dateTime('end_date')->nullable();
             $table->timestamps();
             $table->softDeletes(); // Added for archiving functionality
+
+            // Add indexes for efficient status handling
+            $table->index(['status', 'end_date'], 'surveys_status_end_date_index');
+            $table->index(['status', 'start_date'], 'surveys_status_start_date_index');
         });
     }
 

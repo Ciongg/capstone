@@ -17,6 +17,7 @@ class SurveyTypeModal extends Component
     public $surveyType; // 'basic' or 'advanced'
     public $creationMethod; // 'scratch' or 'template'
     public $selectedTemplate; // 'iso25010' or 'academic'
+    public $createdSurveyUuid; // Store the UUID of the created survey
 
     public function selectSurveyType(string $type)
     {
@@ -100,8 +101,16 @@ class SurveyTypeModal extends Component
             $this->createDefaultSurvey($surveyModel);
         }
 
+        // Store the UUID for later redirect
+        $this->createdSurveyUuid = $surveyModel->uuid;
+        
+        // Close the modal and dispatch a success event
         $this->dispatch('close-modal');
-        return redirect()->route('surveys.create', ['survey' => $surveyModel->uuid]);
+        $this->dispatch('survey-created-success', [
+            'uuid' => $surveyModel->uuid,
+            'title' => $surveyTitle,
+            'type' => $this->surveyType
+        ]);
     }
 
     private function createDefaultSurvey(Survey $survey)

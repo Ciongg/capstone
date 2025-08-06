@@ -23,11 +23,7 @@
                 });
             }
         });
-        
-        // Auto-open announcement carousel if not seen and announcements exist
-        $nextTick(() => {
-            $dispatch('open-modal', { name: 'announcement-carousel-modal' });
-        });
+
      ">
 
     {{--hides the scrollwheel in the topics bar--}}
@@ -130,11 +126,6 @@
             &times;
         </button>
     </div>
-
-    <!-- Standard Announcement Modal -->
-    <x-modal name="announcement-carousel-modal" title="Announcements" focusable>
-        @livewire('super-admin.announcements.modal.announcement-carousel')
-    </x-modal>
 </div>
-                  
+
 

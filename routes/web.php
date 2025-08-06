@@ -17,26 +17,41 @@ use App\Http\Controllers\AnnouncementController;
 // PUBLIC ROUTES (No authentication required)
 // ============================================================================
 
-
-
-
-
 Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('feed.index');
+    }
     return view('welcome');
 })->name('welcome');
 
+// About page - redirect to feed if authenticated
 Route::get('/about', function () {
+    if (auth()->check()) {
+        return redirect()->route('feed.index');
+    }
     return view('about');
 })->name('about');
 
+// Rewards info page - redirect to feed if authenticated
 Route::get('/rewards-info', function () {
+    if (auth()->check()) {
+        return redirect()->route('feed.index');
+    }
     return view('rewards-info');
 })->name('rewards-info');
 
 // Authentication Routes
-Route::get('/login', [SessionController::class, 'create'])->name('login');
+Route::get('/login', [SessionController::class, 'create'])
+    ->name('login')
+    ->middleware('guest')
+    ->defaults('redirectTo', '/feed'); // Redirect to feed if already logged in
+
 Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
-Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+
+Route::get('/register', [RegisteredUserController::class, 'create'])
+    ->name('register')
+    ->middleware('guest')
+    ->defaults('redirectTo', '/feed'); // Redirect to feed if already logged in
 
 // Public voucher verification route
 Route::get('/voucher/verify/{reference_no}', [VoucherController::class, 'verify'])
