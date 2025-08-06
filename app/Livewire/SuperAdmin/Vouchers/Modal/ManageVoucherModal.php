@@ -30,8 +30,9 @@ class ManageVoucherModal extends Component
     public $availableVouchers;
     public $totalVouchers;
     public $restockQuantity = 1;
+    public $voucherExpiryDate; // New property for expiry date
     
-    public $imageMarkedForDeletion = false; // Add this property to track deletion status
+    public $imageMarkedForDeletion = false;
     
     protected $rules = [
         'name' => 'required|string|max:255',
@@ -42,6 +43,7 @@ class ManageVoucherModal extends Component
         'quantity' => 'nullable|integer|min:-1',
         'image' => 'nullable|image|max:2048',
         'restockQuantity' => 'nullable|integer|min:1|max:100',
+        'voucherExpiryDate' => 'nullable|date|after:yesterday', // Add validation rule
         'rank_requirement' => 'required|in:silver,gold,diamond',
     ];
 
@@ -147,7 +149,8 @@ class ManageVoucherModal extends Component
     public function restockVouchers()
     {
         $this->validate([
-            'restockQuantity' => 'required|integer|min:1|max:100'
+            'restockQuantity' => 'required|integer|min:1|max:100',
+            'voucherExpiryDate' => 'nullable|date|after:yesterday'
         ]);
         
         $reward = Reward::findOrFail($this->rewardId);
@@ -170,6 +173,14 @@ class ManageVoucherModal extends Component
                 'rewardId' => $this->rewardId
             ]);
             return;
+        }
+        
+        // Determine expiry date - use provided date or sample voucher date
+        $expiryDate = null;
+        if ($this->voucherExpiryDate) {
+            $expiryDate = \Carbon\Carbon::parse($this->voucherExpiryDate)->startOfDay();
+        } else if ($sampleVoucher->expiry_date) {
+            $expiryDate = $sampleVoucher->expiry_date;
         }
         
         // Generate and create new vouchers
@@ -195,7 +206,7 @@ class ManageVoucherModal extends Component
             $voucher->promo = $reward->description;
             $voucher->cost = $reward->cost;
             $voucher->availability = 'available';
-            $voucher->expiry_date = $sampleVoucher->expiry_date;
+            $voucher->expiry_date = $expiryDate; // Use the determined expiry date
             $voucher->image_path = $reward->image_path;
             $voucher->merchant_id = $reward->merchant_id;
             $voucher->save();
@@ -211,6 +222,7 @@ class ManageVoucherModal extends Component
             
             // Update local state manually to avoid another render
             $this->restockQuantity = 1;
+            $this->voucherExpiryDate = null; // Reset expiry date field
         });
         
         // Dispatch event without message content
@@ -318,8 +330,14 @@ class ManageVoucherModal extends Component
     public function render()
     {
         $merchants = Merchant::orderBy('name')->get();
+        $earliestExpiryDate = null;
+        if ($this->type == 'Voucher' || $this->type == 'voucher') {
+            $reward = Reward::find($this->rewardId);
+            $earliestExpiryDate = $reward ? $reward->getEarliestExpiryDate() : null;
+        }
         return view('livewire.super-admin.vouchers.modal.manage-voucher-modal', [
             'merchants' => $merchants,
+            'earliestExpiryDate' => $earliestExpiryDate,
         ]);
     }
 }

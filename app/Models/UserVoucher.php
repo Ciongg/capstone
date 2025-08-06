@@ -22,10 +22,14 @@ class UserVoucher extends Model
         'voucher_id',
         'reward_redemption_id',
         'status',
-        'used_at',
+        'activated_at',
+        'expires_at',
+        'used_at'
     ];
 
     protected $casts = [
+        'activated_at' => 'datetime',
+        'expires_at' => 'datetime',
         'used_at' => 'datetime',
     ];
 
@@ -41,7 +45,7 @@ class UserVoucher extends Model
 
     public function rewardRedemption(): BelongsTo
     {
-        return $this->belongsTo(RewardRedemption::class);
+        return $this->belongsTo(RewardRedemption::class, 'reward_redemption_id');
     }
 
     /**

@@ -30,13 +30,20 @@ class HandleAnnouncementDates extends Command
         $now = TestTimeService::now();
 
         // Set expired announcements to inactive
-        $expiredCount = Announcement::where('active', true)
+        $expiredCount = 0;
+        Announcement::where('active', true)
             ->whereNotNull('end_date')
             ->where('end_date', '<', $now)
-            ->update(['active' => false]);
+            ->get()
+            ->each(function ($announcement) use (&$expiredCount) {
+                $announcement->active = false;
+                $announcement->save();
+                $expiredCount++;
+            });
 
         // Set eligible announcements to active
-        $activeCount = Announcement::where('active', false)
+        $activeCount = 0;
+        Announcement::where('active', false)
             ->where(function($q) use ($now) {
                 $q->whereNull('start_date')
                   ->orWhere('start_date', '<=', $now);
@@ -45,7 +52,12 @@ class HandleAnnouncementDates extends Command
                 $q->whereNull('end_date')
                   ->orWhere('end_date', '>=', $now);
             })
-            ->update(['active' => true]);
+            ->get()
+            ->each(function ($announcement) use (&$activeCount) {
+                $announcement->active = true;
+                $announcement->save();
+                $activeCount++;
+            });
 
         $this->info("Set $expiredCount expired announcements as inactive.");
         $this->info("Set $activeCount eligible announcements as active.");

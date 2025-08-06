@@ -31,11 +31,10 @@
 
                     {{-- Basic Reward Info in Yellow Warning Container --}}
                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                      
                         <p class="text-sm text-yellow-700 mb-1"><span class="font-semibold">Redeeming:</span> {{ $reward->name }}</p>
                         <p class="text-sm text-yellow-700">
                             <span class="font-semibold">Available:</span> 
-                            {{ $reward->quantity != -1 ? $reward->quantity : 'Unlimited' }}
+                            {{ $availableQuantity != -1 ? $availableQuantity : 'Unlimited' }}
                         </p>
                     </div>
                 </div>
@@ -138,4 +137,5 @@
             </div>
         </div>
     @endif
+</div>
 </div>

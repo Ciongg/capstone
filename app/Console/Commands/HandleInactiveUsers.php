@@ -37,14 +37,22 @@ class HandleInactiveUsers extends Command
             ->where('last_active_at', '<=', $inactiveAfter)
             ->where('last_active_at', '>', $archiveAfter)
             ->whereNotIn('type', ['super_admin', 'institution_admin'])
-            ->update(['is_active' => false]);
+            ->get()
+            ->each(function ($user) {
+                $user->is_active = false;
+                $user->save();
+            });
 
         // Archive researchers (soft delete: set deleted_at)
         User::where('type', 'researcher')
             ->whereNull('deleted_at')
             ->whereNotNull('last_active_at')
             ->where('last_active_at', '<=', $archiveAfter)
-            ->update(['deleted_at' => $now]);
+            ->get()
+            ->each(function ($user) use ($now) {
+                $user->deleted_at = $now;
+                $user->save();
+            });
 
         $this->info('Inactive and archived users handled.');
     }

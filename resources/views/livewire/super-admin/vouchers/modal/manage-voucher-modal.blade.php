@@ -274,9 +274,35 @@
                                         Add Stock
                                     </button>
                                 </div>
-                                <p class="text-xs text-gray-500 mt-1">
-                                    Add more vouchers with the same settings as existing ones
-                                </p>
+                                
+                                <!-- Add Expiry Date Field -->
+                                <div class="mt-3">
+                                    <label for="voucher_expiry_date" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Expiry Date (Optional)
+                                        @if(isset($earliestExpiryDate) && $earliestExpiryDate)
+                                            
+                                        @endif
+                                    </label>
+                                    <div class="flex items-center">
+                                        <input
+                                            type="date"
+                                            id="voucher_expiry_date"
+                                            wire:model="voucherExpiryDate"
+                                            class="w-full border-gray-300 bg-white rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                                            min="{{ date('Y-m-d') }}"
+                                        >
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        Set an expiration date for newly created vouchers. If left empty, vouchers will use the default expiration initially set.
+                                        <span class="text-xs text-orange-500">
+                                                (default expiration: {{ \Carbon\Carbon::parse($earliestExpiryDate)->format('F j, Y') }})
+                                            </span>
+                                    </p>
+                                    
+                                    @error('voucherExpiryDate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                                </div>
+                                
+                              
                                 @error('restockQuantity') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
                         </div>

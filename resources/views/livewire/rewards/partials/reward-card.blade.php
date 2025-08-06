@@ -41,17 +41,51 @@
         @endif
         <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ $reward->name }}</h3>
         <p class="text-sm text-gray-600 mb-3">{{ $reward->description }}</p>
-        <div class="flex items-center text-sm text-gray-600">
-            @if($reward->quantity == -1)
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span>Unlimited availability</span>
-            @else
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                </svg>
-                <span>{{ $reward->quantity }} available</span>
+        
+        <!-- Availability Information -->
+        <div class="flex flex-col space-y-2 text-sm">
+            <!-- Quantity Information -->
+            <div class="flex items-center text-gray-600">
+                @if($reward->type == 'voucher' || $reward->type == 'Voucher')
+                    @php
+                        $availableCount = $reward->vouchers()
+                            ->where('availability', 'available')
+                            ->count();
+                    @endphp
+                    @if($availableCount == -1)
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Unlimited availability</span>
+                    @else
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        <span>{{ $availableCount }} available</span>
+                    @endif
+                @else
+                    @if($reward->quantity == -1)
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Unlimited availability</span>
+                    @else
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        <span>{{ $reward->quantity }} available</span>
+                    @endif
+                @endif
+            </div>
+            
+            <!-- Expiry Date (only for voucher type) -->
+            @if(($reward->type == 'voucher' || $reward->type == 'Voucher') && $reward->getEarliestExpiryDate())
+                <div class="flex items-center text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Voucher Expires: {{ $reward->getEarliestExpiryDate()->format('M d, Y') }}</span>
+                </div>
             @endif
         </div>
     </div>
@@ -67,7 +101,10 @@
             $rankMet = $userRankPriority >= $requiredRankPriority;
             $isUnavailable = in_array($reward->status, ['unavailable', 'sold_out']);
             $notEnoughPoints = Auth::user() && Auth::user()->points < $reward->cost;
-            $shouldDisable = !$rankMet || $isUnavailable || $notEnoughPoints;
+            $availableCount = ($reward->type == 'voucher' || $reward->type == 'Voucher')
+                ? $reward->vouchers()->where('availability', 'available')->count()
+                : $reward->quantity;
+            $shouldDisable = !$rankMet || $isUnavailable || $notEnoughPoints || ($reward->type == 'voucher' && $availableCount <= 0);
         @endphp
         <button 
             x-data="{ loading: false }"
@@ -96,20 +133,12 @@
             </div>
             <!-- Default Button Text -->
             <div x-show="!loading">
-                @if($isUnavailable)
-                    @if($reward->status === 'sold_out')
-                        Sold Out
-                    @else
-                        Unavailable
-                    @endif
+                @if($isUnavailable || ($reward->type == 'voucher' && $availableCount <= 0))
+                    Sold Out
                 @elseif(!$rankMet)
                     {{ ucfirst($requiredRank) }} rank only
                 @elseif(Auth::user() && Auth::user()->points >= $reward->cost)
-                    @if($reward->quantity == 0 && $reward->quantity != -1)
-                        Sold Out
-                    @else
-                        Redeem
-                    @endif
+                    Redeem
                 @else
                     Not Enough Points
                 @endif
@@ -117,3 +146,4 @@
         </button>
     </div>
 </div>
+      

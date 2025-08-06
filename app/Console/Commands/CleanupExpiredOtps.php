@@ -18,4 +18,4 @@ class CleanupExpiredOtps extends Command
         
         return Command::SUCCESS;
     }
-} 
+}

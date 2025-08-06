@@ -3,6 +3,7 @@
 namespace App\Livewire\Rewards;
 
 use App\Models\Reward;
+use App\Models\Voucher;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 
@@ -67,25 +68,35 @@ class RewardIndex extends Component
             return true;
         }
         
-        // Check if reward is available
-        if ($reward->quantity != -1 && $reward->quantity <= 0) {
+        // For voucher rewards, check actual available vouchers (not expired, not unavailable, not used)
+        if ($reward->type == 'voucher' || $reward->type == 'Voucher') {
+            $availableVouchers = \App\Models\Voucher::where('reward_id', $reward->id)
+                ->where('availability', 'available')
+                ->count();
+            if ($availableVouchers <= 0) {
+                return true;
+            }
+        }
+        // For system rewards, check the quantity field
+        else if ($reward->quantity != -1 && $reward->quantity <= 0) {
             return true;
         }
         
-        // If user's rank doesn't meet the minimum required rank for the reward
-        if ($reward->min_rank) {
-            $rankPriority = [
-                'silver' => 1,
-                'gold' => 2,
-                'diamond' => 3
-            ];
-            
-            $userRankPriority = $rankPriority[$user->rank] ?? 0;
-            $requiredRankPriority = $rankPriority[$reward->min_rank] ?? 999;
-            
-            if ($userRankPriority < $requiredRankPriority) {
-                return true;
-            }
+        // Check rank requirements
+        $rankPriority = [
+            'silver' => 1,
+            'gold' => 2,
+            'diamond' => 3
+        ];
+        
+        $userRank = strtolower($user->rank ?? 'silver');
+        $requiredRank = strtolower($reward->rank_requirement ?? 'silver');
+        
+        $userRankPriority = $rankPriority[$userRank] ?? 1;
+        $requiredRankPriority = $rankPriority[$requiredRank] ?? 1;
+        
+        if ($userRankPriority < $requiredRankPriority) {
+            return true;
         }
         
         // All checks passed, button should be enabled
@@ -131,3 +142,4 @@ class RewardIndex extends Component
         ]);
     }
 }
+

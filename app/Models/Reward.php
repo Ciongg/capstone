@@ -82,4 +82,22 @@ class Reward extends Model
     {
         return $this->belongsTo(Merchant::class);
     }
+
+    /**
+     * Get the earliest expiry date from all available vouchers of this reward
+     * 
+     * @return \Carbon\Carbon|null
+     */
+    public function getEarliestExpiryDate()
+    {
+        if ($this->type !== 'voucher' && $this->type !== 'Voucher') {
+            return null;
+        }
+        
+        return $this->vouchers()
+            ->where('availability', 'available')
+            ->whereNotNull('expiry_date')
+            ->orderBy('expiry_date', 'asc')
+            ->first()?->expiry_date;
+    }
 }

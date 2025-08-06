@@ -14,4 +14,5 @@ Artisan::command('inspire', function () {
 
 Schedule::command('app:handle-inactive-users')->daily();
 Schedule::command('app:handle-announcement-dates')->everyThirtyMinutes();
-Schedule::command('app:handle-survey-status')->everyFifteenMinutes();
+Schedule::command('app:handle-survey-status')->everyThirtyMinutes();
+Schedule::command('app:handle-expired-rewards')->hourly(); // Run the voucher expiration check hourly

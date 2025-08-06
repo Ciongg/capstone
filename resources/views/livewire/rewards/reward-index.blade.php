@@ -100,16 +100,7 @@
 
         <!-- Flash Messages for Redemption -->
         <div class="mb-4">
-            @if(session()->has('redeem_success'))
-                <div class="mt-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-md">
-                    {{ session('redeem_success') }}
-                </div>
-            @endif
-            @if(session()->has('redeem_error'))
-                <div class="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
-                    {{ session('redeem_error') }}
-                </div>
-            @endif
+            <!-- We'll now handle these with SweetAlert -->
         </div>
     
 
@@ -155,3 +146,41 @@
         @endif
     </x-modal>
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Add event listeners for redemption success and error
+    window.addEventListener('redemption-success', function (event) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: event.detail || 'Reward redeemed successfully!',
+            timer: 1800,
+            showConfirmButton: false,
+        });
+    });
+    
+    window.addEventListener('redemptionError', function (event) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: event.detail || 'An error occurred during redemption.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+    
+    window.addEventListener('redeem_success', function (event) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: event.detail || 'Reward purchased successfully!',
+            timer: 1800,
+            showConfirmButton: false,
+        });
+    });
+    
+    // Keep the existing level-up event listener if you have one
+</script>
+@endpush

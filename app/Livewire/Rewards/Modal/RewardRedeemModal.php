@@ -10,6 +10,7 @@ use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\TestTimeService;
 
 class RewardRedeemModal extends Component
 {
@@ -41,6 +42,7 @@ class RewardRedeemModal extends Component
         $quantityToRedeem = ($this->reward->type === 'system') ? (int)$this->redeemQuantity : 1;
         $totalCost = $this->reward->cost * $quantityToRedeem;
 
+        $now = TestTimeService::now();
 
         // Pre-transaction validation
         // 1. Check if user has enough points
@@ -66,14 +68,26 @@ class RewardRedeemModal extends Component
         }
         
         // 3. Check voucher availability
-        if ($this->reward->type === 'voucher' && $this->reward->quantity != -1 && $this->reward->quantity < 1) {
-            $this->dispatch('redemptionError', 'This voucher is out of stock.');
-            $this->dispatch('close-modal', name: 'reward-redeem-modal');
-            return;
+        if ($this->reward->type === 'voucher') {
+            // Only allow if there is at least one available voucher with expiry_date not passed
+            $voucherInstance = Voucher::where('reward_id', $this->reward->id)
+                ->where('availability', 'available')
+                ->where(function($q) use ($now) {
+                    $q->whereNull('expiry_date')
+                      ->orWhere('expiry_date', '>', $now);
+                })
+                ->lockForUpdate()
+                ->first();
+
+            if (!$voucherInstance) {
+                $this->dispatch('redemptionError', 'This voucher is out of stock or expired.');
+                $this->dispatch('close-modal', name: 'reward-redeem-modal');
+                return;
+            }
         }
 
         try {
-            DB::transaction(function () use ($user, $quantityToRedeem, $totalCost) {
+            DB::transaction(function () use ($user, $quantityToRedeem, $totalCost, $now) {
                 // Deduct points from user
                 $user->points -= $totalCost;
                 
@@ -127,20 +141,24 @@ class RewardRedeemModal extends Component
                         }
                     }
                 } else { // Voucher type
-                    // Find and claim a voucher instance
+                    // Find and claim a voucher instance (repeat the expiry check inside transaction)
                     $voucherInstance = Voucher::where('reward_id', $this->reward->id)
-                                            ->where('availability', 'available')
-                                            ->lockForUpdate() // Prevent race conditions
-                                            ->first();
+                        ->where('availability', 'available')
+                        ->where(function($q) use ($now) {
+                            $q->whereNull('expiry_date')
+                              ->orWhere('expiry_date', '>', $now);
+                        })
+                        ->lockForUpdate()
+                        ->first();
 
                     if (!$voucherInstance) {
-                        throw new \Exception('No specific vouchers are available for this reward. Please try again later.');
+                        throw new \Exception('No valid vouchers are available for this reward. Please try again later.');
                     }
 
                     // Mark voucher as unavailable
                     $voucherInstance->availability = 'unavailable';
                     $voucherInstance->save();
-                    
+
                     // Decrement voucher reward quantity if limited
                     if ($this->reward->quantity != -1) {
                         $this->reward->quantity -= 1;
@@ -176,8 +194,8 @@ class RewardRedeemModal extends Component
                 }
                 
                 //success in modal
-                session()->flash('redeem_success', "Reward redeemed successfully!");
-                // Dispatch success event in reward index
+                $this->dispatch('redemption-success', 'Reward redeemed successfully!');
+                // Keep the existing event for compatibility
                 $this->dispatch('redeem_success', 'Success Purchase!');
 
                 // Dispatch level-up event if applicable
@@ -210,6 +228,24 @@ class RewardRedeemModal extends Component
     }
     
     /**
+     * Get the actual available quantity for display and validation
+     */
+    public function getActualAvailableQuantity()
+    {
+        if (!$this->reward) return 0;
+        
+        // For voucher rewards, count actual available vouchers
+        if ($this->reward->type === 'voucher') {
+            return Voucher::where('reward_id', $this->reward->id)
+                ->where('availability', 'available')
+                ->count();
+        }
+        
+        // For system rewards, use the quantity field
+        return $this->reward->quantity;
+    }
+    
+    /**
      * Check if button should be disabled
      */
     public function isButtonDisabled()
@@ -218,13 +254,28 @@ class RewardRedeemModal extends Component
         
         $user = Auth::user();
         $calculatedCost = $this->getTotalCost();
+        $availableQuantity = $this->getActualAvailableQuantity();
         
         // Check for conditions that would disable the button
-        return ($this->reward->quantity == 0 && $this->reward->quantity != -1) || 
-               ($user->points < $calculatedCost) ||
-               ($this->reward->type === 'system' && $this->redeemQuantity <= 0) ||
-               ($this->reward->type === 'system' && $this->reward->quantity != -1 && 
-                $this->redeemQuantity > $this->reward->quantity);
+        if ($user->points < $calculatedCost) {
+            return true;
+        }
+        
+        if ($this->reward->type === 'system') {
+            if ($this->redeemQuantity <= 0) {
+                return true;
+            }
+            
+            if ($this->reward->quantity != -1 && $this->redeemQuantity > $availableQuantity) {
+                return true;
+            }
+        } else { // Voucher type
+            if ($availableQuantity <= 0) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     /**
@@ -236,18 +287,23 @@ class RewardRedeemModal extends Component
         
         $user = Auth::user();
         $calculatedCost = $this->getTotalCost();
+        $availableQuantity = $this->getActualAvailableQuantity();
         
         if ($user->points < $calculatedCost) {
             return "You don't have enough points.";
         }
         
         if ($this->reward->type === 'system') {
-            if ($this->reward->quantity != -1 && $this->redeemQuantity > $this->reward->quantity) {
+            if ($this->reward->quantity != -1 && $this->redeemQuantity > $availableQuantity) {
                 return "Requested quantity exceeds available stock.";
             }
             
             if ($this->redeemQuantity <= 0) {
                 return "Quantity must be at least 1 for system rewards.";
+            }
+        } else { // Voucher type
+            if ($availableQuantity <= 0) {
+                return "This voucher is currently out of stock.";
             }
         }
         
@@ -256,6 +312,10 @@ class RewardRedeemModal extends Component
 
     public function render()
     {
-        return view('livewire.rewards.modal.reward-redeem-modal');
+        $availableQuantity = $this->getActualAvailableQuantity();
+        
+        return view('livewire.rewards.modal.reward-redeem-modal', [
+            'availableQuantity' => $availableQuantity
+        ]);
     }
 }

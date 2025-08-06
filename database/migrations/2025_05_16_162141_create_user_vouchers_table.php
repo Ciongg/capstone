@@ -23,6 +23,11 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['user_id', 'voucher_id']); // A user can own a specific voucher instance only once
+
+            // Indexes for performance
+            $table->index('status');
+            $table->index('voucher_id');
+            $table->index('user_id');
         });
     }
 

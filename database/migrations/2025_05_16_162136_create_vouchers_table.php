@@ -22,6 +22,11 @@ return new class extends Migration
             $table->enum('availability', ['available', 'unavailable', 'expired', 'used'])->default('available');
             $table->string('image_path')->nullable(); // Copied from reward
             $table->timestamps();
+
+            // Indexes for performance
+            $table->index(['availability', 'expiry_date']);
+            $table->index('reward_id');
+            $table->index('merchant_id');
         });
     }
 

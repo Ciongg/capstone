@@ -377,11 +377,22 @@
 
     <!-- Main Content Area -->
     <main class="mx-auto bg-gray-50 min-h-screen" x-data="{}" x-init="
-        // Check if announcement has been shown in this tab session
+        // Show announcement only on specific routes
         $nextTick(() => {
-            if (!sessionStorage.getItem('announcementShown')) {
+            const allowedPaths = [
+                '/feed',
+                '/profile',
+                '/rewards',
+                '/vouchers'
+            ];
+            // Also allow /surveys/create and /surveys/create/{uuid}
+            const path = window.location.pathname;
+            const isCreateSurvey = path.startsWith('/surveys/create');
+            if (
+                (allowedPaths.includes(path) || isCreateSurvey)
+                && !sessionStorage.getItem('announcementShown')
+            ) {
                 $dispatch('open-modal', { name: 'announcement-carousel-modal' });
-                // Mark as shown for this tab session
                 sessionStorage.setItem('announcementShown', 'true');
             }
         });
@@ -482,4 +493,3 @@
 </html>
 </body>
 </html>
-         

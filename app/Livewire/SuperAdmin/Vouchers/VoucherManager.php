@@ -30,12 +30,12 @@ class VoucherManager extends Component
     public function filterByType($type)
     {
         $this->typeFilter = $type;
-        $this->$refresh();
+        $this->dispatch('$refresh');
     }
 
     public function updatedSearchTerm()
     {
-        $this->$refresh();
+         $this->dispatch('$refresh');
     }
 
     public function render()
