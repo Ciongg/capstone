@@ -53,15 +53,45 @@
             @if ($photo)
                 <div class="mt-4 flex flex-col items-center">
                     <span class="block text-sm font-medium text-gray-700 mb-1">Uploaded Profile Photo Preview:</span>
-                    <div class="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center">
-                        <img src="{{ $photo->temporaryUrl() }}" alt="New Profile Photo Preview" class="w-full h-full object-cover">
+                    <div class="relative w-32 h-32 flex items-center justify-center">
+                        <div class="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center">
+                            <img src="{{ $photo->temporaryUrl() }}" alt="New Profile Photo Preview" class="w-full h-full object-cover">
+                        </div>
+                        @if($canUpdateProfile)
+                        <button 
+                            type="button" 
+                            wire:click="removePhotoPreview" 
+                            class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
+                            title="Remove photo"
+                            style="box-shadow: 0 2px 6px rgba(0,0,0,0.15);"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        @endif
                     </div>
                 </div>
             @elseif ($user->profile_photo_path)
                 <div class="mt-4 flex flex-col items-center">
                     <span class="block text-sm font-medium text-gray-700 mb-1">Current Profile Photo:</span>
-                    <div class="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center">
-                        <img src="{{ $user->profile_photo_url }}" alt="Profile Photo" class="w-full h-full object-cover" />
+                    <div class="relative w-32 h-32 flex items-center justify-center">
+                        <div class="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center">
+                            <img src="{{ $user->profile_photo_url }}" alt="Profile Photo" class="w-full h-full object-cover" />
+                        </div>
+                        @if($canUpdateProfile)
+                        <button 
+                            type="button" 
+                            wire:click="deleteCurrentPhoto" 
+                            class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
+                            title="Delete photo"
+                            style="box-shadow: 0 2px 6px rgba(0,0,0,0.15);"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -116,13 +146,13 @@
     @endif
 
     <!-- Save Button -->
+    @if($canUpdateProfile)
     <button 
         type="button"
-        class="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 w-full flex items-center justify-center @if(!$canUpdateProfile) opacity-50 cursor-not-allowed @endif"
+        class="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 w-full flex items-center justify-center"
         x-on:click="confirmProfileSave()"
         wire:loading.attr="disabled"
         style="min-width: 180px;"
-        @if(!$canUpdateProfile) disabled @endif
     >
         <span class="flex items-center justify-center w-full">
             <span wire:loading.remove wire:target="save">Save Changes</span>
@@ -134,6 +164,7 @@
             </span>
         </span>
     </button>
+    @endif
     <div class="mt-2">
         <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800 rounded">
             <strong>Note:</strong> Once updated, you will not be able to change your profile information again for 4 months. This is to ensure data integrity.

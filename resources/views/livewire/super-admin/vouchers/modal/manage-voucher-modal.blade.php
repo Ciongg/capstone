@@ -42,18 +42,63 @@
                     
                     <!-- Current Image Preview - Moved below upload and centered -->
                     <div class="mt-4 flex justify-center">
-                        @if($currentImage)
-                            <div class="text-center">
+                        @if($currentImage && !$imageMarkedForDeletion)
+                            <div class="text-center relative">
                                 <label class="block text-xs text-gray-600 mb-1">Current Image:</label>
-                                <img src="{{ asset('storage/' . $currentImage) }}" alt="Current Reward Image" class="h-40 object-cover rounded border border-gray-300 mx-auto">
+                                <div class="relative">
+                                    <img src="{{ asset('storage/' . $currentImage) }}" alt="Current Reward Image" class="h-40 object-cover rounded border border-gray-300 mx-auto">
+                                    <button 
+                                        type="button" 
+                                        wire:click="markImageForDeletion" 
+                                        class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                                        title="Delete image"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        @elseif($imageMarkedForDeletion)
+                            <div class="text-center">
+                                <label class="block text-xs text-gray-600 mb-1">Image marked for deletion:</label>
+                                <div class="relative">
+                                    <div class="h-40 w-64 bg-gray-200 rounded border border-gray-300 mx-auto flex items-center justify-center">
+                                        <div class="text-gray-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                            <p class="text-sm">Image will be deleted on update</p>
+                                            <button 
+                                                type="button" 
+                                                wire:click="$set('imageMarkedForDeletion', false)" 
+                                                class="mt-2 text-blue-500 hover:text-blue-700 text-sm"
+                                            >
+                                                Cancel deletion
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         @endif
                         
                         <!-- New Image Preview -->
                         @if ($image)
-                            <div class="text-center ml-4">
+                            <div class="text-center ml-4 relative">
                                 <span class="block text-xs text-gray-700 mb-1">New Image Preview:</span>
-                                <img src="{{ $image->temporaryUrl() }}" alt="New Image Preview" class="h-40 object-cover rounded border border-gray-300 mx-auto">
+                                <div class="relative">
+                                    <img src="{{ $image->temporaryUrl() }}" alt="New Image Preview" class="h-40 object-cover rounded border border-gray-300 mx-auto">
+                                    <button 
+                                        type="button" 
+                                        wire:click="removeImagePreview" 
+                                        class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                                        title="Remove image"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         @endif
                     </div>

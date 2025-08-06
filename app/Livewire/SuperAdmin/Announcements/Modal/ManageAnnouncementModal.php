@@ -23,6 +23,7 @@ class ManageAnnouncementModal extends Component
     public $start_date;
     public $end_date;
     public $url; // <-- Add this property
+    public $imageMarkedForDeletion = false; // Add this property to track deletion status
     
     protected $rules = [
         'title' => 'required|string|max:255',
@@ -87,8 +88,13 @@ class ManageAnnouncementModal extends Component
 
         $imagePath = $this->currentImage;
 
+        // Handle image deletion if marked for deletion
+        if ($this->imageMarkedForDeletion && $this->currentImage) {
+            Storage::disk('public')->delete($this->currentImage);
+            $imagePath = null;
+        }
         // Handle image upload if a new image is provided
-        if ($this->image) {
+        else if ($this->image) {
             // Delete old image if exists
             if ($this->currentImage) {
                 Storage::disk('public')->delete($this->currentImage);
@@ -114,6 +120,9 @@ class ManageAnnouncementModal extends Component
 
         $announcement->update($updateData);
 
+        // Reset the image marked for deletion flag
+        $this->imageMarkedForDeletion = false;
+
         $this->dispatch('announcement-updated');
         $this->dispatch('close-modal', ['name' => 'manage-announcement-modal']);
     }
@@ -131,6 +140,22 @@ class ManageAnnouncementModal extends Component
             $this->dispatch('announcement-deleted');
             $this->dispatch('close-modal', ['name' => 'manage-announcement-modal']);
         }
+    }
+    
+    /**
+     * Remove the uploaded image preview
+     */
+    public function removeImagePreview()
+    {
+        $this->image = null;
+    }
+
+    /**
+     * Mark the current image for deletion without immediately deleting it
+     */
+    public function markImageForDeletion()
+    {
+        $this->imageMarkedForDeletion = true;
     }
     
     public function render()

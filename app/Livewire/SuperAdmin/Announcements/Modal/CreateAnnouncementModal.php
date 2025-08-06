@@ -89,6 +89,14 @@ class CreateAnnouncementModal extends Component
         $this->dispatch('close-modal', ['name' => 'create-announcement-modal']);
     }
     
+    /**
+     * Remove the uploaded image preview
+     */
+    public function removeImagePreview()
+    {
+        $this->image = null;
+    }
+    
     public function render()
     {
         $user = auth()->user();

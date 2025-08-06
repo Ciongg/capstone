@@ -415,6 +415,27 @@ class SurveySettingsModal extends Component
         $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
     }
 
+    /**
+     * Remove the uploaded banner image preview
+     */
+    public function removeBannerImagePreview()
+    {
+        $this->banner_image = null;
+    }
+
+    /**
+     * Delete the current banner image from storage
+     */
+    public function deleteCurrentBannerImage()
+    {
+        if ($this->survey->image_path) {
+            Storage::disk('public')->delete($this->survey->image_path);
+            
+            $this->survey->image_path = null;
+            $this->survey->save();
+        }
+    }
+    
     // Helper method to show error alerts with SweetAlert2
     private function showErrorAlert($message)
     {

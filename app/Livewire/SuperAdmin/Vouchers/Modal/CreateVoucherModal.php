@@ -115,6 +115,14 @@ class CreateVoucherModal extends Component
         return $prefix . '-' . $random . '-' . $timestamp;
     }
 
+    /**
+     * Remove the uploaded image preview
+     */
+    public function removeImagePreview()
+    {
+        $this->image = null;
+    }
+
     public function closeModal()
     {
         $this->dispatch('close-modal', ['name' => 'create-voucher-modal']);

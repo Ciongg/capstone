@@ -149,6 +149,27 @@ class EditProfileModal extends Component
         $this->dispatch('profileSaved');
     }
 
+    /**
+     * Remove the uploaded photo preview
+     */
+    public function removePhotoPreview()
+    {
+        $this->photo = null;
+    }
+
+    /**
+     * Delete the current profile photo from storage
+     */
+    public function deleteCurrentPhoto()
+    {
+        if ($this->user->profile_photo_path) {
+            Storage::disk('public')->delete($this->user->profile_photo_path);
+            
+            $this->user->profile_photo_path = null;
+            $this->user->save();
+        }
+    }
+    
     public function render()
     {
         return view('livewire.profile.modal.edit-profile-modal');

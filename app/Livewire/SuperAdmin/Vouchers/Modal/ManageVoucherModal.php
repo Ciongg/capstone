@@ -31,6 +31,8 @@ class ManageVoucherModal extends Component
     public $totalVouchers;
     public $restockQuantity = 1;
     
+    public $imageMarkedForDeletion = false; // Add this property to track deletion status
+    
     protected $rules = [
         'name' => 'required|string|max:255',
         'merchant_id' => 'required|exists:merchants,id',
@@ -95,8 +97,16 @@ class ManageVoucherModal extends Component
                 'merchant_id' => $this->merchant_id,
             ];
             
+            // Handle image deletion if marked for deletion
+            if ($this->imageMarkedForDeletion && $reward->image_path) {
+                if (Storage::disk('public')->exists($reward->image_path)) {
+                    Storage::disk('public')->delete($reward->image_path);
+                }
+                $data['image_path'] = null;
+                $this->currentImage = null;
+            }
             // Process image if a new one was uploaded
-            if ($this->image) {
+            else if ($this->image) {
                 // Delete old image if it exists
                 if ($reward->image_path && Storage::disk('public')->exists($reward->image_path)) {
                     Storage::disk('public')->delete($reward->image_path);
@@ -120,6 +130,12 @@ class ManageVoucherModal extends Component
                     ]);
             }
         });
+        
+        // Reset image marked for deletion flag
+        $this->imageMarkedForDeletion = false;
+        
+        // Reset uploaded image after successful update
+        $this->image = null;
         
         // Dispatch event without message content
         $this->dispatch('reward-updated', [
@@ -281,6 +297,22 @@ class ManageVoucherModal extends Component
     {
         // Clear any pending rerenders that might cause flashing
         $this->skipNextRender = false;
+    }
+    
+    /**
+     * Remove the uploaded image preview
+     */
+    public function removeImagePreview()
+    {
+        $this->image = null;
+    }
+
+    /**
+     * Mark the current image for deletion without immediately deleting it
+     */
+    public function markImageForDeletion()
+    {
+        $this->imageMarkedForDeletion = true;
     }
     
     public function render()
