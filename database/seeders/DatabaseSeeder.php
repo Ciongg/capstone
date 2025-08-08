@@ -32,6 +32,8 @@ class DatabaseSeeder extends Seeder
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
             'is_active' => true, // Add is_active flag
             'last_active_at' => now(), 
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
         ]);
 
         User::factory()->create([
@@ -43,6 +45,8 @@ class DatabaseSeeder extends Seeder
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
             'is_active' => true, // Add is_active flag
             'last_active_at' => now(), 
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
         ]);
 
         User::factory()->create([
@@ -54,6 +58,8 @@ class DatabaseSeeder extends Seeder
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
             'is_active' => true, // Add is_active flag
             'last_active_at' => now(), 
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
         ]);
 
         User::factory()->create([
@@ -65,6 +71,8 @@ class DatabaseSeeder extends Seeder
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
             'is_active' => true, // Add is_active flag
             'last_active_at' => now(), 
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
         ]);
 
         User::factory()->create([
@@ -76,6 +84,8 @@ class DatabaseSeeder extends Seeder
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
             'is_active' => true, // Add is_active flag
             'last_active_at' => now(), 
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
         ]);
 
         User::factory()->create([
@@ -87,6 +97,8 @@ class DatabaseSeeder extends Seeder
             'institution_id' => $nationalUniversity ? $nationalUniversity->id : null,
             'is_active' => true, // Add is_active flag
             'last_active_at' => now(), 
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
         ]);
 
         User::factory()->create([
@@ -98,6 +110,8 @@ class DatabaseSeeder extends Seeder
             'institution_id' => $nationalUniversity ? $nationalUniversity->id : null,
             'is_active' => true,
             'last_active_at' => now(), 
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
         ]);
 
         User::factory()->create([
@@ -109,6 +123,8 @@ class DatabaseSeeder extends Seeder
             'institution_id' => null,
             'is_active' => true, // Add is_active flag
             'last_active_at' => now(), 
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
         ]);
 
         User::factory()->create([
@@ -120,6 +136,8 @@ class DatabaseSeeder extends Seeder
             'institution_id' => null,
             'is_active' => true, // Add is_active flag
             'last_active_at' => now(), 
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
         ]);
 
         // Updated seeder order - SurveyTopicSeeder before SurveySeeder

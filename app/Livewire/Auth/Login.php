@@ -14,12 +14,14 @@ class Login extends Component
 {
     public string $email = '';
     public string $password = '';
+    public bool $remember = false;
 
     protected function rules(): array
     {
         return [
             'email' => 'required|string|email',
             'password' => 'required|string',
+            'remember' => 'boolean',
         ];
     }
 
@@ -104,14 +106,22 @@ class Login extends Component
             ->first();
             
         if ($archivedUser) {
-            // Show archived message regardless of password correctness
             throw ValidationException::withMessages([
                 'email' => ['This account has been archived. Please contact the Formigo support team for assistance.'],
             ]);
         }
 
-        // Proceed with normal authentication if not archived
-        if (!Auth::attempt(['email' => $this->email, 'password' => $this->password])) {
+        // Set session lifetime to 1 day if remember is not checked
+        if (!$this->remember) {
+            config(['session.lifetime' => 1440]); // 1 day in minutes
+        }
+
+        // Proceed with normal authentication with remember option
+        if (!Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+            // Restore session lifetime to default if login fails
+            if (!$this->remember) {
+                config(['session.lifetime' => config('session.lifetime', 120)]);
+            }
             throw ValidationException::withMessages([
                 'email' => [trans('auth.failed')], 
             ]);
@@ -128,6 +138,11 @@ class Login extends Component
         }
 
         session()->regenerate();
+
+        // Restore session lifetime to default after login
+        if (!$this->remember) {
+            config(['session.lifetime' => config('session.lifetime', 120)]);
+        }
         
         // After successful login, check user's institution status
         $statusChange = $this->checkInstitutionStatus($user);

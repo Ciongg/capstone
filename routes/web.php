@@ -68,6 +68,16 @@ Route::middleware('auth')->group(function () {
 // Google OAuth Signup
 Route::get('/auth/google/redirect', [\App\Http\Controllers\GoogleAuthController::class, 'redirect'])->name('google.redirect');
 Route::get('/auth/google/callback', [\App\Http\Controllers\GoogleAuthController::class, 'callback'])->name('google.callback');
+Route::post('/auth/google/consent', [\App\Http\Controllers\GoogleAuthController::class, 'consent'])->name('google.consent');
+
+// Privacy Policy and Terms of Use pages
+Route::get('/policies/privacy-policy', function () {
+    return view('privacy-policy');
+})->name('privacy-policy');
+
+Route::get('/policies/terms-of-use', function () {
+    return view('terms-of-use');
+})->name('terms-of-use');
 
 // ============================================================================
 // AUTHENTICATED ROUTES (Requires login)

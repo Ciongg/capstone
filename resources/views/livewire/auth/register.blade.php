@@ -1,5 +1,5 @@
-<div>
-    <div class="min-h-screen flex items-center justify-center -mt-10">
+<div class="bg-white" x-data="{ checkboxChecked: false }">
+    <div class="min-h-screen flex items-center justify-center mt-10">
         <!-- Main container with centered shadow and rounded corners -->
         <div class="bg-white shadow-[0_0_25px_rgba(0,0,0,0.15)] rounded-3xl flex flex-col md:flex-row w-full max-w-6xl overflow-hidden">
             <!-- Left container: Image Carousel - Hidden on small screens, full width on md+ -->
@@ -14,11 +14,11 @@
                 <!-- Blue inner container with inset shadow -->
                 <div class="w-full bg-[#D4F3FF] p-3 sm:p-5 rounded-2xl shadow-inner">
                     <header class="mb-6 text-center">
-                        <h1 class="text-2xl font-bold text-[#03b8ff] mb-2">Create Your Account</h1>
+                        <h1 class="text-2xl font-bold text-blue-500 mb-2">Create Your Account</h1>
                         <p class="text-gray-800">Fill in your information to get started</p>
                     </header>
 
-                    <form wire:submit.prevent="registerUser" x-data="{ checkboxChecked: false }">
+                    <form wire:submit.prevent="registerUser">
                         @csrf
 
                         <!-- Name Fields - Stack on small screens, side by side on md+ -->
@@ -117,6 +117,7 @@
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
                                     </div>
                                     <input 
                                         type="password" 
@@ -137,6 +138,7 @@
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
                                     </div>
                                     <input 
                                         type="password" 
@@ -158,9 +160,14 @@
                                     x-model="checkboxChecked" 
                                     wire:model="terms"
                                     id="terms"
-                                    class="rounded border-gray-300 text-[#03b8ff] shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 @error('terms') border-red-500 @enderror"
+                                    class="rounded cursor-pointer border-gray-300 text-blue-500 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 w-5 h-5 @error('terms') border-red-500 @enderror"
                                 >
-                                <span class="ml-2 text-sm text-gray-800">I agree to the <a href="#" class="text-[#03b8ff] underline">Terms and Conditions</a>.</span>
+                                <span class="ml-2 text-sm text-gray-800">
+                                    I agree to the 
+                                    <a href="{{ route('terms-of-use') }}" class="text-blue-500 italic hover:text-blue-700" target="_blank">Terms and Conditions</a>
+                                    and
+                                    <a href="{{ route('privacy-policy') }}" class="text-blue-500 italic hover:text-blue-700" target="_blank">Privacy Policy</a>.
+                                </span>
                             </label>
                             @error('terms') <span class="text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
                         </div>
@@ -177,6 +184,8 @@
                                 <span wire:loading.remove wire:target="registerUser">REGISTER</span>
                                 <span wire:loading wire:target="registerUser">Registering...</span>
                             </button>
+
+                            
                         </div>
 
                         <!-- OR Divider -->
@@ -200,9 +209,18 @@
                         </div>
 
                         <div class="text-center">
-                            <p class="text-gray-800 text-sm">
-                                Already have an account? <a href="{{ route('login') }}" wire:navigate class="text-[#03b8ff] underline font-semibold">Login</a>
+                            <p class="text-gray-800 text-md">
+                                Already have an account? <a href="{{ route('login') }}" wire:navigate class="text-blue-500 italic hover:text-blue-700">Login</a>
                             </p>
+                            <div class="flex items-center justify-center my-3">
+                                <div class="flex-grow border-t border-gray-300"></div>
+                               
+                            </div>
+                            <div class="flex items-center justify-center gap-3">
+                                <a target="_blank" href="{{ route('terms-of-use') }}" class="text-sm text-blue-500 hover:text-blue-700">Terms & Conditions</a>
+                                <span class="h-4 w-px bg-gray-300"></span>
+                                <a target="_blank" href="{{ route('privacy-policy') }}" class="text-sm text-blue-500 hover:text-blue-700">Privacy Policy</a>
+                            </div>
                         </div>
                     </form>
                 </div>

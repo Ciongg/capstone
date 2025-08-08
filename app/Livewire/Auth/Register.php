@@ -132,6 +132,8 @@ class Register extends Component
             'institution_id' => $institutionId,
             'is_active' => true, // Set new users to active by default
             'email_verified_at' => now(),
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
         ]);
 
         // Delete the email verification record

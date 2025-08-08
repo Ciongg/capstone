@@ -3,7 +3,6 @@
 use Illuminate\Support\Str;
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Default Session Driver
@@ -27,14 +26,26 @@ return [
     |
     | Here you may specify the number of minutes that you wish the session
     | to be allowed to remain idle before it expires. If you want them
-    | to expire immediately when the browser is closed then you may
-    | indicate that via the expire_on_close configuration option.
+    | to immediately expire on the browser closing, set that option.
     |
     */
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 120),
+    'lifetime' => env('SESSION_LIFETIME', 120),
 
-    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
+    'expire_on_close' => false,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Remember Me Cookie Lifetime
+    |--------------------------------------------------------------------------
+    |
+    | The number of minutes that the "remember me" cookie should be valid for
+    | when the application issues it. Typically, this should be a longer period
+    | of time than your session lifetime.
+    |
+    */
+
+    'remember_me_lifetime' => 43200, // 30 days in minutes (30 * 24 * 60)
 
     /*
     |--------------------------------------------------------------------------
@@ -213,5 +224,4 @@ return [
     */
 
     'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
-
 ];

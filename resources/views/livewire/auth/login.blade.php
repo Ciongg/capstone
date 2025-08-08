@@ -1,5 +1,5 @@
-<div>
-    <div class="min-h-screen flex items-center justify-center -mt-12">
+<div class="bg-white">
+    <div class="min-h-screen flex items-center justify-center mt-2">
         <!-- Main container with centered shadow and rounded corners -->
         <div class="bg-white shadow-[0_0_25px_rgba(0,0,0,0.15)] rounded-3xl flex flex-col md:flex-row w-full max-w-6xl overflow-hidden">
             <!-- Left container: Image Carousel - Hidden on small screens, full width on md+ -->
@@ -14,7 +14,7 @@
                 <!-- Blue inner container with inset shadow - adjusted padding -->
                 <div class="w-full bg-[#D4F3FF] p-4 sm:p-6 rounded-2xl shadow-inner py-4 sm:py-6">
                     <header class="mb-6 text-center">
-                        <h1 class="text-3xl font-bold text-[#03b8ff] mb-3">Welcome Back!</h1>
+                        <h1 class="text-3xl font-bold text-blue-500 mb-3">Welcome Back!</h1>
                         <p class="text-gray-800 text-lg">Enter your login credentials</p>
                     </header>
 
@@ -81,16 +81,25 @@
                             @error('password') <span class="text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
                         </div>
                         
-                        <!-- Forgot password link - increased spacing -->
-                        <div class="mb-4 text-right">
-                            <button type="button" wire:click="$dispatch('open-modal', { name: 'forgot-password' })" class="text-[#03b8ff] underline text-sm">Forgot Password?</button>
+                        <!-- Remember Me and Forgot password row -->
+                        <div class="mb-4 flex justify-between items-center">
+                            <label class="flex items-center">
+                                <input 
+                                    type="checkbox"
+                                    wire:model="remember"
+                                    id="remember"
+                                    class="cursor-pointer h-5 w-5 rounded border-gray-300 text-blue-500 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                >
+                                <span class="ml-2 text-sm text-gray-700">Remember me for 30 days</span>
+                            </label>
+                            <button type="button" wire:click="$dispatch('open-modal', { name: 'forgot-password' })" class="cursor-pointer text-blue-500 italic text-sm hover:text-blue-700">Forgot Password?</button>
                         </div>
 
                         <!-- Login Button - increased spacing -->
                         <div class="mb-4">
                             <button 
                                 type="submit" 
-                                class="w-full py-3 rounded-lg transition bg-[#03b8ff] hover:bg-blue-500 text-white font-bold text-lg uppercase"
+                                class="cursor-pointer w-full py-3 rounded-lg transition bg-[#03b8ff] hover:bg-blue-500 text-white font-bold text-lg uppercase"
                                 wire:loading.attr="disabled"
                             >
                                 <span wire:loading.remove wire:target="attemptLogin">LOGIN</span>
@@ -108,7 +117,7 @@
                         <!-- Google Login Button -->
                         <div class="mb-4">
                             <a 
-                                href="{{ route('google.redirect') }}"
+                                href="{{ route('google.redirect', ['remember' => $remember ? 1 : 0]) }}"
                                 class="w-full flex items-center justify-center py-3 px-6 rounded-lg transition font-medium bg-white border border-gray-300 hover:bg-gray-100 text-gray-800"
                             >
                                 <img src="/images/icons/google.svg" alt="Google" class="h-5 w-5 mr-2 inline" />
@@ -117,9 +126,18 @@
                         </div>
 
                         <div class="text-center pt-2">
-                            <p class="text-gray-800 text-sm">
-                                Don't have an account? <a href="{{ route('register') }}" wire:navigate class="text-[#03b8ff] underline font-semibold">Sign Up</a>
+                            <p class="text-gray-800 text-md">
+                                Don't have an account? <a href="{{ route('register') }}" wire:navigate class="text-blue-500 italic hover:text-blue-700">Sign Up</a>
                             </p>
+                            <div class="flex items-center justify-center my-3">
+                                <div class="flex-grow border-t border-gray-300"></div>
+                        
+                            </div>
+                            <div class="flex items-center justify-center gap-3">
+                                <a target="_blank" href="{{ route('terms-of-use') }}" class="text-sm text-blue-500 hover:text-blue-700">Terms & Conditions</a>
+                                <span class="h-4 w-px bg-gray-300"></span>
+                                <a target="_blank" href="{{ route('privacy-policy') }}" class="text-sm text-blue-500 hover:text-blue-700">Privacy Policy</a>
+                            </div>
                         </div>
                     </form>
                 </div>

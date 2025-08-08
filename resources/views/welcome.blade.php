@@ -82,7 +82,7 @@
                 </svg>
                 <h3 class="text-lg font-semibold">Earn points</h3>
                 <p class="text-sm mt-2">Rack up points by answering surveys and redeem them for rewards.</p>
-                <a href="/rewards" class="text-[#03b8ff] text-sm mt-1 inline-block font-medium hover:underline">VIEW REWARDS</a>
+                <a href="/rewards-info" class="text-[#03b8ff] text-sm mt-1 inline-block font-medium hover:underline">VIEW REWARDS</a>
             </div>
         </div>
     </section>

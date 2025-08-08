@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('phone_number')->unique()->nullable();
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_accepted_terms')->default(false);
+            $table->boolean('is_accepted_privacy_policy')->default(false);
             $table->softDeletes();
             
             $table->decimal('points', 10, 0)->default(0);

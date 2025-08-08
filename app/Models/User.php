@@ -52,6 +52,8 @@ class User extends Authenticatable
         'demographic_tags_updated_at', // Add this new field
         'institution_demographic_tags_updated_at', // Add this field to fillable
         'profile_updated_at', // Add this new field
+        'is_accepted_terms', 
+        'is_accepted_privacy_policy', 
     ];
 
     /**
