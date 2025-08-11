@@ -141,13 +141,15 @@ class RewardRedeemModal extends Component
                         }
                     }
                 } else { // Voucher type
-                    // Find and claim a voucher instance (repeat the expiry check inside transaction)
+                    // Find and claim a voucher instance that will expire the soonest
                     $voucherInstance = Voucher::where('reward_id', $this->reward->id)
                         ->where('availability', 'available')
                         ->where(function($q) use ($now) {
                             $q->whereNull('expiry_date')
                               ->orWhere('expiry_date', '>', $now);
                         })
+                        ->orderByRaw('CASE WHEN expiry_date IS NULL THEN 1 ELSE 0 END') // Non-null dates first
+                        ->orderBy('expiry_date', 'asc') // Earliest expiry date first
                         ->lockForUpdate()
                         ->first();
 
@@ -158,7 +160,7 @@ class RewardRedeemModal extends Component
                     // Mark voucher as unavailable
                     $voucherInstance->availability = 'unavailable';
                     $voucherInstance->save();
-
+                    
                     // Decrement voucher reward quantity if limited
                     if ($this->reward->quantity != -1) {
                         $this->reward->quantity -= 1;
