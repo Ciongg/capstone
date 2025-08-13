@@ -4,8 +4,7 @@
         <h2 class="text-xl font-bold mb-4">Account Information</h2>
         <div class="space-y-2">
             <div><span class="font-semibold">Name:</span> {{ $user->name ?? 'N/A' }}</div>
-            <div><span class="font-semibold">Email:</span> {{ $user->email ?? 'N/A' }}
-                @if($user->email_verified_at)
+            <div><span class="font-semibold">Email:    @if($user->email_verified_at)
                     <span title="Verified" class="cursor-pointer">
                         <svg xmlns="http://www.w3.org/2000/svg" class="inline w-5 h-5 text-green-500 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -15,7 +14,8 @@
                     <span x-data x-on:click="$dispatch('open-modal', {name: 'otp-verification'})" class="inline-block align-middle cursor-pointer italic text-red-500 ml-1" title="Click to verify email">
                         Not Verified (Click to verify)
                     </span>
-                @endif
+                @endif </span> {{ $user->email ?? 'N/A' }}
+             
             </div>
             <div><span class="font-semibold">Phone Number:</span> {{ $user->phone_number ?? 'N/A' }}</div>
             <div><span class="font-semibold">Type:</span> {{ ucfirst($user->type ?? 'Respondent') }}</div>

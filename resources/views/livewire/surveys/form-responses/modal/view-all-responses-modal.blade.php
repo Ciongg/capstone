@@ -279,7 +279,7 @@
             
             <div class="flex justify-end items-center space-x-2">
                 {{-- AI Model Selector as a select dropdown --}}
-                <select wire:model="selectedModel" class="px-2 py-1 border rounded text-sm focus:ring focus:ring-blue-200 focus:border-blue-500">
+                <select wire:model="selectedModel" class="px-2 py-2 border rounded text-sm focus:ring focus:ring-blue-200 focus:border-blue-500">
                     <option value="deepseek">DeepSeek</option>
                     <option value="gemini">Gemini</option>
                 </select>

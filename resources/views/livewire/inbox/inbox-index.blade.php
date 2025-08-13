@@ -53,16 +53,21 @@
                     <div class="px-6 py-4 border-b {{ is_null($message->read_at) ? 'bg-blue-50' : '' }}">
                         <div class="flex items-start">
                             <div class="flex-shrink-0 mr-4">
-                                <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-white">
-                                    {{ substr($message->sender->name ?? 'U', 0, 1) }}
+
+                                <div class="w-12 h-12 rounded-full bg-blue-400 flex items-center justify-center text-white">
+                                    {{ substr($message->sender->name ?? 'Formigo', 0, 1) }}
                                 </div>
                             </div>
                             <div class="flex-grow">
+                                {{-- Sender Name and Date --}}
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1">
+                                    <p class="font-medium text-gray-900">{{ $message->sender->name ?? 'Formigo' }}</p>
+                                    <span class="text-sm text-gray-500">{{ $message->created_at->format('M d, Y \a\t h:i A') }}</span>
+                                </div>
                                 <div class="flex justify-between items-start">
                                     <h3 class="font-medium {{ is_null($message->read_at) ? 'text-blue-600' : 'text-gray-900' }}">
                                         {{ $message->subject }}
                                     </h3>
-                                    <span class="text-sm text-gray-500">{{ $message->created_at->diffForHumans() }}</span>
                                 </div>
                                 <div class="text-gray-600 mt-1 whitespace-pre-line">
                                     {{ $message->message }}

@@ -60,8 +60,8 @@
                             "
                         >
                             <div class="flex-shrink-0 mr-3">
-                                <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white">
-                                    {{ substr($message->sender->name ?? 'U', 0, 1) }}
+                                <div class="w-10 h-10 rounded-full bg-blue-400 flex items-center justify-center text-white">
+                                    {{ substr($message->sender->name ?? 'Formigo', 0, 1) }}
                                 </div>
                             </div>
                             <div class="flex-grow">

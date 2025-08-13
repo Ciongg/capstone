@@ -36,11 +36,23 @@
             </div>
             <div class="bg-white shadow rounded-lg p-4 sm:p-6 flex flex-col items-center">
                 <span class="text-base sm:text-lg font-semibold">Average Time</span>
-                <span class="text-xl sm:text-2xl text-blue-600 font-bold mt-2">--</span>
+                <span class="text-xl sm:text-2xl text-blue-600 font-bold mt-2">
+                    @if(isset($averageTime) && $averageTime !== null)
+                        @php
+                            $minutes = floor($averageTime / 60);
+                            $seconds = $averageTime % 60;
+                        @endphp
+                        {{ sprintf('%d:%02d', $minutes, $seconds) }}
+                    @else
+                        --
+                    @endif
+                </span>
             </div>
             <div class="bg-white shadow rounded-lg p-4 sm:p-6 flex flex-col items-center">
                 <span class="text-base sm:text-lg font-semibold">Points</span>
-                <span class="text-xl sm:text-2xl text-blue-600 font-bold mt-2">--</span>
+                <span class="text-xl sm:text-2xl text-blue-600 font-bold mt-2">
+                    {{ $survey->points_allocated ?? '--' }}
+                </span>
             </div>
         </div>
 

@@ -197,7 +197,7 @@
                                             <a href="/admin/announcements" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/announcements')) }} hover:bg-gray-100">Manage Announcements</a>
                                             <a href="/admin/reward-redemptions" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->routeIs('admin.reward-redemptions.index')) }} hover:bg-gray-100">Manage Rewards</a>
                                             <a href="/admin/users" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/users*')) }} hover:bg-gray-100">Manage Users</a>
-                                            <a href="/admin/requests" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/requests')) }} hover:bg-gray-100">Manage Support Request &</a>
+                                            <a href="/admin/requests" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/requests')) }} hover:bg-gray-100">Manage Support Requests</a>
                                         </div>
                                     </div>
                                 @endif
@@ -269,8 +269,6 @@
                         <span class="font-semibold ml-3">{{ Auth::user()->name }}</span>
                     </a>
 
-                 
-                    
                     {{-- Mobile Menu: Inbox Link --}}
                     <a href="/inbox" @click="mobileMenuOpen = false" class="flex items-center justify-between {{ $navLinkClass(request()->is('inbox')) }} hover:text-[#03b8ff]">
                         <div class="flex items-center">
@@ -285,9 +283,18 @@
                     </a>
                     
                     {{-- Mobile Menu Links: Authenticated Users (Common) --}}
-                    <a href="/feed" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->routeIs('feed.index')) }} hover:text-[#03b8ff]">Feed</a>
-                    <a href="/rewards" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->routeIs('rewards.index')) }} hover:text-[#03b8ff">Redeem</a>
-                    <a href="/vouchers" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->routeIs('vouchers.index')) }} hover:text-[#03b8ff]">Vouchers</a>
+                    <a href="/feed" @click="mobileMenuOpen = false" class="flex items-center {{ $navLinkClass(request()->routeIs('feed.index')) }} hover:text-[#03b8ff]">
+                        <img src="/images/icons/home.svg" alt="Feed" class="w-6 h-6 mr-2">
+                        Feed
+                    </a>
+                    <a href="/rewards" @click="mobileMenuOpen = false" class="flex items-center {{ $navLinkClass(request()->routeIs('rewards.index')) }} hover:text-[#03b8ff]">
+                        <img src="/images/icons/redeem.svg" alt="Redeem" class="w-6 h-6 mr-2">
+                        Redeem
+                    </a>
+                    <a href="/vouchers" @click="mobileMenuOpen = false" class="flex items-center {{ $navLinkClass(request()->routeIs('vouchers.index')) }} hover:text-[#03b8ff]">
+                        <img src="/images/icons/voucher.svg" alt="Vouchers" class="w-6 h-6 mr-2">
+                        Vouchers
+                    </a>
                     
                     {{-- Mobile Menu Links: Role Specific --}}
                     @if(Auth::user()->isResearcher())
@@ -295,8 +302,11 @@
                         <button 
                             x-data
                             @click="mobileMenuOpen = false; $dispatch('open-modal', {name: 'select-survey-type'})"
-                            class="{{ $navLinkClass(request()->is('surveys/create*')) }} hover:text-[#03b8ff] text-left"
-                        >Create Survey</button>
+                            class="flex items-center {{ $navLinkClass(request()->is('surveys/create*')) }} hover:text-[#03b8ff] text-left"
+                        >
+                            <img src="/images/icons/survey.svg" alt="Create Survey" class="w-6 h-6 mr-2">
+                            Create Survey
+                        </button>
                     @elseif(Auth::user()->isInstitutionAdmin())
                         {{-- Institution Admin: Links based on institution validity --}}
                         @if(Auth::user()->hasValidInstitution())
@@ -304,17 +314,20 @@
                             <button 
                                 x-data
                                 @click="mobileMenuOpen = false; $dispatch('open-modal', {name: 'select-survey-type'})"
-                                class="{{ $navLinkClass(request()->is('surveys/create*')) }} hover:text-[#03b8ff] text-left"
-                        >Create Survey</button>
-                        
-                        {{-- Institution Sub-menu (if institution is valid) --}}
-                        <div class="border-t border-gray-200 pt-2 mt-2">
-                            <p class="font-semibold text-gray-700 mb-2">Institution</p>
-                            <a href="/institution/analytics" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/analytics')) }} hover:text-[#03b8ff]">Analytics</a>
-                            <a href="/institution/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/users')) }} hover:text-[#03b8ff]">Users</a>
-                            <a href="/institution/surveys" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/surveys')) }} hover:text-[#03b8ff]">Surveys</a>
-                            <a href="/institution/announcements" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/announcements')) }} hover:text-[#03b8ff]">Announcements</a>
-                        </div>
+                                class="flex items-center {{ $navLinkClass(request()->is('surveys/create*')) }} hover:text-[#03b8ff] text-left"
+                            >
+                                <img src="/images/icons/survey.svg" alt="Create Survey" class="w-6 h-6 mr-2">
+                                Create Survey
+                            </button>
+                            
+                            {{-- Institution Sub-menu (if institution is valid) --}}
+                            <div class="border-t border-gray-200 pt-2 mt-2">
+                                <p class="font-semibold text-gray-700 mb-2">Institution</p>
+                                <a href="/institution/analytics" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/analytics')) }} hover:text-[#03b8ff]">Analytics</a>
+                                <a href="/institution/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/users')) }} hover:text-[#03b8ff]">Users</a>
+                                <a href="/institution/surveys" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/surveys')) }} hover:text-[#03b8ff]">Surveys</a>
+                                <a href="/institution/announcements" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/announcements')) }} hover:text-[#03b8ff]">Announcements</a>
+                            </div>
                         @else
                             {{-- Disabled links (if institution is invalid) --}}
                             <span class="text-gray-400 cursor-not-allowed" title="Your institution is not active in our system">Create Survey</span>
@@ -325,8 +338,11 @@
                         <button 
                             x-data
                             @click="mobileMenuOpen = false; $dispatch('open-modal', {name: 'select-survey-type'})"
-                            class="{{ $navLinkClass(request()->is('surveys/create*')) }} hover:text-[#03b8ff] text-left"
-                        >Create Survey</button>
+                            class="flex items-center {{ $navLinkClass(request()->is('surveys/create*')) }} hover:text-[#03b8ff] text-left"
+                        >
+                            <img src="/images/icons/survey.svg" alt="Create Survey" class="w-6 h-6 mr-2">
+                            Create Survey
+                        </button>
                         
                         {{-- Super Admin: Manage Sub-menu --}}
                         <div class="border-t border-gray-200 pt-2 mt-2">
@@ -336,7 +352,7 @@
                             <a href="/admin/announcements" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/announcements')) }} hover:text-[#03b8ff]">Manage Announcements</a>
                             <a href="/admin/reward-redemptions" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->routeIs('admin.reward-redemptions.index')) }} hover:text-[#03b8ff]">Manage Rewards</a>
                             <a href="/admin/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/users*')) }} hover:text-[#03b8ff]">Manage Users</a>
-                            <a href="/admin/requests" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/requests')) }} hover:text-[#03b8ff]">Manage Support Request</a>
+                            <a href="/admin/requests" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/requests')) }} hover:text-[#03b8ff]">Manage Support Requests</a>
                         </div>
                     @endif
                 @endauth

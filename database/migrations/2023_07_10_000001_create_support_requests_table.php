@@ -18,7 +18,7 @@ return new class extends Migration
             $table->text('description');
             $table->string('request_type'); // survey_lock_appeal, report_appeal, account_issue, survey_question, other
             $table->string('status')->default('pending'); // pending, in_progress, resolved, rejected
-            $table->unsignedBigInteger('related_id')->nullable(); // For storing related entity ID (survey ID, report ID, etc)
+            $table->string('related_id')->nullable(); // For storing related entity ID (survey ID, report ID, etc)
             $table->string('related_model')->nullable(); // For storing the model name of the related entity
             $table->text('admin_notes')->nullable(); // For admin responses and notes
             $table->foreignId('admin_id')->nullable()->constrained('users'); // Admin who handled the request

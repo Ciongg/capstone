@@ -1,7 +1,7 @@
 @extends('components.layouts.app')
 
 @section('content')
-<div class="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+<div class="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
     <div class="bg-white shadow-sm rounded-lg overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h1 class="text-xl font-bold text-gray-800">{{ $message->subject }}</h1>
@@ -13,18 +13,18 @@
         <div class="px-6 py-4">
             <div class="flex items-start mb-4">
                 <div class="flex-shrink-0 mr-4">
-                    <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-white">
-                        {{ substr($message->sender->name ?? 'U', 0, 1) }}
+                    <div class="w-12 h-12 rounded-full bg-blue-400 flex items-center justify-center text-white">
+                        {{ substr($message->sender->name ?? 'F', 0, 1) }}
                     </div>
                 </div>
                 <div>
-                    <p class="font-medium text-gray-900">{{ $message->sender->name ?? 'Unknown Sender' }}</p>
+                    <p class="font-medium text-gray-900">{{ $message->sender->name ?? 'Formigo' }}</p>
                     <p class="text-sm text-gray-500">{{ $message->created_at->format('M d, Y \a\t h:i A') }}</p>
                 </div>
             </div>
             
-            <div class="prose prose-sm sm:prose max-w-none">
-                {!! nl2br(e($message->message)) !!}
+            <div class="text-gray-600 mt-1 whitespace-pre-line">
+                {{ $message->message }}
             </div>
             
             @if ($message->url)

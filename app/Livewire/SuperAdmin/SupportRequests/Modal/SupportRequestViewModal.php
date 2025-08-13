@@ -264,7 +264,7 @@ Please ensure all reports are legitimate to avoid future penalties. Multiple fal
         
         InboxMessage::create([
             'recipient_id' => $this->supportRequest->user_id,
-            'subject' => "Support Request Status Update - {$requestTypeText} #{$this->supportRequest->id} {$newStatusText}" ,
+            'subject' => "Support Request Status Update - {$requestTypeText} #{$this->supportRequest->id} - Status: {$newStatusText}" ,
             'message' => "Your Support Request for {$requestTypeText} has been updated to: {$newStatusText}\n\nAdmin Notes:\n{$adminNotesText}",
             'read_at' => null
         ]);

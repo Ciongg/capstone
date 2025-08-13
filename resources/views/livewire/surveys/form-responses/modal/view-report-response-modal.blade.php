@@ -50,7 +50,7 @@
                     </div>
                     <div class="flex flex-col">
                         <span class="font-medium mb-1">Details:</span>
-                        <div class="bg-white p-2 border rounded text-gray-700 whitespace-normal break-words max-h-40 overflow-y-auto">{{ $details }}</div>
+                        <div class="bg-white p-4 border rounded text-gray-700 whitespace-normal break-words max-h-40 overflow-y-auto">{{ $details }}</div>
                     </div>
                 </div>
             </div>
@@ -100,7 +100,7 @@
                         <select 
                             id="questionId" 
                             wire:model="questionId"
-                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                            class="w-full border-gray-300 rounded-md shadow-sm px-4 py-3 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                         >
                             <option value="">Select a specific question (optional)</option>
                             @foreach($questions as $question)
@@ -116,7 +116,7 @@
                         <select 
                             id="reason" 
                             wire:model="reason"
-                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                            class="w-full border-gray-300 rounded-md shadow-sm px-4 py-3 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                         >
                             <option value="">Select a reason</option>
                             @foreach($reportReasons as $key => $label)
@@ -133,7 +133,7 @@
                             id="details"
                             wire:model="details"
                             rows="5"
-                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 px-4 py-3"
                             placeholder="Please provide specific details about why you're reporting this response..."
                         ></textarea>
                         @error('details') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
