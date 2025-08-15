@@ -48,4 +48,13 @@ class Response extends Model
     {
         return $this->hasOne(ResponseSnapshot::class);
     }
+
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
+    }
 }

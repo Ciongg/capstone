@@ -43,6 +43,15 @@ class Survey extends Model
         'boost_count' => 'integer',
     ];
 
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
+    }
+
     public function pages()
     {
         return $this->hasMany(SurveyPage::class);
