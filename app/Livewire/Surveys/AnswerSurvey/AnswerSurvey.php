@@ -629,7 +629,9 @@ class AnswerSurvey extends Component
      */
     protected function saveResponses()
     {
-        DB::transaction(function () {
+        try {
+            DB::beginTransaction();
+            
             $user = Auth::user();
             
             // Update survey status if it's the first response
@@ -645,12 +647,27 @@ class AnswerSurvey extends Component
             // Calculate completion time in seconds
             $completionTimeSeconds = $startedAt->diffInSeconds($completedAt);
 
-            // Create a new response record
-            $response = Response::create([
+            // Create a new response record with explicit UUID
+            $response = new Response([
+                'uuid' => (string) \Illuminate\Support\Str::uuid(),
                 'survey_id' => $this->survey->id,
                 'user_id' => $user?->id,
             ]);
-
+            
+            // Log before saving to catch any validation/saving issues
+            Log::info('About to save response', [
+                'response_data' => [
+                    'uuid' => $response->uuid,
+                    'survey_id' => $response->survey_id,
+                    'user_id' => $response->user_id,
+                ]
+            ]);
+            
+            if (!$response->save()) {
+                throw new \Exception('Failed to save response record');
+            }
+            Log::info('Response saved successfully', ['response_id' => $response->id]);
+            
             // Save user snapshot data if user is authenticated
             if ($user) {
                 // Create demographic tags JSON
@@ -665,7 +682,7 @@ class AnswerSurvey extends Component
                     }
                 }
 
-                // Create the snapshot record
+                // Create the snapshot record - cast completion_time_seconds to integer
                 $response->snapshot()->create([
                     'first_name' => $user->first_name,
                     'last_name' => $user->last_name,
@@ -677,7 +694,7 @@ class AnswerSurvey extends Component
                     'title' => $user->title ?? null,
                     'started_at' => $startedAt,
                     'completed_at' => $completedAt,
-                    'completion_time_seconds' => $completionTimeSeconds,
+                    'completion_time_seconds' => (int)$completionTimeSeconds, // Cast to integer for PostgreSQL
                     'demographic_tags' => json_encode($demographicTags)
                 ]);
             }
@@ -757,7 +774,18 @@ class AnswerSurvey extends Component
                     }
                 }
             }
-        });
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Survey submission error in saveResponses: ' . $e->getMessage(), [
+                'survey_id' => $this->survey->id,
+                'user_id' => Auth::id(),
+                'error_class' => get_class($e),
+                'error' => $e->getTraceAsString()
+            ]);
+            
+            // Re-throw the exception to be caught by the submit method
+            throw $e;
+        }
     }
     
     /**
@@ -769,68 +797,78 @@ class AnswerSurvey extends Component
      */
     protected function saveAnswerForQuestion($response, $question, $answerValue)
     {
-        $answerData = [
-            'response_id' => $response->id,
-            'survey_question_id' => $question->id,
-            'answer' => null,
-            'other_text' => null,
-        ];
+        try {
+            $answerData = [
+                'response_id' => $response->id,
+                'survey_question_id' => $question->id,
+                'answer' => null,
+                'other_text' => null,
+            ];
 
-        switch ($question->question_type) {
-            case 'multiple_choice':
-                // For multiple choice, save selected choice IDs as JSON by encoding
-                $selectedChoiceIds = collect($answerValue)
-                    ->filter(fn($v) => $v === true)
-                    ->keys()
-                    ->toArray();
-                    
-                if (!empty($selectedChoiceIds)) {
-                    $answerData['answer'] = json_encode($selectedChoiceIds);
-                    
-                    // Save "Other" text if applicable
-                    $otherChoice = $question->choices->firstWhere('is_other', true);
-                    if ($otherChoice && in_array($otherChoice->id, $selectedChoiceIds)) {
-                        $answerData['other_text'] = $this->otherTexts[$question->id] ?? null;
+            switch ($question->question_type) {
+                case 'multiple_choice':
+                    // For multiple choice, save selected choice IDs as JSON by encoding
+                    $selectedChoiceIds = collect($answerValue)
+                        ->filter(fn($v) => $v === true)
+                        ->keys()
+                        ->toArray();
+                        
+                    if (!empty($selectedChoiceIds)) {
+                        $answerData['answer'] = json_encode($selectedChoiceIds, JSON_THROW_ON_ERROR);
+                        
+                        // Save "Other" text if applicable
+                        $otherChoice = $question->choices->firstWhere('is_other', true);
+                        if ($otherChoice && in_array($otherChoice->id, $selectedChoiceIds)) {
+                            $answerData['other_text'] = $this->otherTexts[$question->id] ?? null;
+                        }
+                        
+                        Log::info('Creating answer', ['data' => $answerData]);
+                        Answer::create($answerData);
                     }
+                    break;
                     
-                    Answer::create($answerData);
-                }
-                break;
-                
-            case 'radio':
-                // For radio buttons, save the selected choice ID
-                if ($answerValue !== null) {
-                    $answerData['answer'] = $answerValue;
-                    
-                    // Save "Other" text if applicable
-                    $otherChoice = $question->choices->firstWhere('is_other', true);
-                    if ($otherChoice && $answerValue == $otherChoice->id) {
-                        $answerData['other_text'] = $this->otherTexts[$question->id] ?? null;
+                case 'radio':
+                    // For radio buttons, save the selected choice ID
+                    if ($answerValue !== null) {
+                        $answerData['answer'] = $answerValue;
+                        
+                        // Save "Other" text if applicable
+                        $otherChoice = $question->choices->firstWhere('is_other', true);
+                        if ($otherChoice && $answerValue == $otherChoice->id) {
+                            $answerData['other_text'] = $this->otherTexts[$question->id] ?? null;
+                        }
+                        
+                        Answer::create($answerData);
                     }
+                    break;
                     
-                    Answer::create($answerData);
-                }
-                break;
-                
-            case 'likert':
-                // For likert scales, save responses as JSON
-                $filteredLikert = array_filter($answerValue ?? [], fn($v) => $v !== null);
-                if (!empty($filteredLikert)) {
-                    $answerData['answer'] = json_encode($answerValue);
-                    Answer::create($answerData);
-                }
-                break;
-                
-            default:
-                // For text, essay, date inputs, etc.
-                if ($answerValue !== null && $answerValue !== '') {
-                    $answerData['answer'] = $answerValue;
-                    Answer::create($answerData);
-                } elseif (!$question->required) {
-                    // For non-required questions with empty answers, save a placeholder
-                    $answerData['answer'] = '-';
-                    Answer::create($answerData);
-                }
+                case 'likert':
+                    // For likert scales, save responses as JSON
+                    $filteredLikert = array_filter($answerValue ?? [], fn($v) => $v !== null);
+                    if (!empty($filteredLikert)) {
+                        $answerData['answer'] = json_encode($answerValue, JSON_THROW_ON_ERROR);
+                        Answer::create($answerData);
+                    }
+                    break;
+                    
+                default:
+                    // For text, essay, date inputs, etc.
+                    if ($answerValue !== null && $answerValue !== '') {
+                        $answerData['answer'] = $answerValue;
+                        Answer::create($answerData);
+                    } elseif (!$question->required) {
+                        // For non-required questions with empty answers, save a placeholder
+                        $answerData['answer'] = '-';
+                        Answer::create($answerData);
+                    }
+            }
+        } catch (\Exception $e) {
+            Log::error('Error saving answer: ' . $e->getMessage(), [
+                'question_id' => $question->id,
+                'response_id' => $response->id, 
+                'error' => $e->getTraceAsString()
+            ]);
+            throw $e;  // Re-throw to be caught by parent method
         }
     }
     
