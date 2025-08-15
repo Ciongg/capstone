@@ -30,13 +30,6 @@ COPY . .
 # ---------- Install PHP dependencies ----------
 RUN composer install --optimize-autoloader
 
-# ---------- Clear and cache Laravel config ----------
-RUN php artisan config:clear \
-    && php artisan cache:clear \
-    && php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache
-
 # ---------- Set correct APP_URL for Vite ----------
 ARG APP_URL=https://capstone-3zq9.onrender.com
 ENV APP_URL=${APP_URL}
@@ -53,4 +46,11 @@ RUN chown -R www-data:www-data storage bootstrap/cache
 EXPOSE 10000
 
 # ---------- Start Laravel ----------
-CMD php artisan migrate:fresh --seed --force && php artisan storage:link && php artisan serve --host=0.0.0.0 --port=10000
+CMD php artisan config:clear \
+    && php artisan cache:clear \
+    && php artisan config:cache \
+    && php artisan route:cache \
+    && php artisan view:cache \
+    && php artisan migrate:fresh --seed --force \
+    && php artisan storage:link \
+    && php artisan serve --host=0.0.0.0 --port=10000
