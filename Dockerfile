@@ -31,19 +31,16 @@ COPY --chown=www-data:www-data . /var/www
 # Copy built frontend assets from node-builder
 COPY --from=node-builder /app/public/build /var/www/public/build
 
-# Install PHP dependencies
-RUN composer install --optimize-autoloader
+# Install PHP dependencies (including dev for Faker)
+RUN composer install
 
 # Clear and cache config/routes
 RUN php artisan config:clear
 RUN php artisan config:cache
 RUN php artisan route:cache
 
-# Run migrations and seed the database
-RUN php artisan migrate --force --seed
-
-# Expose port 8000 (you can change this to 80 if needed)
+# Expose port
 EXPOSE 8000
 
-# Start Laravel server (for testing; for production, use Nginx + PHP-FPM)
-CMD php artisan serve --host=0.0.0.0 --port=8000
+# Run migrations + seed at container start and serve Laravel
+CMD php artisan migrate --force --seed && php artisan serve --host=0.0.0.0 --port=8000
