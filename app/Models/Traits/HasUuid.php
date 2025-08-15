@@ -24,15 +24,12 @@ trait HasUuid
 
     /**
      * Generate a UUID if it's not already set
-     * Creates a shorter 10-character alphanumeric UUID without dashes
+     * Uses standard UUID format for PostgreSQL compatibility
      */
     protected function generateUuidIfNotSet()
     {
         if (empty($this->uuid)) {
-            // Generate a random 10-character alphanumeric string
-            $this->uuid = substr(str_shuffle(
-                str_repeat('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 3)
-            ), 0, 10);
+            $this->uuid = (string) Str::uuid();
         }
     }
 
