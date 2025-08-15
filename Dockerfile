@@ -32,7 +32,7 @@ COPY --chown=www-data:www-data . /var/www
 COPY --from=node-builder /app/public/build /var/www/public/build
 
 # Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --optimize-autoloader
 
 # Clear and cache config/routes
 RUN php artisan config:clear
