@@ -1,46 +1,49 @@
-### Step 1: Node.js for frontend (Vite)
-FROM node:18 AS node-builder
+# ---------- Base PHP image ----------
+FROM php:8.2-fpm
 
-WORKDIR /app
+# Set working directory
+WORKDIR /var/www/html
+
+# ---------- Install system dependencies ----------
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    nodejs \
+    npm \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---------- Install PHP extensions ----------
+RUN docker-php-ext-install pdo pdo_pgsql
+
+# ---------- Install Composer ----------
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# ---------- Copy project files including .env ----------
 COPY . .
 
-# Install npm dependencies and build production assets
+# ---------- Install PHP dependencies ----------
+RUN composer install --optimize-autoloader
+
+# ---------- Set correct APP_URL for Vite ----------
+ARG APP_URL=https://capstone-3zq9.onrender.com
+ENV APP_URL=${APP_URL}
+ENV ASSET_URL=${APP_URL}
+
+# ---------- Install Node dependencies & build frontend ----------
 RUN npm install
 RUN npm run build
 
+# ---------- Set permissions for storage and cache ----------
+RUN chown -R www-data:www-data storage bootstrap/cache
 
-### Step 2: PHP for Laravel backend
-FROM php:8.2-fpm
+# ---------- Expose port ----------
+EXPOSE 10000
 
-WORKDIR /var/www
-
-# Install PHP extensions and system dependencies
-RUN apt-get update && apt-get install -y \
-    zip unzip curl git libxml2-dev libzip-dev libpng-dev libjpeg-dev libonig-dev \
-    sqlite3 libsqlite3-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd zip
-
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Copy Laravel project into container
-COPY --chown=www-data:www-data . /var/www
-
-# Copy built frontend assets from node-builder
-COPY --from=node-builder /app/public/build /var/www/public/build
-
-# Install PHP dependencies (including dev for Faker)
-RUN composer install
-
-# Clear and cache config/routes
-RUN php artisan config:clear
-RUN php artisan config:cache
-RUN php artisan route:cache
-
-# Expose port
-EXPOSE 8000
-
-# Run migrations + seed at container start and serve Laravel
-CMD php artisan migrate --force --seed && php artisan serve --host=0.0.0.0 --port=8000
+# ---------- Start Laravel ----------
+CMD php artisan migrate:fresh --seed && php artisan storage:link && php artisan serve --host=0.0.0.0 --port=10000
