@@ -12,6 +12,7 @@ use App\Http\Controllers\InstitutionAdminController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\InboxController; 
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Middleware\NoCacheForLivewireTmp;
 
 // ============================================================================
 // PUBLIC ROUTES (No authentication required)
@@ -155,6 +156,14 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:respondent,researcher,institution_admin,super_admin'])->group(function () {
     // Add respondent-specific routes here
     // Most authenticated routes are available to all user types
+});
+
+// If you serve storage via Laravel (not via Nginx directly)
+Route::middleware([NoCacheForLivewireTmp::class])->group(function () {
+    Route::get('storage/livewire-tmp/{file}', function ($file) {
+        // ...your file serving logic...
+    });
+    // Optionally, add other routes that serve temp files
 });
 
 // ============================================================================
