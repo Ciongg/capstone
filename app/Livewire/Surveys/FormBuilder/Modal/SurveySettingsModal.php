@@ -264,7 +264,7 @@ class SurveySettingsModal extends Component
                     }
 
 
-                     $path = $this->image->store('surveys', 'public');
+                     $path = $this->banner_image->store('surveys', 'public');
 
                     
                     $this->survey->image_path = $path;

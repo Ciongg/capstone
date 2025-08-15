@@ -128,7 +128,7 @@ class SurveyTypeModal extends Component
             'question_text' => 'Enter Question Title',
             'question_type' => 'multiple_choice',
             'order' => 1,
-            'required' => false,
+            'required' => true,
         ]);
 
         // Add default choices to the question
