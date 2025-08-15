@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Only append to web group so it runs after authentication
         $middleware->web(\App\Http\Middleware\UpdateLastActiveAt::class);
+
+        // Trust all proxies (required for HTTPS detection on Render.com)
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
