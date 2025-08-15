@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use App\Services\TestTimeService;
 use Carbon\Carbon;
-
+use Illuminate\Support\Str;
 class AnswerSurvey extends Component
 {
     /**
@@ -647,25 +647,20 @@ class AnswerSurvey extends Component
             // Calculate completion time in seconds
             $completionTimeSeconds = $startedAt->diffInSeconds($completedAt);
 
-            // Create a new response record with explicit UUID
-            $response = new Response([
+            // Explicitly set UUID for PostgreSQL
+            $response = Response::create([
                 'uuid' => (string) \Illuminate\Support\Str::uuid(),
                 'survey_id' => $this->survey->id,
                 'user_id' => $user?->id,
+                'reported' => false,
             ]);
-            
-            // Log before saving to catch any validation/saving issues
-            Log::info('About to save response', [
-                'response_data' => [
-                    'uuid' => $response->uuid,
-                    'survey_id' => $response->survey_id,
-                    'user_id' => $response->user_id,
-                ]
-            ]);
-            
-            if (!$response->save()) {
-                throw new \Exception('Failed to save response record');
+
+            if (!$response) {
+                Log::error('Failed to create response record');
+                DB::rollBack();
+                throw new \Exception('Failed to create response record');
             }
+            
             Log::info('Response saved successfully', ['response_id' => $response->id]);
             
             // Save user snapshot data if user is authenticated
@@ -694,7 +689,7 @@ class AnswerSurvey extends Component
                     'title' => $user->title ?? null,
                     'started_at' => $startedAt,
                     'completed_at' => $completedAt,
-                    'completion_time_seconds' => (int)$completionTimeSeconds, // Cast to integer for PostgreSQL
+                    'completion_time_seconds' => (int)$completionTimeSeconds,
                     'demographic_tags' => json_encode($demographicTags)
                 ]);
             }
@@ -755,7 +750,6 @@ class AnswerSurvey extends Component
                     if (in_array($this->survey->status, ['published', 'ongoing'])) {
                         $this->survey->status = 'finished';
                         $this->survey->save();
-                        
                     }
                     
                     // Only send if not already notified (check for existing message)
@@ -774,6 +768,9 @@ class AnswerSurvey extends Component
                     }
                 }
             }
+
+            DB::commit();
+
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Survey submission error in saveResponses: ' . $e->getMessage(), [
@@ -782,8 +779,6 @@ class AnswerSurvey extends Component
                 'error_class' => get_class($e),
                 'error' => $e->getTraceAsString()
             ]);
-            
-            // Re-throw the exception to be caught by the submit method
             throw $e;
         }
     }

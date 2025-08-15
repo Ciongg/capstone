@@ -216,30 +216,23 @@ class SurveySeeder extends Seeder
         }
         
         // Make sure storage/app/public/surveys directory exists (create if not)
-        if (!File::isDirectory(storage_path('app/public/surveys'))) {
-            File::makeDirectory(storage_path('app/public/surveys'), 0755, true);
+        $surveysStoragePath = storage_path('app/public/surveys');
+        if (!File::isDirectory($surveysStoragePath)) {
+            File::makeDirectory($surveysStoragePath, 0755, true);
         }
 
-        // Copy images from public/images/surveys to storage/app/public/surveys if not already present
-        $sourceImages = public_path('images/surveys');
-        $destImages = storage_path('app/public/surveys');
+        // Get all images from storage/app/public/surveys
         $imageFiles = [];
-
-        if (File::isDirectory($sourceImages)) {
-            $files = File::files($sourceImages);
-            foreach ($files as $file) {
-                $destPath = $destImages . '/' . $file->getFilename();
-                if (!File::exists($destPath)) {
-                    File::copy($file->getPathname(), $destPath);
-                }
-                $imageFiles[] = 'surveys/' . $file->getFilename(); // Path relative to 'public' disk
-            }
-        } else {
-            $this->command->warn('No images found in public/images/surveys. No images will be assigned to surveys.');
+        $storageFiles = File::files($surveysStoragePath);
+        foreach ($storageFiles as $file) {
+            $imageFiles[] = 'surveys/' . $file->getFilename(); // Path relative to 'public' disk
+        }
+        if (empty($imageFiles)) {
+            $this->command->warn('No images found in storage/app/public/surveys. No images will be assigned to surveys.');
         }
         
         // Create 10 random surveys
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 10; $i++) {
             $surveyStatus = 'published';
             // Change to 30% probability for advanced surveys, 70% for basic
             $surveyType = $faker->boolean(30) ? 'advanced' : 'basic';
@@ -385,3 +378,4 @@ class SurveySeeder extends Seeder
         $this->command->info('Created x surveys with structured academic content!');
     }
 }
+          

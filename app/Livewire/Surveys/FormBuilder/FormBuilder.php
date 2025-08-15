@@ -684,7 +684,7 @@ class FormBuilder extends Component
                    'question_text' => $options['text'] ?? 'Enter Question Title',
                    'question_type' => $questionType,
                    'order' => $newOrder,
-                   'required' => false,
+                   'required' => true,
                ];
                
                $newItem = $page->questions()->create($questionData);
