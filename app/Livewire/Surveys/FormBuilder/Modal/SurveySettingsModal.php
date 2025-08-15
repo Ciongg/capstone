@@ -258,13 +258,20 @@ class SurveySettingsModal extends Component
             // If validation passes, proceed with saving
             if ($this->survey) {
                 // Handle banner image saving here
-                if ($this->banner_image) {
+               if ($this->banner_image) {
                     if ($this->survey->image_path) {
-                        Storage::disk('public')->delete($this->survey->image_path);
+                        Storage::disk('s3')->delete($this->survey->image_path);
                     }
-                    $path = $this->banner_image->store('surveys', 'public');
+
+                    $path = $this->banner_image->storePubliclyAs(
+                        'surveys',
+                        $this->banner_image->getClientOriginalName(),
+                        's3'
+                    );
+
                     $this->survey->image_path = $path;
                 }
+
 
                 // When survey is published, preserve the original start_date
                 if (in_array($this->survey->status, ['published', 'ongoing'])) {
@@ -429,8 +436,7 @@ class SurveySettingsModal extends Component
     public function deleteCurrentBannerImage()
     {
         if ($this->survey->image_path) {
-            Storage::disk('public')->delete($this->survey->image_path);
-            
+            Storage::disk('s3')->delete($this->survey->image_path);
             $this->survey->image_path = null;
             $this->survey->save();
         }

@@ -127,11 +127,12 @@ class User extends Authenticatable
     public function getProfilePhotoUrlAttribute()
     {
         if ($this->profile_photo_path) {
-            // Use the asset() helper, assuming storage is linked
-            // The path stored (e.g., 'profile-photos/image.jpg') needs '/storage/' prepended
-            return asset('storage/' . $this->profile_photo_path); 
+            // Use S3 in production, local in local
+            if (config('filesystems.default') === 's3') {
+                return \Storage::disk('s3')->url($this->profile_photo_path);
+            }
+            return asset('storage/' . $this->profile_photo_path);
         }
-
         // Fallback to default image
         return 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&color=7F9CF5&background=EBF4FF'; 
     }

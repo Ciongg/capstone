@@ -25,8 +25,7 @@
     {{-- Image --}}
     <div class="w-full flex-grow mt-1 flex items-center justify-center mb-2 relative px-3 sm:px-4 min-h-0">
         @if($survey->image_path)
-
-            @php $imageUrl = asset('storage/' . $survey->image_path); @endphp
+            @php $imageUrl = Storage::disk('s3')->url($survey->image_path); @endphp
 
             <button @click="fullscreenImageSrc = '{{ $imageUrl }}'" class="cursor-pointer w-full h-full flex items-center justify-center">
                 <img src="{{ $imageUrl }}" alt="Survey image for {{ $survey->title }}" class="rounded-lg object-contain max-w-full max-h-[340px]" />

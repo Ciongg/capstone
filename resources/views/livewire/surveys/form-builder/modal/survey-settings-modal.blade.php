@@ -139,7 +139,7 @@
                         <input id="banner-{{ $survey->id }}"
                                type="file"
                                class="hidden"
-                               wire:model.defer="banner_image"
+                               wire:model="banner_image"
                                accept="image/*"
                                @change="fileName = $event.target.files[0] ? $event.target.files[0].name : ''"
                                x-bind:disabled="isDisabled" />
@@ -150,7 +150,7 @@
 
                     {{-- Image Preview --}}
                     @if ($banner_image) {{-- Show preview of NEW image --}}
-                         <div class="mt-4 relative">
+                        <div class="mt-4 relative">
                             <span class="block text-sm font-medium text-gray-700 mb-1">Uploaded Survey Banner Preview:</span>
                             <div class="relative">
                                 <img src="{{ $banner_image->temporaryUrl() }}" alt="New Banner Preview" class="max-h-40 rounded shadow">
@@ -171,7 +171,7 @@
                         <div class="mt-4 relative">
                             <span class="block text-sm font-medium text-gray-700 mb-1">Current Survey Banner:</span>
                             <div class="relative">
-                                <img src="{{ asset('storage/' . $survey->image_path) }}" alt="Survey Banner" class="max-h-40 rounded shadow" />
+                                <img src="{{ Storage::disk('s3')->url($survey->image_path) }}" alt="Survey Banner" class="max-h-40 rounded shadow" />
                                 <button 
                                     type="button" 
                                     wire:click="deleteCurrentBannerImage" 
@@ -477,6 +477,16 @@
                     title: 'Validation Error',
                     text: data.message || 'An error occurred.',
                     confirmButtonColor: '#e3342f',
+                });
+            });
+            Livewire.on('showSuccessAlert', (data) => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: data.message || 'Upload successful!',
+                    confirmButtonColor: '#22c55e',
+                    timer: 1500,
+                    showConfirmButton: false
                 });
             });
         });

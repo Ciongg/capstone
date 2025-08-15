@@ -17,7 +17,8 @@ class EditProfileModal extends Component
     public $phone_number;
     public $photo;
     public $email;
-    
+     
+    // Add th    
     // Add these properties for cooldown
     public $canUpdateProfile = false;
     public $daysUntilProfileUpdateAvailable = 0;
@@ -127,8 +128,13 @@ class EditProfileModal extends Component
             if ($this->user->profile_photo_path) {
                 Storage::disk('public')->delete($this->user->profile_photo_path);
             }
-            $path = $this->photo->store('profile-photos', 'public');
-            $this->user->profile_photo_path = $path;
+                $path = $this->photo->storePubliclyAs(
+                        'profile-photos',
+                        $this->photo->getClientOriginalName(),
+                        's3'
+                    );
+
+                    $this->user->profile_photo_path = $path;
         }
 
         // Update the profile_updated_at timestamp

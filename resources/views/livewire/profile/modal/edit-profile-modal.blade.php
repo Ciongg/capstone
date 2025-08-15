@@ -54,9 +54,9 @@
                 <div class="mt-4 flex flex-col items-center">
                     <span class="block text-sm font-medium text-gray-700 mb-1">Uploaded Profile Photo Preview:</span>
                     <div class="relative w-32 h-32 flex items-center justify-center">
-                        {{-- <div class="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center">
+                        <div class="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center">
                             <img src="{{ $photo->temporaryUrl() }}" alt="New Profile Photo Preview" class="w-full h-full object-cover">
-                        </div> --}}
+                        </div>
                         @if($canUpdateProfile)
                         <button 
                             type="button" 
@@ -77,7 +77,7 @@
                     <span class="block text-sm font-medium text-gray-700 mb-1">Current Profile Photo:</span>
                     <div class="relative w-32 h-32 flex items-center justify-center">
                         <div class="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center">
-                            <img src="{{ $user->profile_photo_url }}" alt="Profile Photo" class="w-full h-full object-cover" />
+                            <img src="{{ Storage::disk('s3')->url($user->profile_photo_path) }}" alt="Survey Banner" class="max-h-40 rounded shadow" />
                         </div>
                         @if($canUpdateProfile)
                         <button 
