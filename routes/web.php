@@ -166,6 +166,11 @@ Route::middleware([NoCacheForLivewireTmp::class])->group(function () {
     // Optionally, add other routes that serve temp files
 });
 
+// Remove auth middleware from Livewire temp file route (for debugging only)
+Route::get('/livewire/preview-file/{filename}', function ($filename) {
+    // ...your logic to serve the file...
+})->withoutMiddleware(['auth']);
+
 // ============================================================================
 // CATCH-ALL ROUTE (Handle undefined routes with user-friendly message)
 // ============================================================================
