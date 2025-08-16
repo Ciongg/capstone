@@ -1,19 +1,22 @@
 <div>
     @if($showSuccess)
-        <div x-data x-init="Swal.fire({
-                icon: 'success',
-                title: 'Email Verified!',
-                text: 'Your account has been created successfully.',
-                showConfirmButton: true,
-                confirmButtonText: 'Go to Feed',
-                confirmButtonColor: '#3B82F6',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href='{{ route('feed.index') }}'
-                }
-            })">
-        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Email Verified!',
+                    text: 'Your account has been created successfully.',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Go to Feed',
+                    confirmButtonColor: '#3B82F6',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '{{ route('feed.index') }}';
+                    }
+                });
+            });
+        </script>
     @endif
 
     <x-modal name="otp-verification" title="Email Verification">

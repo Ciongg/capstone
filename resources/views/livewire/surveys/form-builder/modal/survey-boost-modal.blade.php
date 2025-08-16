@@ -2,7 +2,7 @@
     <div class="flex items-center justify-center mb-6">
         <div class="text-center">
             <div class="flex justify-center mb-3">
-                <div class="bg-gray-100 p-3 rounded-full">
+                <div class="bg-blue-200 p-3 rounded-full">
                     <img src="{{ asset('images/icons/rocket.svg') }}" alt="Rocket" class="w-8 h-8">
                 </div>
             </div>
@@ -15,7 +15,7 @@
     <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4 mb-6">
         <div class="flex items-center justify-between">
             <div class="flex items-center">
-                <div class="bg-gray-100 px-2 py-2 rounded-full mr-3">
+                <div class="bg-blue-200 px-2 py-2 rounded-full mr-3">
                     <img src="{{ asset('images/icons/rocket.svg') }}" alt="Rocket" class="w-4 h-4">
                 </div>
                 <div>
@@ -37,7 +37,7 @@
             <label for="boost-quantity" class="block text-sm font-medium text-gray-700 mb-2">
                 Number of boosts to allocate
             </label>
-            <div class="relative">
+            <div>
                 <input 
                     type="number" 
                     id="boost-quantity"
@@ -48,8 +48,8 @@
                     placeholder="Enter quantity"
                     @if(($survey->boost_count ?? 0) >= 4) disabled @endif
                 />
-                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-                    <span class="text-gray-500 text-sm">/ {{ $availableBoosts }}</span>
+                <div class="mt-1 text-right">
+                    <span class="text-gray-500 text-sm">{{ $availableBoosts }} boosts available</span>
                 </div>
             </div>
             @error('boostQuantity') 
