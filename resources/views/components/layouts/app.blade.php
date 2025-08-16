@@ -437,6 +437,7 @@
     <!-- Survey Creation Success Modal Event Listener -->
     <script>
         document.addEventListener('livewire:initialized', () => {
+            // Existing survey-created-success event listener
             Livewire.on('survey-created-success', (eventData) => {
                 let surveyData = {};
                 let uuid = null;
@@ -470,6 +471,23 @@
                         } else {
                             window.location.href = '/feed';
                         }
+                    }
+                });
+            });
+            
+            // New OTP verification success event listener
+            Livewire.on('otp-verified-success', () => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Email Verified!',
+                    text: 'Your account has been created successfully.',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Go to Feed',
+                    confirmButtonColor: '#3B82F6',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '{{ route('feed.index') }}';
                     }
                 });
             });
