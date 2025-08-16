@@ -7,6 +7,15 @@
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <meta name="description" content="Incentivized Research Survey Platform">
+
+    <!-- Open Graph (works on Facebook, Messenger, Discord, LinkedIn, etc.) -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="Formigo">
+    <meta property="og:description" content="Incentivized Research Survey Platform">
+    <meta property="og:image" content="{{ asset('images/landing/formigo.png') }}">
+    
     <!-- Dynamic page title -->
     <title>{{ $title ?? 'Formigo' }}</title>
 
