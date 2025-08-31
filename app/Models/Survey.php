@@ -17,15 +17,15 @@ class Survey extends Model
         'description',
         'status',   // 'pending', 'published', 'ongoing', 'finished'
         'type',     // 'basic', 'advanced'
-        'survey_topic_id', // Added survey topic
+        'survey_topic_id', 
         'target_respondents',
         'start_date',
         'end_date',
         'points_allocated',
         'image_path',
         'is_institution_only',
-        'is_locked', // Added for lock/unlock functionality
-        'lock_reason', // Added to store the reason for locking
+        'is_locked', 
+        'lock_reason', 
     ];
 
     /**
@@ -60,7 +60,7 @@ class Survey extends Model
 
     public function responses()
     {
-        return $this->hasMany(\App\Models\Response::class);
+        return $this->hasMany(Response::class);
     }
 
     /**

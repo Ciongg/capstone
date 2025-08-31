@@ -10,8 +10,10 @@ use Illuminate\Support\Facades\Auth;
 class RewardIndex extends Component
 {
     public $activeTab = 'system';
+    // to trakc which reward user clicked on done via livewire wire.set selectedRewardId in reward card
     public $selectedRewardId = null;
 
+    //listens to dispatch events
     protected function getListeners()
     {
         return [

@@ -33,18 +33,8 @@ class UpdateLastActiveAt
 
             if (!$lastActive || $diff >= 10) {
                 $user->forceFill(['last_active_at' => $currentTime])->save();
-                // Log::info('last_active_at updated for user', [
-                //     'user_id' => $user->id,
-                //     'time' => $currentTime,
-                // ]);
-            } else {
-                Log::info('last_active_at NOT updated (cooldown)', [
-                    'user_id' => $user->id,
-                    'last_active_at' => $lastActive,
-                    'current_time' => $currentTime,
-                    'diff' => $diff,
-                ]);
-            }
+        
+            } 
         }
 
         return $next($request);

@@ -18,70 +18,39 @@ class Announcement extends Model
         'target_audience',
         'institution_id',
         'active',
-        'url', // Add this to fillable
+        'url', 
         'start_date',
         'end_date',
-        'survey_id', // Add survey_id to fillable
+        'survey_id', 
     ];
 
+    //converts attribute values when reading/writing from the database
     protected $casts = [
         'institution_id' => 'integer',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
     ];
 
+
+    //lifecycle hook runs when model is initialized
     protected static function boot()
     {
-        parent::boot();
+        parent::boot(); //calls default behavior of the parent Model
 
         static::creating(function ($announcement) {
-            $announcement->uuid = (string) Str::uuid();
+            $announcement->uuid = (string) Str::uuid(); //generate uuid of the announcement when its created automatically
         });
     }
 
-    public function institution()
+    public function institution() //one to many relationship
     {
         return $this->belongsTo(Institution::class);
     }
 
-    /**
-     * Get the survey associated with this announcement
-     */
-    public function survey()
+    public function survey() // oine to many relationship
     {
         return $this->belongsTo(Survey::class);
     }
 
-    public function scopeActive($query)
-    {
-        return $query->where('active', true)
-            ->where(function($q) {
-                $now = Carbon::now();
-                $q->whereNull('start_date')
-                  ->orWhere('start_date', '<=', $now);
-            })
-            ->where(function($q) {
-                $now = Carbon::now();
-                $q->whereNull('end_date')
-                  ->orWhere('end_date', '>=', $now);
-            });
-    }
-
-    public function scopeForUser($query, $user)
-    {
-        if (!$user) {
-            return $query->where('target_audience', 'public');
-        }
-
-        return $query->where(function ($query) use ($user) {
-            $query->where('target_audience', 'public');
-            
-            if ($user->institution_id) {
-                $query->orWhere(function ($subquery) use ($user) {
-                    $subquery->where('target_audience', 'institution_specific')
-                             ->where('institution_id', $user->institution_id);
-                });
-            }
-        });
-    }
+    
 }

@@ -18,7 +18,7 @@ class Reward extends Model
         'quantity',
         'type',
         'description',
-        'image_path', // Uncommented to allow updating image
+        'image_path', 
         'rank_requirement',
         'merchant_id',
     ];
@@ -44,25 +44,6 @@ class Reward extends Model
     public function isAvailable(): bool
     {
         return $this->status === self::STATUS_AVAILABLE && $this->quantity > 0;
-    }
-
-
-
-    /**
-     * Decrement quantity when redeemed
-     *
-     * @param int $amount
-     * @return void
-     */
-    public function redeem(int $amount = 1): void
-    {
-        $this->quantity = max(0, $this->quantity - $amount);
-        
-        if ($this->quantity === 0) {
-            $this->status = self::STATUS_SOLD_OUT;
-        }
-        
-        $this->save();
     }
 
     public function redemptions(): HasMany

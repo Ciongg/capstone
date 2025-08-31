@@ -5,6 +5,7 @@ namespace App\Livewire\Feed\Modal;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Survey;
+use App\Services\TestTimeService;
 
 class ViewSurveyModal extends Component
 {
@@ -25,7 +26,7 @@ class ViewSurveyModal extends Component
         $user = Auth::user();
         $userInstitutionId = $user?->institution_id;
         
-        $now = \App\Services\TestTimeService::now();
+        $now = TestTimeService::now();
 
         // Not Started Lock - Check if start date is in the future
         if ($this->survey->start_date && $this->survey->start_date > $now) {

@@ -27,17 +27,10 @@ class TrustScoreService
     /**
      * Calculate false report penalty for a reporter
      * 
-     * @param int $reporterId
-     * @param int|null $dismissedReportCountOverride Override the dismissed report count (for including current report)
-     * @return array Calculation details with amount and explanation
      */
     public function calculateFalseReportPenalty($reporterId, $dismissedReportCountOverride = null)
     {
         try {
-            Log::info('Starting false report penalty calculation', [
-                'reporter_id' => $reporterId,
-                'using_dismissed_report_count_override' => $dismissedReportCountOverride !== null
-            ]);
             
             // Get number of dismissed reports by this reporter (false reports)
             $dismissedReports = Report::where('reporter_id', $reporterId)
@@ -66,10 +59,7 @@ class TrustScoreService
             
             // Check threshold
             if ($dismissedReports <= self::FALSE_REPORT_THRESHOLD) {
-                Log::info('False report threshold not met', [
-                    'dismissed_reports' => $dismissedReports,
-                    'threshold' => self::FALSE_REPORT_THRESHOLD
-                ]);
+             
                 return $result;
             }
             
@@ -84,14 +74,7 @@ class TrustScoreService
             $result['penalty_amount'] = round($finalPenalty, 2);
             $result['modifier'] = $modifier;
             
-            Log::info('False report penalty calculated', [
-                'reporter_id' => $reporterId,
-                'dismissed_reports' => $dismissedReports, 
-                'total_reports' => $totalReports,
-                'percentage' => $falseReportPercentage,
-                'modifier' => $modifier,
-                'final_penalty' => $finalPenalty
-            ]);
+
             
             return $result;
         } catch (Exception $e) {
@@ -115,22 +98,16 @@ class TrustScoreService
     
     /**
      * Calculate trust score deduction based on user's reported response history
-     * 
-     * @param int $userId
-     * @param int|null $reportCountOverride Override the report count (for including current report)
-     * @return array Calculation details with amount and explanation
-     */
+    */
+   
     public function calculateReportedResponseDeduction($userId, $reportCount = null)
     {
         try {
-            Log::info('Starting trust score deduction calculation', [
-                'user_id' => $userId,
-                'using_report_count_override' => $reportCount !== null
-            ]);
+          
             
             // Get number of valid reports against this user (confirmed or unappealed)
             $validReports = $reportCount ?? Report::where('respondent_id', $userId)
-                ->whereIn('status', ['confirmed', 'unappealed'])
+                ->whereIn('status', ['confirmed', 'unappealed', 'under_appeal'])
                 ->count();
                 
             // Apply override if provided
@@ -156,10 +133,7 @@ class TrustScoreService
             
             // Check threshold
             if ($validReports <= self::REPORTED_RESPONSE_THRESHOLD) {
-                Log::info('Reported response threshold not met', [
-                    'valid_reports' => $validReports,
-                    'threshold' => self::REPORTED_RESPONSE_THRESHOLD
-                ]);
+              
                 return $result;
             }
             
@@ -174,14 +148,7 @@ class TrustScoreService
             $result['penalty_amount'] = round($finalDeduction, 2);
             $result['modifier'] = $modifier;
             
-            Log::info('Trust score deduction calculated', [
-                'user_id' => $userId,
-                'valid_reports' => $validReports,
-                'total_responses' => $totalResponses,
-                'percentage' => $reportedPercentage,
-                'modifier' => $modifier,
-                'final_deduction' => $finalDeduction
-            ]);
+        
             
             return $result;
         } catch (Exception $e) {
@@ -205,9 +172,6 @@ class TrustScoreService
     
     /**
      * Calculate modifier based on percentage
-     * 
-     * @param float $percentage
-     * @return float
      */
     private function calculateModifier($percentage)
     {
@@ -216,15 +180,12 @@ class TrustScoreService
         } elseif ($percentage > 20) {
             return 1.5; // More than 20% - increased penalty
         } else {
-            return 1.0; // Default modifier (5-10%)
+            return 1.0; // Default modifier 
         }
     }
     
     /**
      * Get ordinal suffix for a number (1st, 2nd, 3rd, etc.)
-     * 
-     * @param int $number
-     * @return string
      */
     public function getOrdinal($number)
     {

@@ -19,7 +19,7 @@ class InstitutionTag extends Model
     public function surveys()
     {
         return $this->belongsToMany(Survey::class, 'institution_survey_tags')
-            ->withPivot('tag_name')
+            ->withPivot('tag_name') //uses pivot table named institution_survey_tags, so that whhen you access $tag->surveys, you also get the tag_name from the pivot table like $survey->pivot->tag_name
             ->withTimestamps();
     }
 

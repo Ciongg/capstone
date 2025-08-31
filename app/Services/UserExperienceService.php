@@ -22,9 +22,6 @@ class UserExperienceService
     /**
      * Calculate user's level based on experience points.
      * Simplified calculation: Each level requires level*100 XP
-     * 
-     * @param float $experiencePoints
-     * @return int
      */
     public static function calculateLevel($experiencePoints): int
     {
@@ -41,9 +38,6 @@ class UserExperienceService
     
     /**
      * Calculate XP required for a specific level.
-     * 
-     * @param int $level
-     * @return int
      */
     public static function xpRequiredForLevel(int $level): int
     {
@@ -62,9 +56,6 @@ class UserExperienceService
     
     /**
      * Get rank for a specific level based on level thresholds.
-     * 
-     * @param int $level
-     * @return string
      */
     public static function getRankForLevel(int $level): string
     {
@@ -79,9 +70,6 @@ class UserExperienceService
     
     /**
      * Check if user is at max level
-     * 
-     * @param User $user
-     * @return bool
      */
     public static function isUserAtMaxLevel(User $user): bool
     {
@@ -90,9 +78,6 @@ class UserExperienceService
     
     /**
      * Get current level for a user based on their XP.
-     *
-     * @param User $user
-     * @return int
      */
     public static function getUserLevel(User $user): int
     {
@@ -107,9 +92,6 @@ class UserExperienceService
     
     /**
      * Get progress to next level (percentage) for a user.
-     *
-     * @param User $user
-     * @return float
      */
     public static function getUserLevelProgressPercentage(User $user): float
     {
@@ -140,9 +122,6 @@ class UserExperienceService
     
     /**
      * Get XP required for user's next level.
-     *
-     * @param User $user
-     * @return int
      */
     public static function getXpRequiredForUserNextLevel(User $user): int
     {
@@ -158,10 +137,6 @@ class UserExperienceService
     
     /**
      * Add experience points to user and handle level-up logic
-     * 
-     * @param User $user
-     * @param int $xp
-     * @return array
      */
     public static function addUserExperiencePoints(User $user, $xp)
     {
@@ -219,59 +194,4 @@ class UserExperienceService
             ];
         }
     }
-    
-    // /**
-    //  * Apply perks based on level reached.
-    //  * 
-    //  * @param User $user
-    //  * @param int $previousLevel
-    //  * @param int $currentLevel
-    //  * @return array Perks applied
-    //  */
-    // public static function applyLevelPerks($user, int $previousLevel, int $currentLevel): array
-    // {
-    //     $perksApplied = [];
-        
-    //     // Apply perks for each level gained
-    //     for ($level = $previousLevel + 1; $level <= $currentLevel; $level++) {
-    //         switch ($level) {
-    //             case 2:
-    //                 // Level 2 perk: 50 bonus points
-    //                 $user->points += 50;
-    //                 $perksApplied[] = '50 bonus points';
-    //                 break;
-                    
-    //             case 5:
-    //                 // Level 5 perk: 150 bonus points
-    //                 $user->points += 150;
-    //                 $perksApplied[] = '150 bonus points';
-    //                 break;
-                    
-    //             case 11: // Gold rank threshold
-    //                 // Level 11 perk: 500 bonus points
-    //                 $user->points += 500;
-    //                 $perksApplied[] = '500 bonus points';
-    //                 $perksApplied[] = 'Gold rank achieved!';
-    //                 break;
-                    
-    //             case 21: // Diamond rank threshold
-    //                 // Level 21 perk: 1000 bonus points
-    //                 $user->points += 1000;
-    //                 $perksApplied[] = '1000 bonus points';
-    //                 $perksApplied[] = 'Diamond rank achieved!';
-    //                 break;
-                    
-    //             case 30: // Max level
-    //                 // Level 30 perk: 2000 bonus points
-    //                 $user->points += 2000;
-    //                 $perksApplied[] = '2000 bonus points';
-    //                 $perksApplied[] = 'Maximum level achieved!';
-    //                 break;
-                    
-    //             // Add more level-specific perks as needed
-    //         }
-    //     }
-        
-    //     return $perksApplied;
-    // }
 }

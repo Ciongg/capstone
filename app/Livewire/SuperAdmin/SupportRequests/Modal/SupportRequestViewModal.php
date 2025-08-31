@@ -41,13 +41,14 @@ class SupportRequestViewModal extends Component
 
     public function loadSupportRequest()
     {
+        //grabs all supportRequest and its related models (user and admin) eager loaded
         $this->supportRequest = SupportRequest::with(['user', 'admin'])
             ->findOrFail($this->requestId);
             
         $this->adminNotes = $this->supportRequest->admin_notes;
         $this->status = $this->supportRequest->status;
         
-        // Load related item based on request type
+        // Load related item based on request type if looking at survey lock appeal or report appeal
         if ($this->supportRequest->related_id && $this->supportRequest->related_model) {
             if ($this->supportRequest->request_type === 'survey_lock_appeal' && $this->supportRequest->related_model === 'Survey') {
                 $this->relatedItem = Survey::find($this->supportRequest->related_id);
@@ -81,27 +82,23 @@ class SupportRequestViewModal extends Component
         
         // Update associated report status if this is a report appeal
         if ($this->supportRequest->request_type === 'report_appeal' && $this->supportRequest->related_id) {
-            $report = Report::find($this->supportRequest->related_id);
+            $report = Report::where('uuid', $this->supportRequest->related_id)->first();
             
             
             if ($report) {
                 try {
                     DB::transaction(function() use ($report, $wasResolved, $wasRejected) {
+                       
                         if ($wasResolved) {
                             // Support request resolved = report dismissed and trust score deduction reversed
                             $report->markAsDismissed();
-                            
+                          
                             // Also update the associated response to mark it as not reported anymore
                             if ($report->response_id) {
                                 $response = Response::find($report->response_id);
                                 if ($response) {
                                     $response->reported = false;
                                     $response->save();
-                                    
-                                    Log::info('Reset reported status for response', [
-                                        'report_id' => $report->id,
-                                        'response_id' => $response->id
-                                    ]);
                                 }
                             }
                             
@@ -113,26 +110,13 @@ class SupportRequestViewModal extends Component
                                     if ($report->trust_score_deduction) {
                                         $deductionAmount = abs($report->trust_score_deduction); // Convert to positive for addition
                                         $respondent->trust_score += $deductionAmount;
-                                        
-                                        Log::info('Reversed trust score deduction for respondent', [
-                                            'report_id' => $report->id,
-                                            'respondent_id' => $respondent->id,
-                                            'restored_amount' => $deductionAmount,
-                                            'new_trust_score' => $respondent->trust_score
-                                        ]);
                                     }
                                     
                                     // Restore points if they were deducted
                                     if ($report->points_deducted > 0 && !$report->points_restored) {
                                         $respondent->points += $report->points_deducted;
                                         $report->points_restored = true;
-                                        
-                                        Log::info('Restored points for respondent', [
-                                            'report_id' => $report->id,
-                                            'respondent_id' => $respondent->id,
-                                            'points_restored' => $report->points_deducted,
-                                            'new_points_balance' => $respondent->points
-                                        ]);
+                                      
                                         
                                         // Add to notification message
                                         $pointsMessage = "\n\nThe {$report->points_deducted} points that were deducted from your account have been restored.";
@@ -156,8 +140,6 @@ class SupportRequestViewModal extends Component
                                 $reporter = User::find($report->reporter_id);
                                 if ($reporter) {
 
-
-
                                     // Calculate penalty based on reporter's false report history
                                     $calcFalseReport = $this->trustScoreService->calculateFalseReportPenalty($report->reporter_id);
                                     $penaltyAmount = $calcFalseReport['penalty_amount']; // Get the actual penalty amount
@@ -169,15 +151,7 @@ class SupportRequestViewModal extends Component
                                     
                                     // Always record the penalty amount in the report (even if 0)
                                     $report->reporter_trust_score_deduction = $penaltyAmount;
-                                    
-                                    Log::info('Processed false report for reporter', [
-                                        'report_id' => $report->id,
-                                        'reporter_id' => $reporter->id,
-                                        'penalty_amount' => $penaltyAmount,
-                                        'penalty_applied' => ($penaltyAmount < 0),
-                                        'new_trust_score' => $reporter->trust_score
-                                    ]);
-                                    
+
                                     // Get count of dismissed reports for this reporter
                                     $dismissedReportsCount = Report::where('reporter_id', $reporter->id)
                                         ->where('status', 'dismissed')
@@ -189,11 +163,11 @@ class SupportRequestViewModal extends Component
                                         'subject' => 'Report Reviewed and Dismissed',
                                         'message' => "Your report (ID: {$report->uuid}) has been reviewed and determined to be invalid. 
 
-You now have {$dismissedReportsCount} false " . ($dismissedReportsCount == 1 ? "report" : "reports") . " on your account.
+                                        You now have {$dismissedReportsCount} false " . ($dismissedReportsCount == 1 ? "report" : "reports") . " on your account.
 
-When a user exceeds 2 false reports, they will receive trust score penalties for each additional false report. As this is your " . $this->trustScoreService->getOrdinal($dismissedReportsCount) . " false report, " . ($penaltyAmount < 0 ? "a trust score penalty of " . abs($penaltyAmount) . " points has been applied to your account." : "no penalty has been applied yet.") . "
+                                        When a user exceeds 2 false reports, they will receive trust score penalties for each additional false report. As this is your " . $this->trustScoreService->getOrdinal($dismissedReportsCount) . " false report, " . ($penaltyAmount < 0 ? "a trust score penalty of " . abs($penaltyAmount) . " points has been applied to your account." : "no penalty has been applied yet.") . "
 
-Please ensure all reports are legitimate to avoid future penalties. Multiple false reports may result in increasing penalties and account restrictions.",
+                                        Please ensure all reports are legitimate to avoid future penalties. Multiple false reports may result in increasing penalties and account restrictions.",
                                         'read_at' => null
                                     ]);
                                 }
@@ -209,7 +183,7 @@ Please ensure all reports are legitimate to avoid future penalties. Multiple fal
                             // No change to trust scores as the original deduction stands
                             // No restoration of points either - mark them as permanently deducted
                             if ($report->points_deducted > 0 && !$report->points_restored) {
-                                $report->points_restored = true; // Mark as "handled" even though not actually restored
+                                $report->points_restored = true; 
                                 $report->save();
                                 
                                 // Notify the user that points deduction is permanent

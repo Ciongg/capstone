@@ -34,14 +34,19 @@ class Report extends Model
     ];
 
     // Status constants
+    // centralized reference for status values instead of hardcoding strings throughout the codebase
+    
     const STATUS_UNAPPEALED = 'unappealed';
     const STATUS_UNDER_APPEAL = 'under_appeal';
     const STATUS_DISMISSED = 'dismissed';
     const STATUS_CONFIRMED = 'confirmed';
 
+    //business logic methods / helper methods
+    //instead of $report->status === 'unappealed', use the function for better maintainability
+
     public function canBeAppealed()
     {
-        return $this->status === self::STATUS_UNAPPEALED;
+        return $this->status === self::STATUS_UNAPPEALED; 
     }
 
      public function isUnderAppeal()
@@ -64,7 +69,7 @@ class Report extends Model
         $this->status = 'dismissed';
         $this->save();
         
-        return $this;
+        return $this; 
     }
 
     /**
@@ -115,14 +120,7 @@ class Report extends Model
      */
     public function question(): BelongsTo
     {
-        return $this->belongsTo(SurveyQuestion::class, 'question_id');
+        return $this->belongsTo(SurveyQuestion::class);
     }
 
-    /**
-     * Get the user who reviewed the report.
-     */
-    public function reviewer(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'reviewed_by');
-    }
 }

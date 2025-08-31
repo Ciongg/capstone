@@ -18,7 +18,7 @@ class CreateVoucherModal extends Component
     // Voucher properties
     public $name; 
     public $merchant_id;
-    public $promo;
+    public $description;
     public $cost;
     public $rank_requirement = 'silver';
     public $expiry_date;
@@ -32,7 +32,7 @@ class CreateVoucherModal extends Component
     protected $rules = [
         'name' => 'required|string|max:255',
         'merchant_id' => 'required|exists:merchants,id',
-        'promo' => 'required|string|max:2000',
+        'description' => 'required|string|max:1000',
         'cost' => 'required|integer|min:0',
         'rank_requirement' => 'required|in:silver,gold,diamond',
         'quantity' => 'required|integer|min:1|max:100',
@@ -59,7 +59,7 @@ class CreateVoucherModal extends Component
         // Create the reward record first
         $reward = Reward::create([
             'name' => $this->name,
-            'description' => $this->promo,
+            'description' => $this->description,
             'status' => 'available',
             'cost' => $this->cost,
             'quantity' => $this->quantity,
@@ -70,19 +70,19 @@ class CreateVoucherModal extends Component
         ]);
 
         // Parse expiry date
-        $expiryDate = $this->expiry_date ? \Carbon\Carbon::parse($this->expiry_date) : null;
+        $expiryDate = $this->expiry_date ? Carbon::parse($this->expiry_date) : null;
 
         // Generate and save the specified quantity of vouchers
         for ($i = 0; $i < $this->quantity; $i++) {
             $referenceNo = $this->generateUniqueReferenceNumber();
             // Ensure uniqueness
-            while (\App\Models\Voucher::where('reference_no', $referenceNo)->exists()) {
+            while (Voucher::where('reference_no', $referenceNo)->exists()) {
                 $referenceNo = $this->generateUniqueReferenceNumber();
             }
-            \App\Models\Voucher::create([
+            Voucher::create([
                 'reward_id' => $reward->id,
                 'reference_no' => $referenceNo,
-                'promo' => $this->promo,
+                'promo' => $this->name,
                 'cost' => $this->cost,
                 'availability' => 'available',
                 'expiry_date' => $expiryDate,
@@ -95,7 +95,7 @@ class CreateVoucherModal extends Component
         $this->showSuccess = true;
         $this->message = "Successfully created {$this->quantity} voucher" . ($this->quantity > 1 ? 's' : '') . " and a new reward.";
         $this->reset([
-            'name', 'promo', 'cost', 'rank_requirement',
+            'name', 'description', 'cost', 'rank_requirement',
             'expiry_date', 'image', 'quantity', 'merchant_id'
         ]);
         $this->dispatch('voucherCreated');

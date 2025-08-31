@@ -127,7 +127,7 @@ class ManageVoucherModal extends Component
                 Voucher::where('reward_id', $reward->id)
                     ->update([
                         'cost' => $reward->cost,
-                        'promo' => $reward->description,
+                        'promo' => $reward->name,
                         'image_path' => $reward->image_path,
                     ]);
             }
@@ -203,7 +203,7 @@ class ManageVoucherModal extends Component
             $voucher = new Voucher();
             $voucher->reward_id = $reward->id;
             $voucher->reference_no = $referenceNo;
-            $voucher->promo = $reward->description;
+            $voucher->promo = $reward->name;
             $voucher->cost = $reward->cost;
             $voucher->availability = 'available';
             $voucher->expiry_date = $expiryDate; // Use the determined expiry date

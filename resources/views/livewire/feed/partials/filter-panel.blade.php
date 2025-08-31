@@ -6,7 +6,7 @@
     x-data="{ 
         activeTagTab: 'general',
         updateActiveTab() {
-            this.activeTagTab = $wire.tempInstitutionOnly ? 'institution' : 'general';
+            this.activeTagTab = $wire.tempFilters.institutionOnly ? 'institution' : 'general';
         }
     }"
     x-init="updateActiveTab()"
@@ -21,30 +21,30 @@
             <h4 class="font-semibold text-gray-600 mb-2">Survey Complexity</h4>
             <div class="flex flex-wrap gap-2 sm:space-x-3">
                 <button 
-                    wire:click="toggleTempSurveyType('basic')" 
+                    wire:click="toggleTempFilter('type', 'basic')" 
                     type="button"
                     class="px-4 py-2 rounded-md text-sm transition-colors duration-150
-                           {{ $tempSurveyType === 'basic' 
+                           {{ $tempFilters['type'] === 'basic' 
                                ? 'bg-[#03b8ff] text-white font-semibold shadow-md'  
                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
                 >
                     Basic
                 </button>
                 <button 
-                    wire:click="toggleTempSurveyType('advanced')" 
+                    wire:click="toggleTempFilter('type', 'advanced')" 
                     type="button"
                     class="px-4 py-2 rounded-md text-sm transition-colors duration-150
-                           {{ $tempSurveyType === 'advanced' 
+                           {{ $tempFilters['type'] === 'advanced' 
                                ? 'bg-[#03b8ff] text-white font-semibold shadow-md' 
                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
                 >
                     Advanced
                 </button>
                 <button 
-                    wire:click="clearTempSurveyType" 
+                    wire:click="updateTempFilter('type', null)" 
                     type="button"
                     class="px-4 py-2 rounded-md text-sm transition-colors duration-150
-                           {{ $tempSurveyType === null 
+                           {{ $tempFilters['type'] === null 
                                ? 'bg-[#03b8ff] text-white font-semibold shadow-md' 
                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
                 >
@@ -61,13 +61,13 @@
                         <input 
                             type="checkbox" 
                             id="institution-only" 
-                            wire:model.live="tempInstitutionOnly"
-                            wire:change="$set('hasUnsavedFilterChanges', true)"
+                            wire:model.live="tempFilters.institutionOnly"
+                            wire:change="checkForFilterChanges"
                             class="sr-only"
                         >
                         <div class="w-10 h-5 bg-gray-300 rounded-full shadow-inner"></div>
                         <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-0 transition" 
-                             :class="{ 'transform translate-x-5 bg-[#03b8ff]': $wire.tempInstitutionOnly }"></div> 
+                             :class="{ 'transform translate-x-5 bg-[#03b8ff]': $wire.tempFilters.institutionOnly }"></div> 
                     </div>
                     <div class="ml-3 text-sm font-medium text-gray-700">
                         Institution Only Surveys
@@ -80,13 +80,13 @@
                         <input 
                             type="checkbox" 
                             id="answerable-only" 
-                            wire:model.live="tempAnswerableOnly"
-                            wire:change="$set('hasUnsavedFilterChanges', true)"
+                            wire:model.live="tempFilters.answerableOnly"
+                            wire:change="checkForFilterChanges"
                             class="sr-only"
                         >
                         <div class="w-10 h-5 bg-gray-300 rounded-full shadow-inner"></div>
                         <div class="dot absolute w-5 h-5 bg-white rounded-full shadow -left-1 -top-0 transition" 
-                             :class="{ 'transform translate-x-5 bg-[#03b8ff]': $wire.tempAnswerableOnly }"></div> 
+                             :class="{ 'transform translate-x-5 bg-[#03b8ff]': $wire.tempFilters.answerableOnly }"></div> 
                     </div>
                     <div class="ml-3 text-sm font-medium text-gray-700">
                         Show Only Answerable Surveys
@@ -113,13 +113,13 @@
         
         {{-- Tag selection info and clear button --}}
         <div x-show="activeTagTab === 'general'">
-            @if(!empty($tempSelectedTagIds))
+            @if(!empty($tempFilters['tags']))
                 <div class="mb-4 p-2 bg-blue-50 border border-blue-100 rounded-md">
                     <div class="flex items-center justify-between">
                         <span class="text-sm text-blue-700">
-                            {{ count($tempSelectedTagIds) }} tag(s) selected
+                            {{ count($tempFilters['tags']) }} tag(s) selected
                         </span>
-                        <button wire:click="clearPanelTagFilter" class="text-xs text-blue-600 hover:text-blue-800 underline">
+                        <button wire:click="clearFilter('tags')" class="text-xs text-blue-600 hover:text-blue-800 underline">
                             Clear selection
                         </button>
                     </div>
@@ -128,13 +128,13 @@
         </div>
         
         <div x-show="activeTagTab === 'institution'">
-            @if(!empty($tempSelectedInstitutionTagIds))
+            @if(!empty($tempFilters['institutionTags']))
                 <div class="mb-4 p-2 bg-blue-50 border border-blue-100 rounded-md">
                     <div class="flex items-center justify-between">
                         <span class="text-sm text-blue-700">
-                            {{ count($tempSelectedInstitutionTagIds) }} tag(s) selected
+                            {{ count($tempFilters['institutionTags']) }} tag(s) selected
                         </span>
-                        <button wire:click="clearPanelInstitutionTagFilter" class="text-xs text-blue-600 hover:text-blue-800 underline">
+                        <button wire:click="clearFilter('institutionTags')" class="text-xs text-blue-600 hover:text-blue-800 underline">
                             Clear selection
                         </button>
                     </div>
@@ -150,11 +150,11 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                         @foreach($category->tags as $tag)
                             <button 
-                                wire:click="togglePanelTagFilter({{ $tag->id }})"
+                                wire:click="toggleTempArrayFilter('tags', {{ $tag->id }})"
                                 wire:key="filter-tag-{{ $tag->id }}"
                                 type="button"
                                 class="w-full text-left px-3 py-2 rounded-md text-sm transition-colors duration-150
-                                       {{ in_array($tag->id, $tempSelectedTagIds) 
+                                       {{ in_array($tag->id, $tempFilters['tags']) 
                                        ? 'bg-[#03b8ff] text-white font-semibold shadow-md'
                                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
                             >
@@ -189,11 +189,11 @@
                         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                             @foreach($category->tags as $tag)
                                 <button 
-                                    wire:click="togglePanelInstitutionTagFilter({{ $tag->id }})"
+                                    wire:click="toggleTempArrayFilter('institutionTags', {{ $tag->id }})"
                                     wire:key="filter-inst-tag-{{ $tag->id }}"
                                     type="button"
                                     class="w-full text-left px-3 py-2 rounded-md text-sm transition-colors duration-150
-                                           {{ in_array($tag->id, $tempSelectedInstitutionTagIds ?? []) 
+                                           {{ in_array($tag->id, $tempFilters['institutionTags'] ?? []) 
                                            ? 'bg-[#03b8ff] text-white font-semibold shadow-md'
                                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700' }}"
                                 >
@@ -218,7 +218,7 @@
             Cancel
         </button>
         <button 
-            wire:click="applyPanelTagFilters"
+            wire:click="applyFilters"
             class="px-4 py-2 bg-[#03b8ff] text-white text-sm rounded-md hover:bg-[#0295d1] shadow-sm
                   {{ $hasUnsavedFilterChanges ? '' : 'opacity-50 cursor-not-allowed' }}"
             {{ $hasUnsavedFilterChanges ? '' : 'disabled' }}
