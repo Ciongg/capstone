@@ -184,68 +184,81 @@ class AnswerSurvey extends Component
     }
 
     /**
-     * Gets validation rules for questions on the current page only.
-     * Used when navigating between pages to validate only the current page's content.
+     * Gets validation rules for either the current page or all questions
      * 
+     * @param bool $allPages Whether to get rules for all pages (true) or just current page (false)
      * @return array Validation rules array formatted for Laravel validator
      */
-    protected function getValidationRules() //used on submit
+    protected function getValidationRules($allPages = false)
     {
         $rules = [];
         
-        // Safety check: make sure the current page index exists
-        if (!$this->survey->pages->has($this->currentPage)) {
-            return $rules;
-        }
-        
-        // Get questions for current page only
-        $currentPageQuestions = $this->survey->pages[$this->currentPage]->questions;
-
-        // Build validation rules for each question on this page
-        foreach ($currentPageQuestions as $question) {
-            $rules = array_merge($rules, $this->getRulesForQuestion($question)); //appends to the existing rules variable the new set of rules for each question.
+        if ($allPages) {
+            // Get rules for all questions in the survey
+            foreach ($this->survey->pages as $page) {
+                foreach ($page->questions as $question) {
+                    $rules = array_merge($rules, $this->getRulesForQuestion($question));
+                }
+            }
+        } else {
+            // Get rules for current page only
+            if (!$this->survey->pages->has($this->currentPage)) {
+                return $rules;
+            }
+            
+            $currentPageQuestions = $this->survey->pages[$this->currentPage]->questions;
+            foreach ($currentPageQuestions as $question) {
+                $rules = array_merge($rules, $this->getRulesForQuestion($question));
+            }
         }
         
         return $rules;
     }
 
     /**
-     * Gets validation messages for questions on the current page.
-     * These messages are displayed when validation fails.
+     * Gets validation messages for either the current page or all questions
      * 
-     * Calculates proper question numbers across pages, so error messages
-     * show consistent question numbering matching what the user sees on screen.
-     * 
+     * @param bool $allPages Whether to get messages for all pages (true) or just current page (false)
      * @return array Validation messages keyed by field and rule
      */
-    protected function getValidationMessages() //used on submit
+    protected function getValidationMessages($allPages = false)
     {
-         // Safety check: make sure the current page index exists
-        if (!$this->survey->pages->has($this->currentPage)) {
-            return [];
-        }
-        
-        // Calculate global question numbering across all pages
-        // This ensures error messages reference the correct question number
-        $questionNumber = 1;
-        for ($i = 0; $i < $this->currentPage; $i++) {
-            if ($this->survey->pages->has($i)) {
-                $questionNumber += $this->survey->pages[$i]->questions->count();
-            }
-        }
-        
         $messages = [];
-        $currentPageQuestions = $this->survey->pages[$this->currentPage]->questions;
         
-        // Generate messages for each question on this page
-        foreach ($currentPageQuestions as $question) {
-            // Use the current question number BEFORE incrementing it
-            $messages = array_merge(
-                $messages, 
-                $this->getMessagesForQuestion($question, $questionNumber)
-            );
-            // Then increment the question number for the next iteration
-            $questionNumber++;
+        if ($allPages) {
+            // Get messages for all questions
+            $questionNumber = 1;
+            foreach ($this->survey->pages as $page) {
+                foreach ($page->questions as $question) {
+                    $messages = array_merge(
+                        $messages, 
+                        $this->getMessagesForQuestion($question, $questionNumber)
+                    );
+                    $questionNumber++;
+                }
+            }
+        } else {
+            // Get messages for current page only
+            if (!$this->survey->pages->has($this->currentPage)) {
+                return $messages;
+            }
+            
+            // Calculate question numbering across pages
+            $questionNumber = 1;
+            for ($i = 0; $i < $this->currentPage; $i++) {
+                if ($this->survey->pages->has($i)) {
+                    $questionNumber += $this->survey->pages[$i]->questions->count();
+                }
+            }
+            
+            $currentPageQuestions = $this->survey->pages[$this->currentPage]->questions;
+            foreach ($currentPageQuestions as $question) {
+                $messages = array_merge(
+                    $messages, 
+                    $this->getMessagesForQuestion($question, $questionNumber)
+                );
+                $questionNumber++;
+            }
         }
         
         return $messages;
@@ -429,6 +442,18 @@ class AnswerSurvey extends Component
         return $messages;
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
     /**
      * Validate if survey is still accepting responses
      * 
@@ -484,37 +509,33 @@ class AnswerSurvey extends Component
         return null; // All validations passed
     }
 
-    /**
-     * Check if user has already responded to this survey
-     * 
-     * @return array|null Returns error details if user already responded, null if valid
-     */
-    protected function validateUserResponse()
-    {
-        // Temporarily commented out to allow multiple responses
-        /*
-        $user = Auth::user();
-        if (!$user) {
-            return null; // Allow anonymous responses if not authenticated
-        }
-        
-        $existingResponse = Response::where('survey_id', $this->survey->id)
-                                  ->where('user_id', $user->id)
-                                  ->exists();
-        
-        if ($existingResponse) {
-            return [
-                'type' => 'already_responded',
-                'title' => 'Already Submitted',
-                'message' => 'You have already submitted a response to this survey.',
-                'icon' => 'info'
-            ];
-        }
-        */
-        
-        return null;
-    }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     /**
      * Process form submission - handles both page navigation and final submission
      */
@@ -527,7 +548,9 @@ class AnswerSurvey extends Component
                 if ($this->survey->pages->has($this->currentPage) && 
                     $this->survey->pages[$this->currentPage]->questions->count() > 0) {
                     // Validate only the current page
-                    $this->validate($this->getValidationRules(), $this->getValidationMessages());
+                    // handles the error message through the rules for each question
+                    $this->validate($this->getValidationRules(false), $this->getValidationMessages(false));
+               
                 }
 
                 // If there are more pages, advance to the next one
@@ -548,6 +571,9 @@ class AnswerSurvey extends Component
             }
             return;
         }
+
+
+
         
         // Handle final submission
         if ($this->navAction === 'submit') {
@@ -555,7 +581,7 @@ class AnswerSurvey extends Component
                 // In preview mode, skip all validations and just show success
                 if ($this->isPreview) {
                     // Validate form data for preview
-                    $this->validate($this->getAllValidationRules(), $this->getAllValidationMessages());
+                    $this->validate($this->getValidationRules(true), $this->getValidationMessages(true));
                     
                     session()->flash('success', 'Preview submitted successfully! (No data saved)');
                     
@@ -568,6 +594,8 @@ class AnswerSurvey extends Component
                     return redirect()->route('surveys.create', ['survey' => $this->survey->uuid]);
                 }
 
+                
+
                 // Validate survey availability (end date, response limits, etc.)
                 $availabilityError = $this->validateSurveyAvailability();
                 if ($availabilityError) {
@@ -575,17 +603,8 @@ class AnswerSurvey extends Component
                     return;
                 }
 
-                // Validate user hasn't already responded - COMMENTED OUT
-                /*
-                $userResponseError = $this->validateUserResponse();
-                if ($userResponseError) {
-                    $this->dispatch('surveySubmissionError', $userResponseError);
-                    return;
-                }
-                */
-
                 // Validate all questions in the survey
-                $this->validate($this->getAllValidationRules(), $this->getAllValidationMessages());
+                $this->validate($this->getValidationRules(true), $this->getValidationMessages(true));
 
                 // Save the responses
                 $this->saveResponses();
@@ -596,7 +615,7 @@ class AnswerSurvey extends Component
                     'message' => 'Thank you for completing the survey.',
                     'points' => $this->survey->points_allocated,
                     'surveyName' => $this->survey->title,
-                    'xp' => 100 // always 100 XP per survey
+                    'xp' => 100 
                 ]);
 
             } catch (\Illuminate\Validation\ValidationException $e) {
@@ -817,7 +836,6 @@ class AnswerSurvey extends Component
                             $answerData['other_text'] = $this->otherTexts[$question->id] ?? null;
                         }
                         
-                        Log::info('Creating answer', ['data' => $answerData]);
                         Answer::create($answerData);
                     }
                     break;
@@ -866,9 +884,61 @@ class AnswerSurvey extends Component
             throw $e;  // Re-throw to be caught by parent method
         }
     }
+
+    
+    /**
+     * Navigate to the previous page
+     */
+    public function goToPreviousPage()
+    {
+        if ($this->currentPage > 0) {
+            $this->currentPage--;
+            $this->dispatch('pageChanged');
+        }
+    }
+
     
 
   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   /**
      * Translate question using DeepSeek API
      * 
@@ -1331,17 +1401,6 @@ class AnswerSurvey extends Component
             $translatedLikertData['columns'][$colIndex] = $fullContent;
         }
     }
-
-    /**
-     * Navigate to the previous page
-     */
-    public function goToPreviousPage()
-    {
-        if ($this->currentPage > 0) {
-            $this->currentPage--;
-            $this->dispatch('pageChanged');
-        }
-    }
     
     /**
      * Extract JSON object from AI response text
@@ -1377,6 +1436,27 @@ class AnswerSurvey extends Component
         
         return null;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * Render the component

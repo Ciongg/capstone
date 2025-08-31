@@ -131,7 +131,7 @@
                 `,
                 icon: 'success',
                 confirmButtonText: '<i class="fas fa-home mr-2"></i> Back to Feed',
-                confirmButtonColor: '#3b82f6', // Tailwind blue-500
+                confirmButtonColor: '#3b82f6', 
                 allowOutsideClick: false,
                 customClass: {
                     confirmButton: 'px-5 py-3 text-lg bg-blue-500 hover:bg-blue-600 text-white rounded',
