@@ -13,6 +13,7 @@ use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\InboxController; 
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Middleware\NoCacheForLivewireTmp;
+use \App\Http\Controllers\GoogleAuthController;
 
 // ============================================================================
 // PUBLIC ROUTES (No authentication required)
@@ -67,9 +68,9 @@ Route::middleware('auth')->group(function () {
 });
 
 // Google OAuth Signup
-Route::get('/auth/google/redirect', [\App\Http\Controllers\GoogleAuthController::class, 'redirect'])->name('google.redirect');
-Route::get('/auth/google/callback', [\App\Http\Controllers\GoogleAuthController::class, 'callback'])->name('google.callback');
-Route::post('/auth/google/consent', [\App\Http\Controllers\GoogleAuthController::class, 'consent'])->name('google.consent');
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+Route::post('/auth/google/consent', [GoogleAuthController::class, 'consent'])->name('google.consent');
 
 // Privacy Policy and Terms of Use pages
 Route::get('/policies/privacy-policy', function () {
@@ -79,6 +80,20 @@ Route::get('/policies/privacy-policy', function () {
 Route::get('/policies/terms-of-use', function () {
     return view('terms-of-use');
 })->name('terms-of-use');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ============================================================================
 // AUTHENTICATED ROUTES (Requires login)

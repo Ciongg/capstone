@@ -444,32 +444,26 @@
         </form>
     </div>
 
+    <x-modal name="survey-boost-modal-{{ $survey->id }}" title="Survey Boost Allocation">
+        @livewire('surveys.form-builder.modal.survey-boost-modal', ['survey' => $survey], key('survey-boost-modal-' . $survey->id))
+    </x-modal>
     <!-- Institution-Only Checkbox handler - Update the script -->
     <script>
         document.addEventListener('livewire:initialized', () => {
             @this.on('updated', (event) => {
                 if (typeof event.isInstitutionOnly !== 'undefined') {
+
                     // Get the Alpine component for the modal
                     const modalComponent = Alpine.$data(document.querySelector('[x-data*="tab"]'));
-                    
-                    // Update the isInstitutionOnly property in the main Alpine component
-                    if
-                    } 
-                    else if (!event.isInstitutionOnly && Alpine.$data(document.querySelector('[x-data*="tab"]')).tab === 'institution_demographics') {
+                
+                } 
+                else if (!event.isInstitutionOnly && Alpine.$data(document.querySelector('[x-data*="tab"]')).tab === 'institution_demographics') {
                         Alpine.$data(document.querySelector('[x-data*="tab"]')).tab = 'info';
-                    }
                 }
-            });
-        });
-    </script>
+                }
+            )});
 
-    <!-- Survey Boost Modal -->
-    <x-modal name="survey-boost-modal-{{ $survey->id }}" title="Survey Boost Allocation">
-        @livewire('surveys.form-builder.modal.survey-boost-modal', ['survey' => $survey], key('survey-boost-modal-' . $survey->id))
-    </x-modal>
 
-    <!-- SweetAlert2 event listener for validation errors -->
-    <script>
         document.addEventListener('livewire:initialized', () => {
             Livewire.on('showErrorAlert', (data) => {
                 Swal.fire({
@@ -490,6 +484,7 @@
                 });
             });
         });
+        
     </script>
 
 </div>

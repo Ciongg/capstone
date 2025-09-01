@@ -38,22 +38,20 @@
             @this.on('questionAdded', ({ questionId, pageId }) => {
                 selectedQuestionId = questionId;
                 activePageId = pageId;
-                console.log('Alpine received questionAdded:', questionId, pageId);
+    
             });
 
             @this.on('pageAdded', ({ pageId }) => {
                 activePageId = pageId;
                 selectedQuestionId = null;
-                console.log('Alpine received pageAdded:', pageId);
 
-             
             });
 
             @this.on('pageSelected', ({ pageId }) => {
 
                 selectedQuestionId = null;
                 activePageId = pageId;
-                console.log('Alpine received pageSelected:', pageId);
+
             });
         });
 
@@ -108,8 +106,6 @@
             <span class="block sm:inline">{{ session('success') }}</span>
         </div>
     @endif
-    {{-- Error alerts for publish are now handled by SweetAlert2 --}}
-    
     
     <!-- Sticky Survey Navbar - Always accessible -->
     @include('livewire.surveys.form-builder.partials.survey-navbar')
