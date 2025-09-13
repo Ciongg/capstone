@@ -19,8 +19,8 @@ class Login extends Component
     protected function rules(): array
     {
         return [
-            'email' => 'required|string|email',
-            'password' => 'required|string',
+            'email' => 'required|string|email|max:254',
+            'password' => 'required|string|min:8|max:128',
             'remember' => 'boolean',
         ];
     }
@@ -137,11 +137,11 @@ class Login extends Component
             session()->flash('account-reactivated', 'Your account has been reactivated!');
         }
 
-        session()->regenerate();
+        session()->regenerate(); //regens session ID
 
         // Restore session lifetime to default after login
         if (!$this->remember) {
-            config(['session.lifetime' => config('session.lifetime', 120)]);
+            config(['session.lifetime' => config('session.lifetime', 120)]); //2 hours
         }
         
         // After successful login, check user's institution status

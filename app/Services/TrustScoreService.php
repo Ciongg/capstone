@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Report;
 use App\Models\Response;
 use Illuminate\Support\Facades\Log;
+use Exception;
 
 class TrustScoreService
 {
@@ -28,7 +29,7 @@ class TrustScoreService
      * Calculate false report penalty for a reporter
      * 
      */
-    public function calculateFalseReportPenalty($reporterId, $dismissedReportCountOverride = null)
+    public function calculateFalseReportPenalty($reporterId, $dismissedReportCountOverride = null, $totalReportsOverride = null)
     {
         try {
             
@@ -43,7 +44,7 @@ class TrustScoreService
             }
             
             // Get total number of reports initiated by this reporter
-            $totalReports = Report::where('reporter_id', $reporterId)->count();
+            $totalReports = $totalReportsOverride ?? Report::where('reporter_id', $reporterId)->count();
             
             // Calculate percentage
             $falseReportPercentage = ($totalReports > 0) ? ($dismissedReports / $totalReports) * 100 : 0;
@@ -100,7 +101,7 @@ class TrustScoreService
      * Calculate trust score deduction based on user's reported response history
     */
    
-    public function calculateReportedResponseDeduction($userId, $reportCount = null)
+    public function calculateReportedResponseDeduction($userId, $reportCount = null, $totalResponsesOverride = null)
     {
         try {
           
@@ -116,7 +117,7 @@ class TrustScoreService
             }
             
             // Get total number of responses by this user (all responses, not just reported ones)
-            $totalResponses = Response::where('user_id', $userId)->count();
+            $totalResponses = $totalResponsesOverride ?? Response::where('user_id', $userId)->count();
             
             // Calculate percentage
             $reportedPercentage = ($totalResponses > 0) ? ($validReports / $totalResponses) * 100 : 0;

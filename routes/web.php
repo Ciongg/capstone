@@ -167,25 +167,6 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-// Respondent Routes (can also be accessed by other roles)
-Route::middleware(['auth', 'role:respondent,researcher,institution_admin,super_admin'])->group(function () {
-    // Add respondent-specific routes here
-    // Most authenticated routes are available to all user types
-});
-
-// If you serve storage via Laravel (not via Nginx directly)
-Route::middleware([NoCacheForLivewireTmp::class])->group(function () {
-    Route::get('storage/livewire-tmp/{file}', function ($file) {
-        // ...your file serving logic...
-    });
-    // Optionally, add other routes that serve temp files
-});
-
-// Remove auth middleware from Livewire temp file route (for debugging only)
-Route::get('/livewire/preview-file/{filename}', function ($filename) {
-    // ...your logic to serve the file...
-})->withoutMiddleware(['auth']);
-
 // ============================================================================
 // CATCH-ALL ROUTE (Handle undefined routes with user-friendly message)
 // ============================================================================

@@ -43,6 +43,26 @@
         </button>
         @endif
     </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <!-- Survey Information Tab -->
     <div x-show="tab === 'info'" x-cloak>
         <form wire:submit.prevent="saveSurveyInformation" class="space-y-4" x-data="{ fileName: '' }">
@@ -89,6 +109,13 @@
             </div>
             @endif
 
+
+
+
+
+
+
+
             <!-- Points Allocated Section - Reorganized for mobile -->
             <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
                 <div class="flex items-center"> {{-- Changed: ensure label and badge are always in a row --}}
@@ -118,6 +145,25 @@
 
             <!-- Hidden field to store points_allocated value -->
             <input type="hidden" wire:model.defer="points_allocated">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             <!-- Banner Image Upload -->
             <div>
@@ -190,6 +236,35 @@
                 </div>
             </div>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             <!-- Survey Title -->
             <div>
                 <label for="survey-title-{{ $survey->id }}" class="block font-semibold mb-1">Survey Title</label>
@@ -213,7 +288,8 @@
                 </select>
                 @error('type') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
-            
+
+            <!-- Survey Target Number of Respondents -->
             <div>
                 <label class="block font-semibold mb-1">Target Respondents</label>
                 <input 
@@ -240,7 +316,7 @@
                 @error('survey_topic_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
-            <!-- Date Inputs - Fixed to use Livewire models -->
+            <!-- Date Inputs -->
             <div x-data="{
                 currentTime: new Date().toISOString().slice(0, 16),
                 updateEndDateConstraints() {
@@ -316,6 +392,8 @@
                 </button>
             </div>
             
+
+
             {{-- Read-only message for ongoing/finished surveys --}}
             <div x-show="isDisabled" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p class="text-sm text-yellow-700">
@@ -324,6 +402,24 @@
             </div>
         </form>
     </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     <!-- Survey Demographics Tab -->
     <div x-show="tab === 'demographics'" x-cloak>
@@ -367,6 +463,10 @@
             </div>
         </form>
     </div>
+
+
+
+    
 
     <!-- Institution Demographics Tab -->
     <div x-show="tab === 'institution_demographics'" x-cloak>
@@ -484,7 +584,7 @@
                 });
             });
         });
-        
+
     </script>
 
 </div>

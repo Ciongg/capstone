@@ -88,6 +88,25 @@
                     </button>
                 </div>
             </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
         @else
             {{-- QR Code View --}}
             <div class="flex flex-col items-center space-y-4 p-4">

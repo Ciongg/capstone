@@ -105,6 +105,52 @@ class BrevoService
     }
 
     /**
+     * Send a generic email using Brevo API
+     *
+     * @param string $toEmail
+     * @param string $subject
+     * @param string $body (HTML content)
+     * @return bool
+     */
+    public function sendEmail(string $toEmail, string $subject, string $body): bool
+    {
+        try {
+            $response = Http::withHeaders([
+                'api-key' => $this->apiKey,
+                'accept' => 'application/json',
+                'content-type' => 'application/json',
+            ])->post('https://api.brevo.com/v3/smtp/email', [
+                'sender' => [
+                    'name' => config('services.brevo.sender_name', 'Formigo'),
+                    'email' => config('services.brevo.sender_email'),
+                ],
+                'to' => [
+                    ['email' => $toEmail],
+                ],
+                'subject' => $subject,
+                'htmlContent' => $body,
+            ]);
+
+            if (!$response->successful()) {
+                Log::error('Brevo API Error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'email' => $toEmail
+                ]);
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Brevo Service Error', [
+                'message' => $e->getMessage(),
+                'email' => $toEmail
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Get the HTML template for OTP email
      */
     private function getOtpEmailTemplate(string $otpCode): string
@@ -147,4 +193,4 @@ class BrevoService
         </div>
         ";
     }
-} 
+}
