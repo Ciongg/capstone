@@ -4,11 +4,9 @@ namespace App\Livewire\Auth;
 
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
 use App\Models\Institution;
 use App\Models\User;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Hash;
 
 class Login extends Component
 {
@@ -19,7 +17,7 @@ class Login extends Component
     protected function rules(): array
     {
         return [
-            'email' => 'required|string|email|max:254',
+            'email' => 'required|string|email|max:256',
             'password' => 'required|string|min:8|max:128',
             'remember' => 'boolean',
         ];
@@ -97,7 +95,13 @@ class Login extends Component
 
     public function attemptLogin()
     {
-        $this->validate();
+        try {
+            $this->validate();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $errors = $e->validator->errors()->all();
+            $this->dispatch('validation-error', ['message' => implode(' ', $errors)]);
+            return;
+        }
 
         // First check if the user is archived (soft-deleted)
         $archivedUser = User::withTrashed()
@@ -106,9 +110,10 @@ class Login extends Component
             ->first();
             
         if ($archivedUser) {
-            throw ValidationException::withMessages([
-                'email' => ['This account has been archived. Please contact the Formigo support team for assistance.'],
+            $this->dispatch('archived-account', [
+                'message' => 'This account has been archived. Please contact the Formigo support team for assistance.'
             ]);
+            return;
         }
 
         // Set session lifetime to 1 day if remember is not checked
@@ -122,9 +127,11 @@ class Login extends Component
             if (!$this->remember) {
                 config(['session.lifetime' => config('session.lifetime', 120)]);
             }
-            throw ValidationException::withMessages([
-                'email' => [trans('auth.failed')], 
+            
+            $this->dispatch('login-error', [
+                'message' => 'Invalid email or password. Please check your credentials and try again.'
             ]);
+            return;
         }
 
         // Get the authenticated user
@@ -134,7 +141,11 @@ class Login extends Component
         if (!$user->is_active) {
             $user->is_active = true;
             $user->save();
-            session()->flash('account-reactivated', 'Your account has been reactivated!');
+            $this->dispatch('account-status-change', [
+                'type' => 'success',
+                'title' => 'Account Reactivated',
+                'message' => 'Your account has been reactivated!'
+            ]);
         }
 
         session()->regenerate(); //regens session ID
@@ -147,17 +158,37 @@ class Login extends Component
         // After successful login, check user's institution status
         $statusChange = $this->checkInstitutionStatus($user);
         
-        // Flash appropriate message based on the status change
+        // Dispatch appropriate message based on the status change
         if ($statusChange === 'upgraded') {
-            session()->flash('account-upgrade', 'Your account has been upgraded to Researcher status! Your institution is now recognized in our system.');
+            $this->dispatch('account-status-change', [
+                'type' => 'success',
+                'title' => 'Account Upgraded',
+                'message' => 'Your account has been upgraded to Researcher status! Your institution is now recognized in our system.'
+            ]);
         } elseif ($statusChange === 'downgraded') {
-            session()->flash('account-downgrade', 'Your account has been changed to Respondent status. This could be because your institution is no longer in our system or your email domain changed.');
+            $this->dispatch('account-status-change', [
+                'type' => 'warning',
+                'title' => 'Account Status Changed',
+                'message' => 'Your account has been changed to Respondent status. This could be because your institution is no longer in our system or your email domain changed.'
+            ]);
         } elseif ($statusChange === 'institution-restored') {
-            session()->flash('account-upgrade', 'Your institution has been restored in our system. All features are now available.');
+            $this->dispatch('account-status-change', [
+                'type' => 'success',
+                'title' => 'Institution Restored',
+                'message' => 'Your institution has been restored in our system. All features are now available.'
+            ]);
         } elseif ($statusChange === 'institution-changed') {
-            session()->flash('account-upgrade', 'Your institution has been updated in our system based on your email domain.');
+            $this->dispatch('account-status-change', [
+                'type' => 'info',
+                'title' => 'Institution Updated',
+                'message' => 'Your institution has been updated in our system based on your email domain.'
+            ]);
         } elseif ($statusChange === 'institution-lost') {
-            session()->flash('account-downgrade', 'Your institution is no longer recognized in our system. Some features will be limited.');
+            $this->dispatch('account-status-change', [
+                'type' => 'warning',
+                'title' => 'Institution Status Changed',
+                'message' => 'Your institution is no longer recognized in our system. Some features will be limited.'
+            ]);
         }
         
         return redirect()->route('feed.index');

@@ -37,7 +37,7 @@ class Register extends Component
             'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'phone_number' => 'required|string|max:20|unique:users,phone_number',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8|confirmed|regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%]).*$/',
             'terms' => 'required|accepted',
         ];
     }
@@ -51,14 +51,87 @@ class Register extends Component
 
     public function updated($propertyName)
     {
+        // For password confirmation, check if passwords match in real-time
+        if ($propertyName === 'password_confirmation') {
+            if (!empty($this->password) && !empty($this->password_confirmation) && $this->password !== $this->password_confirmation) {
+                $this->addError('password_confirmation', 'The passwords do not match.');
+                return;
+            } else {
+                $this->resetErrorBag('password_confirmation');
+            }
+        }
+        
         $this->validateOnly($propertyName);
     }
 
     public function registerUser()
     {
-        $this->validate();
+        // First check if passwords match before validation
+        if (!empty($this->password) && !empty($this->password_confirmation) && $this->password !== $this->password_confirmation) {
+            $this->dispatch('password-mismatch', [
+                'message' => 'The passwords do not match. Please make sure both password fields are identical.'
+            ]);
+            return;
+        }
 
-        // Generate 6-digit OTP
+        try {
+            $this->validate();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $errors = $e->validator->errors();
+            
+            // Check for password strength errors
+            if ($errors->has('password') && str_contains($errors->first('password'), 'format is invalid')) {
+                $this->dispatch('password-strength-error', [
+                    'message' => 'Password must contain at least one uppercase letter and one special character.'
+                ]);
+                return;
+            }
+            
+            // Check for specific duplicate errors
+            if ($errors->has('email') && str_contains($errors->first('email'), 'already been taken')) {
+                $this->dispatch('duplicate-email', [
+                    'message' => 'This email address is already registered. Please use a different email or try logging in.'
+                ]);
+                return;
+            }
+            
+            if ($errors->has('phone_number') && str_contains($errors->first('phone_number'), 'already been taken')) {
+                $this->dispatch('duplicate-phone', [
+                    'message' => 'This phone number is already registered. Please use a different phone number.'
+                ]);
+                return;
+            }
+            
+            // Check for password confirmation mismatch (backup check)
+            if ($errors->has('password') && (str_contains($errors->first('password'), 'confirmation does not match') || str_contains($errors->first('password'), 'confirmed'))) {
+                $this->dispatch('password-mismatch', [
+                    'message' => 'The passwords do not match. Please make sure both password fields are identical.'
+                ]);
+                return;
+            }
+            
+            // Handle other validation errors
+            $allErrors = $errors->all();
+            $this->dispatch('validation-error', ['message' => implode(' ', $allErrors)]);
+            return;
+        }
+
+        // Check if there's an existing valid OTP for this email
+        $existingVerification = EmailVerification::where('email', $this->email)
+            ->where('expires_at', '>', Carbon::now())
+            ->first();
+
+        if ($existingVerification) {
+            // Valid OTP exists, just open the modal without sending a new code
+            $this->pendingEmail = $this->email;
+            $this->dispatch('open-modal', name: 'otp-verification');
+            $this->dispatch('existing-otp-found', [
+                'message' => 'A verification code was already sent to your email. Please check your inbox or spam folder.'
+            ]);
+            return;
+        }
+
+        // No valid OTP exists, generate a new one
         $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         
         // Store OTP in database with 10-minute expiry
@@ -75,7 +148,9 @@ class Register extends Component
         $emailSent = $brevoService->sendOtpEmail($this->email, $otpCode);
 
         if (!$emailSent) {
-            session()->flash('error', 'Failed to send verification email. Please try again.');
+            $this->dispatch('email-error', [
+                'message' => 'Failed to send verification email. Please try again.'
+            ]);
             return;
         }
 
@@ -85,12 +160,20 @@ class Register extends Component
         // Dispatch browser event to open modal
         $this->dispatch('open-modal', name: 'otp-verification');
         
-        session()->flash('success', 'Verification code sent to your email!');
+        $this->dispatch('otp-sent', [
+            'message' => 'Verification code sent to your email!'
+        ]);
     }
 
     public function verifyOtp()
     {
-        $this->validate($this->otpRules());
+        try {
+            $this->validate($this->otpRules());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $errors = $e->validator->errors()->all();
+            $this->dispatch('validation-error', ['message' => implode(' ', $errors)]);
+            return;
+        }
 
         // Find the email verification record
         $emailVerification = EmailVerification::where('email', $this->pendingEmail)
@@ -98,7 +181,9 @@ class Register extends Component
             ->first();
 
         if (!$emailVerification || $emailVerification->isExpired()) {
-            $this->addError('otp_code', 'Invalid or expired verification code. Please try again.');
+            $this->dispatch('otp-error', [
+                'message' => 'Invalid or expired verification code. Please request a new code.'
+            ]);
             return;
         }
 
@@ -122,27 +207,38 @@ class Register extends Component
             // Can be upgraded on future logins if institution is added
         }
 
-        $user = User::create([
-            'first_name' => $this->first_name,
-            'last_name' => $this->last_name,
-            'email' => $this->pendingEmail,
-            'phone_number' => $this->phone_number,
-            'password' => Hash::make($this->password),
-            'type' => $userType,
-            'institution_id' => $institutionId,
-            'is_active' => true, // Set new users to active by default
-            'email_verified_at' => now(),
-            'is_accepted_terms' => true,
-            'is_accepted_privacy_policy' => true,
-        ]);
+        try {
+            $user = User::create([
+                'first_name' => $this->first_name,
+                'last_name' => $this->last_name,
+                'email' => $this->pendingEmail,
+                'phone_number' => $this->phone_number,
+                'password' => Hash::make($this->password),
+                'type' => $userType,
+                'institution_id' => $institutionId,
+                'is_active' => true, // Set new users to active by default
+                'email_verified_at' => now(),
+                'is_accepted_terms' => true,
+                'is_accepted_privacy_policy' => true,
+            ]);
 
-        // Delete the email verification record
-        $emailVerification->delete();
+            // Delete the email verification record
+            $emailVerification->delete();
 
-        Auth::login($user);
+            Auth::login($user);
 
-        $this->showSuccess = true;
-        $this->dispatch('otp-verified-success');
+            $this->showSuccess = true;
+            $this->dispatch('otp-verified-success');
+            
+            $this->dispatch('registration-success', [
+                'message' => 'Your account has been created successfully! Welcome to Formigo.'
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->dispatch('registration-error', [
+                'message' => 'An error occurred while creating your account. Please try again.'
+            ]);
+        }
     }
 
     public function resendOtp()
@@ -152,7 +248,9 @@ class Register extends Component
         }
 
         if (empty($this->pendingEmail)) {
-            session()->flash('error', 'No pending email verification found.');
+            $this->dispatch('registration-error', [
+                'message' => 'No pending email verification found. Please start registration again.'
+            ]);
             return;
         }
 
@@ -173,10 +271,14 @@ class Register extends Component
         $emailSent = $brevoService->sendOtpEmail($this->pendingEmail, $otpCode);
 
         if ($emailSent) {
-            session()->flash('success', 'New verification code sent to your email!');
+            $this->dispatch('otp-sent', [
+                'message' => 'New verification code sent to your email!'
+            ]);
             $this->startResendCooldown();
         } else {
-            session()->flash('error', 'Failed to send verification email. Please try again.');
+            $this->dispatch('email-error', [
+                'message' => 'Failed to send verification email. Please try again.'
+            ]);
         }
     }
 
