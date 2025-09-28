@@ -42,6 +42,15 @@
             Institution Demographics
         </button>
         @endif
+        <!-- Collaborators Tab Button -->
+        <button
+            type="button"
+            :class="tab === 'collaborators' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+            class="px-4 py-2 rounded font-semibold focus:outline-none w-full sm:w-auto"
+            @click="tab = 'collaborators'"
+        >
+            Collaborators
+        </button>
     </div>
 
 
@@ -544,6 +553,125 @@
         </form>
     </div>
 
+    <!-- Collaborators Tab -->
+    <div x-show="tab === 'collaborators'" x-cloak>
+        <div class="mb-4">
+            <h3 class="text-lg font-semibold">Survey Collaborators</h3>
+            <p class="text-sm text-gray-500">Add collaborators who can edit and manage this survey by entering their user UUID.</p>
+        </div>
+        
+        <form wire:submit.prevent="addCollaborator" class="mb-6" x-data="{ 
+            checkExistingCollaborators() {
+                const inputValue = $refs.collaboratorInput.value.trim();
+                
+                // Check if input is empty
+                if (!inputValue) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'Please enter a UUID. The field cannot be empty.',
+                        confirmButtonColor: '#e3342f',
+                    });
+                    return false;
+                }
+                
+                // Basic UUID format validation (8-4-4-4-12 pattern)
+                const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                if (!uuidPattern.test(inputValue)) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid UUID Format',
+                        text: 'Please enter a valid UUID in format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+                        confirmButtonColor: '#e3342f',
+                    });
+                    return false;
+                }
+                
+                // Check if the UUID is already in the collaborators list
+                // (Note: Existence of the UUID in the database is checked server-side)
+                const existingCollaborators = @js($collaborators);
+                const isExisting = existingCollaborators.some(collab => collab.uuid === inputValue);
+                
+                if (isExisting) {
+                    // Show validation error using SweetAlert
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'This user is already a collaborator on this survey.',
+                        confirmButtonColor: '#e3342f',
+                    });
+                    return false;
+                }
+                
+                return true;
+            }
+        }">
+            <div class="flex flex-col md:flex-row gap-2">
+                <div class="flex-1">
+                    <input 
+                        type="text" 
+                        wire:model.defer="newCollaboratorUuid" 
+                        class="w-full border rounded px-3 py-2" 
+                        placeholder="Enter user UUID (e.g. c32636cb-610c-4d02-ac31-8b3dab30e075)"
+                        maxlength="36"
+                        x-bind:disabled="isDisabled"
+                        x-ref="collaboratorInput"
+                    />
+                </div>
+                
+                <button 
+                    type="button" 
+                    class="px-4 py-3 md:py-[9px] bg-green-500 text-white rounded hover:bg-green-600 flex items-center justify-center"
+                    x-bind:disabled="isDisabled"
+                    @click.prevent="if(checkExistingCollaborators()) $wire.addCollaborator()"
+                >
+                    <span wire:loading.remove wire:target="addCollaborator">Add Collaborator</span>
+                    <span wire:loading wire:target="addCollaborator">Adding...</span>
+                </button>
+            </div>
+        </form>
+        
+        <div class="mt-6">
+            <h4 class="font-semibold mb-2">Current Collaborators</h4>
+            
+            @if(count($collaborators) > 0)
+                <div class="space-y-3">
+                    @foreach($collaborators as $collaborator)
+                        <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
+                            <div>
+                                <div class="font-medium text-gray-800">{{ $collaborator['name'] }}</div>
+                                <div class="text-sm text-gray-500">UUID: {{ $collaborator['uuid'] }}</div>
+                            </div>
+                            @if(Auth::id() === $survey->user_id)
+                            <button 
+                                type="button"
+                                wire:click="removeCollaborator('{{ $collaborator['uuid'] }}')"
+                                class="text-red-500 hover:text-red-700"
+                                title="Remove collaborator"
+                                x-bind:disabled="isDisabled"
+                            >
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="text-center p-4 bg-gray-50 rounded-lg border">
+                    <p class="text-gray-500">No collaborators added yet</p>
+                </div>
+            @endif
+        </div>
+        
+        <!-- Read-only message for ongoing/finished surveys -->
+        <div x-show="isDisabled" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p class="text-sm text-yellow-700">
+                This survey is {{ $survey->status }} and collaborator settings cannot be modified.
+            </p>
+        </div>
+    </div>
     <x-modal name="survey-boost-modal-{{ $survey->id }}" title="Survey Boost Allocation">
         @livewire('surveys.form-builder.modal.survey-boost-modal', ['survey' => $survey], key('survey-boost-modal-' . $survey->id))
     </x-modal>
@@ -573,6 +701,7 @@
                     confirmButtonColor: '#e3342f',
                 });
             });
+
             Livewire.on('showSuccessAlert', (data) => {
                 Swal.fire({
                     icon: 'success',
@@ -583,8 +712,39 @@
                     showConfirmButton: false
                 });
             });
+
+            // Updated event handler for validation errors to ensure the message is correctly displayed
+            Livewire.on('validation-error', (event) => {
+                console.log('Raw validation error event:', event); // Debug log
+                
+                let errorMessage = 'Please check your input and try again.';
+                
+                // Handle different event data structures
+                if (event && typeof event === 'object') {
+                    if (event.message) {
+                        errorMessage = event.message;
+                    } else if (event[0] && event[0].message) {
+                        errorMessage = event[0].message;
+                    } else if (Array.isArray(event) && event.length > 0) {
+                        // Handle array of event data
+                        const firstEvent = event[0];
+                        if (firstEvent && firstEvent.message) {
+                            errorMessage = firstEvent.message;
+                        }
+                    }
+                }
+                
+                console.log('Final error message:', errorMessage); // Debug log
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: errorMessage,
+                    confirmButtonColor: '#e3342f',
+                });
+            });
         });
 
     </script>
-
 </div>
+

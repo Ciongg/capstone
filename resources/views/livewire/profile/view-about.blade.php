@@ -4,6 +4,7 @@
         <h2 class="text-xl font-bold mb-4">Account Information</h2>
         <div class="space-y-2">
             <div><span class="font-semibold">Name:</span> {{ $user->name ?? 'N/A' }}</div>
+            <div><span class="font-semibold">UUID:</span> {{ $user->uuid ?? 'N/A' }}</div>
             <div><span class="font-semibold">Email:    @if($user->email_verified_at)
                     <span title="Verified" class="cursor-pointer">
                         <svg xmlns="http://www.w3.org/2000/svg" class="inline w-5 h-5 text-green-500 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

@@ -15,6 +15,31 @@ use App\Services\TestTimeService;
 
 class SurveyController extends Controller
 {
+    /**
+     * Check if user can access the survey as owner or collaborator
+     */
+    protected function canAccessSurvey($survey)
+    {
+        $user = auth()->user();
+        
+        // Super admins can access all surveys
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+        
+        // Owner can access
+        if ($survey->user_id === $user->id) {
+            return true;
+        }
+        
+        // Collaborators can access
+        if ($survey->isCollaborator($user)) {
+            return true;
+        }
+        
+        return false;
+    }
+
     public function create(Request $request, $surveyId = null)
     {
         $user = Auth::user();
@@ -33,9 +58,9 @@ class SurveyController extends Controller
                 abort(404, 'The requested survey could not be found.');
             }
 
-            // Only super_admin can access all, others only their own
-            if ($user->type !== 'super_admin' && $surveyModel->user_id !== $user->id) {
-                abort(403, 'You do not have permission to access this page.');
+            // Check if user can access this survey (as owner or collaborator)
+            if (!$this->canAccessSurvey($surveyModel)) {
+                abort(403, 'You do not have permission to access this survey.');
             }
 
             return view('researcher.show-form-builder', ['survey' => $surveyModel]);
@@ -56,6 +81,11 @@ class SurveyController extends Controller
         // Check if the logged-in user is the owner of this survey
         if ($survey->user_id === Auth::id()) {
             abort(403, 'You cannot answer your own survey.');
+        }
+        
+        // Check if the logged-in user is a collaborator of this survey
+        if ($survey->isCollaborator($user)) {
+            abort(403, 'You cannot answer a survey you collaborate on.');
         }
         
         // Check if survey is locked by admin
@@ -119,18 +149,9 @@ class SurveyController extends Controller
         $user = Auth::user();
 
         if ($isPreview) {
-            // Only allow super_admin to preview any survey
-            // Institution admin can preview surveys owned by users in their institution
-            // Others only their own
-            $surveyOwner = $survey->user;
-            if ($user->type === 'super_admin') {
-                // allow
-            } elseif ($user->type === 'institution_admin') {
-                if (!$surveyOwner || $surveyOwner->institution_id !== $user->institution_id) {
-                    abort(403, 'You do not have permission to access this page.');
-                }
-            } elseif ($survey->user_id !== $user->id) {
-                abort(403, 'You do not have permission to access this page.');
+            // For previews, check if user can access as owner or collaborator
+            if (!$this->canAccessSurvey($survey)) {
+                abort(403, 'You do not have permission to preview this survey.');
             }
         }
 
@@ -154,7 +175,6 @@ class SurveyController extends Controller
     {
         $user = Auth::user();
 
-        // Only allow owner of the survey
         // Find survey by UUID instead of ID
         $survey = Survey::where('uuid', $surveyId)->first();
 
@@ -163,8 +183,9 @@ class SurveyController extends Controller
             abort(404, 'The requested survey could not be found.');
         }
 
-        if ($survey->user_id !== $user->id) {
-            abort(403, 'You do not have permission to access this page.');
+        // Check if user can access this survey (as owner or collaborator)
+        if (!$this->canAccessSurvey($survey)) {
+            abort(403, 'You do not have permission to view responses for this survey.');
         }
 
         return view('researcher.show-form-responses', compact('survey'));
@@ -172,11 +193,9 @@ class SurveyController extends Controller
 
     public function showIndividualResponses(Survey $survey): View
     {
-        $user = Auth::user();
-
-        // Only allow owner of the survey
-        if ($survey->user_id !== $user->id) {
-            abort(403, 'You do not have permission to access this page.');
+        // Check if user can access this survey (as owner or collaborator)
+        if (!$this->canAccessSurvey($survey)) {
+            abort(403, 'You do not have permission to view individual responses for this survey.');
         }
 
         return view('researcher.show-individual-responses', ['surveyId' => $survey->id]);
@@ -186,6 +205,4 @@ class SurveyController extends Controller
     {
         return view('respondent.show-own-response', compact('survey', 'response'));
     }
-
 }
-

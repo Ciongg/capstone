@@ -114,4 +114,22 @@ class Survey extends Model
     {
         return $this->hasMany(Announcement::class);
     }
+
+    /**
+     * Relationship with collaborators (users who can edit this survey)
+     */
+    public function collaborators()
+    {
+        return $this->belongsToMany(User::class, 'survey_collaborators')
+                    ->withPivot('user_uuid')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Check if the given user is a collaborator on this survey
+     */
+    public function isCollaborator(User $user)
+    {
+        return $this->collaborators()->where('user_id', $user->id)->exists();
+    }
 }

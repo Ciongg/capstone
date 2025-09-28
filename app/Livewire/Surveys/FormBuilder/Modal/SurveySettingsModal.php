@@ -10,6 +10,8 @@ use App\Models\TagCategory;
 use App\Models\Tag;
 use App\Models\InstitutionTagCategory;
 use App\Models\InstitutionTag;
+use App\Models\User;
+use App\Models\InboxMessage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
@@ -44,6 +46,10 @@ class SurveySettingsModal extends Component
         'surveyTitleUpdated' => 'updateTitleFromEvent',
         'refresh-survey-data' => 'refreshSurveyData'
     ];
+
+    // Add new properties for collaborator management
+    public $collaborators = [];
+    public $newCollaboratorUuid;
 
     public function mount($survey)
     {
@@ -92,6 +98,9 @@ class SurveySettingsModal extends Component
         // Load institution tag categories and tags if they exist
         $this->loadInstitutionTagCategories();
         $this->loadSelectedInstitutionTags();
+
+        // Load collaborators
+        $this->loadCollaborators();
     }
 
     // Method to handle the event
@@ -444,6 +453,129 @@ class SurveySettingsModal extends Component
     private function showErrorAlert($message)
     {
         $this->dispatch('showErrorAlert', message: $message);
+    }
+
+    // Add methods for collaborator management
+    private function loadCollaborators()
+    {
+        $this->collaborators = [];
+        
+        if ($this->survey) {
+            $surveyCollaborators = $this->survey->collaborators()->get();
+            
+            foreach ($surveyCollaborators as $user) {
+                $this->collaborators[] = [
+                    'id' => $user->id,
+                    'uuid' => $user->uuid,
+                    'name' => $user->first_name . ' ' . $user->last_name
+                ];
+            }
+        }
+    }
+    
+    public function addCollaborator()
+    {
+        try {
+            // Validate UUID input with max length
+            $this->validate([
+                'newCollaboratorUuid' => 'required|string|uuid|max:36'
+            ]);
+            
+            // Find user by UUID
+            $user = User::where('uuid', $this->newCollaboratorUuid)->first();
+            
+            // Debug log to check if user exists
+            \Log::debug("Collaborator check:", [
+                'uuid' => $this->newCollaboratorUuid,
+                'user_found' => (bool)$user
+            ]);
+            
+            if (!$user) {
+                // Make sure the message is correctly formatted for the client
+                $errorMessage = 'No user found with this UUID. Please verify the UUID is correct and the user exists in the system.';
+                
+                \Log::debug("User not found error:", [
+                    'message' => $errorMessage
+                ]);
+                
+                // Use the correct dispatch format with array parameter
+                $this->dispatch('validation-error', [
+                    'message' => $errorMessage
+                ]);
+                return;
+            }
+            
+            // Check if user is already the owner
+            if ($user->id === $this->survey->user_id) {
+                $this->dispatch('validation-error', [
+                    'message' => 'This user is already the survey owner.'
+                ]);
+                return;
+            }
+            
+            // Check if user is already a collaborator
+            if ($this->survey->isCollaborator($user)) {
+                $this->dispatch('validation-error', [
+                    'message' => 'This user is already a collaborator on this survey.'
+                ]);
+                return;
+            }
+            
+            // Add as collaborator
+            $this->survey->collaborators()->attach($user->id, ['user_uuid' => $user->uuid]);
+            
+            // Send inbox message to the new collaborator
+            InboxMessage::create([
+                'recipient_id' => $user->id,
+                'subject' => 'Added as Survey Collaborator',
+                'message' => "You have been added as a collaborator to the survey '{$this->survey->title}' by {" . Auth::user()->first_name . " " . Auth::user()->last_name . "}.\n\n" .
+                            "You can now view and edit this survey. To access it, go to Profile > My Surveys > Shared with Me.",
+                'url' => route('surveys.create', $this->survey->uuid),
+                'read_at' => null
+            ]);
+            
+            // Refresh collaborator list
+            $this->loadCollaborators();
+            
+            // Clear input only on successful addition
+            $this->newCollaboratorUuid = '';
+            
+            // Show success message
+            $this->dispatch('showSuccessAlert', [
+                'message' => 'Collaborator added successfully!'
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Extract all validation errors and convert to a single message
+            $errors = $e->validator->errors()->all();
+            $this->dispatch('validation-error', [
+                'message' => implode(' ', $errors)
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Collaborator error: " . $e->getMessage(), [
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            $this->dispatch('validation-error', [
+                'message' => 'Failed to add collaborator: ' . $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function removeCollaborator($uuid)
+    {
+        try {
+            $user = User::where('uuid', $uuid)->first();
+            
+            if ($user) {
+                $this->survey->collaborators()->detach($user->id);
+                $this->loadCollaborators();
+                $this->dispatch('showSuccessAlert', message: 'Collaborator removed successfully!');
+            }
+        } catch (\Exception $e) {
+            $this->dispatch('showErrorAlert', message: 'Failed to remove collaborator: ' . $e->getMessage());
+        }
     }
 
     public function render()
