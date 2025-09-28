@@ -51,6 +51,7 @@ class FormBuilder extends Component
         'settingsOperationCompleted' => 'handleSettingsOperationCompleted', // New listener
         'setSaveStatus' => 'handleSetSaveStatus', // New listener for save status
         'surveySettingsUpdated' => 'handleSurveySettingsUpdated', // Add this listener
+        'surveyStructureUpdated' => 'loadPages', // Add this line
     ];
 
    public function mount(Survey $survey)
@@ -93,8 +94,6 @@ class FormBuilder extends Component
            ->orderBy('order') // Ensure pages are ordered
            ->get();
 
-           
-
        $this->questions = [];
        $this->choices = [];
 
@@ -126,6 +125,12 @@ class FormBuilder extends Component
                            $this->choices[$choice->id] = $choice->toArray();
                        }
            }
+       }
+       
+       // Get the first page ID if available
+       $firstPage = $this->pages->first();
+       if ($firstPage && $this->activePageId === null) {
+           $this->activePageId = $firstPage->id;
        }
    }
 

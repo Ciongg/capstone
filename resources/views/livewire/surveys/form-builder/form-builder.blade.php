@@ -53,6 +53,15 @@
                 activePageId = pageId;
 
             });
+            
+            // Add event listener for survey structure updates
+            @this.on('surveyStructureUpdated', () => {
+                // Reload the survey pages and structure
+                @this.loadPages();
+                // Reset selection
+                selectedQuestionId = null;
+                activePageId = null;
+            });
         });
 
         window.addEventListener('scrollToPage', (event) => {
@@ -116,6 +125,14 @@
         <livewire:surveys.form-builder.modal.survey-settings-modal 
             :survey="$survey" 
             :key="'settings-modal-' . $survey->id . '-' . $survey->updated_at->timestamp" 
+        />
+    </x-modal>
+
+    <!-- AI Generator Modal - Add this new modal -->
+    <x-modal name="survey-generator-modal-{{ $survey->id }}" title="AI Survey Generator">
+        <livewire:surveys.form-builder.modal.survey-generator-modal 
+            :survey="$survey" 
+            :key="'generator-modal-' . $survey->id . '-' . $survey->updated_at->timestamp" 
         />
     </x-modal>
 
