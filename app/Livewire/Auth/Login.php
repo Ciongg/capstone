@@ -98,8 +98,19 @@ class Login extends Component
         try {
             $this->validate();
         } catch (\Illuminate\Validation\ValidationException $e) {
-            $errors = $e->validator->errors()->all();
-            $this->dispatch('validation-error', ['message' => implode(' ', $errors)]);
+            $errors = $e->validator->errors();
+            
+            // Check for password length error specifically
+            if ($errors->has('password') && str_contains($errors->first('password'), 'at least 8')) {
+                $this->dispatch('password-length-error', [
+                    'message' => 'Password must be at least 8 characters.'
+                ]);
+                return;
+            }
+            
+            // Handle other validation errors
+            $allErrors = $errors->all();
+            $this->dispatch('validation-error', ['message' => implode(' ', $allErrors)]);
             return;
         }
 

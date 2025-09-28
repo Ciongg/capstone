@@ -104,6 +104,7 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'first_name' => 'John',
             'last_name' => 'Doe',
+            'phone_number' => '09516322710',
             'email' => 'johndoe@nu.edu.ph',
             'password' => Hash::make('password123'),
             'type' => 'researcher',

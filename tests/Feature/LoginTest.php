@@ -59,7 +59,7 @@ it('cannot authenticate with invalid password', function () {
         ->set('email', 'active@example.com')
         ->set('password', 'wrong-password')
         ->call('attemptLogin')
-        ->assertHasErrors('email');
+        ->assertDispatched('login-error');
     
     $this->assertFalse(Auth::check());
 });
@@ -80,40 +80,37 @@ it('reactivates inactive user accounts on login', function () {
 });
 
 it('cannot authenticate with archived account', function () {
-    // Direct check of the error response pattern instead of specific message
     Livewire::test('auth.login')
-    ->set('email', 'archived@example.com')
+        ->set('email', 'archived@example.com')
         ->set('password', 'password123')
         ->call('attemptLogin')
-        ->assertHasErrors(['email']);
+        ->assertDispatched('archived-account');
         
-        $this->assertFalse(Auth::check());
-        
-    });
+    $this->assertFalse(Auth::check());
+});
     
-    it('can check and update institution status on login', function () {
-        // Create a user with researcher type but no matching institution
-        $researcher = User::factory()->create([
-            'email' => 'researcher@random.edu.ph',
-            'password' => Hash::make('password123'),
-            'type' => 'researcher',
-            'is_active' => true,
-        ]);
-        
-        // Login and check if downgraded
-        Livewire::test('auth.login')
+it('can check and update institution status on login', function () {
+    // Create a user with researcher type but no matching institution
+    $researcher = User::factory()->create([
+        'email' => 'researcher@random.edu.ph',
+        'password' => Hash::make('password123'),
+        'type' => 'researcher',
+        'is_active' => true,
+    ]);
+    
+    // Login and check if downgraded
+    Livewire::test('auth.login')
         ->set('email', 'researcher@random.edu.ph')
         ->set('password', 'password123')
         ->call('attemptLogin')
-        ->assertHasNoErrors();
-        
-        $researcher->refresh();
-        expect($researcher->type)->toBe('respondent');
-        expect(session('account-downgrade'))->not->toBeEmpty();
-    });
+        ->assertHasNoErrors()
+        ->assertDispatched('account-status-change');
     
-    
-    it('allows users to logout', function () {
+    $researcher->refresh();
+    expect($researcher->type)->toBe('respondent');
+});
+
+it('allows users to logout', function () {
         // First login
         Auth::login($this->user);
         $this->assertTrue(Auth::check());
@@ -123,3 +120,5 @@ it('cannot authenticate with archived account', function () {
         $this->assertFalse(Auth::check());
         $response->assertRedirect('/');
     });
+
+    

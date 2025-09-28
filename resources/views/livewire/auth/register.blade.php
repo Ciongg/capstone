@@ -106,6 +106,9 @@
                                     class="w-full pl-10 border border-white/50 bg-white text-gray-700 rounded-lg p-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 @error('phone_number') border-red-400 @enderror"
                                     placeholder="Enter your phone number"
                                     maxlength="11"
+                                    inputmode="numeric"
+                                    pattern="[0-9]*"
+                                    onkeypress="return event.charCode >= 48 && event.charCode <= 57"
                                     required
                                 >
                             </div>
@@ -331,9 +334,16 @@
         Swal.fire({
             icon: 'success',
             title: 'Registration Successful!',
-            text: event.detail.message || 'Your account has been created successfully.',
-            timer: 2000,
-            showConfirmButton: false,
+            text: event.detail.message || 'Your account has been created successfully! Welcome to Formigo.',
+            showConfirmButton: true,
+            confirmButtonText: 'Continue to Dashboard',
+            confirmButtonColor: '#3B82F6',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = '{{ route('feed.index') }}';
+            }
         });
     });
     
@@ -354,6 +364,28 @@
             title: 'Verification Code Already Sent',
             text: event.detail.message || 'A verification code was already sent to your email.',
             timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle phone number length errors
+    window.addEventListener('phone-length-error', function (event) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Phone Number',
+            text: event.detail.message || 'Phone number must be exactly 11 digits.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle password length errors
+    window.addEventListener('password-length-error', function (event) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Password Too Short',
+            text: event.detail.message || 'Password must be at least 8 characters and include a special character and one uppercase letter.',
+            timer: 4000,
             showConfirmButton: true,
         });
     });

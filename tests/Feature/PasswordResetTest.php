@@ -39,7 +39,8 @@ it('can request a password reset', function () {
         ->set('email', 'resettest@example.com')
         ->call('sendResetEmail')
         ->assertHasNoErrors()
-        ->assertSet('currentStep', 'otp');
+        ->assertSet('currentStep', 'otp')
+        ->assertDispatched('otp-sent');
         
     // Verify that an OTP record was created
     $this->assertDatabaseHas('email_verifications', [
@@ -51,7 +52,7 @@ it('shows an error for non-existent email', function () {
     Livewire::test('auth.forgot-password')
         ->set('email', 'nonexistent@example.com')
         ->call('sendResetEmail')
-        ->assertHasErrors('email');
+        ->assertDispatched('email-not-found');
         
     // Verify no OTP was created
     $this->assertDatabaseMissing('email_verifications', [
@@ -86,8 +87,10 @@ it('shows an error for invalid OTP', function () {
     Livewire::test('auth.forgot-password')
         ->set('email', 'resettest@example.com')
         ->set('otp_code', '654321') // Wrong OTP
+        ->set('currentStep', 'otp')
         ->call('verifyOtp')
-        ->assertHasErrors('otp_code');
+        ->assertDispatched('otp-error')
+        ->assertSet('currentStep', 'otp'); // Step should not change
 });
 
 it('shows an error for expired OTP', function () {
@@ -101,8 +104,10 @@ it('shows an error for expired OTP', function () {
     Livewire::test('auth.forgot-password')
         ->set('email', 'resettest@example.com')
         ->set('otp_code', '123456')
+        ->set('currentStep', 'otp')
         ->call('verifyOtp')
-        ->assertHasErrors('otp_code');
+        ->assertDispatched('otp-error')
+        ->assertSet('currentStep', 'otp'); // Step should not change
 });
 
 it('can reset password with valid data', function () {
@@ -117,15 +122,16 @@ it('can reset password with valid data', function () {
     Livewire::test('auth.forgot-password')
         ->set('email', 'resettest@example.com')
         ->set('currentStep', 'password')
-        ->set('new_password', 'newpassword123')
-        ->set('new_password_confirmation', 'newpassword123')
+        ->set('new_password', 'NewPassword@123')
+        ->set('new_password_confirmation', 'NewPassword@123')
         ->call('resetPassword')
         ->assertHasNoErrors()
+        ->assertDispatched('password-reset-success')
         ->assertSet('showSuccess', true);
     
     // Verify the password was updated
     $this->user->refresh();
-    $this->assertTrue(Hash::check('newpassword123', $this->user->password));
+    $this->assertTrue(Hash::check('NewPassword@123', $this->user->password));
     
     // Verify the OTP record was deleted
     $this->assertDatabaseMissing('email_verifications', [
@@ -137,8 +143,9 @@ it('enforces password confirmation', function () {
     Livewire::test('auth.forgot-password')
         ->set('email', 'resettest@example.com')
         ->set('currentStep', 'password')
-        ->set('new_password', 'newpassword123')
-        ->set('new_password_confirmation', 'different-password')
+        ->set('new_password', 'NewPassword@123')
+        ->set('new_password_confirmation', 'DifferentPassword@123')
         ->call('resetPassword')
-        ->assertHasErrors(['new_password']);
+        ->assertDispatched('password-mismatch')
+        ->assertSet('currentStep', 'password'); // Step should not change
 });

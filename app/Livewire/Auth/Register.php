@@ -36,8 +36,8 @@ class Register extends Component
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
-            'phone_number' => 'required|string|max:20|unique:users,phone_number',
-            'password' => 'required|string|min:8|confirmed|regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%]).*$/',
+            'phone_number' => 'required|string|max:11|min:11|unique:users,phone_number',
+            'password' => 'required|string|min:8|confirmed|regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%@]).*$/',
             'terms' => 'required|accepted',
         ];
     }
@@ -78,6 +78,22 @@ class Register extends Component
             $this->validate();
         } catch (\Illuminate\Validation\ValidationException $e) {
             $errors = $e->validator->errors();
+            
+            // Check for password length errors
+            if ($errors->has('password') && str_contains($errors->first('password'), 'at least 8')) {
+                $this->dispatch('password-length-error', [
+                    'message' => 'Password must be at least 8 characters and include a special character and one uppercase letter.'
+                ]);
+                return;
+            }
+            
+            // Check for phone number length errors
+            if ($errors->has('phone_number') && (str_contains($errors->first('phone_number'), 'at least') || str_contains($errors->first('phone_number'), 'at most') || str_contains($errors->first('phone_number'), 'characters'))) {
+                $this->dispatch('phone-length-error', [
+                    'message' => 'Phone number must be exactly 11 digits.'
+                ]);
+                return;
+            }
             
             // Check for password strength errors
             if ($errors->has('password') && str_contains($errors->first('password'), 'format is invalid')) {
@@ -139,7 +155,7 @@ class Register extends Component
             ['email' => $this->email],
             [
                 'otp_code' => $otpCode,
-                'expires_at' => Carbon::now()->addMinutes(10),
+                'expires_at' => Carbon::now()->addSeconds(60), // 10 minutes from now
             ]
         );
 
@@ -167,6 +183,7 @@ class Register extends Component
 
     public function verifyOtp()
     {
+        
         try {
             $this->validate($this->otpRules());
         } catch (\Illuminate\Validation\ValidationException $e) {

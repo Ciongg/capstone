@@ -196,5 +196,16 @@
             showConfirmButton: true,
         });
     });
+    
+    // Handle password length errors
+    window.addEventListener('password-length-error', function (event) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Password Too Short',
+            text: event.detail.message || 'Password must be at least 8 characters.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
 </script>
 @endpush

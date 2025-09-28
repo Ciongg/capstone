@@ -1,76 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Meta tags for character set and viewport -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <meta name="description" content="Incentivized Research Survey Platform">
-
-    <!-- Open Graph (works on Facebook, Messenger, Discord, LinkedIn, etc.) -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:title" content="Formigo">
-    <meta property="og:description" content="Incentivized Research Survey Platform">
-    <meta property="og:image" content="{{ asset('images/landing/formigo.png') }}">
-    
-    <!-- Dynamic page title -->
-    <title>{{ $title ?? 'Formigo' }}</title>
-
-    <!-- Vite assets (CSS and JS) -->
+    <title>{{ $title ?? 'My App' }}</title>
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{-- Vite assets --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <!-- Livewire styles -->
-    @livewireStyles <!-- Required Livewire styles -->
+
+    {{-- Livewire styles --}}
+    @livewireStyles
     
-    <!-- External scripts for confetti and sweetalert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-  <!-- Google Fonts: Roboto -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-
-    {{-- Script to manage scroll restoration and scroll to top on page load --}}
-    <script>
-        // Check if browser supports scroll restoration
-        if (history.scrollRestoration) {
-            history.scrollRestoration = 'manual'; // Disable automatic scroll restoration
-        } else {
-            // Fallback for older browsers: scroll to top before unload
-            window.onbeforeunload = function () {
-                window.scrollTo(0, 0);
-            }
-        }
-        window.scrollTo(0,0); // Ensure scroll to top for all browsers
-    </script>
-
-    {{-- Inline styles for body font and mobile menu behavior --}}
     <style>
-         /* Set the default font for the entire body */
-         body {
-        font-family: 'roboto', sans-serif;
-        }
-
-        /* Styles to prevent the body from scrolling when the mobile menu is open */
-        body.no-scroll {
-            overflow: hidden; /* Hide scrollbars */
-            position: fixed; /* Fix the body position */
-            width: 100%; /* Ensure full width */
-            height: 100%; /* Ensure full height */
+        /* No scroll class to prevent body scrolling when mobile menu is open */
+        .no-scroll {
+            overflow: hidden !important;
+            position: fixed;
+            width: 100%;
+            height: 100%;
         }
         
-        /* Make the mobile menu background solid white */
+        /* Mobile menu styling with solid background */
         .mobile-menu {
-            background-color: #ffffff; /* Solid white background */
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(4px);
+            z-index: 9999 !important;
+        }
+        
+        /* Mobile menu overlay styling */
+        .mobile-menu-overlay {
+            background-color: rgba(0, 0, 0, 0.5) !important;
+            z-index: 9998 !important;
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 text-gray-900">
 
-    <!-- Navigation Bar Section -->
+   <!-- Navigation Bar Section -->
     <nav class="sticky top-0 z-40 transition-all duration-300 shadow-md" 
          :class="scrollY > 50 ? 'bg-white/60 backdrop-blur-sm' : 'bg-white'"
          x-data="{ 
@@ -243,15 +208,14 @@
         <!-- Mobile Menu Section (slides in from right) -->
         <div 
             x-show="mobileMenuOpen" 
-            x-transition:enter="transition ease-in-out duration-200"
+            x-transition:enter="transition ease-in-out duration-300"
             x-transition:enter-start="transform translate-x-full"
             x-transition:enter-end="transform translate-x-0"
-            x-transition:leave="transition ease-in-out duration-200"
+            x-transition:leave="transition ease-in-out duration-300"
             x-transition:leave-start="transform translate-x-0"
             x-transition:leave-end="transform translate-x-full"
-            class="fixed top-0 right-0 h-full w-4/5 mobile-menu shadow-lg z-50 p-6 overflow-y-auto"
-            style="display: none;"
-            @keydown.escape.window="toggleMenu()" {{-- Close menu on Escape key press --}}
+            class="fixed top-0 right-0 h-full w-4/5 mobile-menu shadow-xl z-50 p-6 overflow-y-auto"
+            style="background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(4px);"
         >
             <!-- Mobile Menu Header: Logo and Close Button -->
             <div class="flex justify-between items-center mb-6">
@@ -267,22 +231,22 @@
             <div class="flex flex-col space-y-4 text-lg pt-4">
                 @guest
                     {{-- Mobile Menu Links: Guest Users --}}
-                    <a href="/" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('/')) }} hover:text-[#03b8ff]">Home</a>
-                    <a href="/about" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('about')) }} hover:text-[#03b8ff]">About</a>
-                    <a href="/rewards-info" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('rewards-info')) }} hover:text-[#03b8ff]">Rewards</a>
+                    <a href="/" class="{{ $navLinkClass(request()->is('/')) }} hover:text-[#03b8ff]">Home</a>
+                    <a href="/about" class="{{ $navLinkClass(request()->is('about')) }} hover:text-[#03b8ff]">About</a>
+                    <a href="/rewards-info" class="{{ $navLinkClass(request()->is('rewards-info')) }} hover:text-[#03b8ff]">Rewards</a>
                     <hr class="border-gray-300 my-2"> {{-- Separator --}}
                     {{-- Mobile Menu Authentication Buttons: Guest Users --}}
-                    <a href="{{ route('register') }}" @click="mobileMenuOpen = false" class="bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-6 py-2 rounded-lg text-center">Register</a>
-                    <a href="{{ route('login') }}" @click="mobileMenuOpen = false" class="bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-6 py-2 rounded-lg text-center">Login</a>
+                    <a href="{{ route('register') }}" class="bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-6 py-2 rounded-lg text-center">Register</a>
+                    <a href="{{ route('login') }}" class="bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-6 py-2 rounded-lg text-center">Login</a>
                 @else
                     {{-- Mobile Menu: User Profile Section (Authenticated Users) --}}
-                    <a href="/profile" @click="mobileMenuOpen = false" class="flex items-center mb-4 pb-4 border-b border-gray-200 {{ request()->routeIs('profile.index') ? 'text-[#03b8ff]' : 'text-gray-700' }} hover:text-[#03b8ff]">
+                    <a href="/profile" class="flex items-center mb-4 pb-4 border-b border-gray-200 {{ request()->routeIs('profile.index') ? 'text-[#03b8ff]' : 'text-gray-700' }} hover:text-[#03b8ff]">
                         <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" class="w-12 h-12 rounded-full object-cover border border-gray-400">
                         <span class="font-semibold ml-3">{{ Auth::user()->name }}</span>
                     </a>
 
                     {{-- Mobile Menu: Inbox Link --}}
-                    <a href="/inbox" @click="mobileMenuOpen = false" class="flex items-center justify-between {{ $navLinkClass(request()->is('inbox')) }} hover:text-[#03b8ff]">
+                    <a href="/inbox" class="flex items-center justify-between {{ $navLinkClass(request()->is('inbox')) }} hover:text-[#03b8ff]">
                         <div class="flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 0 0-2.15-1.588H6.911a2.25 2.25 0 0 0-2.15 1.588L2.35 13.177a2.25 2.25 0 0 0-.1.661Z" />
@@ -295,15 +259,15 @@
                     </a>
                     
                     {{-- Mobile Menu Links: Authenticated Users (Common) --}}
-                    <a href="/feed" @click="mobileMenuOpen = false" class="flex items-center {{ $navLinkClass(request()->routeIs('feed.index')) }} hover:text-[#03b8ff]">
+                    <a href="/feed" class="flex items-center {{ $navLinkClass(request()->routeIs('feed.index')) }} hover:text-[#03b8ff]">
                         <img src="/images/icons/home.svg" alt="Feed" class="w-6 h-6 mr-2">
                         Feed
                     </a>
-                    <a href="/rewards" @click="mobileMenuOpen = false" class="flex items-center {{ $navLinkClass(request()->routeIs('rewards.index')) }} hover:text-[#03b8ff]">
+                    <a href="/rewards" class="flex items-center {{ $navLinkClass(request()->routeIs('rewards.index')) }} hover:text-[#03b8ff]">
                         <img src="/images/icons/redeem.svg" alt="Redeem" class="w-6 h-6 mr-2">
                         Redeem
                     </a>
-                    <a href="/vouchers" @click="mobileMenuOpen = false" class="flex items-center {{ $navLinkClass(request()->routeIs('vouchers.index')) }} hover:text-[#03b8ff]">
+                    <a href="/vouchers" class="flex items-center {{ $navLinkClass(request()->routeIs('vouchers.index')) }} hover:text-[#03b8ff]">
                         <img src="/images/icons/voucher.svg" alt="Vouchers" class="w-6 h-6 mr-2">
                         Vouchers
                     </a>
@@ -313,7 +277,7 @@
                         {{-- Researcher: Create Survey Button --}}
                         <button 
                             x-data
-                            @click="mobileMenuOpen = false; $dispatch('open-modal', {name: 'select-survey-type'})"
+                            @click="$dispatch('open-modal', {name: 'select-survey-type'})"
                             class="flex items-center {{ $navLinkClass(request()->is('surveys/create*')) }} hover:text-[#03b8ff] text-left"
                         >
                             <img src="/images/icons/survey.svg" alt="Create Survey" class="w-6 h-6 mr-2">
@@ -325,7 +289,7 @@
                             {{-- Create Survey Button (if institution is valid) --}}
                             <button 
                                 x-data
-                                @click="mobileMenuOpen = false; $dispatch('open-modal', {name: 'select-survey-type'})"
+                                @click="$dispatch('open-modal', {name: 'select-survey-type'})"
                                 class="flex items-center {{ $navLinkClass(request()->is('surveys/create*')) }} hover:text-[#03b8ff] text-left"
                             >
                                 <img src="/images/icons/survey.svg" alt="Create Survey" class="w-6 h-6 mr-2">
@@ -335,10 +299,10 @@
                             {{-- Institution Sub-menu (if institution is valid) --}}
                             <div class="border-t border-gray-200 pt-2 mt-2">
                                 <p class="font-semibold text-gray-700 mb-2">Institution</p>
-                                <a href="/institution/analytics" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/analytics')) }} hover:text-[#03b8ff]">Analytics</a>
-                                <a href="/institution/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/users')) }} hover:text-[#03b8ff]">Users</a>
-                                <a href="/institution/surveys" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/surveys')) }} hover:text-[#03b8ff]">Surveys</a>
-                                <a href="/institution/announcements" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/announcements')) }} hover:text-[#03b8ff]">Announcements</a>
+                                <a href="/institution/analytics" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/analytics')) }} hover:text-[#03b8ff]">Analytics</a>
+                                <a href="/institution/users" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/users')) }} hover:text-[#03b8ff]">Users</a>
+                                <a href="/institution/surveys" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/surveys')) }} hover:text-[#03b8ff]">Surveys</a>
+                                <a href="/institution/announcements" class="block pl-2 py-2 {{ $navLinkClass(request()->is('institution/announcements')) }} hover:text-[#03b8ff]">Announcements</a>
                             </div>
                         @else
                             {{-- Disabled links (if institution is invalid) --}}
@@ -349,7 +313,7 @@
                         {{-- Super Admin: Create Survey Button --}}
                         <button 
                             x-data
-                            @click="mobileMenuOpen = false; $dispatch('open-modal', {name: 'select-survey-type'})"
+                            @click="$dispatch('open-modal', {name: 'select-survey-type'})"
                             class="flex items-center {{ $navLinkClass(request()->is('surveys/create*')) }} hover:text-[#03b8ff] text-left"
                         >
                             <img src="/images/icons/survey.svg" alt="Create Survey" class="w-6 h-6 mr-2">
@@ -359,15 +323,25 @@
                         {{-- Super Admin: Manage Sub-menu --}}
                         <div class="border-t border-gray-200 pt-2 mt-2">
                             <p class="font-semibold text-gray-700 mb-2">Manage</p>
-                            <a href="/admin/analytics" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/analytics')) }} hover:text-[#03b8ff]">Analytics</a>
-                            <a href="/admin/surveys" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/surveys*')) }} hover:text-[#03b8ff]">Manage Surveys</a>
-                            <a href="/admin/announcements" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/announcements')) }} hover:text-[#03b8ff]">Manage Announcements</a>
-                            <a href="/admin/reward-redemptions" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->routeIs('admin.reward-redemptions.index')) }} hover:text-[#03b8ff]">Manage Rewards</a>
-                            <a href="/admin/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/users*')) }} hover:text-[#03b8ff]">Manage Users</a>
-                            <a href="/admin/requests" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/requests')) }} hover:text-[#03b8ff]">Manage Support Requests</a>
+                            <a href="/admin/analytics" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/analytics')) }} hover:text-[#03b8ff]">Analytics</a>
+                            <a href="/admin/surveys" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/surveys*')) }} hover:text-[#03b8ff]">Manage Surveys</a>
+                            <a href="/admin/announcements" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/announcements')) }} hover:text-[#03b8ff]">Manage Announcements</a>
+                            <a href="/admin/reward-redemptions" class="block pl-2 py-2 {{ $navLinkClass(request()->routeIs('admin.reward-redemptions.index')) }} hover:text-[#03b8ff]">Manage Rewards</a>
+                            <a href="/admin/users" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/users*')) }} hover:text-[#03b8ff]">Manage Users</a>
+                            <a href="/admin/requests" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/requests')) }} hover:text-[#03b8ff]">Manage Support Requests</a>
                         </div>
                     @endif
                 @endauth
+                
+                {{-- Add a manual close button at the bottom for better UX --}}
+                <div class="border-t border-gray-200 pt-4 mt-4">
+                    <button @click="toggleMenu()" class="w-full flex justify-center items-center py-2 bg-gray-100 hover:bg-gray-200 rounded-lg">
+                        <span class="mr-2">Close Menu</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -375,14 +349,14 @@
         <div 
             x-show="mobileMenuOpen" 
             @click="toggleMenu()"
-            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter="transition ease-out duration-300"
             x-transition:enter-start="opacity-0"
             x-transition:enter-end="opacity-100"
-            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave="transition ease-in duration-300"
             x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0"
-            class="fixed inset-0 z-40" {{-- Overlay to cover the page content --}}
-            style="display: none;"
+            class="fixed inset-0 mobile-menu-overlay"
+            style="background-color: rgba(0, 0, 0, 0.5); z-index: 9998;"
         ></div>
     </nav> <!-- End of Navigation Bar Section -->
     
@@ -403,7 +377,8 @@
     </x-modal>
     <!-- End of Modal Sections -->
 
-    <!-- Main Content Area -->
+
+    {{-- Page content --}}
     <main class="mx-auto bg-gray-50 min-h-screen" x-data="{}" x-init="
         // Show announcement only on specific routes
         $nextTick(() => {
@@ -425,16 +400,15 @@
             }
         });
     ">
-        @yield('content') {{-- Blade directive to output the content of the current section --}}
+        {{ $slot }}
     </main>
-    <!-- End of Main Content Area -->
 
-    <!-- Additional Scripts Section -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> {{-- Chart.js library --}}
-    @stack('scripts') {{-- Blade directive to push scripts from child views --}}
-    @livewireScripts <!-- Required Livewire scripts -->
-    
-    <!-- Survey Creation Success Modal Event Listener -->
+    {{-- Livewire scripts --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @stack('scripts')
+    @livewireScripts
+
     <script>
         document.addEventListener('livewire:initialized', () => {
             // Existing survey-created-success event listener
@@ -535,7 +509,6 @@
 
     <!-- Include Level-Up Listener -->
     @include('livewire.rewards.partials.level-up-listener')
-</body>
-</html>
+
 </body>
 </html>
