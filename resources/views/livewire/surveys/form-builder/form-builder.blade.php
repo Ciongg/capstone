@@ -135,7 +135,10 @@
             :key="'generator-modal-' . $survey->id . '-' . $survey->updated_at->timestamp" 
         />
     </x-modal>
-
+      <!-- Add this right below the main heading or at an appropriate location in your form builder template -->
+    <div class="w-full">
+        @livewire('surveys.form-builder.survey-generation-status', ['surveyId' => $survey->id])
+    </div>
     <!-- Wrapper for survey content - disabled when survey is locked or ongoing/finished -->
     <div @class([
         'relative', // Always relative
@@ -241,6 +244,8 @@
             @endforeach
         </div>
     </div> <!-- End of wrapper for interactive elements -->
+
+  
 </div>
 
 @push('scripts')

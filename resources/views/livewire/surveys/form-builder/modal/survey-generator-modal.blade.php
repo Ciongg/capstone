@@ -68,36 +68,21 @@
         <!-- Normal Survey Options -->
         <div x-show="surveyType === 'normal'" class="mb-6 border-t border-gray-200 pt-4">
             <h3 class="font-medium text-lg mb-3 text-gray-800">Normal Survey Settings</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label for="maxPages" class="block font-semibold mb-1 text-gray-700">Max Number of Pages</label>
-                    <input
-                        type="number"
-                        id="maxPages"
-                        wire:model.defer="maxPages"
-                        class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        min="1"
-                        max="10"
-                        required
-                    >
-                    @error('maxPages') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                    <p class="text-xs text-gray-500 mt-1">Limit: 1-10 pages</p>
-                </div>
-                <div>
-                    <label for="maxQuestionsPerPage" class="block font-semibold mb-1 text-gray-700">Max Questions Per Page</label>
-                    <input
-                        type="number"
-                        id="maxQuestionsPerPage"
-                        wire:model.defer="maxQuestionsPerPage"
-                        class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        min="1"
-                        max="20"
-                        required
-                    >
-                    @error('maxQuestionsPerPage') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                    <p class="text-xs text-gray-500 mt-1">Limit: 1-20 questions per page</p>
-                </div>
+            <div>
+                <label for="maxPages" class="block font-semibold mb-1 text-gray-700">Number of Pages</label>
+                <input
+                    type="number"
+                    id="maxPages"
+                    wire:model.defer="maxPages"
+                    class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    min="1"
+                    max="10"
+                    required
+                >
+                @error('maxPages') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                <p class="text-xs text-gray-500 mt-1">Limit: 1-10 pages</p>
             </div>
+            <!-- Removed maxQuestionsPerPage input field -->
         </div>
 
         <!-- ISO Survey Options -->
@@ -168,21 +153,7 @@
                 @error('likertPoints') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
             
-            <!-- Questions Per Page for ISO -->
-            <div class="mb-4">
-                <label for="maxQuestionsIso" class="block font-semibold mb-1 text-gray-700">Max Questions Per Page</label>
-                <input
-                    type="number"
-                    id="maxQuestionsIso"
-                    wire:model.defer="maxQuestionsPerPage"
-                    class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    min="1"
-                    max="20"
-                    required
-                >
-                @error('maxQuestionsPerPage') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                <p class="text-xs text-gray-500 mt-1">Limit: 1-20 questions per page</p>
-            </div>
+            <!-- Removed maxQuestionsPerPage input for ISO -->
         </div>
 
         <!-- Warning message -->
@@ -223,4 +194,3 @@
         </div>
     </form>
 </div>
-              

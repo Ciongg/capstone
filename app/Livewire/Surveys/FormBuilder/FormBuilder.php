@@ -45,13 +45,15 @@ class FormBuilder extends Component
     public $saveStatus = ''; // '', 'saving', 'saved'
     public $saveMessage = 'Saving changes...'; // Add this line to define the save message property
     
-    // Add the listener property
+    // Update the listeners property to include new event
     protected $listeners = [
         'surveyTitleUpdated' => 'updateTitleFromEvent',
-        'settingsOperationCompleted' => 'handleSettingsOperationCompleted', // New listener
-        'setSaveStatus' => 'handleSetSaveStatus', // New listener for save status
-        'surveySettingsUpdated' => 'handleSurveySettingsUpdated', // Add this listener
-        'surveyStructureUpdated' => 'loadPages', // Add this line
+        'settingsOperationCompleted' => 'handleSettingsOperationCompleted',
+        'setSaveStatus' => 'handleSetSaveStatus',
+        'surveySettingsUpdated' => 'handleSurveySettingsUpdated',
+        'surveyStructureUpdated' => 'loadPages',
+        'surveyGenerationStarted' => 'handleSurveyGenerationStarted',
+        'openSurveyGeneratorModal' => 'handleOpenSurveyGeneratorModal', // New listener
     ];
 
    public function mount(Survey $survey)
@@ -608,6 +610,24 @@ class FormBuilder extends Component
        $this->hasResponses = $this->survey->responses()->exists();
        $this->checkAndUpdateSurveyStatus();
    }
+   
+   /**
+     * Handle when a survey generation job is started
+     */
+    public function handleSurveyGenerationStarted($data)
+    {
+        // Forward the event to the SurveyGenerationStatus component
+        $this->dispatch('surveyGenerationStarted', $data)->to('surveys.form-builder.survey-generation-status');
+    }
+
+    /**
+     * Handle opening the survey generator modal
+     */
+    public function handleOpenSurveyGeneratorModal($data)
+    {
+        // This will trigger the modal to open via the browser event
+        $this->dispatch('open-modal', ['name' => 'survey-generator-modal-' . $this->survey->id]);
+    }
 
 
 

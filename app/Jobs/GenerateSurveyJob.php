@@ -1,175 +1,151 @@
 <?php
 
-namespace App\Livewire\Surveys\FormBuilder\Modal;
+namespace App\Jobs;
 
-use Livewire\Component;
-use App\Livewire\Surveys\FormBuilder\FormBuilder;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use App\Models\Survey;
 use App\Models\SurveyPage;
 use App\Models\SurveyQuestion;
 use App\Models\SurveyChoice;
 use App\Models\SurveyGenerationJob;
-use App\Jobs\GenerateSurveyJob;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 
-class SurveyGeneratorModal extends Component
+class GenerateSurveyJob implements ShouldQueue
 {
-    public $survey;
-    public $abstract = '';
-    public $maxPages = 3;
-    public $generationType = 'normal';
-    public $isGenerating = false;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public $timeout = 300; // 5 minutes
+    public $tries = 2;
     
-    // New properties for ISO category selection
-    public $isoCategories = [
-        'general' => ['title' => 'General Information', 'subtitle' => 'Basic information about the software being evaluated'],
-        'functional' => ['title' => 'Functional Suitability', 'subtitle' => 'Does the software do what it is supposed to do accurately and sufficiently?'],
-        'performance' => ['title' => 'Performance Efficiency', 'subtitle' => 'How fast and resource-friendly is the software under normal conditions?'],
-        'compatibility' => ['title' => 'Compatibility', 'subtitle' => 'Can the software operate in diverse environments with other products?'],
-        'usability' => ['title' => 'Usability', 'subtitle' => 'Is the system easy, efficient, and pleasant for users to interact with?'],
-        'reliability' => ['title' => 'Reliability', 'subtitle' => 'How stable and fault-tolerant is the system in real-world usage?'],
-        'security' => ['title' => 'Security', 'subtitle' => 'Does the software prevent unauthorized access and protect data integrity?'],
-        'maintainability' => ['title' => 'Maintainability', 'subtitle' => 'How easy is it to update or fix issues in the system?'],
-        'portability' => ['title' => 'Portability', 'subtitle' => 'Can the software run across different platforms or be easily installed?'],
-        'overall' => ['title' => 'Overall Rating and Comments', 'subtitle' => 'Provide your overall assessment and feedback'],
-    ];
-    
-    public $selectedIsoCategories = [
-        'general' => true,
-        'functional' => true,
-        'performance' => true,
-        'usability' => true,
-        'compatibility' => true
-    ];
-    
-    // Property for Likert scale points
-    public $likertPoints = 5;
-    
-    public function mount($survey)
-    {
+    protected $survey;
+    protected $abstract;
+    protected $maxPages;
+    protected $maxQuestionsPerPage;
+    protected $generationType;
+    protected $selectedIsoCategories;
+    protected $likertPoints;
+    protected $jobId;
+
+    /**
+     * Create a new job instance.
+     *
+     * @param Survey $survey
+     * @param string $abstract
+     * @param int $maxPages
+     * @param int $maxQuestionsPerPage
+     * @param string $generationType
+     * @param array $selectedIsoCategories
+     * @param int $likertPoints
+     * @param int $jobId
+     */
+    public function __construct(
+        Survey $survey,
+        string $abstract,
+        int $maxPages,
+        int $maxQuestionsPerPage,
+        string $generationType,
+        array $selectedIsoCategories = [],
+        int $likertPoints = 5,
+        int $jobId = null
+    ) {
         $this->survey = $survey;
+        $this->abstract = $abstract;
+        $this->maxPages = $maxPages;
+        $this->maxQuestionsPerPage = $maxQuestionsPerPage;
+        $this->generationType = $generationType;
+        $this->selectedIsoCategories = $selectedIsoCategories;
+        $this->likertPoints = $likertPoints;
+        $this->jobId = $jobId;
     }
-    
-    // Add an updated method to handle generationType changes
-    public function updatedGenerationType()
+
+    /**
+     * Execute the job.
+     */
+    public function handle(): void
     {
-        // Reset ISO category selection when switching between types
-        if ($this->generationType === 'iso') {
-            $this->selectedIsoCategories = [
-                'general' => true,
-                'functional' => true,
-                'performance' => true,
-                'usability' => true,
-                'compatibility' => true
-            ];
+        // Update job status to processing
+        $job = SurveyGenerationJob::find($this->jobId);
+        if ($job) {
+            $job->status = 'processing';
+            $job->save();
         }
-    }
-    
-    public function generateSurvey()
-    {
-        // Validate differently based on survey type
-        if ($this->generationType === 'normal') {
-            $this->validate([
-                'abstract' => [
-                    'required', 
-                    'string',
-                    'min:10',
-                    function ($attribute, $value, $fail) {
-                        $wordCount = str_word_count($value);
-                        if ($wordCount > 200) {
-                            $fail('The abstract may not be greater than 200 words.');
-                        }
-                    }
-                ],
-                'maxPages' => 'required|integer|min:1|max:10',
-                'generationType' => 'required|in:normal,iso',
-            ]);
-        } else {
-            // Validate ISO-specific fields
-            $this->validate([
-                'abstract' => [
-                    'required', 
-                    'string',
-                    'min:10',
-                    function ($attribute, $value, $fail) {
-                        $wordCount = str_word_count($value);
-                        if ($wordCount > 200) {
-                            $fail('The abstract may not be greater than 200 words.');
-                        }
-                    }
-                ],
-                'generationType' => 'required|in:normal,iso',
-                'likertPoints' => 'required|in:3,4,5',
+
+        try {
+            // Log the job execution
+            Log::info('AI Survey Generation job started', [
+                'survey_id' => $this->survey->id,
+                'job_id' => $this->jobId,
+                'generationType' => $this->generationType
             ]);
             
-            // Ensure at least one ISO category is selected
-            if (!collect($this->selectedIsoCategories)->contains(true)) {
-                $this->addError('selectedIsoCategories', 'Please select at least one ISO category.');
+            // For ISO surveys, use the custom template
+            if ($this->generationType === 'iso') {
+                $this->deleteExistingSurveyContent();
+                
+                // Use the ISO template with selected categories and Likert points
+                $createdItems = $this->createISOTemplate();
+                
+                if ($job) {
+                    $job->status = 'completed';
+                    $job->result = json_encode([
+                        'success' => true,
+                        'message' => "ISO25010 survey structure created with {$createdItems['pages']} pages and {$createdItems['questions']} questions.",
+                        'stats' => $createdItems
+                    ]);
+                    $job->save();
+                }
+                
                 return;
             }
-        }
-        
-        $this->isGenerating = true;
-        
-        try {
-            // Create a job record in the database
-            $job = SurveyGenerationJob::create([
-                'survey_id' => $this->survey->id,
-                'user_id' => Auth::id(),
-                'status' => 'pending',
-            ]);
             
-            // Log the job creation
-            Log::info('AI Survey Generation job created', [
-                'survey_id' => $this->survey->id,
-                'job_id' => $job->id,
-                'abstract' => $this->abstract,
-                'maxPages' => $this->generationType === 'normal' ? $this->maxPages : count(array_filter($this->selectedIsoCategories)),
-                'generationType' => $this->generationType,
-                'likertPoints' => $this->likertPoints,
-            ]);
+            // For normal surveys, proceed with AI generation
+            $result = $this->callAIService($this->generationType);
             
-            // Dispatch the job to the queue
-            GenerateSurveyJob::dispatch(
-                $this->survey,
-                $this->abstract,
-                $this->maxPages,
-                10, // Default fixed value for maxQuestionsPerPage
-                $this->generationType,
-                $this->selectedIsoCategories,
-                $this->likertPoints,
-                $job->id
-            );
-            
-            // Show success message
-            $this->dispatch('showSuccessAlert', [
-                'message' => 'Survey generation started! This may take a few minutes.'
-            ]);
-            
-            // Notify the parent component that a job has started
-            $this->dispatch('surveyGenerationStarted', ['survey_id' => $this->survey->id, 'job_id' => $job->id])
-                ->to('surveys.form-builder.form-builder');
-            
-            // Close modal
-            $this->dispatch('close-modal', ['name' => 'survey-generator-modal-' . $this->survey->id]);
+            if ($result) {
+                // Delete all existing content before processing the AI result
+                $this->deleteExistingSurveyContent();
+                
+                // Process the generated content and create the survey structure
+                $createdItems = $this->processSurveyStructure($result);
+                
+                // Update job status
+                if ($job) {
+                    $job->status = 'completed';
+                    $job->result = json_encode([
+                        'success' => true,
+                        'message' => "Survey generation complete! Created {$createdItems['pages']} pages with {$createdItems['questions']} questions.",
+                        'stats' => $createdItems
+                    ]);
+                    $job->save();
+                }
+            } else {
+                throw new \Exception('Failed to generate survey structure. Please try again with a different description.');
+            }
             
         } catch (\Exception $e) {
-            Log::error('Error creating survey generation job: ' . $e->getMessage(), [
+            Log::error('Survey generation error in job: ' . $e->getMessage(), [
                 'survey_id' => $this->survey->id,
+                'job_id' => $this->jobId,
                 'trace' => $e->getTraceAsString()
             ]);
             
-            $this->dispatch('showErrorAlert', [
-                'message' => 'Failed to start survey generation: ' . $e->getMessage()
-            ]);
-        } finally {
-            $this->isGenerating = false;
+            // Update job status to failed
+            if ($job) {
+                $job->status = 'failed';
+                $job->result = json_encode([
+                    'success' => false,
+                    'message' => 'Failed to generate survey: ' . $e->getMessage()
+                ]);
+                $job->save();
+            }
         }
     }
-    
-  
     
     /**
      * Delete all existing questions and pages for the survey
@@ -187,57 +163,14 @@ class SurveyGeneratorModal extends Component
             SurveyPage::where('survey_id', $this->survey->id)->delete();
             
             Log::info('Deleted existing survey content before AI generation', [
-                'survey_id' => $this->survey->id
+                'survey_id' => $this->survey->id,
+                'job_id' => $this->jobId
             ]);
         });
     }
     
     /**
-     * Create prompt for AI to generate survey structure
-     * 
-     * @param string $type The type of survey (normal or ISO)
-     * @return string The prompt for the AI
-     */
-    private function createSurveyPrompt($type)
-    {
-        // Ensure the abstract isn't too long for API processing
-        $processedAbstract = $this->getProcessedAbstract();
-        
-        $questionTypes = ['multiple_choice', 'radio', 'likert', 'essay', 'short_text', 'rating', 'date'];
-        $questionTypesStr = implode(', ', $questionTypes);
-        
-        // Shorter, more concise prompt to save tokens
-        $prompt = "Create survey: {$processedAbstract}\n\n";
-        $prompt .= "Pages: {$this->maxPages}\n";
-        $prompt .= "Questions per page: 10\n";
-        $prompt .= "Types: {$questionTypesStr}\n\n";
-        
-        $prompt .= "Rules:\n";
-        $prompt .= "- Exactly {$this->maxPages} pages, 10 questions each\n";
-        $prompt .= "- Vary question types\n";
-        $prompt .= "- Multiple choice: 3-7 options\n";
-        $prompt .= "- Likert: 3-5 columns/rows\n";
-        $prompt .= "- Rating: 5/7/10 stars\n";
-        
-        if ($type === 'iso') {
-            $prompt = "ISO25010 survey: {$processedAbstract}\n\n";
-            $prompt .= "Pages: {$this->maxPages}, Questions: 10 each\n";
-            $prompt .= "Categories: General Info, Functional, Performance, Compatibility, Usability, Reliability, Security, Maintainability, Portability, Overall\n";
-            $prompt .= "Use likert for quality attributes\n";
-        }
-        
-        $prompt .= "\nJSON format:\n";
-        $prompt .= '{"pages":[{"title":"","subtitle":"","questions":[{"question_text":"","question_type":"","required":true,"choices":[],"stars":5,"likert_columns":[],"likert_rows":[]}]}]}';
-        $prompt .= "\n\nReturn JSON only.";
-        
-        return $prompt;
-    }
-    
-    /**
      * Call the AI service to generate survey structure
-     * 
-     * @param string $type The type of survey (normal or ISO)
-     * @return array|null JSON structure for the survey or null on failure
      */
     private function callAIService($type)
     {
@@ -279,7 +212,6 @@ class SurveyGeneratorModal extends Component
                         ]
                     ]
                 ];
-
             }
         }
         
@@ -306,12 +238,12 @@ class SurveyGeneratorModal extends Component
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'api-key' => $apiKey,
-            ])->timeout(30)->post($apiUrl, [
+            ])->timeout(120)->post($apiUrl, [
                 'messages' => [
                     ['role' => 'system', 'content' => 'You are an expert survey designer.'],
                     ['role' => 'user', 'content' => $prompt]
                 ],
-                'max_tokens' => 8912,
+                'max_tokens' => 16000, // Increased from 8912 to 16000
                 'temperature' => 0.7
             ]);
             
@@ -321,7 +253,7 @@ class SurveyGeneratorModal extends Component
                 Log::error('DeepSeek API error: ' . $response->body());
             }
         } catch (\Exception $e) {
-            Log::error('DeepSeek API call failed: ' . $e->getMessage());
+            Log::error('DeepSeek API call failed in job: ' . $e->getMessage());
         }
         
         return null;
@@ -339,15 +271,15 @@ class SurveyGeneratorModal extends Component
         $prompt = $this->createSurveyPrompt($type);
         
         try {
-            // Fix: Use correct model name
+            // Fix: Use correct model name - remove the version from the model name
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
-            ])->timeout(30)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={$apiKey}", [
+            ])->timeout(120)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={$apiKey}", [
                 'contents' => [
                     ['parts' => [['text' => $prompt]]]
                 ],
                 'generationConfig' => [
-                    'maxOutputTokens' => 8912,
+                    'maxOutputTokens' => 16000,
                     'temperature' => 0.7,
                     'topP' => 0.95,
                     'topK' => 40,
@@ -367,7 +299,7 @@ class SurveyGeneratorModal extends Component
                 Log::error('Gemini API error: ' . json_encode($errorDetails));
             }
         } catch (\Exception $e) {
-            Log::error('Gemini API call failed: ' . $e->getMessage());
+            Log::error('Gemini API call failed in job: ' . $e->getMessage());
         }
         
         return null;
@@ -394,7 +326,21 @@ class SurveyGeneratorModal extends Component
             // Build pages array from selected ISO categories
             $pages = [];
             
-            foreach ($this->isoCategories as $key => $category) {
+            // Define ISO categories
+            $isoCategories = [
+                'general' => ['title' => 'General Information', 'subtitle' => 'Basic information about the software being evaluated'],
+                'functional' => ['title' => 'Functional Suitability', 'subtitle' => 'Does the software do what it is supposed to do accurately and sufficiently?'],
+                'performance' => ['title' => 'Performance Efficiency', 'subtitle' => 'How fast and resource-friendly is the software under normal conditions?'],
+                'compatibility' => ['title' => 'Compatibility', 'subtitle' => 'Can the software operate in diverse environments with other products?'],
+                'usability' => ['title' => 'Usability', 'subtitle' => 'Is the system easy, efficient, and pleasant for users to interact with?'],
+                'reliability' => ['title' => 'Reliability', 'subtitle' => 'How stable and fault-tolerant is the system in real-world usage?'],
+                'security' => ['title' => 'Security', 'subtitle' => 'Does the software prevent unauthorized access and protect data integrity?'],
+                'maintainability' => ['title' => 'Maintainability', 'subtitle' => 'How easy is it to update or fix issues in the system?'],
+                'portability' => ['title' => 'Portability', 'subtitle' => 'Can the software run across different platforms or be easily installed?'],
+                'overall' => ['title' => 'Overall Rating and Comments', 'subtitle' => 'Provide your overall assessment and feedback'],
+            ];
+            
+            foreach ($isoCategories as $key => $category) {
                 // Skip if this category is not selected
                 if (empty($this->selectedIsoCategories[$key])) {
                     continue;
@@ -421,15 +367,6 @@ class SurveyGeneratorModal extends Component
                             'required' => true,
                         ]
                     ];
-                    
-                    // Add additional questions to meet exact count if needed
-                    while (count($page['questions']) < $this->maxQuestionsPerPage) {
-                        $page['questions'][] = [
-                            'question_text' => 'Additional Information ' . count($page['questions']),
-                            'question_type' => 'short_text',
-                            'required' => false,
-                        ];
-                    }
                 } else if ($key === 'overall') {
                     $page['questions'] = [
                         [
@@ -444,15 +381,6 @@ class SurveyGeneratorModal extends Component
                             'required' => false
                         ]
                     ];
-                    
-                    // Add additional questions to meet exact count if needed
-                    while (count($page['questions']) < $this->maxQuestionsPerPage) {
-                        $page['questions'][] = [
-                            'question_text' => 'Additional Feedback ' . count($page['questions']),
-                            'question_type' => 'essay',
-                            'required' => false,
-                        ];
-                    }
                 } else {
                     // For all other categories, use likert questions
                     $likertRows = $this->getLikertRowsForCategory($key);
@@ -465,35 +393,10 @@ class SurveyGeneratorModal extends Component
                             'likert_rows' => $likertRows
                         ]
                     ];
-                    
-                    // Add additional questions to meet exact count if needed
-                    while (count($page['questions']) < $this->maxQuestionsPerPage) {
-                        $page['questions'][] = [
-                            'question_text' => 'Additional ' . $this->getCategoryNameFromKey($key) . ' feedback:',
-                            'question_type' => 'short_text',
-                            'required' => false,
-                        ];
-                    }
                 }
                 
                 $pages[] = $page;
             }
-            
-            // If we have fewer pages than maxPages, add generic pages to meet the exact count
-            while (count($pages) < $this->maxPages) {
-                $pages[] = [
-                    'title' => 'Additional Feedback ' . (count($pages) + 1),
-                    'subtitle' => 'Please provide any additional comments or suggestions',
-                    'questions' => array_fill(0, $this->maxQuestionsPerPage, [
-                        'question_text' => 'Please provide any additional feedback:',
-                        'question_type' => 'essay',
-                        'required' => false
-                    ])
-                ];
-            }
-            
-            // Limit to exact number of pages if we have too many
-            $pages = array_slice($pages, 0, $this->maxPages);
             
             // Create the pages and questions
             foreach ($pages as $pageIndex => $pageData) {
@@ -508,13 +411,12 @@ class SurveyGeneratorModal extends Component
                 
                 $stats['pages']++;
                 
-                // Ensure exactly maxQuestionsPerPage questions are created
-                for ($i = 0; $i < $this->maxQuestionsPerPage; $i++) {
-                    $questionData = isset($pageData['questions'][$i]) ? $pageData['questions'][$i] : [
-                        'question_text' => 'Additional Question ' . ($i + 1),
-                        'question_type' => 'short_text',
-                        'required' => false
-                    ];
+                // Limit questions to maxQuestionsPerPage
+                $questionCount = 0;
+                foreach ($pageData['questions'] as $questionData) {
+                    if ($questionCount >= $this->maxQuestionsPerPage) {
+                        break;
+                    }
                     
                     // Create the question
                     $question = SurveyQuestion::create([
@@ -522,11 +424,12 @@ class SurveyGeneratorModal extends Component
                         'survey_page_id' => $page->id,
                         'question_text' => $questionData['question_text'],
                         'question_type' => $questionData['question_type'],
-                        'order' => $i + 1,
+                        'order' => $questionCount + 1,
                         'required' => $questionData['required'] ?? true,
                     ]);
                     
                     $stats['questions']++;
+                    $questionCount++;
                     
                     // Handle specific question types
                     switch ($questionData['question_type']) {
@@ -677,6 +580,43 @@ class SurveyGeneratorModal extends Component
     }
     
     /**
+     * Create prompt for AI to generate survey structure
+     * 
+     * @param string $type The type of survey (normal or ISO)
+     * @return string The prompt for the AI
+     */
+    private function createSurveyPrompt($type)
+    {
+        // Process abstract to ensure it's not too long
+        $processedAbstract = $this->getProcessedAbstract();
+        
+        $questionTypes = ['multiple_choice', 'radio', 'likert', 'essay', 'short_text', 'rating', 'date'];
+        $questionTypesStr = implode(', ', $questionTypes);
+        
+        // Even shorter prompt to avoid thinking responses
+        $prompt = "Survey: {$processedAbstract}\n\n";
+        $prompt .= "Requirements:\n";
+        $prompt .= "- {$this->maxPages} pages\n";
+        $prompt .= "- {$this->maxQuestionsPerPage} questions per page\n";
+        $prompt .= "- Types: {$questionTypesStr}\n";
+        $prompt .= "- Multiple choice: 3-5 options\n";
+        $prompt .= "- Likert: 3-5 columns/rows\n";
+        $prompt .= "- Rating: 5/7/10 stars\n\n";
+        
+        if ($type === 'iso') {
+            $prompt = "ISO25010 survey: {$processedAbstract}\n\n";
+            $prompt .= "Requirements: {$this->maxPages} pages, {$this->maxQuestionsPerPage} questions each\n";
+            $prompt .= "Categories: General, Functional, Performance, Usability, Reliability, Security\n";
+            $prompt .= "Use likert for quality ratings\n\n";
+        }
+        
+        $prompt .= "Return JSON only - no explanations:\n";
+        $prompt .= '{"pages":[{"title":"","subtitle":"","questions":[{"question_text":"","question_type":"","required":true,"choices":[],"stars":5,"likert_columns":[],"likert_rows":[]}]}]}';
+        
+        return $prompt;
+    }
+
+    /**
      * Process abstract to ensure it's not too long for the AI models
      * 
      * @return string The processed abstract
@@ -694,12 +634,16 @@ class SurveyGeneratorModal extends Component
         }
         
         // For longer abstracts, truncate to a reasonable length
-        // This is simpler than the previous summarization but will keep requests from failing
         $words = str_word_count($abstract, 1);
         $truncatedWords = array_slice($words, 0, 150);
         $truncated = implode(' ', $truncatedWords);
         
         // Add ellipsis to indicate truncation
+        Log::info('Abstract truncated for AI processing', [
+            'original_word_count' => $wordCount,
+            'truncated_word_count' => count($truncatedWords)
+        ]);
+        
         return $truncated . '...';
     }
     
@@ -711,10 +655,16 @@ class SurveyGeneratorModal extends Component
      */
     private function extractJsonFromResponse($response)
     {
+        // Log the raw response for debugging
+        Log::debug('AI response to extract JSON from', [
+            'survey_id' => $this->survey->id,
+            'response_excerpt' => substr($response, 0, 500) . (strlen($response) > 500 ? '...' : '')
+        ]);
+        
         // Remove any thinking tags that AI might include in response (more aggressive removal)
         $response = preg_replace('/<think>.*?<\/think>/is', '', $response);
-        $response = preg_replace('/<\/think>/i', '', $response);
-        $response = preg_replace('/<think>/i', '', $response);
+        $response = preg_replace('/<\/think>/i', '', $response); // Remove orphaned closing tags
+        $response = preg_replace('/<think>/i', '', $response); // Remove orphaned opening tags
         
         // Also remove any text before the first { and after the last }
         $firstBrace = strpos($response, '{');
@@ -727,7 +677,9 @@ class SurveyGeneratorModal extends Component
         // Try to parse the response directly
         $data = json_decode($response, true);
         if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
-            return $data;
+            if (isset($data['pages']) && is_array($data['pages'])) {
+                return $data;
+            }
         }
         
         // Try multiple extraction patterns
@@ -754,18 +706,41 @@ class SurveyGeneratorModal extends Component
                 
                 $data = json_decode($candidate, true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
-                    return $data;
+                    // Validate basic structure
+                    if (isset($data['pages']) && is_array($data['pages'])) {
+                        return $data;
+                    }
                 }
             }
         }
         
-        // Remove any markdown formatting and try again
-        $cleaned = preg_replace('/```(?:json)?\s*(.*?)\s*```/s', '$1', $response);
-        $data = json_decode($cleaned, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
-            return $data;
+        // Try to find any array with pages inside the text - last resort
+        if (preg_match('/"pages"\s*:\s*\[\s*\{/s', $response)) {
+            // This looks like it might have a pages array - extract everything from this point
+            $startPos = strpos($response, '"pages"');
+            if ($startPos !== false) {
+                $subset = '{' . substr($response, $startPos);
+                // Find a reasonable ending
+                $endPos = strpos($subset, '}]}');
+                if ($endPos !== false) {
+                    $subset = substr($subset, 0, $endPos + 3);
+                    $data = json_decode($subset, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($data) && isset($data['pages'])) {
+                        return $data;
+                    }
+                }
+            }
         }
         
+        // If extraction failed, log details with more info
+        Log::error('Failed to extract valid JSON from AI response', [
+            'survey_id' => $this->survey->id,
+            'response_length' => strlen($response),
+            'json_error' => json_last_error_msg(),
+            'cleaned_response_start' => substr($response, 0, 200)
+        ]);
+        
+        // Return null to indicate failure
         return null;
     }
     
@@ -840,16 +815,27 @@ class SurveyGeneratorModal extends Component
     private function processPageQuestions($page, $questions)
     {
         $questionsAdded = 0;
+        $defaultQuestionTypes = ['multiple_choice', 'short_text', 'essay', 'rating'];
         
+        // Process provided questions up to maxQuestionsPerPage
         foreach ($questions as $questionIndex => $questionData) {
-            // Skip if missing required fields
+            // Stop if we've reached the exact number
+            if ($questionsAdded >= $this->maxQuestionsPerPage) {
+                break;
+            }
+            
+            // Skip if missing required fields and add a default question instead
             if (!isset($questionData['question_text']) || !isset($questionData['question_type'])) {
+                $this->addDefaultQuestion($page, $questionsAdded, $defaultQuestionTypes);
+                $questionsAdded++;
                 continue;
             }
             
-            // Check if question type is valid
+            // Check if question type is valid, use a default if not
             $questionType = $questionData['question_type'];
             if (!in_array($questionType, ['multiple_choice', 'radio', 'likert', 'essay', 'short_text', 'rating', 'date'])) {
+                $this->addDefaultQuestion($page, $questionsAdded, $defaultQuestionTypes);
+                $questionsAdded++;
                 continue;
             }
             
@@ -859,11 +845,9 @@ class SurveyGeneratorModal extends Component
                 'survey_page_id' => $page->id,
                 'question_text' => $questionData['question_text'],
                 'question_type' => $questionType,
-                'order' => $questionIndex + 1,
+                'order' => $questionsAdded + 1,
                 'required' => $questionData['required'] ?? true,
             ]);
-            
-            $questionsAdded++;
             
             // Handle specific question types
             switch ($questionType) {
@@ -880,9 +864,74 @@ class SurveyGeneratorModal extends Component
                     $this->processRatingQuestion($question, $questionData);
                     break;
             }
+            
+            $questionsAdded++;
+        }
+        
+        // Add additional default questions if needed to reach exactly maxQuestionsPerPage
+        while ($questionsAdded < $this->maxQuestionsPerPage) {
+            $this->addDefaultQuestion($page, $questionsAdded, $defaultQuestionTypes);
+            $questionsAdded++;
         }
         
         return $questionsAdded;
+    }
+    
+    /**
+     * Add a default question to a page
+     *
+     * @param SurveyPage $page The page to add a question to
+     * @param int $order The order of the question
+     * @param array $questionTypes Array of available question types
+     */
+    private function addDefaultQuestion($page, $order, $questionTypes)
+    {
+        // Rotate through question types for variety
+        $type = $questionTypes[$order % count($questionTypes)];
+        
+        // Create the question
+        $question = SurveyQuestion::create([
+            'survey_id' => $this->survey->id,
+            'survey_page_id' => $page->id,
+            'question_text' => "Question " . ($order + 1),
+            'question_type' => $type,
+            'order' => $order + 1,
+            'required' => true,
+        ]);
+        
+        // Set up the question based on type
+        switch ($type) {
+            case 'multiple_choice':
+                SurveyChoice::create([
+                    'survey_question_id' => $question->id,
+                    'choice_text' => 'Option 1',
+                    'order' => 1,
+                ]);
+                SurveyChoice::create([
+                    'survey_question_id' => $question->id,
+                    'choice_text' => 'Option 2',
+                    'order' => 2,
+                ]);
+                SurveyChoice::create([
+                    'survey_question_id' => $question->id,
+                    'choice_text' => 'Option 3',
+                    'order' => 3,
+                ]);
+                break;
+                
+            case 'rating':
+                $question->stars = 5;
+                $question->save();
+                break;
+                
+            case 'likert':
+                $columns = ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'];
+                $rows = ['Statement 1', 'Statement 2', 'Statement 3'];
+                $question->likert_columns = json_encode($columns);
+                $question->likert_rows = json_encode($rows);
+                $question->save();
+                break;
+        }
     }
     
     /**
@@ -927,7 +976,7 @@ class SurveyGeneratorModal extends Component
             ]);
         }
     }
-    
+
     /**
      * Process likert question
      * 
@@ -951,7 +1000,7 @@ class SurveyGeneratorModal extends Component
         $question->likert_rows = json_encode($rows);
         $question->save();
     }
-    
+
     /**
      * Process rating question
      * 
@@ -968,10 +1017,5 @@ class SurveyGeneratorModal extends Component
         // Save to question
         $question->stars = $stars;
         $question->save();
-    }
-    
-    public function render()
-    {
-        return view('livewire.surveys.form-builder.modal.survey-generator-modal');
     }
 }
