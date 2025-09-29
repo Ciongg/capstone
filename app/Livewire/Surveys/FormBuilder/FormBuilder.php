@@ -838,6 +838,9 @@ class FormBuilder extends Component
    {
        if ($type === 'rating') {
            $this->ratingStars[$question->id] = 5;
+           // Fix: Add explicit setting of stars property on question model
+           $question->stars = 5;
+           $question->save(); // Save the change to the database
        }
        else if ($type === 'likert') {
            $defaultColumns = ['Agree', 'Neutral', 'Disagree'];
