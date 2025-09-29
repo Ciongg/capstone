@@ -163,11 +163,10 @@ class DatabaseSeeder extends Seeder
             'type' => 'respondent',
             'institution_id' => null,
             'is_active' => false, 
-            'last_active_at' => null, 
+            'last_active_at' => now()->subDays(30), // Set a past date instead of null
             'is_accepted_terms' => true,
             'is_accepted_privacy_policy' => true,
         ]);
-
 
          
         $archivedUser = User::factory()->create([
@@ -178,7 +177,7 @@ class DatabaseSeeder extends Seeder
             'type' => 'respondent',
             'institution_id' => null,
             'is_active' => false, 
-            'last_active_at' => null, 
+            'last_active_at' => now()->subDays(60), // Set a past date instead of null
             'is_accepted_terms' => true,
             'is_accepted_privacy_policy' => true,
         ]);
