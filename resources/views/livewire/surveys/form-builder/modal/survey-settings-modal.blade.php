@@ -226,7 +226,7 @@
                         <div class="mt-4 relative">
                             <span class="block text-sm font-medium text-gray-700 mb-1">Current Survey Banner:</span>
                             <div class="relative">
-                                <img src="{{ Storage::disk('s3')->url($survey->image_path) }}" alt="Survey Banner" class="max-h-40 rounded shadow" />
+                                <img src="{{ asset('storage/' . $survey->image_path) }}" alt="Survey Banner" class="max-h-40 rounded shadow" />
                                 <button 
                                     type="button" 
                                     wire:click="deleteCurrentBannerImage" 

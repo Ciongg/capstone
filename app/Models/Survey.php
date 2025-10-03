@@ -25,7 +25,8 @@ class Survey extends Model
         'image_path',
         'is_institution_only',
         'is_locked', 
-        'lock_reason', 
+        'lock_reason',
+        'is_announced', // Add this to fillable
     ];
 
     /**
@@ -38,6 +39,7 @@ class Survey extends Model
         'end_date' => 'datetime',
         'is_institution_only' => 'boolean',
         'is_locked' => 'boolean',
+        'is_announced' => 'boolean', // Add this to cast attributes
         'target_respondents' => 'integer',
         'points_allocated' => 'integer',
         'boost_count' => 'integer',

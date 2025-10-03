@@ -26,13 +26,10 @@ class RewardRedeemModal extends Component
         $this->reward = $reward;
     }
 
-
     public function purchaseError($message){
         $this->dispatch('redemptionError', $message);
         $this->dispatch('close-modal', name: 'reward-redeem-modal');
     }
-
-  
 
     /**
      * Process reward redemption
@@ -41,7 +38,6 @@ class RewardRedeemModal extends Component
     {
         if (!$this->reward || !Auth::check()) {
             $this->purchaseError('Could not process redemption. Please try again.');
-           
             return;
         }
 
@@ -225,21 +221,6 @@ class RewardRedeemModal extends Component
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
     /**
      * Calculate total cost
      */
@@ -256,10 +237,15 @@ class RewardRedeemModal extends Component
     {
         if (!$this->reward) return 0;
         
-        // For voucher rewards, count actual available vouchers
+        // For voucher rewards, count actual available vouchers (excluding expired ones)
         if ($this->reward->type === 'voucher') {
+            $now = TestTimeService::now();
             return Voucher::where('reward_id', $this->reward->id)
                 ->where('availability', 'available')
+                ->where(function($q) use ($now) {
+                    $q->whereNull('expiry_date')
+                      ->orWhere('expiry_date', '>', $now);
+                })
                 ->count();
         }
         
@@ -272,7 +258,7 @@ class RewardRedeemModal extends Component
      */
     public function isButtonDisabled()
     {
-        if (!$this->reward) return true;
+        if (!$this->reward || !Auth::check()) return true;
         
         $user = Auth::user();
         $calculatedCost = $this->getTotalCost();
@@ -305,7 +291,7 @@ class RewardRedeemModal extends Component
      */
     public function getErrorMessage()
     {
-        if (!$this->reward) return '';
+        if (!$this->reward || !Auth::check()) return '';
         
         $user = Auth::user();
         $calculatedCost = $this->getTotalCost();
@@ -341,3 +327,4 @@ class RewardRedeemModal extends Component
         ]);
     }
 }
+      

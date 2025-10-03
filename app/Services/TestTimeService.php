@@ -19,6 +19,11 @@ class TestTimeService
         Cache::forget(self::TEST_TIME_KEY);
     }
     
+    public static function mock($dateTime)
+    {
+        return self::setTestTime($dateTime);
+    }
+    
     public static function getTestTime()
     {
         return Cache::get(self::TEST_TIME_KEY);

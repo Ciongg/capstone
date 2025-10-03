@@ -29,6 +29,7 @@ class Announcement extends Model
         'institution_id' => 'integer',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'active' => 'boolean', 
     ];
 
 

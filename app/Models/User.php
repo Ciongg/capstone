@@ -127,11 +127,8 @@ class User extends Authenticatable
      */
     public function getProfilePhotoUrlAttribute()
     {
-        if ($this->profile_photo_path) {
-            // Use S3 in production, local in local
-            if (config('filesystems.default') === 's3') {
-                return \Storage::disk('s3')->url($this->profile_photo_path);
-            }
+           if ($this->profile_photo_path) {
+            // Always use public storage asset URL
             return asset('storage/' . $this->profile_photo_path);
         }
         // Fallback to default image

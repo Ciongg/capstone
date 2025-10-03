@@ -80,42 +80,53 @@ class VoucherVerify extends Component
         
         // Check if it's the first time being scanned
         if ($this->userVoucher->status === UserVoucher::STATUS_ACTIVE) {
-            // Check for expiry based on activation time (30 min window)
+            // Check for expiry based on expires_at time first
             $now = TestTimeService::now();
-
-            //if uservoucher is activated then check if it's over 30 minutes based on activated at time.
-            if ($this->userVoucher->activated_at) {
-                $activatedAt = $this->userVoucher->activated_at;
-                if ($now->diffInMinutes($activatedAt) >= 30) {
-
-                    // Mark user's voucher as expired
-                    $this->userVoucher->status = UserVoucher::STATUS_EXPIRED;
-                    $this->userVoucher->save();
-
-                     //set the voucher availability to expired as well
-                    $this->voucher->availability = 'expired';
-                    $this->voucher->save();
-
-                    $this->valid = false;
-                    $this->message = 'Invalid! This voucher has expired (over 30 minutes since activation).';
-                    return;
-                }
-            }
-            // Check for voucher expiry date as well
-            if ($this->voucher->expiry_date && $now->gt($this->voucher->expiry_date)) {
+            
+            // First check expires_at field directly
+            if ($this->userVoucher->expires_at && $now->gt($this->userVoucher->expires_at)) {
+                // Mark user's voucher as expired
                 $this->userVoucher->status = UserVoucher::STATUS_EXPIRED;
                 $this->userVoucher->save();
-
+                
+                // Set the voucher availability to expired as well
                 $this->voucher->availability = 'expired';
                 $this->voucher->save();
-
+                
                 $this->valid = false;
                 $this->message = 'Invalid! This voucher has expired.';
                 return;
             }
 
+            // Then check activation time (30 min window)
+            if ($this->userVoucher->activated_at && $now->diffInMinutes($this->userVoucher->activated_at) >= 30) {
+                // Mark user's voucher as expired
+                $this->userVoucher->status = UserVoucher::STATUS_EXPIRED;
+                $this->userVoucher->save();
+                
+                // Set the voucher availability to expired as well
+                $this->voucher->availability = 'expired';
+                $this->voucher->save();
+                
+                $this->valid = false;
+                $this->message = 'Invalid! This voucher has expired (over 30 minutes since activation).';
+                return;
+            }
+            
+            // Check for voucher expiry date as well
+            if ($this->voucher->expiry_date && $now->gt($this->voucher->expiry_date)) {
+                $this->userVoucher->status = UserVoucher::STATUS_EXPIRED;
+                $this->userVoucher->save();
+                
+                $this->voucher->availability = 'expired';
+                $this->voucher->save();
+                
+                $this->valid = false;
+                $this->message = 'Invalid! This voucher has expired.';
+                return;
+            }
 
-            // Mark as used on first visit
+            // Mark as used on first visit (only if not expired)
             $this->userVoucher->markAsUsed();
             $this->voucher->availability = 'used';
             $this->voucher->save();
@@ -127,6 +138,9 @@ class VoucherVerify extends Component
             $this->valid = false;
             $this->message = 'Invalid! This voucher was used before.';
             $this->usedAt = $this->userVoucher->used_at;
+        } else if ($this->userVoucher->status === UserVoucher::STATUS_EXPIRED) {
+            $this->valid = false;
+            $this->message = 'Invalid! This voucher has expired.';
         // if voucher is not activated yet by user
         } else {
             $this->valid = false;
