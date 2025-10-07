@@ -96,7 +96,26 @@
                 </p>
             </div>
             @endif
-            
+
+            <!-- Allow Guest Responses Checkbox (Green) -->
+            <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg w-full">
+                <div class="flex items-center">
+                    <input 
+                        type="checkbox" 
+                        id="guest-allowed-{{ $survey->id }}" 
+                        wire:model.defer="isGuestAllowed"
+                        class="w-5 h-5 text-green-600 rounded focus:ring-green-500"
+                        x-bind:disabled="isDisabled"
+                    >
+                    <label for="guest-allowed-{{ $survey->id }}" class="ml-2 text-sm font-medium text-green-900">
+                        Allow guest responses
+                    </label>
+                </div>
+                <p class="mt-1 text-xs text-green-600">
+                    If checked, users who are not logged in can respond to this survey. Guest responses won't earn rewards.
+                </p>
+            </div>
+
             <!-- Announce on Publish Checkbox (Blue) - Only for researcher, institution admin, or super admin -->
             @if(auth()->user()->isInstitutionAdmin() || auth()->user()->isSuperAdmin())
             <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg w-full">

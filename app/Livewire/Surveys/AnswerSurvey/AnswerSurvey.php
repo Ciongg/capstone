@@ -117,6 +117,11 @@ class AnswerSurvey extends Component
         if (!$this->isPreview && !in_array($this->survey->status, ['published', 'ongoing'])) {
             abort(404, 'Survey not available.');
         }
+        
+        // Check if user is guest and survey doesn't allow guest responses
+        if (!Auth::check() && !$this->survey->is_guest_allowed && !$this->isPreview) {
+            abort(403, 'This survey requires you to be logged in to respond.');
+        }
 
         // Start at the first page
         $this->currentPage = 0;
@@ -669,7 +674,7 @@ class AnswerSurvey extends Component
         try {
             DB::beginTransaction();
             
-            $user = Auth::user();
+            $user = Auth::user(); // This will be null for guest users
             
             // Update survey status if it's the first response
             if ($this->survey->status === 'published') {
@@ -688,7 +693,7 @@ class AnswerSurvey extends Component
             $response = Response::create([
                 'uuid' => (string) \Illuminate\Support\Str::uuid(),
                 'survey_id' => $this->survey->id,
-                'user_id' => $user?->id,
+                'user_id' => $user?->id, // Will be null for guest users
                 'reported' => false,
             ]);
 
@@ -729,6 +734,22 @@ class AnswerSurvey extends Component
                     'completion_time_seconds' => (int)$completionTimeSeconds,
                     'demographic_tags' => json_encode($demographicTags)
                 ]);
+            } else {
+                // Create a minimal snapshot for guest users
+                $response->snapshot()->create([
+                    'first_name' => 'Guest',
+                    'last_name' => 'User',
+                    'trust_score' => 100,
+                    'points' => 0,
+                    'account_level' => 0,
+                    'experience_points' => 0,
+                    'rank' => 'silver',
+                    'title' => null,
+                    'started_at' => $startedAt,
+                    'completed_at' => $completedAt,
+                    'completion_time_seconds' => (int)$completionTimeSeconds,
+                    'demographic_tags' => json_encode([])
+                ]);
             }
 
             // Process answers for each question
@@ -739,7 +760,7 @@ class AnswerSurvey extends Component
                 $this->saveAnswerForQuestion($response, $question, $answerValue);
             }
 
-            // Award points to user if configured
+            // Award points to user if authenticated and points are configured
             if ($user && $this->survey->points_allocated > 0) {
                 $user->points = ($user->points ?? 0) + $this->survey->points_allocated;
                 if ($user instanceof User) {
@@ -751,7 +772,7 @@ class AnswerSurvey extends Component
                 }
             }
 
-            // Award 100 XP to user after answering survey
+            // Award 100 XP to user after answering survey (only if authenticated)
             if ($user) {
                 $xpResult = $user->addExperiencePoints(100); // always 100 XP per survey
                 Log::info("Awarded 100 XP to user ID: {$user->id}", ['xpResult' => $xpResult]);
@@ -807,6 +828,27 @@ class AnswerSurvey extends Component
             }
 
             DB::commit();
+
+            // Set different success messages for guest vs authenticated users
+            if (!Auth::check()) {
+                $this->dispatch('surveySubmitted', [
+                    'title' => 'Survey Completed!',
+                    'message' => 'Thank you for completing the survey as a guest. Sign up to earn rewards for future surveys!',
+                    'points' => 0,
+                    'surveyName' => $this->survey->title,
+                    'xp' => 0,
+                    'isGuest' => true
+                ]);
+            } else {
+                $this->dispatch('surveySubmitted', [
+                    'title' => 'Survey Completed!',
+                    'message' => 'Thank you for completing the survey.',
+                    'points' => $this->survey->points_allocated,
+                    'surveyName' => $this->survey->title,
+                    'xp' => 100,
+                    'isGuest' => false
+                ]);
+            }
 
         } catch (\Exception $e) {
             DB::rollBack();

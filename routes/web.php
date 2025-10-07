@@ -59,13 +59,17 @@ Route::get('/register', [RegisteredUserController::class, 'create'])
 Route::get('/voucher/verify/{reference_no}', [VoucherController::class, 'verify'])
     ->name('voucher.verify');
 
-// Survey answering routes (require authentication)
-Route::middleware('auth')->group(function () {
-    Route::get('/surveys/answer/{survey:uuid}', [SurveyController::class, 'answer'])->name('surveys.answer')->missing(function () {
+// Survey answering routes - register the middleware directly for these routes
+Route::get('/surveys/answer/{survey:uuid}', [SurveyController::class, 'answer'])
+    ->name('surveys.answer')
+    ->middleware(\App\Http\Middleware\SurveyAccessMiddleware::class)  // Register middleware directly
+    ->missing(function () {
         abort(404, 'The requested page could not be found.');
     });
-    Route::post('/surveys/answer/{survey:uuid}', [SurveyController::class, 'submit'])->name('surveys.submit');
-});
+    
+Route::post('/surveys/answer/{survey:uuid}', [SurveyController::class, 'submit'])
+    ->name('surveys.submit')
+    ->middleware(\App\Http\Middleware\SurveyAccessMiddleware::class);  // Register middleware directly
 
 // Google OAuth Signup
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
