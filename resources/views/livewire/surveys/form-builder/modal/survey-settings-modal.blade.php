@@ -276,15 +276,15 @@
 
             <!-- Survey Title -->
             <div>
-                <label for="survey-title-{{ $survey->id }}" class="block font-semibold mb-1">Survey Title</label>
-                <input type="text" id="survey-title-{{ $survey->id }}" wire:model.defer="title" class="w-full border rounded px-3 py-2" x-bind:disabled="isDisabled" />
+                <label for="survey-title-{{ $survey->id }}" class="block font-semibold mb-1"   >Survey Title</label>
+                <input type="text" id="survey-title-{{ $survey->id }}" wire:model.defer="title" class="w-full border rounded px-3 py-2" x-bind:disabled="isDisabled" maxlength="256"/>
                 @error('title') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
             <!-- Survey Description -->
             <div>
-                <label for="survey-description-{{ $survey->id }}" class="block font-semibold mb-1">Survey Description</label>
-                <textarea id="survey-description-{{ $survey->id }}" wire:model.defer="description" class="w-full border rounded px-3 py-2" rows="3" x-bind:disabled="isDisabled"></textarea>
+                <label for="survey-description-{{ $survey->id }}" class="block font-semibold mb-1" >Survey Description</label>
+                <textarea id="survey-description-{{ $survey->id }}" wire:model.defer="description" class="w-full border rounded px-3 py-2" rows="3" x-bind:disabled="isDisabled" maxlength="2046" ></textarea>
                 @error('description') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
@@ -305,7 +305,7 @@
                     type="number" 
                     wire:model.defer="target_respondents" 
                     class="w-full border rounded px-3 py-2" 
-                    min="1" 
+                    min="10" 
                     max="1000" 
                     step="1"
                     x-bind:disabled="isDisabled" 

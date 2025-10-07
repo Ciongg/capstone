@@ -22,8 +22,8 @@ class SurveyController extends Controller
     {
         $user = auth()->user();
         
-        // Super admins can access all surveys
-        if ($user->isSuperAdmin()) {
+        // Super admins and institution admins can access all surveys
+        if ($user->isSuperAdmin() || $user->type === 'institution_admin') {
             return true;
         }
         

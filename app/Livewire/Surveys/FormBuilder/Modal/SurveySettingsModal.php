@@ -150,7 +150,7 @@ class SurveySettingsModal extends Component
                 'title' => 'required|string|max:256',
                 'description' => 'nullable|string|max:2046',
                 'type' => 'required|in:basic,advanced',
-                'target_respondents' => 'nullable|integer|min:1|max:1000',
+                'target_respondents' => 'nullable|integer|min:10|max:1000', // Changed min from 1 to 10
                 'survey_topic_id' => 'nullable|exists:survey_topic,id',
                 'banner_image' => 'nullable|image|max:2048', // 2MB max
             ];
@@ -227,7 +227,9 @@ class SurveySettingsModal extends Component
                 
                 // Validate: at least 1 page
                 if ($this->survey->pages->isEmpty()) {
-                    $this->dispatch('showErrorAlert', message: 'You must have at least 1 page in your survey before setting a start date.');
+                    $this->dispatch('validation-error', [
+                        'message' => 'You must have at least 1 page in your survey before setting a start date.'
+                    ]);
                     return;
                 }
 
@@ -239,7 +241,9 @@ class SurveySettingsModal extends Component
                 }
                 
                 if ($totalRequiredQuestions < 6) {
-                    $this->dispatch('showErrorAlert', message: 'Your survey must have at least 6 required questions before setting a start date. Please mark at least ' . (6 - $totalRequiredQuestions) . ' more questions as required.');
+                    $this->dispatch('validation-error', [
+                        'message' => 'Your survey must have at least 6 required questions before setting a start date. Please mark at least ' . (6 - $totalRequiredQuestions) . ' more questions as required.'
+                    ]);
                     return;
                 }
 
@@ -251,13 +255,17 @@ class SurveySettingsModal extends Component
                     if ($this->isInstitutionOnly) {
                         // Institution-only: require at least one institution tag
                         if ($this->survey->institutionTags->isEmpty()) {
-                            $this->dispatch('showErrorAlert', message: 'You must set at least one demographic (institution tag) before setting a start date for an advanced survey.');
+                            $this->dispatch('validation-error', [
+                                'message' => 'You must set at least one demographic (institution tag) before setting a start date for an advanced survey.'
+                            ]);
                             return;
                         }
                     } else {
                         // Public: require at least one general tag
                         if ($this->survey->tags->isEmpty()) {
-                            $this->dispatch('showErrorAlert', message: 'You must set at least one demographic (general tag) before setting a start date for an advanced survey.');
+                            $this->dispatch('validation-error', [
+                                'message' => 'You must set at least one demographic (general tag) before setting a start date for an advanced survey.'
+                            ]);
                             return;
                         }
                     }
@@ -272,13 +280,10 @@ class SurveySettingsModal extends Component
                         Storage::disk('public')->delete($this->survey->image_path);
                     }
 
-
                      $path = $this->banner_image->store('surveys', 'public');
-
                     
                     $this->survey->image_path = $path;
                 }
-
 
                 // When survey is published, preserve the original start_date
                 if (in_array($this->survey->status, ['published', 'ongoing'])) {
@@ -325,50 +330,55 @@ class SurveySettingsModal extends Component
                 $this->dispatch('surveyTitleUpdated', title: $this->title)->to(FormBuilder::class);
                 $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
             }
-
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Log validation errors for debugging
-            \Log::error("Validation failed:", [
-                'errors' => $e->errors(),
-                'start_date' => $this->start_date,
-                'end_date' => $this->end_date
+            // Extract all validation errors and convert to a single message
+            $errors = $e->validator->errors()->all();
+            $this->dispatch('validation-error', [
+                'message' => implode(' ', $errors)
             ]);
-            
-            // Re-throw validation exception so @error directives can display the errors
-            // Do NOT close the modal when validation fails
-            throw $e;
+            return;
         } catch (\Exception $e) {
             // Handle other exceptions
             \Log::error("Save survey information error: " . $e->getMessage());
-            throw $e;
+            $this->dispatch('validation-error', [
+                'message' => 'An error occurred: ' . $e->getMessage()
+            ]);
+            return;
         }
     }
 
     public function saveSurveyTags()
     {
-        $syncData = [];
-        
-        foreach ($this->selectedSurveyTags as $categoryId => $tagIds) {
-            if (!empty($tagIds)) {
-                foreach ($tagIds as $tagId) {
-                    $tag = \App\Models\Tag::find($tagId);
-                    if ($tag) {
-                        $syncData[$tagId] = ['tag_name' => $tag->name];
+        try {
+            $syncData = [];
+            
+            foreach ($this->selectedSurveyTags as $categoryId => $tagIds) {
+                if (!empty($tagIds)) {
+                    foreach ($tagIds as $tagId) {
+                        $tag = \App\Models\Tag::find($tagId);
+                        if ($tag) {
+                            $syncData[$tagId] = ['tag_name' => $tag->name];
+                        }
                     }
                 }
             }
+            
+            // Sync the tags
+            $this->survey->tags()->sync($syncData);
+            $this->survey->institutionTags()->sync([]); // Clear all institution tags
+            
+            // Reset the selected institution tags array
+            $this->selectedInstitutionTags = [];
+            
+            // Dispatch events - use save status with custom message
+            $this->dispatch('setSaveStatus', status: 'saved', message: 'New settings saved!')->to(FormBuilder::class);
+            $this->dispatch('close-modal', name: 'survey-settings-modal-' . $this->survey->id);
+        } catch (\Exception $e) {
+            $this->dispatch('validation-error', [
+                'message' => 'Failed to save survey tags: ' . $e->getMessage()
+            ]);
+            return;
         }
-        
-        // Sync the tags
-        $this->survey->tags()->sync($syncData);
-        $this->survey->institutionTags()->sync([]); // Clear all institution tags
-        
-        // Reset the selected institution tags array
-        $this->selectedInstitutionTags = [];
-        
-        // Dispatch events - use save status with custom message
-        $this->dispatch('setSaveStatus', status: 'saved', message: 'New settings saved!')->to(FormBuilder::class);
-        $this->dispatch('close-modal', name: 'survey-settings-modal-' . $this->survey->id);
     }
 
     private function loadInstitutionTagCategories()
@@ -402,31 +412,38 @@ class SurveySettingsModal extends Component
 
     public function saveInstitutionTags()
     {
-        $syncData = [];
-        
-        foreach ($this->selectedInstitutionTags as $categoryId => $tagIds) {
-            if (!empty($tagIds)) {
-                foreach ($tagIds as $tagId) {
-                    $tag = InstitutionTag::find($tagId);
-                    if ($tag) {
-                        $syncData[$tagId] = ['tag_name' => $tag->name];
+        try {
+            $syncData = [];
+            
+            foreach ($this->selectedInstitutionTags as $categoryId => $tagIds) {
+                if (!empty($tagIds)) {
+                    foreach ($tagIds as $tagId) {
+                        $tag = InstitutionTag::find($tagId);
+                        if ($tag) {
+                            $syncData[$tagId] = ['tag_name' => $tag->name];
+                        }
                     }
                 }
             }
+            
+            // Sync the tags
+            $this->survey->institutionTags()->sync($syncData);
+            $this->survey->tags()->sync([]); // Clear all general survey tags
+            
+            // Reset the selected survey tags array
+            $this->selectedSurveyTags = [];
+            
+            $surveyId = $this->survey->id;
+            
+            // Dispatch events - use save status with custom message
+            $this->dispatch('setSaveStatus', status: 'saved', message: 'New settings saved!')->to(FormBuilder::class);
+            $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
+        } catch (\Exception $e) {
+            $this->dispatch('validation-error', [
+                'message' => 'Failed to save institution tags: ' . $e->getMessage()
+            ]);
+            return;
         }
-        
-        // Sync the tags
-        $this->survey->institutionTags()->sync($syncData);
-        $this->survey->tags()->sync([]); // Clear all general survey tags
-        
-        // Reset the selected survey tags array
-        $this->selectedSurveyTags = [];
-        
-        $surveyId = $this->survey->id;
-        
-        // Dispatch events - use save status with custom message
-        $this->dispatch('setSaveStatus', status: 'saved', message: 'New settings saved!')->to(FormBuilder::class);
-        $this->dispatch('close-modal', name: 'survey-settings-modal-' . $surveyId);
     }
 
     /**

@@ -139,10 +139,13 @@ class ManageVoucherModal extends Component
         // Reset uploaded image after successful update
         $this->image = null;
         
-        // Dispatch event without message content
-        $this->dispatch('reward-updated', [
-            'rewardId' => $this->rewardId,
-            'closeModal' => true
+        // Dispatch a notification event
+        $this->dispatch('show-notification', [
+            'type' => 'success',
+            'title' => 'Reward Updated',
+            'message' => 'The reward details have been successfully updated.',
+            'closeModal' => 'manage-voucher-modal',
+            'refresh' => true
         ]);
     }
     
@@ -225,9 +228,12 @@ class ManageVoucherModal extends Component
             $this->voucherExpiryDate = null; // Reset expiry date field
         });
         
-        // Dispatch event without message content
-        $this->dispatch('vouchers-restocked', [
-            'rewardId' => $this->rewardId
+        // Dispatch a notification event
+        $this->dispatch('show-notification', [
+            'type' => 'success',
+            'title' => 'Vouchers Restocked',
+            'message' => $createdCount . ' new vouchers have been added to inventory.',
+            'refresh' => true
         ]);
     }
 
@@ -275,6 +281,47 @@ class ManageVoucherModal extends Component
         $this->dispatch('close-modal', ['name' => 'reward-modal-' . $this->rewardId]);
     }
 
+    public function updateStatus()
+    {
+        // Validate just the status field
+        $this->validate(['status' => 'required|string|in:available,unavailable,sold_out']);
+
+        \DB::transaction(function() {
+            $reward = Reward::findOrFail($this->rewardId);
+            $reward->update(['status' => $this->status]);
+            
+            // If this is a voucher reward, update availability of vouchers accordingly
+            if ($reward->type == 'voucher' || $reward->type == 'Voucher') {
+                // If marked unavailable, update all available vouchers to be unavailable
+                if ($this->status == 'unavailable' || $this->status == 'sold_out') {
+                    Voucher::where('reward_id', $reward->id)
+                        ->where('availability', 'available')
+                        ->update(['availability' => 'unavailable']);
+                }
+            }
+        });
+
+        // Set success message and close modal
+        $this->dispatch('show-notification', [
+            'type' => 'success',
+            'title' => 'Status Updated',
+            'message' => 'Reward status has been successfully updated.',
+            'closeModal' => 'manage-voucher-modal'
+        ]);
+    }
+    
+    public function confirmDelete()
+    {
+        $this->dispatch('show-confirmation', [
+            'title' => 'Delete Reward?',
+            'message' => 'Are you sure you want to delete this reward? This action cannot be undone.',
+            'icon' => 'warning',
+            'confirmButtonText' => 'Yes, delete it!',
+            'confirmButtonColor' => '#d33',
+            'action' => 'deleteReward'
+        ]);
+    }
+
     public function deleteReward()
     {
         $reward = Reward::findOrFail($this->rewardId);
@@ -288,13 +335,16 @@ class ManageVoucherModal extends Component
             $reward->delete();
         });
         
-        // Single dispatch without message
-        $this->dispatch('rewardDeleted');
-        
-        // Also dispatch to refresh the reward redemption index if needed
-        $this->dispatch('redemptionStatusUpdated');
+        // Dispatch a notification event
+        $this->dispatch('show-notification', [
+            'type' => 'success',
+            'title' => 'Reward Deleted',
+            'message' => 'The reward has been successfully deleted.',
+            'closeModal' => 'manage-voucher-modal',
+            'refresh' => true
+        ]);
     }
-
+    
     // Add this method to control when the component updates
     public function dehydrate()
     {
@@ -341,3 +391,4 @@ class ManageVoucherModal extends Component
         ]);
     }
 }
+

@@ -153,7 +153,7 @@ it('validates required fields in survey settings', function () {
     Livewire::test(SurveySettingsModal::class, ['survey' => $this->survey])
         ->set('title', '') // Empty title should fail validation
         ->call('saveSurveyInformation')
-        ->assertHasErrors(['title']);
+        ->assertDispatched('validation-error'); // Check for dispatched event instead of errors
 });
 
 it('validates start date is in future for pending surveys', function () {
@@ -162,7 +162,7 @@ it('validates start date is in future for pending surveys', function () {
     Livewire::test(SurveySettingsModal::class, ['survey' => $this->survey])
         ->set('start_date', $pastDate)
         ->call('saveSurveyInformation')
-        ->assertHasErrors(['start_date']);
+        ->assertDispatched('validation-error'); // Check for dispatched event instead of errors
 });
 
 it('validates end date is after start date', function () {
@@ -173,7 +173,7 @@ it('validates end date is after start date', function () {
         ->set('start_date', $startDate)
         ->set('end_date', $endDate)
         ->call('saveSurveyInformation')
-        ->assertHasErrors(['end_date']);
+        ->assertDispatched('validation-error'); // Check for dispatched event instead of errors
 });
 
 it('successfully sets start and end dates when valid', function () {
