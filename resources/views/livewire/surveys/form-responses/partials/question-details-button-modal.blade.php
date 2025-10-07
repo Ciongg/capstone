@@ -19,6 +19,8 @@
 </div>
 
 {{-- Modal for all responses to this question --}}
-<x-modal name="{{ $modalName }}" title="All Responses">
-    <livewire:surveys.form-responses.modal.view-all-responses-modal :question="$question" />
-</x-modal>
+<div wire:ignore.self>
+    <x-modal name="{{ $modalName }}" title="All Responses">
+        <livewire:surveys.form-responses.modal.view-all-responses-modal :question="$question" :key="'modal-'.$question->id" />
+    </x-modal>
+</div>
