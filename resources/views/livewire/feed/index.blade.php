@@ -127,3 +127,47 @@
         </button>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    // Use window event listener for Livewire dispatched events
+    window.addEventListener('show-data-privacy-notice', function (event) {
+        // Access the redirectUrl from event.detail
+        const redirectUrl = event.detail && event.detail.redirectUrl ? event.detail.redirectUrl : (event.detail && event.detail[0] && event.detail[0].redirectUrl ? event.detail[0].redirectUrl : null);
+        
+        if (!redirectUrl) {
+            console.error('No redirect URL provided');
+            return;
+        }
+        
+        Swal.fire({
+            title: 'Data Privacy Notice',
+            html: '<div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 15px;">' +
+                  '<p style="margin-bottom: 15px; font-weight: 600;">Before you proceed with this survey, please read and acknowledge the following:</p>' +
+                  '<h4 style="margin-top: 15px; margin-bottom: 10px; font-weight: 600;">Data Collection & Usage</h4>' +
+                  '<p style="margin-bottom: 10px; font-size: 14px; line-height: 1.6;">By participating in this survey, you acknowledge and agree that Formigo will collect, process, and store your responses along with associated metadata (including but not limited to: response timestamps, user ID, and demographic information if provided).</p>' +
+                  '<h4 style="margin-top: 15px; margin-bottom: 10px; font-weight: 600;">Purpose of Data Collection</h4>' +
+                  '<p style="margin-bottom: 10px; font-size: 14px; line-height: 1.6;">Your data will be used for research and analytical purposes by the survey creator. The information collected will help in understanding trends, preferences, and opinions related to the survey topic.</p>' +
+                  '<h4 style="margin-top: 15px; margin-bottom: 10px; font-weight: 600;">Data Privacy & Security</h4>' +
+                  '<p style="margin-bottom: 10px; font-size: 14px; line-height: 1.6;">Your responses will be treated in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction.</p>' +
+                  '<h4 style="margin-top: 15px; margin-bottom: 10px; font-weight: 600;">Your Rights</h4>' +
+                  '<p style="margin-bottom: 10px; font-size: 14px; line-height: 1.6;">You have the right to access, correct, or request deletion of your personal data. You may also withdraw your consent at any time by contacting the Formigo support team.</p>' +
+                  '<p style="margin-top: 15px; font-size: 14px; font-weight: 600;">By clicking "I Agree, Continue to Survey" below, you acknowledge that you have read and understood this notice and consent to the collection and processing of your data as described above.</p>' +
+                  '</div>',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'I Agree, Continue to Survey',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#03b8ff',
+            cancelButtonColor: '#6b7280',
+            width: '600px',
+            allowOutsideClick: false,
+            allowEscapeKey: true,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = redirectUrl;
+            }
+        });
+    });
+</script>
+@endpush

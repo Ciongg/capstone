@@ -84,6 +84,12 @@ class ViewSurveyModal extends Component
         }
     }
 
+    public function showDataPrivacyNotice()
+    {
+        $this->dispatch('show-data-privacy-notice', [
+            'redirectUrl' => route('surveys.answer', $this->survey->uuid)
+        ]);
+    }
 
     public function render()
     {
