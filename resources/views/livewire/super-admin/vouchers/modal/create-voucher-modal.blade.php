@@ -110,17 +110,17 @@
                         @error('name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
-                    <!-- Promo Description -->
+                    <!-- Description -->
                     <div>
-                        <label for="promo" class="block text-sm font-medium text-gray-700 mb-1">Promo Description</label>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                         <textarea
-                            id="promo"
-                            wire:model="promo"
+                            id="description"
+                            wire:model="description"
                             rows="3"
                             class="w-full border-gray-300 rounded-md shadow-sm px-4 py-3 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                             placeholder="Description of what this voucher offers"
                         ></textarea>
-                        @error('promo') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                        @error('description') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <!-- Points Cost -->

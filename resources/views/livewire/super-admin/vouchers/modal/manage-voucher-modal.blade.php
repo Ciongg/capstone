@@ -158,32 +158,13 @@
                         <select
                             id="status"
                             wire:model="status"
-                            class="w-130 border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                            class="w-full border-gray-300 rounded-md shadow-sm px-4 py-2 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                         >
                             <option value="available">Available</option>
                             <option value="unavailable">Unavailable</option>
                             <option value="sold_out">Sold Out</option>
                         </select>
-                        <button
-                            type="button"
-                            x-data
-                            x-on:click="Swal.fire({
-                                title: 'Update Status?',
-                                text: 'Are you sure you want to update the status of this reward?',
-                                icon: 'question',
-                                showCancelButton: true,
-                                confirmButtonColor: '#03b8ff',
-                                cancelButtonColor: '#aaa',
-                                confirmButtonText: 'Yes, update it!'
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    $wire.updateReward();
-                                }
-                            })"
-                            class="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium"
-                        >
-                            Update Status
-                        </button>
+                      
                     </div>
                     @error('status') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
@@ -344,41 +325,14 @@
                     @if($type == 'voucher' || $type == 'Voucher')
                     <button
                         type="button"
-                        x-data
-                        x-on:click="Swal.fire({
-                            title: 'Delete Voucher?',
-                            text: 'Are you sure you want to delete this voucher? This action cannot be undone.',
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonColor: '#d33',
-                            cancelButtonColor: '#aaa',
-                            confirmButtonText: 'Yes, delete it!'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $wire.deleteReward();
-                            }
-                        })"
                         class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md"
+                        wire:click="confirmDelete"
                     >
                         Delete
                     </button>
                     @endif
                     <button
-                        type="button"
-                        x-data
-                        x-on:click="Swal.fire({
-                            title: 'Update Reward?',
-                            text: 'Are you sure you want to update this reward?',
-                            icon: 'question',
-                            showCancelButton: true,
-                            confirmButtonColor: '#03b8ff',
-                            cancelButtonColor: '#aaa',
-                            confirmButtonText: 'Yes, update it!'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $wire.updateReward();
-                            }
-                        })"
+                        type="submit"
                         class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md"
                     >
                         Update Reward
@@ -392,3 +346,4 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @endpush
+                        

@@ -1,4 +1,42 @@
-<div x-data="{ fullscreenImageSrc: null }">
+<div x-data="{ 
+    fullscreenImageSrc: null,
+    showNotification: false,
+    notificationType: '',
+    notificationTitle: '',
+    notificationMessage: '',
+    displayNotification(data) {
+        this.notificationType = data.type || 'info';
+        this.notificationTitle = data.title || 'Notification';
+        this.notificationMessage = data.message || '';
+        this.showNotification = true;
+        
+        // Show the SweetAlert notification
+        Swal.fire({
+            icon: this.notificationType,
+            title: this.notificationTitle,
+            text: this.notificationMessage,
+            timer: 3000,
+            showConfirmButton: true,
+        }).then(() => {
+            // If closeModal is specified, close that modal
+            if (data.closeModal) {
+                Livewire.dispatch('close-modal', { name: data.closeModal });
+            }
+            
+            // If refresh is specified, refresh the component
+            if (data.refresh) {
+                Livewire.dispatch('$refresh');
+            }
+        });
+    }
+}" x-init="() => {
+    // Check for flash messages on page load
+    @if (session()->has('success_message'))
+        $nextTick(() => {
+            displayNotification(@js(session('success_message')));
+        });
+    @endif
+}">
     <!-- Status explanation notice -->
     <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
         <p><strong>Note:</strong> This section allows you to manage all rewards in the system. Update reward details or adjust inventory levels.</p>
@@ -191,4 +229,61 @@
         </button>
     </div>
 </div>
-          
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // New unified notification handler with success style
+    window.addEventListener('show-notification', function (event) {
+        Swal.fire({
+            icon: event.detail.type || 'success',
+            title: event.detail.title || 'Success',
+            text: event.detail.message || 'Operation completed successfully',
+            confirmButtonColor: '#10b981', // Green color for confirmation button
+            confirmButtonText: 'Great!',
+            showConfirmButton: true,
+        }).then(() => {
+            // If closeModal is specified, close that modal
+            if (event.detail.closeModal) {
+                Livewire.dispatch('close-modal', { name: event.detail.closeModal });
+            }
+            
+            // Always refresh the component after a success notification
+            if (event.detail.type === 'success' || event.detail.refresh) {
+                @this.$refresh();
+            }
+        });
+    });
+    
+    // Handle confirmation dialogs
+    window.addEventListener('show-confirmation', function (event) {
+        Swal.fire({
+            title: event.detail.title || 'Confirm',
+            text: event.detail.message || 'Are you sure?',
+            icon: event.detail.icon || 'question',
+            showCancelButton: true,
+            confirmButtonColor: event.detail.confirmButtonColor || '#3085d6',
+            cancelButtonColor: event.detail.cancelButtonColor || '#d33',
+            confirmButtonText: event.detail.confirmButtonText || 'Yes'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Call the specified Livewire action
+                if (event.detail.action) {
+                    Livewire.dispatch(event.detail.action);
+                }
+            }
+        });
+    });
+    
+    // Only keep the error notification handler
+    window.addEventListener('reward-error', function (event) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Operation Failed',
+            text: event.detail.message || 'An error occurred during the operation.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+</script>
+@endpush

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Services\TestTimeService;
+use \App\Models\UserSystemReward;
 
 class RewardRedeemModal extends Component
 {
@@ -25,7 +26,10 @@ class RewardRedeemModal extends Component
         $this->reward = $reward;
     }
 
-  
+    public function purchaseError($message){
+        $this->dispatch('redemptionError', $message);
+        $this->dispatch('close-modal', name: 'reward-redeem-modal');
+    }
 
     /**
      * Process reward redemption
@@ -33,36 +37,31 @@ class RewardRedeemModal extends Component
     public function confirmRedemption()
     {
         if (!$this->reward || !Auth::check()) {
-            $this->dispatch('redemptionError', 'Could not process redemption. Please try again.');
-            $this->dispatch('close-modal', name: 'reward-redeem-modal');
+            $this->purchaseError('Could not process redemption. Please try again.');
             return;
         }
 
         $user = Auth::user();
-        $quantityToRedeem = ($this->reward->type === 'system') ? (int)$this->redeemQuantity : 1;
+        $quantityToRedeem = ($this->reward->type === 'system') ? $this->redeemQuantity : 1;
         $totalCost = $this->reward->cost * $quantityToRedeem;
-
         $now = TestTimeService::now();
 
         // Pre-transaction validation
         // 1. Check if user has enough points
         if ($user->points < $totalCost) {
-            $this->dispatch('redemptionError', 'Not enough points to redeem this reward.');
-            $this->dispatch('close-modal', name: 'reward-redeem-modal');
+            $this->purchaseError('Not enough points to redeem this reward.');
             return;
         }
         
         // 2. Check for system rewards quantity
         if ($this->reward->type === 'system') {
             if ($this->redeemQuantity <= 0) {
-                $this->dispatch('redemptionError', 'Quantity must be at least 1 for system rewards.');
-                $this->dispatch('close-modal', name: 'reward-redeem-modal');
-                return;
+            $this->purchaseError('Quantity must be at least 1 for system rewards.');
+            return;
             }
             
             if ($this->reward->quantity != -1 && $this->redeemQuantity > $this->reward->quantity) {
-                $this->dispatch('redemptionError', 'Requested quantity exceeds available stock.');
-                $this->dispatch('close-modal', name: 'reward-redeem-modal');
+                $this->purchaseError('Requested quantity exceeds available stock.');
                 return;
             }
         }
@@ -70,32 +69,33 @@ class RewardRedeemModal extends Component
         // 3. Check voucher availability
         if ($this->reward->type === 'voucher') {
             // Only allow if there is at least one available voucher with expiry_date not passed
-            $voucherInstance = Voucher::where('reward_id', $this->reward->id)
-                ->where('availability', 'available')
-                ->where(function($q) use ($now) {
-                    $q->whereNull('expiry_date')
-                      ->orWhere('expiry_date', '>', $now);
-                })
-                ->lockForUpdate()
-                ->first();
+           $voucherInstance = Voucher::where('reward_id', $this->reward->id)
+            ->where('availability', 'available')
+            // The closure groups multiple conditions together.
+            // `use ($now)` passes the $now variable from outside into the closure, 
+            // so we can use it inside.
+            ->where(function($q) use ($now) { 
+                $q->whereNull('expiry_date')          // Voucher has no expiry date
+                ->orWhere('expiry_date', '>', $now); // OR voucher hasn't expired yet
+            })
+            ->lockForUpdate() // Prevents race conditions by locking this row until the transaction finishes
+            ->first(); // Fetch the first matching voucher
 
             if (!$voucherInstance) {
-                $this->dispatch('redemptionError', 'This voucher is out of stock or expired.');
-                $this->dispatch('close-modal', name: 'reward-redeem-modal');
+                $this->purchaseError('This voucher is out of stock or expired.');
                 return;
             }
         }
+        
+        //if no errors start the transaction
 
         try {
             DB::transaction(function () use ($user, $quantityToRedeem, $totalCost, $now) {
                 // Deduct points from user
                 $user->points -= $totalCost;
                 
-                $levelUpMessage = '';
                 $leveledUp = false;
-                $newLevel = 0;
-                $newTitle = '';
-                $redemptionStatus = RewardRedemption::STATUS_COMPLETED; //same as "completed"
+                $redemptionStatus = RewardRedemption::STATUS_COMPLETED;
 
                 // Process based on reward type
                 if ($this->reward->type === 'system') {
@@ -103,7 +103,7 @@ class RewardRedeemModal extends Component
                     // Handle system reward (e.g., Experience Level Increase)
                     if ($this->reward->name === 'Experience Level Increase') {
                         $xpToAdd = 10 * $quantityToRedeem;
-                        $oldRank = $user->rank; // Store old rank before adding XP
+                        $oldRank = $user->rank; 
                         $result = $user->addExperiencePoints($xpToAdd);
                         if ($result['leveled_up']) {
                             $leveledUp = true;
@@ -114,8 +114,8 @@ class RewardRedeemModal extends Component
                     
                     // Handle Survey Boost system reward
                     if ($this->reward->name === 'Survey Boost') {
-                        // Create or update user's survey boost rewards
-                        $existingBoost = \App\Models\UserSystemReward::where('user_id', $user->id)
+                        //access user system reward, if user alreayd has a survey boost, increment quantity
+                        $existingBoost = UserSystemReward::where('user_id', $user->id)
                             ->where('type', 'survey_boost')
                             ->where('status', 'unused')
                             ->first();
@@ -124,7 +124,8 @@ class RewardRedeemModal extends Component
                             $existingBoost->quantity += $quantityToRedeem;
                             $existingBoost->save();
                         } else {
-                            \App\Models\UserSystemReward::create([
+                            //if no existing survey boost reward record, create a new one
+                            UserSystemReward::create([
                                 'user_id' => $user->id,
                                 'type' => 'survey_boost',
                                 'quantity' => $quantityToRedeem,
@@ -174,7 +175,7 @@ class RewardRedeemModal extends Component
                 $user->save();
                 $this->reward->save();
 
-                // Create redemption record
+                // Create reward redemption record
                 $redemptionData = [
                     'user_id' => $user->id,
                     'reward_id' => $this->reward->id,
@@ -236,10 +237,15 @@ class RewardRedeemModal extends Component
     {
         if (!$this->reward) return 0;
         
-        // For voucher rewards, count actual available vouchers
+        // For voucher rewards, count actual available vouchers (excluding expired ones)
         if ($this->reward->type === 'voucher') {
+            $now = TestTimeService::now();
             return Voucher::where('reward_id', $this->reward->id)
                 ->where('availability', 'available')
+                ->where(function($q) use ($now) {
+                    $q->whereNull('expiry_date')
+                      ->orWhere('expiry_date', '>', $now);
+                })
                 ->count();
         }
         
@@ -252,7 +258,7 @@ class RewardRedeemModal extends Component
      */
     public function isButtonDisabled()
     {
-        if (!$this->reward) return true;
+        if (!$this->reward || !Auth::check()) return true;
         
         $user = Auth::user();
         $calculatedCost = $this->getTotalCost();
@@ -285,7 +291,7 @@ class RewardRedeemModal extends Component
      */
     public function getErrorMessage()
     {
-        if (!$this->reward) return '';
+        if (!$this->reward || !Auth::check()) return '';
         
         $user = Auth::user();
         $calculatedCost = $this->getTotalCost();
@@ -321,3 +327,4 @@ class RewardRedeemModal extends Component
         ]);
     }
 }
+      

@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
 use App\Services\TestTimeService;
+use Carbon\Carbon;
 
 class EditProfileModal extends Component
 {
@@ -80,9 +81,9 @@ class EditProfileModal extends Component
         }
         
         // Calculate time differences and round to integers
-        $this->daysUntilProfileUpdateAvailable = (int) floor($now->diffInDays($nextUpdateDate, false));
-        $this->hoursUntilProfileUpdateAvailable = (int) floor($now->diffInHours($nextUpdateDate, false) % 24);
-        $this->minutesUntilProfileUpdateAvailable = (int) floor($now->diffInMinutes($nextUpdateDate, false) % 60);
+        $this->daysUntilProfileUpdateAvailable = (int) $now->diffInDays($nextUpdateDate, false);
+        $this->hoursUntilProfileUpdateAvailable = (int) $now->diffInHours($nextUpdateDate, false) % 24;
+        $this->minutesUntilProfileUpdateAvailable = (int) $now->diffInMinutes($nextUpdateDate, false) % 60;
         
         // Create human-readable text with proper rounding
         if ($this->daysUntilProfileUpdateAvailable > 0) {

@@ -23,15 +23,9 @@ class InboxMessage extends Model
         'read_at' => 'datetime',
     ];
     
-
-    
     public function recipient()
     {
         return $this->belongsTo(User::class, 'recipient_id');
     }
     
-    public function isUnread()
-    {
-        return $this->read_at === null;
-    }
 }

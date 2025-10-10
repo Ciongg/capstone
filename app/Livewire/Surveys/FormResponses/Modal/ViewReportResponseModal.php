@@ -113,6 +113,7 @@ class ViewReportResponseModal extends Component
             if ($this->response->user_id) {
                 $existingUserReport = Report::where('respondent_id', $this->response->user_id)
                     ->where('reporter_id', auth()->id())
+                    ->where('survey_id', $this->survey->id)
                     ->exists();
                     
                 if ($existingUserReport) {
@@ -166,22 +167,12 @@ class ViewReportResponseModal extends Component
                             $pointsDeducted = $this->survey->points_allocated;
                             $respondent->points = max(0, $respondent->points - $pointsDeducted);
                             
-                            Log::info('Deducted points from reported user', [
-                                'user_id' => $respondent->id,
-                                'points_deducted' => $pointsDeducted,
-                                'new_points_balance' => $respondent->points
-                            ]);
+                          
                         }
                         
                         $respondent->save();
                         
-                        Log::info('Applied deductions to reported user', [
-                            'user_id' => $respondent->id,
-                            'trust_deduction' => $trustScoreDeduction,
-                            'points_deducted' => $pointsDeducted,
-                            'new_trust_score' => $respondent->trust_score,
-                            'new_points' => $respondent->points
-                        ]);
+        
                     }
                 }
 

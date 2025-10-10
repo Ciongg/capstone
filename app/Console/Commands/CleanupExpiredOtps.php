@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\EmailVerification;
 use Illuminate\Console\Command;
+use App\Services\TestTimeService;
 
 class CleanupExpiredOtps extends Command
 {
@@ -12,6 +13,7 @@ class CleanupExpiredOtps extends Command
 
     public function handle()
     {
+        
         $deleted = EmailVerification::where('expires_at', '<', now())->delete();
         
         $this->info("Cleaned up {$deleted} expired OTP records.");

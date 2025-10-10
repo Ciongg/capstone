@@ -17,15 +17,16 @@ class Survey extends Model
         'description',
         'status',   // 'pending', 'published', 'ongoing', 'finished'
         'type',     // 'basic', 'advanced'
-        'survey_topic_id', // Added survey topic
+        'survey_topic_id', 
         'target_respondents',
         'start_date',
         'end_date',
         'points_allocated',
         'image_path',
         'is_institution_only',
-        'is_locked', // Added for lock/unlock functionality
-        'lock_reason', // Added to store the reason for locking
+        'is_locked', 
+        'lock_reason',
+        'is_announced', // Add this to fillable
     ];
 
     /**
@@ -38,6 +39,7 @@ class Survey extends Model
         'end_date' => 'datetime',
         'is_institution_only' => 'boolean',
         'is_locked' => 'boolean',
+        'is_announced' => 'boolean', // Add this to cast attributes
         'target_respondents' => 'integer',
         'points_allocated' => 'integer',
         'boost_count' => 'integer',
@@ -60,7 +62,7 @@ class Survey extends Model
 
     public function responses()
     {
-        return $this->hasMany(\App\Models\Response::class);
+        return $this->hasMany(Response::class);
     }
 
     /**
@@ -113,5 +115,23 @@ class Survey extends Model
     public function announcements()
     {
         return $this->hasMany(Announcement::class);
+    }
+
+    /**
+     * Relationship with collaborators (users who can edit this survey)
+     */
+    public function collaborators()
+    {
+        return $this->belongsToMany(User::class, 'survey_collaborators')
+                    ->withPivot('user_uuid')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Check if the given user is a collaborator on this survey
+     */
+    public function isCollaborator(User $user)
+    {
+        return $this->collaborators()->where('user_id', $user->id)->exists();
     }
 }

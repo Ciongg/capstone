@@ -16,19 +16,16 @@ class EmailVerification extends Model
         'expires_at' => 'datetime',
     ];
 
-    /**
-     * Check if the OTP is expired
-     */
+    //check if otp expired
     public function isExpired(): bool
     {
-        return $this->expires_at->isPast();
+        return $this->expires_at->isPast(); // isPast is a carbon function
     }
 
-    /**
-     * Check if the OTP is valid (not expired and matches)
-     */
+    //check if otp is valid and not expired
     public function isValid(string $otpCode): bool
     {
         return !$this->isExpired() && $this->otp_code === $otpCode;
+        //so return when this this is not expired and this otp code is equal to the otp code passed in
     }
 } 

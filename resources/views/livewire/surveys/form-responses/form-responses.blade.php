@@ -1,6 +1,13 @@
 <div class="bg-gray-100 min-h-screen py-4 sm:py-8">
     <div class="max-w-7xl mx-auto space-y-6 sm:space-y-10 px-2 sm:px-4">
 
+        <!-- Display any session flash messages -->
+        @if(session()->has('error'))
+        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+            <p>{{ session('error') }}</p>
+        </div>
+        @endif
+
         <div class="flex flex-col md:flex-row md:items-center gap-4 mb-6">
             <a href="{{ route('surveys.create', $survey->uuid) }}"
                class="px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg shadow hover:bg-gray-200 flex items-center justify-center text-sm sm:text-base"
@@ -12,6 +19,30 @@
             </a>
             <div class="flex-grow"></div>
         
+            {{-- Export to CSV Button - Only show if there are responses --}}
+            @if($survey->responses()->count() > 0)
+                <button
+                    wire:click="exportToCsv"
+                    wire:loading.attr="disabled"
+                    wire:target="exportToCsv"
+                    class="w-40 px-3 sm:px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 inline-flex items-center justify-center text-sm sm:text-base mr-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                    <span wire:loading.remove wire:target="exportToCsv" class="inline-flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2 flex-shrink-0">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                        </svg>
+                        <span>Export to CSV</span>
+                    </span>
+                    <span wire:loading wire:target="exportToCsv" class="inline-flex items-center justify-center">
+                        <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        
+                    </span>
+                </button>
+            @endif
+            
             {{-- View Individual Responses Button - Only show if there are responses --}}
             @if($survey->responses()->count() > 0)
                 <a href="{{ route('surveys.responses.individual', $survey->uuid) }}"
@@ -98,7 +129,7 @@
                     @if(in_array($question->question_type, ['multiple_choice', 'radio']))
 
                         {{-- container of question for multiple choice and radio aka single option--}}
-                        <div class="bg-white shadow rounded-lg sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8">
+                        <div class="bg-white shadow rounded-lg sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8" wire:key="question-{{ $question->id }}">
                             {{-- Include the question title and "More Details" button --}}
                             @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question, 'questionCounter' => $questionCounter])
                             
@@ -124,7 +155,7 @@
                                     </ul>
                                 </div>
                                 {{-- Pie Chart --}}
-                                <div class="md:w-1/2 flex justify-center">
+                                <div class="md:w-1/2 flex justify-center" wire:ignore>
                                     <canvas id="chart-question-{{ $question->id }}" class="max-w-full h-auto" width="200" height="200"></canvas>
                                 </div>
                             </div>
@@ -134,32 +165,26 @@
                             let chartInstance{{ $question->id }};
 
                             function renderChart{{ $question->id }}() {
-                                //gets 2d drawing context from canvas element to draw chart
-                                const ctx = document.getElementById('chart-question-{{ $question->id }}').getContext('2d');
-                                //destroys previous chart instance if it exists
+                                const canvas = document.getElementById('chart-question-{{ $question->id }}');
+                                if (!canvas) return;
+                                
+                                const ctx = canvas.getContext('2d');
+                                
                                 if (chartInstance{{ $question->id }}) {
                                     chartInstance{{ $question->id }}.destroy();
                                 }
 
-                                //  pulls choices and answers from the question laravel collection into JS using JSON
                                 const choices = @json($question->choices->sortBy('order')->values());
                                 const answers = @json($question->answers);
-                                // Get the same color mapping used for the legend
                                 const choiceColors = @json($choiceColors);
                                 
-                                // Initialize counts for each choice for pie chart data to be all zeroes
                                 let data = Array(choices.length).fill(0);
                                 
-                                // Process each answer
                                answers.forEach(answer => {
                                 try {
-                                    // Parse the JSON string to get answered choices
                                     const choiceIds = JSON.parse(answer.answer);
-                                    
-                                    // Convert to array if it's not already one (for radio buttons)
                                     const choiceIdArray = Array.isArray(choiceIds) ? choiceIds : [choiceIds];
                                     
-                                    // Process each choice ID
                                     choiceIdArray.forEach(choiceId => {
                                         if (choiceId !== null && !isNaN(parseInt(choiceId))) {
                                             const choiceIndex = choices.findIndex(c => c.id === parseInt(choiceId));
@@ -173,10 +198,7 @@
                                     }
                                 });
                                 
-                                //maps through the choices to use as labels grabbing their text choice_text
                                 let labels = choices.map(choice => choice.choice_text);
-
-                                // Use the exact same colors as the legend by mapping choice IDs to their colors
                                 let backgroundColor = choices.map(choice => choiceColors[choice.id]);
                                 
                                 chartInstance{{ $question->id }} = new Chart(ctx, {
@@ -200,6 +222,13 @@
 
                             document.addEventListener('DOMContentLoaded', function () {
                                 renderChart{{ $question->id }}();
+                            });
+                            
+                            // Re-render on Livewire updates but only if canvas exists
+                            document.addEventListener('livewire:update', function () {
+                                if (document.getElementById('chart-question-{{ $question->id }}')) {
+                                    renderChart{{ $question->id }}();
+                                }
                             });
                         </script>
                         @endpush
@@ -238,7 +267,7 @@
                         }
                     @endphp
 
-                        <div class="bg-white shadow rounded-lg p-4 sm:p-6 mb-6">
+                        <div class="bg-white shadow rounded-lg p-4 sm:p-6 mb-6" wire:key="likert-{{ $question->id }}">
                             {{-- Include the question title and "More Details" button --}}
                             @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question, 'questionCounter' => $questionCounter])
 
@@ -265,69 +294,84 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="flex justify-center mt-6 overflow-x-auto">
+                            <div class="flex justify-center mt-6 overflow-x-auto" wire:ignore>
                                 <canvas id="likert-chart-{{ $question->id }}" class="max-w-full" height="{{ 150 * count($likertRows) }}"></canvas>
                             </div>
                         </div>
                         @push('scripts')
                         <script>
-                            document.addEventListener('DOMContentLoaded', function () {
-                                const ctx = document.getElementById('likert-chart-{{ $question->id }}').getContext('2d');
+                            (function() {
+                                let chartInstance = null;
+                                
+                                function renderLikertChart{{ $question->id }}() {
+                                    const canvas = document.getElementById('likert-chart-{{ $question->id }}');
+                                    if (!canvas) return;
+                                    
+                                    const ctx = canvas.getContext('2d');
 
-                                //json directive to pass PHP variables to JavaScript
-                                const rows = @json($likertRows);
-                                const columns = @json($likertColumns);
-                                const counts = @json($likertCounts); // Pass the correctly calculated counts
-                                const colors = [
-                                    @foreach($likertColumns as $i => $column)
-                                        "{{ $colors[$i % count($colors)] }}",
-                                    @endforeach
-                                ];
+                                    if (chartInstance) {
+                                        chartInstance.destroy();
+                                    }
 
-                                // Each dataset is a Likert option (column)
-                                const datasets = columns.map((col, colIdx) => ({
-                                    label: col,
-                                    // Ensure data mapping uses the correct counts array structure
-                                    data: rows.map((row, rowIdx) => counts[rowIdx]?.[colIdx] ?? 0),
-                                    backgroundColor: colors[colIdx],
-                                    borderWidth: 1
-                                }));
+                                    const rows = @json($likertRows);
+                                    const columns = @json($likertColumns);
+                                    const counts = @json($likertCounts);
+                                    const colors = [
+                                        @foreach($likertColumns as $i => $column)
+                                            "{{ $colors[$i % count($colors)] }}",
+                                        @endforeach
+                                    ];
 
-                                new Chart(ctx, {
-                                    type: 'bar',
-                                    data: {
-                                        labels: rows,
-                                        datasets: datasets
-                                    },
-                                    options: {
-                                        indexAxis: 'y', // horizontal bars
-                                        responsive: true,
-                                        maintainAspectRatio: false,
-                                        plugins: {
-                                            legend: { display: true, position: 'top' }
+                                    const datasets = columns.map((col, colIdx) => ({
+                                        label: col,
+                                        data: rows.map((row, rowIdx) => counts[rowIdx]?.[colIdx] ?? 0),
+                                        backgroundColor: colors[colIdx],
+                                        borderWidth: 1
+                                    }));
+
+                                    chartInstance = new Chart(ctx, {
+                                        type: 'bar',
+                                        data: {
+                                            labels: rows,
+                                            datasets: datasets
                                         },
-                                        scales: {
-                                            x: {
-                                                beginAtZero: true,
-                                                precision: 0, // Ensure whole numbers on axis
-                                                ticks: {
-                                                    stepSize: 1 // Force step size of 1
-                                                }
+                                        options: {
+                                            indexAxis: 'y',
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            plugins: {
+                                                legend: { display: true, position: 'top' }
                                             },
-                                            y: {
-                                                stacked: false
+                                            scales: {
+                                                x: {
+                                                    beginAtZero: true,
+                                                    precision: 0,
+                                                    ticks: {
+                                                        stepSize: 1
+                                                    }
+                                                },
+                                                y: {
+                                                    stacked: false
+                                                }
                                             }
                                         }
+                                    });
+                                }
+                                
+                                document.addEventListener('DOMContentLoaded', renderLikertChart{{ $question->id }});
+                                document.addEventListener('livewire:update', function() {
+                                    if (document.getElementById('likert-chart-{{ $question->id }}')) {
+                                        renderLikertChart{{ $question->id }}();
                                     }
                                 });
-                            });
+                            })();
                         </script>
                         @endpush
 
 
                     {{-- Handle other types like essay, short_text, date, rating --}}
                     @else
-                        <div class="bg-white shadow rounded-lg p-4 sm:p-6 mb-6">
+                        <div class="bg-white shadow rounded-lg p-4 sm:p-6 mb-6" wire:key="rating-{{ $question->id }}">
                             {{-- Include the question title and "More Details" button --}}
                             @include('livewire.surveys.form-responses.partials.question-details-button-modal', ['question' => $question, 'questionCounter' => $questionCounter])
 
@@ -362,7 +406,7 @@
                                     </div>
 
                                     {{-- Right Side: Rating Distribution Chart --}}
-                                    <div class="lg:w-2/3 relative overflow-x-auto" style="min-height: 150px;"> 
+                                    <div class="lg:w-2/3 relative overflow-x-auto" style="min-height: 150px;" wire:ignore> 
                                         <canvas id="rating-chart-{{ $question->id }}" class="max-w-full"></canvas>
                                     </div>
 
@@ -371,50 +415,65 @@
                                 @push('scripts')
 
                                 <script>
-                                    document.addEventListener('DOMContentLoaded', function () {
-                                        const ctx = document.getElementById('rating-chart-{{ $question->id }}');
-                                        if (!ctx) return;
+                                    (function() {
+                                        let chartInstance = null;
+                                        
+                                        function renderRatingChart{{ $question->id }}() {
+                                            const canvas = document.getElementById('rating-chart-{{ $question->id }}');
+                                            if (!canvas) return;
 
-                                        const labels = [
-                                            @for($i = 1; $i <= $starCount; $i++)
-                                                "{{ $i }} Star{{ $i > 1 ? 's' : '' }}",
-                                            @endfor
-                                        ];
-                                        const data = @json($ratingCounts);
+                                            if (chartInstance) {
+                                                chartInstance.destroy();
+                                            }
 
-                                        new Chart(ctx.getContext('2d'), {
-                                            type: 'bar',
-                                            data: {
-                                                labels: labels,
-                                                datasets: [{
-                                                    label: 'Number of Responses',
-                                                    data: data,
-                                                    backgroundColor: '#60a5fa',
-                                                    borderColor: '#3b82f6',
-                                                    borderWidth: 1
-                                                }]
-                                            },
-                                            options: {
-                                                indexAxis: 'y',
-                                                responsive: true,
-                                                maintainAspectRatio: false,
-                                                plugins: {
-                                                    legend: { display: false }
+                                            const labels = [
+                                                @for($i = 1; $i <= $starCount; $i++)
+                                                    "{{ $i }} Star{{ $i > 1 ? 's' : '' }}",
+                                                @endfor
+                                            ];
+                                            const data = @json($ratingCounts);
+
+                                            chartInstance = new Chart(canvas.getContext('2d'), {
+                                                type: 'bar',
+                                                data: {
+                                                    labels: labels,
+                                                    datasets: [{
+                                                        label: 'Number of Responses',
+                                                        data: data,
+                                                        backgroundColor: '#60a5fa',
+                                                        borderColor: '#3b82f6',
+                                                        borderWidth: 1
+                                                    }]
                                                 },
-                                                scales: {
-                                                    x: {
-                                                        beginAtZero: true,
-                                                        precision: 0
+                                                options: {
+                                                    indexAxis: 'y',
+                                                    responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    plugins: {
+                                                        legend: { display: false }
                                                     },
-                                                    y: {
-                                                        ticks: {
-                                                            autoSkip: false
+                                                    scales: {
+                                                        x: {
+                                                            beginAtZero: true,
+                                                            precision: 0
+                                                        },
+                                                        y: {
+                                                            ticks: {
+                                                                autoSkip: false
+                                                            }
                                                         }
                                                     }
                                                 }
+                                            });
+                                        }
+                                        
+                                        document.addEventListener('DOMContentLoaded', renderRatingChart{{ $question->id }});
+                                        document.addEventListener('livewire:update', function() {
+                                            if (document.getElementById('rating-chart-{{ $question->id }}')) {
+                                                renderRatingChart{{ $question->id }}();
                                             }
                                         });
-                                    });
+                                    })();
                                 </script>
                                 @endpush
 
@@ -450,4 +509,13 @@
             @endif
         @endif
     </div>
+
+    @push('scripts')
+    <script>
+        // Remove all the Livewire event listeners since we're using direct download now
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Form responses page loaded');
+        });
+    </script>
+    @endpush
 </div>

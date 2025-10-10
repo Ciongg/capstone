@@ -1,9 +1,10 @@
 <?php
 
 namespace App\Livewire\Surveys;
-use Illuminate\Support\Facades\Auth; // Ensure Auth facade is imported
+
 use Livewire\Component;
 use App\Models\Survey;
+use Illuminate\Support\Facades\Auth;
 
 class FormIndex extends Component
 {
@@ -26,11 +27,26 @@ class FormIndex extends Component
 
     public function render()
     {
-        $surveys = Survey::where('user_id', Auth::id()) // Use Auth::id()
-                         ->withCount('responses') // Add this line
-                         ->latest()
-                         ->get();
-
-        return view('livewire.surveys.form-index', compact('surveys'));
+        $user = Auth::user();
+        
+        // Get surveys owned by the user
+        $surveys = Survey::where('user_id', $user->id)
+            ->withCount('responses')
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        // Get surveys where the user is a collaborator
+        $sharedSurveys = Survey::whereHas('collaborators', function($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->with('user:id,first_name,last_name') // Load owner details
+            ->withCount('responses')
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        return view('livewire.surveys.form-index', [
+            'surveys' => $surveys,
+            'sharedSurveys' => $sharedSurveys
+        ]);
     }
 }

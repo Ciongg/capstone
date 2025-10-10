@@ -43,7 +43,8 @@
                         </form>
                     </div>
                     
-                    {{-- Report button to flag problematic responses --}}
+                    {{-- Report button to flag problematic responses - Only show for non-guest responses --}}
+                    @if($currentRespondent->user_id)
                     <button
                         x-data
                         x-on:click="$dispatch('open-modal', {name : 'view-report-response-modal'})"
@@ -57,6 +58,7 @@
                             </path>
                         </svg>
                     </button>
+                    @endif
                 </div>
                 
                 {{-- Navigation controls between responses --}}

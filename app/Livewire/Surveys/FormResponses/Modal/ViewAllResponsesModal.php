@@ -14,14 +14,28 @@ class ViewAllResponsesModal extends Component
     public $aiSummary = '';
     public $exactCounts = '';
     public $loading = false;
-    public $selectedModel = 'deepseek'; // 'deepseek' or 'gemini'
+    public $selectedModel = 'deepseek';
 
-
-    public function mount()
+    public function mount($question)
     {
+        $this->question = $question;
         $this->aiSummary = $this->question->ai_summary ?? '';
-        // Generate exact counts on mount for immediate display
         $this->exactCounts = $this->generateExactCounts();
+    }
+    
+    // Reload question data on every render to ensure fresh data
+    public function render()
+    {
+        // Refresh the question with all relationships
+        $this->question->loadMissing(['answers.response.user', 'choices', 'answers.response']);
+        
+        // Regenerate exact counts with fresh data
+        if (empty($this->exactCounts) || $this->exactCounts === '') {
+            $this->exactCounts = $this->generateExactCounts();
+        }
+        
+        Log::info('Rendering ViewAllResponsesModal with aiSummary: ' . $this->aiSummary);
+        return view('livewire.surveys.form-responses.modal.view-all-responses-modal');
     }
 
     /**
@@ -650,12 +664,6 @@ class ViewAllResponsesModal extends Component
         
         return implode("\n\n", $analysisResults);
     }
-
-    public function render()
-    {
-        $this->question->loadMissing('answers.response.user');
-        Log::info('Rendering ViewAllResponsesModal with aiSummary: ' . $this->aiSummary);
-        return view('livewire.surveys.form-responses.modal.view-all-responses-modal');
-    }
 }
+
 

@@ -53,10 +53,11 @@
                                     id="emailLogin" 
                                     class="w-full pl-10 border border-white/50 bg-white text-gray-700 rounded-lg p-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 @error('email') border-red-400 @enderror"
                                     placeholder="enter your email address"
+                                    maxlength="254"
                                     required
                                 >
                             </div>
-                            @error('email') <span class="text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
+                            @error('email') <span class="text-red-600 text-xs mt-1 hidden">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Password - added more spacing -->
@@ -74,11 +75,12 @@
                                     id="passwordLogin" 
                                     class="w-full pl-10 border border-white/50 bg-white text-gray-700 rounded-lg p-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 @error('password') border-red-400 @enderror"
                                     placeholder="enter your password"
+                                    maxlength="128"
                                     required
                                 >
                               
                             </div>
-                            @error('password') <span class="text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
+                            @error('password') <span class="text-red-600 text-xs mt-1 hidden">{{ $message }}</span> @enderror
                         </div>
                         
                         <!-- Remember Me and Forgot password row -->
@@ -148,3 +150,62 @@
     <!-- Forgot Password Modal -->
     <livewire:auth.forgot-password />
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Handle validation errors
+    window.addEventListener('validation-error', function (event) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: event.detail.message || 'Please check your input and try again.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle login errors
+    window.addEventListener('login-error', function (event) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Login Failed',
+            text: event.detail.message || 'Invalid credentials. Please try again.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle archived account error
+    window.addEventListener('archived-account', function (event) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Account Archived',
+            text: event.detail.message || 'This account has been archived. Please contact the Formigo support team for assistance.',
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle account status changes
+    window.addEventListener('account-status-change', function (event) {
+        Swal.fire({
+            icon: event.detail.type || 'info',
+            title: event.detail.title || 'Account Status Updated',
+            text: event.detail.message,
+            timer: 4000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle password length errors
+    window.addEventListener('password-length-error', function (event) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Password Too Short',
+            text: event.detail.message || 'Password must be at least 8 characters.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+</script>
+@endpush

@@ -43,6 +43,8 @@
                                     class="w-full text-center text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors p-3 @error('email') border-red-500 @enderror"
                                     placeholder="Enter your email address"
                                     aria-label="Enter email address"
+                                    maxlength="256"
+                                    required
                                 >
                                 @error('email') 
                                     <span class="text-red-600 text-sm">{{ $message }}</span> 
@@ -90,6 +92,7 @@
                                     class="w-full text-center text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors p-3 @error('otp_code') border-red-500 @enderror"
                                     placeholder="Enter 6-digit code"
                                     aria-label="Enter verification code"
+                                    required
                                 >
                                 @error('otp_code') 
                                     <span class="text-red-600 text-sm">{{ $message }}</span> 
@@ -152,34 +155,50 @@
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900 mb-2">Create New Password</h3>
                             <p class="text-gray-600 mb-4">
-                                Enter your new password below.
+                                Your password must contain at least 8 characters with 1 uppercase letter and 1 special character.
                             </p>
                         </div>
 
                         <form wire:submit.prevent="resetPassword">
+                            <!-- Password -->
                             <div class="mb-6">
                                 <label class="block text-sm font-medium text-gray-700 mb-3">New Password</label>
-                                <input
-                                    type="password"
-                                    wire:model="new_password"
-                                    class="w-full text-center text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors p-3 @error('new_password') border-red-500 @enderror"
-                                    placeholder="Enter new password"
-                                    aria-label="Enter new password"
-                                >
-                                @error('new_password') 
-                                    <span class="text-red-600 text-sm">{{ $message }}</span> 
-                                @enderror
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                    </div>
+                                    <input
+                                        type="password"
+                                        wire:model="new_password"
+                                        class="w-full pl-10 border border-gray-300 text-gray-700 rounded-lg p-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 @error('new_password') border-red-400 @enderror"
+                                        placeholder="Enter new password"
+                                        maxlength="128"
+                                        required
+                                    >
+                                </div>
+                                @error('new_password') <span class="text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
                             </div>
 
+                            <!-- Confirm Password -->
                             <div class="mb-6">
                                 <label class="block text-sm font-medium text-gray-700 mb-3">Confirm New Password</label>
-                                <input
-                                    type="password"
-                                    wire:model="new_password_confirmation"
-                                    class="w-full text-center text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors p-3"
-                                    placeholder="Confirm new password"
-                                    aria-label="Confirm new password"
-                                >
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                    </div>
+                                    <input
+                                        type="password"
+                                        wire:model="new_password_confirmation"
+                                        class="w-full pl-10 border border-gray-300 text-gray-700 rounded-lg p-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        placeholder="Confirm new password"
+                                        maxlength="128"
+                                        required
+                                    >
+                                </div>
                             </div>
 
                             <div class="flex flex-col space-y-3">
@@ -198,4 +217,112 @@
             </div>
         </div>
     </x-modal>
+
+    @push('scripts')
+    <script>
+        // These event listeners will be added to the page scripts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Password validation errors
+            window.addEventListener('password-length-error', function (event) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Password Too Short',
+                    text: event.detail.message || 'Password must be at least 8 characters and include a special character and one uppercase letter.',
+                    timer: 4000,
+                    showConfirmButton: true,
+                });
+            });
+            
+            window.addEventListener('password-strength-error', function (event) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Password Requirements Not Met',
+                    text: event.detail.message || 'Password must contain at least one uppercase letter and one special character.',
+                    timer: 4000,
+                    showConfirmButton: true,
+                });
+            });
+            
+            window.addEventListener('password-mismatch', function (event) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Password Mismatch',
+                    text: event.detail.message || 'The passwords do not match. Please make sure both password fields are identical.',
+                    timer: 3000,
+                    showConfirmButton: true,
+                });
+            });
+            
+            window.addEventListener('validation-error', function (event) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: event.detail.message || 'Please check your input and try again.',
+                    timer: 4000,
+                    showConfirmButton: true,
+                });
+            });
+            
+            window.addEventListener('password-reset-success', function (event) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Password Reset Successfully!',
+                    text: event.detail.message || 'Your password has been updated. You can now login with your new password.',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Go to Login',
+                    confirmButtonColor: '#3B82F6',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '{{ route('login') }}';
+                    }
+                });
+            });
+            
+            // OTP errors
+            window.addEventListener('otp-error', function (event) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'OTP Error',
+                    text: event.detail.message || 'Invalid or expired verification code. Please try again.',
+                    timer: 3000,
+                    showConfirmButton: true,
+                });
+            });
+            
+            // Email sending errors
+            window.addEventListener('email-error', function (event) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Email Error',
+                    text: event.detail.message || 'Failed to send verification email. Please try again.',
+                    timer: 3000,
+                    showConfirmButton: true,
+                });
+            });
+            
+            // OTP sent successfully
+            window.addEventListener('otp-sent', function (event) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Verification Code Sent',
+                    text: event.detail.message || 'A verification code has been sent to your email.',
+                    timer: 2000,
+                    showConfirmButton: false,
+                });
+            });
+            
+            // Email not found in system
+            window.addEventListener('email-not-found', function (event) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Email Not Registered',
+                    text: event.detail.message || 'This email address is not registered in our system.',
+                    timer: 3000,
+                    showConfirmButton: true,
+                });
+            });
+        });
+    </script>
+    @endpush
 </div>

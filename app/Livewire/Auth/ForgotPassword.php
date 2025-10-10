@@ -38,7 +38,7 @@ class ForgotPassword extends Component
     protected function passwordRules(): array
     {
         return [
-            'new_password' => 'required|string|min:8|confirmed',
+            'new_password' => 'required|string|min:8|confirmed|regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%@]).*$/',
         ];
     }
 
@@ -49,17 +49,50 @@ class ForgotPassword extends Component
 
     public function sendResetEmail()
     {
-        $this->validate();
+        try {
+            $this->validate();
+        } catch (\Illuminate\Validation\ValidatpionException $e) {
+            $errors = $e->validator->errors();
+            
+            // Check for specific email errors
+            if ($errors->has('email')) {
+                if (str_contains($errors->first('email'), 'required')) {
+                    $this->dispatch('validation-error', [
+                        'message' => 'Please enter your email address.'
+                    ]);
+                    return;
+                }
+                
+                if (str_contains($errors->first('email'), 'valid email')) {
+                    $this->dispatch('validation-error', [
+                        'message' => 'Please enter a valid email address.'
+                    ]);
+                    return;
+                }
+                
+                // Modified: More direct check for the exists rule failure
+                // Laravel typically uses "The selected email is invalid" for exists rule failures
+                $this->dispatch('email-not-found', [
+                    'message' => 'This email address is not registered in our system.'
+                ]);
+                return;
+            }
+            
+            // Handle other validation errors
+            $allErrors = $errors->all();
+            $this->dispatch('validation-error', ['message' => implode(' ', $allErrors)]);
+            return;
+        }
 
         // Generate 6-digit OTP
         $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         
-        // Store OTP in database with 10-minute expiry
+        // Store OTP in database with 10-minute expiry (or 1 second for testing)
         EmailVerification::updateOrCreate(
             ['email' => $this->email],
             [
                 'otp_code' => $otpCode,
-                'expires_at' => Carbon::now()->addMinutes(10),
+                'expires_at' => Carbon::now()->addSeconds(60), // Change to addMinutes(10) for production
             ]
         );
 
@@ -68,26 +101,47 @@ class ForgotPassword extends Component
         $emailSent = $brevoService->sendPasswordResetEmail($this->email, $otpCode);
 
         if (!$emailSent) {
-            $this->addError('email', 'Failed to send reset email. Please try again.');
+            $this->dispatch('email-error', [
+                'message' => 'Failed to send reset email. Please try again.'
+            ]);
             return;
         }
 
         // Move to OTP step
         $this->currentStep = 'otp';
-        session()->flash('success', 'Reset code sent to your email!');
+        $this->dispatch('otp-sent', [
+            'message' => 'Reset code sent to your email!'
+        ]);
     }
 
     public function verifyOtp()
     {
-        $this->validate($this->otpRules());
+        try {
+            $this->validate($this->otpRules());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $errors = $e->validator->errors()->all();
+            $this->dispatch('validation-error', ['message' => implode(' ', $errors)]);
+            return;
+        }
 
         // Find the email verification record
         $emailVerification = EmailVerification::where('email', $this->email)
             ->where('otp_code', $this->otp_code)
             ->first();
 
-        if (!$emailVerification || $emailVerification->isExpired()) {
-            $this->addError('otp_code', 'Invalid or expired verification code. Please try again.');
+        // Check if verification record exists
+        if (!$emailVerification) {
+            $this->dispatch('otp-error', [
+                'message' => 'Invalid verification code. Please try again or request a new code.'
+            ]);
+            return;
+        }
+
+        // Use the model's isExpired() method to check expiration
+        if ($emailVerification->isExpired()) {
+            $this->dispatch('otp-error', [
+                'message' => 'Verification code has expired. Please request a new code.'
+            ]);
             return;
         }
 
@@ -97,13 +151,48 @@ class ForgotPassword extends Component
 
     public function resetPassword()
     {
-        $this->validate($this->passwordRules());
+        try {
+            $this->validate($this->passwordRules());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $errors = $e->validator->errors();
+            
+            // Check for password length errors
+            if ($errors->has('new_password') && str_contains($errors->first('new_password'), 'at least 8')) {
+                $this->dispatch('password-length-error', [
+                    'message' => 'Password must be at least 8 characters and include a special character and one uppercase letter.'
+                ]);
+                return;
+            }
+            
+            // Check for password strength errors
+            if ($errors->has('new_password') && str_contains($errors->first('new_password'), 'format is invalid')) {
+                $this->dispatch('password-strength-error', [
+                    'message' => 'Password must contain at least one uppercase letter and one special character.'
+                ]);
+                return;
+            }
+            
+            // Check for password confirmation mismatch
+            if ($errors->has('new_password') && (str_contains($errors->first('new_password'), 'confirmation does not match') || str_contains($errors->first('new_password'), 'confirmed'))) {
+                $this->dispatch('password-mismatch', [
+                    'message' => 'The passwords do not match. Please make sure both password fields are identical.'
+                ]);
+                return;
+            }
+            
+            // Handle other validation errors
+            $allErrors = $errors->all();
+            $this->dispatch('validation-error', ['message' => implode(' ', $allErrors)]);
+            return;
+        }
 
         // Find the user
         $user = User::where('email', $this->email)->first();
         
         if (!$user) {
-            $this->addError('new_password', 'User not found.');
+            $this->dispatch('validation-error', [
+                'message' => 'User not found. Please try again with a different email.'
+            ]);
             return;
         }
 
@@ -120,6 +209,9 @@ class ForgotPassword extends Component
         $this->currentStep = 'email';
 
         $this->showSuccess = true;
+        $this->dispatch('password-reset-success', [
+            'message' => 'Your password has been reset successfully! You can now login with your new password.'
+        ]);
     }
 
     public function resendOtp()
@@ -129,19 +221,21 @@ class ForgotPassword extends Component
         }
 
         if (empty($this->email)) {
-            $this->addError('otp_code', 'No email address found.');
+            $this->dispatch('validation-error', [
+                'message' => 'No email address found. Please start again.'
+            ]);
             return;
         }
 
         // Generate new 6-digit OTP
         $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         
-        // Update OTP in database with 10-minute expiry
+        // Update OTP in database with expiry time
         EmailVerification::updateOrCreate(
             ['email' => $this->email],
             [
                 'otp_code' => $otpCode,
-                'expires_at' => Carbon::now()->addMinutes(10),
+                'expires_at' => Carbon::now()->addSeconds(60), // Change to addMinutes(10) for production
             ]
         );
 
@@ -150,10 +244,14 @@ class ForgotPassword extends Component
         $emailSent = $brevoService->sendPasswordResetEmail($this->email, $otpCode);
 
         if ($emailSent) {
-            session()->flash('success', 'New reset code sent to your email!');
+            $this->dispatch('otp-sent', [
+                'message' => 'New reset code sent to your email!'
+            ]);
             $this->startResendCooldown();
         } else {
-            $this->addError('otp_code', 'Failed to send reset email. Please try again.');
+            $this->dispatch('email-error', [
+                'message' => 'Failed to send reset email. Please try again.'
+            ]);
         }
     }
 
@@ -181,4 +279,4 @@ class ForgotPassword extends Component
     {
         return view('livewire.auth.forgot-password-modal');
     }
-} 
+}

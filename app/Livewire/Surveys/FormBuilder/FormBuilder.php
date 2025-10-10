@@ -45,12 +45,15 @@ class FormBuilder extends Component
     public $saveStatus = ''; // '', 'saving', 'saved'
     public $saveMessage = 'Saving changes...'; // Add this line to define the save message property
     
-    // Add the listener property
+    // Update the listeners property to include new event
     protected $listeners = [
         'surveyTitleUpdated' => 'updateTitleFromEvent',
-        'settingsOperationCompleted' => 'handleSettingsOperationCompleted', // New listener
-        'setSaveStatus' => 'handleSetSaveStatus', // New listener for save status
-        'surveySettingsUpdated' => 'handleSurveySettingsUpdated', // Add this listener
+        'settingsOperationCompleted' => 'handleSettingsOperationCompleted',
+        'setSaveStatus' => 'handleSetSaveStatus',
+        'surveySettingsUpdated' => 'handleSurveySettingsUpdated',
+        'surveyStructureUpdated' => 'loadPages',
+        'surveyGenerationStarted' => 'handleSurveyGenerationStarted',
+        'openSurveyGeneratorModal' => 'handleOpenSurveyGeneratorModal', // New listener
     ];
 
    public function mount(Survey $survey)
@@ -93,8 +96,6 @@ class FormBuilder extends Component
            ->orderBy('order') // Ensure pages are ordered
            ->get();
 
-           
-
        $this->questions = [];
        $this->choices = [];
 
@@ -126,6 +127,12 @@ class FormBuilder extends Component
                            $this->choices[$choice->id] = $choice->toArray();
                        }
            }
+       }
+       
+       // Get the first page ID if available
+       $firstPage = $this->pages->first();
+       if ($firstPage && $this->activePageId === null) {
+           $this->activePageId = $firstPage->id;
        }
    }
 
@@ -603,6 +610,24 @@ class FormBuilder extends Component
        $this->hasResponses = $this->survey->responses()->exists();
        $this->checkAndUpdateSurveyStatus();
    }
+   
+   /**
+     * Handle when a survey generation job is started
+     */
+    public function handleSurveyGenerationStarted($data)
+    {
+        // Forward the event to the SurveyGenerationStatus component
+        $this->dispatch('surveyGenerationStarted', $data)->to('surveys.form-builder.survey-generation-status');
+    }
+
+    /**
+     * Handle opening the survey generator modal
+     */
+    public function handleOpenSurveyGeneratorModal($data)
+    {
+        // This will trigger the modal to open via the browser event
+        $this->dispatch('open-modal', ['name' => 'survey-generator-modal-' . $this->survey->id]);
+    }
 
 
 
@@ -813,6 +838,9 @@ class FormBuilder extends Component
    {
        if ($type === 'rating') {
            $this->ratingStars[$question->id] = 5;
+           // Fix: Add explicit setting of stars property on question model
+           $question->stars = 5;
+           $question->save(); // Save the change to the database
        }
        else if ($type === 'likert') {
            $defaultColumns = ['Agree', 'Neutral', 'Disagree'];

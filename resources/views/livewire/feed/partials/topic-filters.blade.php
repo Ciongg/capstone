@@ -79,7 +79,7 @@
     >
         {{-- All Topics option --}}
         <button
-            wire:click="clearTopicFilter"
+            wire:click="clearFilter('topic')"
             class="whitespace-nowrap px-3 sm:px-4 py-2 rounded-full border text-sm font-medium flex-shrink-0 transition-colors select-none
                   {{ is_null($activeFilters['topic']) 
                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-transparent shadow-md' 

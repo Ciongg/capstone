@@ -85,10 +85,11 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'last_active_at' => 'datetime', // Fix typo here
-            'demographic_tags_updated_at' => 'datetime', // Add this new cast
-            'institution_demographic_tags_updated_at' => 'datetime', // Add this cast
-            'profile_updated_at' => 'datetime', // Add this new cast
+            'last_active_at' => 'datetime', 
+            'demographic_tags_updated_at' => 'datetime', 
+            'institution_demographic_tags_updated_at' => 'datetime', 
+            'profile_updated_at' => 'datetime', 
+            'is_active' => 'boolean'
         ];
     }
 
@@ -126,11 +127,8 @@ class User extends Authenticatable
      */
     public function getProfilePhotoUrlAttribute()
     {
-        if ($this->profile_photo_path) {
-            // Use S3 in production, local in local
-            if (config('filesystems.default') === 's3') {
-                return \Storage::disk('s3')->url($this->profile_photo_path);
-            }
+           if ($this->profile_photo_path) {
+            // Always use public storage asset URL
             return asset('storage/' . $this->profile_photo_path);
         }
         // Fallback to default image

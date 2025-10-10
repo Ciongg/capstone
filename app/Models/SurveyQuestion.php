@@ -19,9 +19,8 @@ class SurveyQuestion extends Model
         'stars', // For rating
         'likert_columns', // For likert
         'likert_rows', // For likert
-        // 'limit_answers', // Removed
-        'limit_condition', // Added
-        'max_answers', // Keep
+        'limit_condition', 
+        'max_answers', 
         'ai_summary',
     ];
 
@@ -29,7 +28,7 @@ class SurveyQuestion extends Model
         'required' => 'boolean',
         'likert_columns' => 'json',
         'likert_rows' => 'json',
-        // 'limit_answers' => 'boolean', // Removed
+        
         // 'likert_columns' => 'array',
         // 'likert_rows' => 'array',
     ];

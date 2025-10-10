@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use App\Models\Survey;
 
 class SessionController extends Controller
 {
@@ -40,7 +41,7 @@ class SessionController extends Controller
         $intendedUrl = session()->get('url.intended');
         
         if ($intendedUrl && str_contains($intendedUrl, '/surveys/answer/')) {
-            session()->flash('warning_message', 'You must be logged in to answer surveys. If you already have an account, please login below. If not, please register a new account.');
+            session()->flash('warning_message', 'You need to login to continue.');
         }
         
         return view('auth.login');
@@ -48,3 +49,4 @@ class SessionController extends Controller
 
 
 }
+              

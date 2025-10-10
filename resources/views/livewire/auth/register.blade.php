@@ -38,10 +38,11 @@
                                         id="first_name" 
                                         class="w-full pl-10 border border-white/50 bg-white text-gray-700 rounded-lg p-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 @error('first_name') border-red-400 @enderror"
                                         placeholder="Enter your first name"
+                                        maxlength="40"
                                         required
                                     >
                                 </div>
-                                @error('first_name') <span class="text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
+                                @error('first_name') <span class="text-red-600 text-xs mt-1 hidden">{{ $message }}</span> @enderror
                             </div>
 
                             <!-- Last Name -->
@@ -59,10 +60,11 @@
                                         id="last_name" 
                                         class="w-full pl-10 border border-white/50 bg-white text-gray-700 rounded-lg p-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 @error('last_name') border-red-400 @enderror"
                                         placeholder="Enter your last name"
+                                        maxlength="40"
                                         required
                                     >
                                 </div>
-                                @error('last_name') <span class="text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
+                                @error('last_name') <span class="text-red-600 text-xs mt-1 hidden">{{ $message }}</span> @enderror
                             </div>
                         </div>
 
@@ -81,10 +83,11 @@
                                     id="emailReg" 
                                     class="w-full pl-10 border border-white/50 bg-white text-gray-700 rounded-lg p-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 @error('email') border-red-400 @enderror"
                                     placeholder="Enter your email address"
+                                    maxlength="256"
                                     required
                                 >
                             </div>
-                            @error('email') <span class="text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
+                            @error('email') <span class="text-red-600 text-xs mt-1 hidden">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Phone Number -->
@@ -102,10 +105,14 @@
                                     id="phone_number" 
                                     class="w-full pl-10 border border-white/50 bg-white text-gray-700 rounded-lg p-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 @error('phone_number') border-red-400 @enderror"
                                     placeholder="Enter your phone number"
+                                    maxlength="11"
+                                    inputmode="numeric"
+                                    pattern="[0-9]*"
+                                    onkeypress="return event.charCode >= 48 && event.charCode <= 57"
                                     required
                                 >
                             </div>
-                            @error('phone_number') <span class="text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
+                            @error('phone_number') <span class="text-red-600 text-xs mt-1 hidden">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Password Fields - Stack on small screens, side by side on md+ -->
@@ -125,10 +132,11 @@
                                         id="passwordReg" 
                                         class="w-full pl-10 border border-white/50 bg-white text-gray-700 rounded-lg p-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 @error('password') border-red-400 @enderror"
                                         placeholder="Create password"
+                                        maxlength="128"
                                         required
                                     >
                                 </div>
-                                @error('password') <span class="text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
+                                @error('password') <span class="text-red-600 text-xs mt-1 hidden">{{ $message }}</span> @enderror
                             </div>
 
                             <!-- Confirm Password -->
@@ -146,6 +154,7 @@
                                         id="password_confirmation" 
                                         class="w-full pl-10 border border-white/50 bg-white text-gray-700 rounded-lg p-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300"
                                         placeholder="Confirm password"
+                                        maxlength="128"
                                         required
                                     >
                                 </div>
@@ -169,7 +178,7 @@
                                     <a href="{{ route('privacy-policy') }}" class="text-blue-500 italic hover:text-blue-700" target="_blank">Privacy Policy</a>.
                                 </span>
                             </label>
-                            @error('terms') <span class="text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
+                            @error('terms') <span class="text-red-600 text-xs mt-1 hidden">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Button -->
@@ -231,3 +240,154 @@
     <!-- OTP Verification Modal -->
     @include('livewire.auth.otp-verification-modal')
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Handle validation errors - use the specific message from the PHP component
+    window.addEventListener('validation-error', function (event) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: event.detail.message || 'Please check your input and try again.',
+            timer: 4000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle password mismatch specifically
+    window.addEventListener('password-mismatch', function (event) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Password Mismatch',
+            text: event.detail.message || 'The passwords do not match. Please make sure both password fields are identical.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle password strength requirements
+    window.addEventListener('password-strength-error', function (event) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Password Requirements Not Met',
+            text: event.detail.message || 'Password must contain at least one uppercase letter and one special character.',
+            timer: 4000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle registration errors
+    window.addEventListener('registration-error', function (event) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Registration Failed',
+            text: event.detail.message || 'An error occurred during registration. Please try again.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle duplicate email/phone errors
+    window.addEventListener('duplicate-email', function (event) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Email Already Exists',
+            text: event.detail.message || 'This email address is already registered. Please use a different email or try logging in.',
+            showConfirmButton: true,
+        });
+    });
+    
+    window.addEventListener('duplicate-phone', function (event) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Phone Number Already Exists',
+            text: event.detail.message || 'This phone number is already registered. Please use a different phone number.',
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle OTP errors
+    window.addEventListener('otp-error', function (event) {
+        Swal.fire({
+            icon: 'error',
+            title: 'OTP Error',
+            text: event.detail.message || 'Invalid or expired verification code. Please try again.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle email sending errors
+    window.addEventListener('email-error', function (event) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Email Error',
+            text: event.detail.message || 'Failed to send verification email. Please try again.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle success messages
+    window.addEventListener('registration-success', function (event) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Registration Successful!',
+            text: event.detail.message || 'Your account has been created successfully! Welcome to Formigo.',
+            showConfirmButton: true,
+            confirmButtonText: 'Continue to Dashboard',
+            confirmButtonColor: '#3B82F6',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = '{{ route('feed.index') }}';
+            }
+        });
+    });
+    
+    window.addEventListener('otp-sent', function (event) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Verification Code Sent',
+            text: event.detail.message || 'A verification code has been sent to your email.',
+            timer: 2000,
+            showConfirmButton: false,
+        });
+    });
+    
+    // Handle existing OTP found case
+    window.addEventListener('existing-otp-found', function (event) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Verification Code Already Sent',
+            text: event.detail.message || 'A verification code was already sent to your email.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle phone number length errors
+    window.addEventListener('phone-length-error', function (event) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Phone Number',
+            text: event.detail.message || 'Phone number must be exactly 11 digits.',
+            timer: 3000,
+            showConfirmButton: true,
+        });
+    });
+    
+    // Handle password length errors
+    window.addEventListener('password-length-error', function (event) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Password Too Short',
+            text: event.detail.message || 'Password must be at least 8 characters and include a special character and one uppercase letter.',
+            timer: 4000,
+            showConfirmButton: true,
+        });
+    });
+</script>
+@endpush

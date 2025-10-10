@@ -5,7 +5,7 @@ namespace App\Livewire\Vouchers;
 use App\Models\UserVoucher;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
-
+use App\Services\TestTimeService;
 class VoucherIndex extends Component
 {
     public $selectedVoucher = null;
@@ -17,12 +17,12 @@ class VoucherIndex extends Component
 
     public function openRedeemModal($userVoucherId)
     {
-        $userVoucher = \App\Models\UserVoucher::with('voucher')->find($userVoucherId);
+        $userVoucher = UserVoucher::with('voucher')->find($userVoucherId);
         if ($userVoucher && $userVoucher->voucher && $userVoucher->voucher->expiry_date) {
-            $now = \App\Services\TestTimeService::now();
+            $now = TestTimeService::now();
             if ($now->greaterThanOrEqualTo($userVoucher->voucher->expiry_date)) {
                 // Mark as expired
-                $userVoucher->status = \App\Models\UserVoucher::STATUS_EXPIRED;
+                $userVoucher->status = UserVoucher::STATUS_EXPIRED;
                 $userVoucher->save();
                 // Dispatch browser event for SweetAlert2
                 $this->dispatch('voucher-expired-alert');

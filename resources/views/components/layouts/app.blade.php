@@ -1,72 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Meta tags for character set and viewport -->
+        <!-- Meta tags for character set and viewport -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+    <!-- Ensure HTTPS assets load properly -->
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+
+    <!-- Laravel CSRF token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <!-- SEO meta tags -->
     <meta name="description" content="Incentivized Research Survey Platform">
+    <meta name="keywords" content="Formigo, Survey Platform, Research, Academic Surveys, Incentivized Surveys">
+    <meta name="author" content="Formigo Team">
 
-    <!-- Open Graph (works on Facebook, Messenger, Discord, LinkedIn, etc.) -->
+    <!-- Mobile & web app support -->
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Formigo">
+
+    <!-- Open Graph (Facebook, Messenger, Discord, LinkedIn, etc.) -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:title" content="Formigo">
     <meta property="og:description" content="Incentivized Research Survey Platform">
     <meta property="og:image" content="{{ asset('images/landing/formigo.png') }}">
-    
+
     <!-- Dynamic page title -->
     <title>{{ $title ?? 'Formigo' }}</title>
 
     <!-- Vite assets (CSS and JS) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     <!-- Livewire styles -->
-    @livewireStyles <!-- Required Livewire styles -->
-    
-    <!-- External scripts for confetti and sweetalert2 -->
+    @livewireStyles
+
+    <!-- External scripts -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <!-- Google Fonts: Roboto -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 
-    {{-- Script to manage scroll restoration and scroll to top on page load --}}
+    <!-- Scroll behavior script -->
     <script>
-        // Check if browser supports scroll restoration
         if (history.scrollRestoration) {
-            history.scrollRestoration = 'manual'; // Disable automatic scroll restoration
+            history.scrollRestoration = 'manual';
         } else {
-            // Fallback for older browsers: scroll to top before unload
             window.onbeforeunload = function () {
                 window.scrollTo(0, 0);
             }
         }
-        window.scrollTo(0,0); // Ensure scroll to top for all browsers
+        window.scrollTo(0,0);
     </script>
 
-    {{-- Inline styles for body font and mobile menu behavior --}}
+    <!-- Inline styles -->
     <style>
-         /* Set the default font for the entire body */
-         body {
-        font-family: 'roboto', sans-serif;
+        body {
+            font-family: 'Roboto', sans-serif;
         }
 
-        /* Styles to prevent the body from scrolling when the mobile menu is open */
         body.no-scroll {
-            overflow: hidden; /* Hide scrollbars */
-            position: fixed; /* Fix the body position */
-            width: 100%; /* Ensure full width */
-            height: 100%; /* Ensure full height */
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
         }
-        
-        /* Make the mobile menu background solid white */
+
         .mobile-menu {
-            background-color: #ffffff; /* Solid white background */
+            background-color: #ffffff;
         }
     </style>
+
 </head>
 <body>
 

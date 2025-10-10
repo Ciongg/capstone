@@ -13,6 +13,7 @@ use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\InboxController; 
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Middleware\NoCacheForLivewireTmp;
+use \App\Http\Controllers\GoogleAuthController;
 
 // ============================================================================
 // PUBLIC ROUTES (No authentication required)
@@ -58,18 +59,22 @@ Route::get('/register', [RegisteredUserController::class, 'create'])
 Route::get('/voucher/verify/{reference_no}', [VoucherController::class, 'verify'])
     ->name('voucher.verify');
 
-// Survey answering routes (require authentication)
-Route::middleware('auth')->group(function () {
-    Route::get('/surveys/answer/{survey:uuid}', [SurveyController::class, 'answer'])->name('surveys.answer')->missing(function () {
+// Survey answering routes - register the middleware directly for these routes
+Route::get('/surveys/answer/{survey:uuid}', [SurveyController::class, 'answer'])
+    ->name('surveys.answer')
+    ->middleware(\App\Http\Middleware\SurveyAccessMiddleware::class)  // Register middleware directly
+    ->missing(function () {
         abort(404, 'The requested page could not be found.');
     });
-    Route::post('/surveys/answer/{survey:uuid}', [SurveyController::class, 'submit'])->name('surveys.submit');
-});
+    
+Route::post('/surveys/answer/{survey:uuid}', [SurveyController::class, 'submit'])
+    ->name('surveys.submit')
+    ->middleware(\App\Http\Middleware\SurveyAccessMiddleware::class);  // Register middleware directly
 
 // Google OAuth Signup
-Route::get('/auth/google/redirect', [\App\Http\Controllers\GoogleAuthController::class, 'redirect'])->name('google.redirect');
-Route::get('/auth/google/callback', [\App\Http\Controllers\GoogleAuthController::class, 'callback'])->name('google.callback');
-Route::post('/auth/google/consent', [\App\Http\Controllers\GoogleAuthController::class, 'consent'])->name('google.consent');
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+Route::post('/auth/google/consent', [GoogleAuthController::class, 'consent'])->name('google.consent');
 
 // Privacy Policy and Terms of Use pages
 Route::get('/policies/privacy-policy', function () {
@@ -79,6 +84,20 @@ Route::get('/policies/privacy-policy', function () {
 Route::get('/policies/terms-of-use', function () {
     return view('terms-of-use');
 })->name('terms-of-use');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ============================================================================
 // AUTHENTICATED ROUTES (Requires login)
@@ -151,25 +170,6 @@ Route::middleware(['auth'])->group(function () {
         abort(404, 'The requested page could not be found.');
     });
 });
-
-// Respondent Routes (can also be accessed by other roles)
-Route::middleware(['auth', 'role:respondent,researcher,institution_admin,super_admin'])->group(function () {
-    // Add respondent-specific routes here
-    // Most authenticated routes are available to all user types
-});
-
-// If you serve storage via Laravel (not via Nginx directly)
-Route::middleware([NoCacheForLivewireTmp::class])->group(function () {
-    Route::get('storage/livewire-tmp/{file}', function ($file) {
-        // ...your file serving logic...
-    });
-    // Optionally, add other routes that serve temp files
-});
-
-// Remove auth middleware from Livewire temp file route (for debugging only)
-Route::get('/livewire/preview-file/{filename}', function ($filename) {
-    // ...your logic to serve the file...
-})->withoutMiddleware(['auth']);
 
 // ============================================================================
 // CATCH-ALL ROUTE (Handle undefined routes with user-friendly message)

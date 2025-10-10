@@ -268,7 +268,7 @@ class UserViewModal extends Component
                     'type' => 'voucher_activity',
                     'action' => $actionType . ' Voucher',
                     'details' => "{$voucherName} - Status: {$userVoucher->status}",
-                    'created_at' => $timestamp,
+                    'created_at' => $timestamp ?: now(), // Fallback to current time if null
                 ];
             });
             

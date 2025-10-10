@@ -25,6 +25,7 @@ class VoucherManager extends Component
         'reward-error' => '$refresh',
         'rewardDeleted' => '$refresh',
         'voucherCreated' => '$refresh',
+        'show-notification' => 'handleNotification',
     ];
 
     public function filterByType($type)
@@ -36,6 +37,13 @@ class VoucherManager extends Component
     public function updatedSearchTerm()
     {
          $this->dispatch('$refresh');
+    }
+
+    public function handleNotification($data)
+    {
+        if (isset($data['refresh']) && $data['refresh'] === true) {
+            // The component will refresh
+        }
     }
 
     public function render()

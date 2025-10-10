@@ -38,22 +38,29 @@
             @this.on('questionAdded', ({ questionId, pageId }) => {
                 selectedQuestionId = questionId;
                 activePageId = pageId;
-                console.log('Alpine received questionAdded:', questionId, pageId);
+    
             });
 
             @this.on('pageAdded', ({ pageId }) => {
                 activePageId = pageId;
                 selectedQuestionId = null;
-                console.log('Alpine received pageAdded:', pageId);
 
-             
             });
 
             @this.on('pageSelected', ({ pageId }) => {
 
                 selectedQuestionId = null;
                 activePageId = pageId;
-                console.log('Alpine received pageSelected:', pageId);
+
+            });
+            
+            // Add event listener for survey structure updates
+            @this.on('surveyStructureUpdated', () => {
+                // Reload the survey pages and structure
+                @this.loadPages();
+                // Reset selection
+                selectedQuestionId = null;
+                activePageId = null;
             });
         });
 
@@ -108,8 +115,6 @@
             <span class="block sm:inline">{{ session('success') }}</span>
         </div>
     @endif
-    {{-- Error alerts for publish are now handled by SweetAlert2 --}}
-    
     
     <!-- Sticky Survey Navbar - Always accessible -->
     @include('livewire.surveys.form-builder.partials.survey-navbar')
@@ -123,6 +128,17 @@
         />
     </x-modal>
 
+    <!-- AI Generator Modal - Add this new modal -->
+    <x-modal name="survey-generator-modal-{{ $survey->id }}" title="AI Survey Generator">
+        <livewire:surveys.form-builder.modal.survey-generator-modal 
+            :survey="$survey" 
+            :key="'generator-modal-' . $survey->id . '-' . $survey->updated_at->timestamp" 
+        />
+    </x-modal>
+      <!-- Add this right below the main heading or at an appropriate location in your form builder template -->
+    <div class="w-full">
+        @livewire('surveys.form-builder.survey-generation-status', ['surveyId' => $survey->id])
+    </div>
     <!-- Wrapper for survey content - disabled when survey is locked or ongoing/finished -->
     <div @class([
         'relative', // Always relative
@@ -228,6 +244,8 @@
             @endforeach
         </div>
     </div> <!-- End of wrapper for interactive elements -->
+
+  
 </div>
 
 @push('scripts')

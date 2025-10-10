@@ -15,6 +15,41 @@ use App\Services\TestTimeService;
 
 class SurveyController extends Controller
 {
+    /**
+     * Check if user can access the survey as owner or collaborator
+     */
+    protected function canAccessSurvey($survey)
+    {
+        $user = auth()->user();
+        
+        // Super admins and institution admins can access all surveys
+        if ($user->isSuperAdmin() || $user->type === 'institution_admin') {
+            return true;
+        }
+        
+        // Owner can access
+        if ($survey->user_id === $user->id) {
+            return true;
+        }
+        
+        // Collaborators can access
+        if ($survey->isCollaborator($user)) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Check if user has already answered this survey
+     */
+    protected function hasUserAnsweredSurvey($survey, $userId)
+    {
+        return Response::where('survey_id', $survey->id)
+            ->where('user_id', $userId)
+            ->exists();
+    }
+
     public function create(Request $request, $surveyId = null)
     {
         $user = Auth::user();
@@ -33,9 +68,9 @@ class SurveyController extends Controller
                 abort(404, 'The requested survey could not be found.');
             }
 
-            // Only super_admin can access all, others only their own
-            if ($user->type !== 'super_admin' && $surveyModel->user_id !== $user->id) {
-                abort(403, 'You do not have permission to access this page.');
+            // Check if user can access this survey (as owner or collaborator)
+            if (!$this->canAccessSurvey($surveyModel)) {
+                abort(403, 'You do not have permission to access this survey.');
             }
 
             return view('researcher.show-form-builder', ['survey' => $surveyModel]);
@@ -49,69 +84,57 @@ class SurveyController extends Controller
         abort(403, 'You do not have permission to access this page.');
     }
 
+    /**
+     * Show the survey answering form.
+     * Access control is handled by SurveyAccessMiddleware.
+     *
+     * @param Survey $survey
+     * @return \Illuminate\View\View
+     */
     public function answer(Survey $survey)
     {
-        $user = Auth::user();
-        
-        // Check if the logged-in user is the owner of this survey
-        if ($survey->user_id === Auth::id()) {
-            abort(403, 'You cannot answer your own survey.');
-        }
-        
-        // Check if survey is locked by admin
-        if ($survey->isLocked()) {
-            abort(403, 'This survey has been locked by an administrator.');
-        }
-
-        // Check if survey is not started yet - using TestTimeService for consistency
-        if ($survey->start_date && TestTimeService::now()->lt($survey->start_date)) {
-            $start = \Carbon\Carbon::parse($survey->start_date)->format('M j, Y g:i A');
-            abort(403, "This survey will start accepting responses on $start.");
-        }
-        
-        // Check if survey is expired - using TestTimeService for consistency
-        if ($survey->end_date && TestTimeService::now()->gt($survey->end_date)) {
-            abort(403, 'This survey has expired and is no longer accepting responses.');
-        }
-        
-        // Check if target respondents reached
-        if ($survey->target_respondents && $survey->responses()->count() >= $survey->target_respondents) {
-            abort(403, 'This survey has reached its maximum number of responses.');
-        }
-        
-        // Check for demographic matching if it's an advanced survey
-        if ($survey->type === 'advanced') {
-            $userTagIds = $user->tags()->pluck('tags.id')->toArray();
-            $surveyTagIds = $survey->tags()->pluck('tags.id')->toArray();
+        // If the user is authenticated, perform additional checks
+        if (Auth::check()) {
+            $user = Auth::user();
             
-            // If the survey has tags but user doesn't match any of them
-            if (!empty($surveyTagIds) && empty(array_intersect($userTagIds, $surveyTagIds))) {
-                abort(403, 'You do not meet the demographic requirements for this advanced survey.');
+            // Don't allow the creator to answer their own survey
+            if ($survey->user_id == $user->id) {
+                abort(403, 'You cannot answer your own survey.');
             }
             
-            // Check institution tags if survey is institution only
-            if ($survey->is_institution_only) {
-                $userInstitutionTagIds = $user->institutionTags()->pluck('institution_tags.id')->toArray();
-                $surveyInstitutionTagIds = $survey->institutionTags()->pluck('institution_tags.id')->toArray();
-                
-                if (!empty($surveyInstitutionTagIds) && empty(array_intersect($userInstitutionTagIds, $surveyInstitutionTagIds))) {
-                    abort(403, 'This survey is restricted to specific institutions that you are not a part of.');
-                }
+            // Don't allow collaborators to answer the survey
+            if ($survey->isCollaborator($user)) {
+                abort(403, 'You cannot answer a survey you collaborate on.');
+            }
+            
+            // Don't allow users who have already answered the survey
+            if ($this->hasUserAnsweredSurvey($survey, $user->id)) {
+                abort(403, 'You have already answered this survey.');
             }
         }
         
-        // Check if user has already answered this survey
-        $existingResponse = Response::where('survey_id', $survey->id)
-                                   ->where('user_id', $user->id)
-                                   ->first();
-        
-        if ($existingResponse) {
-            // User has already answered, show the "already answered" interface
-            return view('respondent.show-already-answered', compact('survey', 'existingResponse'));
-        }
-        
-        $survey->load('pages.questions.choices');
+        // Allow access if all checks pass or if the user is a guest with guest access enabled
         return view('respondent.show-answer-form', compact('survey'));
+    }
+
+    /**
+     * Handle form submission.
+     */
+    public function submit(Survey $survey, Request $request)
+    {
+        // Form submission is handled by Livewire, but we should still do validation checks
+        if (Auth::check()) {
+            $user = Auth::user();
+            
+            // Check if user is eligible to submit
+            if ($survey->user_id == $user->id || 
+                $survey->isCollaborator($user) || 
+                $this->hasUserAnsweredSurvey($survey, $user->id)) {
+                abort(403, 'You are not eligible to submit a response to this survey.');
+            }
+        }
+        
+        return back();
     }
 
     public function showAnswerForm(Survey $survey, $isPreview = false): View
@@ -119,18 +142,9 @@ class SurveyController extends Controller
         $user = Auth::user();
 
         if ($isPreview) {
-            // Only allow super_admin to preview any survey
-            // Institution admin can preview surveys owned by users in their institution
-            // Others only their own
-            $surveyOwner = $survey->user;
-            if ($user->type === 'super_admin') {
-                // allow
-            } elseif ($user->type === 'institution_admin') {
-                if (!$surveyOwner || $surveyOwner->institution_id !== $user->institution_id) {
-                    abort(403, 'You do not have permission to access this page.');
-                }
-            } elseif ($survey->user_id !== $user->id) {
-                abort(403, 'You do not have permission to access this page.');
+            // For previews, check if user can access as owner or collaborator
+            if (!$this->canAccessSurvey($survey)) {
+                abort(403, 'You do not have permission to preview this survey.');
             }
         }
 
@@ -154,7 +168,6 @@ class SurveyController extends Controller
     {
         $user = Auth::user();
 
-        // Only allow owner of the survey
         // Find survey by UUID instead of ID
         $survey = Survey::where('uuid', $surveyId)->first();
 
@@ -163,8 +176,9 @@ class SurveyController extends Controller
             abort(404, 'The requested survey could not be found.');
         }
 
-        if ($survey->user_id !== $user->id) {
-            abort(403, 'You do not have permission to access this page.');
+        // Check if user can access this survey (as owner or collaborator)
+        if (!$this->canAccessSurvey($survey)) {
+            abort(403, 'You do not have permission to view responses for this survey.');
         }
 
         return view('researcher.show-form-responses', compact('survey'));
@@ -172,11 +186,9 @@ class SurveyController extends Controller
 
     public function showIndividualResponses(Survey $survey): View
     {
-        $user = Auth::user();
-
-        // Only allow owner of the survey
-        if ($survey->user_id !== $user->id) {
-            abort(403, 'You do not have permission to access this page.');
+        // Check if user can access this survey (as owner or collaborator)
+        if (!$this->canAccessSurvey($survey)) {
+            abort(403, 'You do not have permission to view individual responses for this survey.');
         }
 
         return view('researcher.show-individual-responses', ['surveyId' => $survey->id]);
@@ -187,5 +199,35 @@ class SurveyController extends Controller
         return view('respondent.show-own-response', compact('survey', 'response'));
     }
 
-}
+    /**
+     * Show the survey answering form for guest users (only if allowed)
+     */
+    public function guestAnswer(Survey $survey)
+    {
+        // Check if the survey allows guest responses
+        if (!$survey->is_guest_allowed) {
+            abort(403, 'This survey requires login to participate.');
+        }
+        
+        // Flag to show guest access notice on the survey page
+        session()->flash('guest_survey_access', true);
+        
+        return view('respondent.show-answer-form', [
+            'survey' => $survey,
+        ]);
+    }
 
+    /**
+     * Handle submission of a survey for guest users (only if allowed)
+     */
+    public function guestSubmit(Survey $survey, Request $request)
+    {
+        // Check if the survey allows guest responses
+        if (!$survey->is_guest_allowed) {
+            abort(403, 'This survey does not allow guest responses.');
+        }
+        
+        // The actual submission is handled by the Livewire component
+        return back();
+    }
+}

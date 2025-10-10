@@ -104,6 +104,7 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'first_name' => 'John',
             'last_name' => 'Doe',
+            'phone_number' => '09516322710',
             'email' => 'johndoe@nu.edu.ph',
             'password' => Hash::make('password123'),
             'type' => 'researcher',
@@ -139,6 +140,52 @@ class DatabaseSeeder extends Seeder
             'is_accepted_terms' => true,
             'is_accepted_privacy_policy' => true,
         ]);
+
+        
+        User::factory()->create([
+            'first_name' => 'active',
+            'last_name' => 'user',
+            'email' => 'active@example.com',
+            'password' => Hash::make('password123'),
+            'type' => 'respondent',
+            'institution_id' => null,
+            'is_active' => true, 
+            'last_active_at' => now(), 
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
+        ]);
+
+        User::factory()->create([
+            'first_name' => 'inactive',
+            'last_name' => 'user',
+            'email' => 'inactive@example.com',
+            'password' => Hash::make('password123'),
+            'type' => 'respondent',
+            'institution_id' => null,
+            'is_active' => false, 
+            'last_active_at' => now()->subDays(30), // Set a past date instead of null
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
+        ]);
+
+         
+        $archivedUser = User::factory()->create([
+            'first_name' => 'archived',
+            'last_name' => 'user',
+            'email' => 'archived@example.com',
+            'password' => Hash::make('password123'),
+            'type' => 'respondent',
+            'institution_id' => null,
+            'is_active' => false, 
+            'last_active_at' => now()->subDays(60), // Set a past date instead of null
+            'is_accepted_terms' => true,
+            'is_accepted_privacy_policy' => true,
+        ]);
+
+        //soft-delete (archive) the user
+        $archivedUser->delete();
+
+
 
         // Updated seeder order - SurveyTopicSeeder before SurveySeeder
         $this->call([
