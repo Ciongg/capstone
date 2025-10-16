@@ -264,7 +264,7 @@
             showCancelButton: true,
             confirmButtonColor: event.detail.confirmButtonColor || '#3085d6',
             cancelButtonColor: event.detail.cancelButtonColor || '#d33',
-            confirmButtonText: event.detail.confirmButtonText || 'Yes'
+            confirmButtonText: event.detail.confirmButtonText || 'Confirm'
         }).then((result) => {
             if (result.isConfirmed) {
                 // Call the specified Livewire action

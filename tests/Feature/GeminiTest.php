@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Http;
 
 it('can call the Gemini API and get a response', function () {
     $apiKey = config('services.gemini.api_key');
-    $endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . $apiKey;
+    $endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . $apiKey;
 
     $payload = [
         'contents' => [

@@ -51,27 +51,37 @@ class ForgotPassword extends Component
     {
         try {
             $this->validate();
-        } catch (\Illuminate\Validation\ValidatpionException $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
             $errors = $e->validator->errors();
             
             // Check for specific email errors
             if ($errors->has('email')) {
-                if (str_contains($errors->first('email'), 'required')) {
+                $errorMessage = $errors->first('email');
+                
+                if (str_contains($errorMessage, 'required')) {
                     $this->dispatch('validation-error', [
                         'message' => 'Please enter your email address.'
                     ]);
                     return;
                 }
                 
-                if (str_contains($errors->first('email'), 'valid email')) {
+                if (str_contains($errorMessage, 'valid email')) {
                     $this->dispatch('validation-error', [
                         'message' => 'Please enter a valid email address.'
                     ]);
                     return;
                 }
                 
-                // Modified: More direct check for the exists rule failure
-                // Laravel typically uses "The selected email is invalid" for exists rule failures
+                // Check if the error is from the exists rule
+                // Laravel's exists rule typically returns "The selected {field} is invalid."
+                if (str_contains($errorMessage, 'invalid') || str_contains($errorMessage, 'selected')) {
+                    $this->dispatch('email-not-found', [
+                        'message' => 'This email address is not registered in our system.'
+                    ]);
+                    return;
+                }
+                
+                // Default email error
                 $this->dispatch('email-not-found', [
                     'message' => 'This email address is not registered in our system.'
                 ]);

@@ -310,39 +310,63 @@ class ManageVoucherModal extends Component
         ]);
     }
     
-    public function confirmDelete()
-    {
-        $this->dispatch('show-confirmation', [
-            'title' => 'Delete Reward?',
-            'message' => 'Are you sure you want to delete this reward? This action cannot be undone.',
-            'icon' => 'warning',
-            'confirmButtonText' => 'Yes, delete it!',
-            'confirmButtonColor' => '#d33',
-            'action' => 'deleteReward'
-        ]);
-    }
-
     public function deleteReward()
     {
-        $reward = Reward::findOrFail($this->rewardId);
+        // Log to browser console for debugging
+        $this->js("console.log('deleteReward method called for reward ID: {$this->rewardId}')");
         
-        // Use a transaction to batch DB operations
-        \DB::transaction(function() use ($reward) {
-            // Delete all available vouchers for this reward
-            \App\Models\Voucher::where('reward_id', $reward->id)
-                ->where('availability', 'available')
-                ->delete();
-            $reward->delete();
-        });
-        
-        // Dispatch a notification event
-        $this->dispatch('show-notification', [
-            'type' => 'success',
-            'title' => 'Reward Deleted',
-            'message' => 'The reward has been successfully deleted.',
-            'closeModal' => 'manage-voucher-modal',
-            'refresh' => true
-        ]);
+        try {
+            $reward = Reward::findOrFail($this->rewardId);
+            
+            // Debug log
+            $this->js("console.log('Found reward:', " . json_encode([
+                'id' => $reward->id, 
+                'name' => $reward->name,
+                'type' => $reward->type
+            ]) . ")");
+            
+            // Use a transaction to batch DB operations
+            \DB::transaction(function() use ($reward) {
+                // Delete all available vouchers for this reward
+                $voucherCount = Voucher::where('reward_id', $reward->id)
+                    ->where('availability', 'available')
+                    ->count();
+                    
+                // Debug log
+                $this->js("console.log('Found {$voucherCount} vouchers to delete')");
+                
+                // Delete vouchers and reward
+                Voucher::where('reward_id', $reward->id)
+                    ->where('availability', 'available')
+                    ->delete();
+                    
+                $reward->delete();
+                
+                // Debug log
+                $this->js("console.log('Deleted reward and vouchers successfully')");
+            });
+            
+            // Dispatch a notification event
+            $this->dispatch('show-notification', [
+                'type' => 'success',
+                'title' => 'Reward Deleted',
+                'message' => 'The reward has been successfully deleted.',
+                'closeModal' => 'manage-voucher-modal',
+                'refresh' => true
+            ]);
+            
+            $this->js("console.log('Dispatched success notification')");
+        } catch (\Exception $e) {
+            // Log error to console
+            $this->js("console.error('Error deleting reward:', " . json_encode($e->getMessage()) . ")");
+            
+            $this->dispatch('show-notification', [
+                'type' => 'error',
+                'title' => 'Error',
+                'message' => 'Failed to delete reward: ' . $e->getMessage(),
+                'closeModal' => false
+            ]);
+        }
     }
     
     // Add this method to control when the component updates

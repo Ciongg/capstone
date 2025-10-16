@@ -15,8 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckUserRole::class,
         ]);
 
-        // Only append to web group so it runs after authentication
-        $middleware->web(\App\Http\Middleware\UpdateLastActiveAt::class);
+        // Removed the UpdateLastActiveAt middleware
 
         // Trust all proxies (required for HTTPS detection on Render.com)
         $middleware->trustProxies(at: '*');
