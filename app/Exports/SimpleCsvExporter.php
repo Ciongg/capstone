@@ -34,8 +34,8 @@ class SimpleCsvExporter
             // Add BOM for Excel UTF-8 compatibility
             fputs($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
             
-            // Create CSV headers
-            $headers = ['Respondent ID', 'Submitted At', 'User ID', 'Trust Score', 
+            // Create CSV headers - removed User ID
+            $headers = ['Respondent No.', 'Submitted At', 'Trust Score', 
                        'Completion Time (seconds)', 'Started At', 'Completed At'];
             
             // Add question headers with numbering
@@ -65,22 +65,23 @@ class SimpleCsvExporter
                 ->orderBy('created_at')
                 ->get();
 
+            $respondentNumber = 1; // Counter for sequential numbering of respondents
+
             foreach ($responses as $response) {
                 // Safely handle potentially null snapshot
                 $snapshot = $response->snapshot;
                 
                 $row = [
-                    $response->id,
-                    $response->created_at->format('Y-m-d H:i:s'),
-                    $response->user_id ?? 'Guest',
+                    $respondentNumber++, // Sequential numbering instead of ID
+                    $response->created_at->format('d/m/Y h:i A'), // Changed date format
                 ];
                 
                 // Add snapshot data with null checks
                 if ($snapshot) {
                     $row[] = $snapshot->trust_score ?? 'N/A';
                     $row[] = $snapshot->completion_time_seconds ?? 'N/A';
-                    $row[] = $snapshot->started_at ? date('Y-m-d H:i:s', strtotime($snapshot->started_at)) : 'N/A';
-                    $row[] = $snapshot->completed_at ? date('Y-m-d H:i:s', strtotime($snapshot->completed_at)) : 'N/A';
+                    $row[] = $snapshot->started_at ? date('d/m/Y h:i A', strtotime($snapshot->started_at)) : 'N/A';
+                    $row[] = $snapshot->completed_at ? date('d/m/Y h:i A', strtotime($snapshot->completed_at)) : 'N/A';
                 } else {
                     // Add placeholder values if snapshot is null
                     $row[] = 'N/A';

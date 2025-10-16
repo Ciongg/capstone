@@ -1,4 +1,5 @@
 <form wire:submit.prevent="save" class="space-y-6" x-data="{
+    fileName: '',
     confirmProfileSave() {
         Swal.fire({
             title: 'Confirm Profile Update',

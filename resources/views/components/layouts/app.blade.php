@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 
     <!-- Ensure HTTPS assets load properly -->
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    {{-- <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"> --}}
 
     <!-- Laravel CSRF token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -18,7 +18,7 @@
 
     <!-- Mobile & web app support -->
     <meta name="theme-color" content="#ffffff">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Formigo">
 
@@ -220,6 +220,7 @@
                                             <a href="/admin/reward-redemptions" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->routeIs('admin.reward-redemptions.index')) }} hover:bg-gray-100">Manage Rewards</a>
                                             <a href="/admin/users" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/users*')) }} hover:bg-gray-100">Manage Users</a>
                                             <a href="/admin/requests" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/requests')) }} hover:bg-gray-100">Manage Support Requests</a>
+                                            <a href="/admin/tags" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/tags')) }} hover:bg-gray-100">Manage Tags</a>
                                         </div>
                                     </div>
                                 @endif
@@ -375,6 +376,7 @@
                             <a href="/admin/reward-redemptions" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->routeIs('admin.reward-redemptions.index')) }} hover:text-[#03b8ff]">Manage Rewards</a>
                             <a href="/admin/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/users*')) }} hover:text-[#03b8ff]">Manage Users</a>
                             <a href="/admin/requests" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/requests')) }} hover:text-[#03b8ff]">Manage Support Requests</a>
+                            <a href="/admin/tags" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/tags')) }} hover:text-[#03b8ff]">Manage Tags</a>
                         </div>
                     @endif
                 @endauth

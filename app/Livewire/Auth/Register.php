@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Institution;
 use App\Models\EmailVerification;
 use App\Services\BrevoService;
+use App\Services\TestTimeService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -29,7 +30,7 @@ class Register extends Component
     public bool $showSuccess = false;
     public bool $resendCooldown = false;
     public int $resendCooldownSeconds = 0;
-
+    
     protected function rules(): array
     {
         return [
@@ -237,6 +238,7 @@ class Register extends Component
                 'email_verified_at' => now(),
                 'is_accepted_terms' => true,
                 'is_accepted_privacy_policy' => true,
+                'last_active_at' => TestTimeService::now(), // Set last_active_at on registration
             ]);
 
             // Delete the email verification record

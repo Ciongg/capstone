@@ -103,6 +103,16 @@ class SuperAdminController extends Controller
         return view('super-admin.show-analytics');
     }
 
+     /**
+     * Show the analytics dashboard page.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function tagsIndex()
+    {
+        return view('super-admin.show-tags');
+    }
+
     /**
      * Show the survey management page.
      *

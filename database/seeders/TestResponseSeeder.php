@@ -7,9 +7,11 @@ use App\Models\Answer;
 use App\Models\Survey;
 use App\Models\SurveyQuestion;
 use App\Models\SurveyChoice;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Faker\Factory as Faker;
+use Carbon\Carbon;
 
 class TestResponseSeeder extends Seeder
 {
@@ -22,6 +24,12 @@ class TestResponseSeeder extends Seeder
         
         // Get user ID (Miguel Inciong)
         $userId = 7;
+        $user = User::find($userId);
+        
+        if (!$user) {
+            $this->command->error("User with ID {$userId} not found. Please check the user ID.");
+            return;
+        }
         
         // Set number of responses to create per survey
         $responsesPerSurvey = 30;
@@ -49,12 +57,22 @@ class TestResponseSeeder extends Seeder
             
             // Create responses for this survey
             for ($i = 0; $i < $responsesPerSurvey; $i++) {
-                // Create response record
+                // Calculate a random time taken between 2-20 minutes (in seconds)
+                $timeTakenSeconds = $faker->numberBetween(120, 1200);
+                
+                // Generate random start and completion times
+                $completedAt = Carbon::now()->subDays($faker->numberBetween(1, 30));
+                $startedAt = (clone $completedAt)->subSeconds($timeTakenSeconds);
+                
+                // Create response record (without timing data)
                 $response = Response::create([
                     'user_id' => $userId,
                     'survey_id' => $survey->id,
                     'reported' => false,
                 ]);
+                
+                // Create response snapshot with user data and timing information
+                $this->createResponseSnapshot($response, $user, $startedAt, $completedAt, $timeTakenSeconds, $faker);
                 
                 // Answer each question in this survey
                 foreach ($questions as $question) {
@@ -99,7 +117,77 @@ class TestResponseSeeder extends Seeder
             }
         }
         
-        $this->command->info("Created responses for all surveys successfully!");
+        $this->command->info("Created responses for all surveys successfully with timing data!");
+    }
+    
+    /**
+     * Create response snapshot with timing data and demographic tags
+     */
+    private function createResponseSnapshot($response, $user, $startedAt, $completedAt, $timeTakenSeconds, $faker)
+    {
+        // Generate mock demographic tags
+        $demographicTags = $this->generateMockDemographicTags($faker);
+
+        // Create the response snapshot with pre-encoded JSON
+        $response->snapshot()->create([
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'trust_score' => $user->trust_score ?? 100,
+            'points' => $user->points ?? 0,
+            'account_level' => $user->account_level ?? 1,
+            'experience_points' => $user->experience_points ?? 0,
+            'rank' => $user->rank ?? 'silver',
+            'title' => $user->title ?? '0',
+            'started_at' => $startedAt,
+            'completed_at' => $completedAt,
+            'completion_time_seconds' => $timeTakenSeconds,
+            'demographic_tags' => json_encode($demographicTags), // Explicitly encode as JSON string
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+    
+    /**
+     * Generate mock demographic tags based on TagSeeder data
+     */
+    private function generateMockDemographicTags($faker)
+    {
+        // Get all tag categories
+        $categories = DB::table('tag_categories')->get();
+        
+        // Get all tags with their categories
+        $allTags = DB::table('tags')
+            ->select('tags.id', 'tags.name', 'tags.tag_category_id', 'tag_categories.name as category_name')
+            ->join('tag_categories', 'tag_categories.id', '=', 'tags.tag_category_id')
+            ->get()
+            ->groupBy('category_name');
+            
+        $demographicTags = [];
+        
+        // For each category, pick a random tag (or sometimes none)
+        foreach ($categories as $category) {
+            // Skip some categories occasionally (20% chance)
+            if ($faker->boolean(20)) {
+                continue;
+            }
+            
+            // Get tags for this category
+            $tagsInCategory = $allTags->get($category->name);
+            
+            if ($tagsInCategory && $tagsInCategory->count() > 0) {
+                // Special handling for multiple choice categories (pick one)
+                $selectedTag = $tagsInCategory->random();
+                
+                // Add the selected tag to demographic_tags in the format used by AnswerSurvey
+                $demographicTags[] = [
+                    'id' => $selectedTag->id,
+                    'name' => $selectedTag->name,
+                    'category_id' => $selectedTag->tag_category_id
+                ];
+            }
+        }
+        
+        return $demographicTags;
     }
     
     /**

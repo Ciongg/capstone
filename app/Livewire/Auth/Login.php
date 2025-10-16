@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Institution;
 use App\Models\User;
 use Illuminate\Support\Str;
+use App\Services\TestTimeService;
 
 class Login extends Component
 {
@@ -147,6 +148,9 @@ class Login extends Component
 
         // Get the authenticated user
         $user = Auth::user();
+        
+        // Update last_active_at timestamp on successful login
+        $user->forceFill(['last_active_at' => TestTimeService::now()])->save();
         
         // If the user was inactive, reactivate their account
         if (!$user->is_active) {

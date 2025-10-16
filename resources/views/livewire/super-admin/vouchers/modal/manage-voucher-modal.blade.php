@@ -240,7 +240,7 @@
                                             icon: 'question',
                                             showCancelButton: true,
                                             confirmButtonColor: '#10b981',
-                                            cancelButtonColor: '#aaa',
+                                            cancelButtonColor: '#708090',
                                             confirmButtonText: 'Yes, add stock!'
                                         }).then((result) => {
                                             if (result.isConfirmed) {
@@ -326,7 +326,21 @@
                     <button
                         type="button"
                         class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md"
-                        wire:click="confirmDelete"
+                        x-data
+                        x-on:click="Swal.fire({
+                            title: 'Delete Reward?',
+                            text: 'This action cannot be undone. The reward will be deleted along with all unredeemed vouchers. Vouchers already redeemed by users will remain in their history.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#708090',
+                            confirmButtonText: 'Confirm'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                console.log('User confirmed deletion, calling deleteReward directly');
+                                $wire.deleteReward();
+                            }
+                        })"
                     >
                         Delete
                     </button>
@@ -346,4 +360,3 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @endpush
-                        

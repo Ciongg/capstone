@@ -26,8 +26,8 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             @forelse($surveys as $survey)
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden flex flex-col">
-                    {{-- Survey Image --}}
-                    <a href="{{ route('surveys.create', $survey->uuid) }}" class="block w-full h-36">
+                    {{-- Survey Image - fixed height --}}
+                    <a href="{{ route('surveys.create', $survey->uuid) }}" class="block w-full h-36 flex-shrink-0">
                         @if($survey->image_path)
                             <img src="{{ asset('storage/' . $survey->image_path) }}"
                                  alt="Survey image for {{ $survey->title }}"
@@ -39,54 +39,64 @@
                         @endif
                     </a>
 
-                    {{-- Survey Content --}}
-                    <div class="p-3 flex-grow">
-                        <h3 class="text-base font-semibold mb-1 text-gray-800 hover:text-blue-600 transition duration-150 ease-in-out">
-                            <a href="{{ route('surveys.create', $survey->uuid) }}">{{ $survey->title }}</a>
-                        </h3>
-                        <p class="text-gray-600 text-sm mb-2 truncate" title="{{ $survey->description }}">
-                            {{ $survey->description ?? 'No description available.' }}
-                        </p>
-
-                        {{-- Details Section --}}
-                        <div class="flex justify-between items-center text-xs mt-2 mb-2">
-                            {{-- Survey Status (Left) --}}
-                            <div>
-                                <span @class([
-                                    'inline-flex items-center h-6 px-2 py-0.5 font-semibold rounded-full',
-                                    'bg-gray-100 text-gray-700' => $survey->status === 'pending',
-                                    'bg-blue-100 text-blue-700' => $survey->status === 'published',
-                                    'bg-amber-100 text-amber-700' => $survey->status === 'ongoing',
-                                    'bg-green-100 text-green-700' => $survey->status === 'finished',
-                                    'bg-red-100 text-red-800' => $survey->status === 'closed',
-                                    'bg-gray-100 text-gray-800' => !in_array($survey->status, ['pending', 'published', 'ongoing', 'finished', 'closed']),
-                                ])>
-                                    {{ ucfirst($survey->status) }}
-                                </span>
+                    {{-- Survey Content - simplified structure --}}
+                    <div class="p-3 flex flex-col flex-grow">
+                        {{-- Main content area with fixed heights for each section --}}
+                        <div class="flex-grow">
+                            {{-- Title with fixed height --}}
+                            <div class="h-12 mb-1">
+                                <h3 class="text-base font-semibold text-gray-800 hover:text-blue-600 transition duration-150 ease-in-out line-clamp-2 overflow-hidden">
+                                    <a href="{{ route('surveys.create', $survey->uuid) }}" title="{{ $survey->title }}">{{ $survey->title }}</a>
+                                </h3>
+                            </div>
+                            
+                            {{-- Description with fixed height --}}
+                            <div class="h-10 mb-2">
+                                <p class="text-gray-600 text-sm line-clamp-2 overflow-hidden" title="{{ $survey->description }}">
+                                    {{ $survey->description ?? 'No description available.' }}
+                                </p>
                             </div>
 
-                            {{-- Respondent Count (Center) --}}
-                            <div class="flex items-center text-gray-600" title="Number of Responses / Target Respondents">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                                <span>{{ $survey->responses_count ?? 0 }}/{{ $survey->target_respondents > 0 ? $survey->target_respondents : '∞' }}</span>
-                            </div>
+                            {{-- Details Section - Status badges with fixed height --}}
+                            <div class="h-8 flex justify-between items-center text-xs">
+                                {{-- Survey Status (Left) --}}
+                                <div>
+                                    <span @class([
+                                        'inline-flex items-center h-6 px-2 py-0.5 font-semibold rounded-full',
+                                        'bg-gray-100 text-gray-700' => $survey->status === 'pending',
+                                        'bg-blue-100 text-blue-700' => $survey->status === 'published',
+                                        'bg-amber-100 text-amber-700' => $survey->status === 'ongoing',
+                                        'bg-green-100 text-green-700' => $survey->status === 'finished',
+                                        'bg-red-100 text-red-800' => $survey->status === 'closed',
+                                        'bg-gray-100 text-gray-800' => !in_array($survey->status, ['pending', 'published', 'ongoing', 'finished', 'closed']),
+                                    ])>
+                                        {{ ucfirst($survey->status) }}
+                                    </span>
+                                </div>
 
-                            {{-- Survey Type (Right) --}}
-                            <div>
-                                <span @class([
-                                    'inline-flex items-center h-6 px-2 py-0.5 font-semibold rounded-full',
-                                    'bg-blue-100 text-blue-700' => $survey->type === 'basic',
-                                    'bg-purple-100 text-purple-700' => $survey->type !== 'basic',
-                                ])>
-                                    {{ ucfirst($survey->type) }}
-                                </span>
+                                {{-- Respondent Count (Center) --}}
+                                <div class="flex items-center text-gray-600" title="Number of Responses / Target Respondents">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    <span>{{ $survey->responses_count ?? 0 }}/{{ $survey->target_respondents > 0 ? $survey->target_respondents : '∞' }}</span>
+                                </div>
+
+                                {{-- Survey Type (Right) --}}
+                                <div>
+                                    <span @class([
+                                        'inline-flex items-center h-6 px-2 py-0.5 font-semibold rounded-full',
+                                        'bg-blue-100 text-blue-700' => $survey->type === 'basic',
+                                        'bg-purple-100 text-purple-700' => $survey->type !== 'basic',
+                                    ])>
+                                        {{ ucfirst($survey->type) }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         
-                        {{-- Actions --}}
-                        <div class="mt-3 flex justify-between items-center">
+                        {{-- Actions - Always at the bottom --}}
+                        <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
                             {{-- Open Button --}}
                             <a href="{{ route('surveys.create', $survey->uuid) }}"
                                class="px-2.5 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
@@ -116,8 +126,21 @@
 
                             {{-- Delete Button --}}
                             <button
-                                wire:click="deleteSurvey({{ $survey->id }})"
-                                wire:confirm="Are you sure you want to delete this survey and all its data?"
+                                x-data
+                                x-on:click="Swal.fire({
+                                    title: 'Are you sure?',
+                                    text: 'You won\'t be able to revert this! All survey data including responses will be deleted.',
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#ef4444',
+                                    cancelButtonColor: '#708090',
+                                    confirmButtonText: 'Yes, delete it!',
+                                    cancelButtonText: 'Cancel'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        $wire.deleteSurvey({{ $survey->id }})
+                                    }
+                                })"
                                 class="p-1 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                                 title="Delete Survey"
                             >
@@ -158,8 +181,8 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             @forelse($sharedSurveys as $survey)
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden flex flex-col">
-                    {{-- Survey Image --}}
-                    <a href="{{ route('surveys.create', $survey->uuid) }}" class="block w-full h-36">
+                    {{-- Survey Image - fixed height --}}
+                    <a href="{{ route('surveys.create', $survey->uuid) }}" class="block w-full h-36 flex-shrink-0">
                         @if($survey->image_path)
                             <img src="{{ asset('storage/' . $survey->image_path) }}"
                                  alt="Survey image for {{ $survey->title }}"
@@ -171,63 +194,70 @@
                         @endif
                     </a>
 
-                    {{-- Survey Content --}}
-                    <div class="p-3 flex-grow">
-                        <div class="flex justify-between items-center mb-1">
-                            <h3 class="text-base font-semibold text-gray-800 hover:text-blue-600 transition duration-150 ease-in-out">
-                                <a href="{{ route('surveys.create', $survey->uuid) }}">{{ $survey->title }}</a>
-                            </h3>
-                            <span class="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full">Collaborator</span>
-                        </div>
-                        
-                        {{-- Owner info --}}
-                        <div class="text-xs text-gray-500 mb-2">
-                            <span>Owner: {{ $survey->user ? ($survey->user->first_name . ' ' . $survey->user->last_name) : 'Unknown' }}</span>
-                        </div>
-                        
-                        <p class="text-gray-600 text-sm mb-2 truncate" title="{{ $survey->description }}">
-                            {{ $survey->description ?? 'No description available.' }}
-                        </p>
-
-                        {{-- Details Section --}}
-                        <div class="flex justify-between items-center text-xs mt-2 mb-2">
-                            {{-- Survey Status (Left) --}}
-                            <div>
-                                <span @class([
-                                    'inline-flex items-center h-6 px-2 py-0.5 font-semibold rounded-full',
-                                    'bg-gray-100 text-gray-700' => $survey->status === 'pending',
-                                    'bg-blue-100 text-blue-700' => $survey->status === 'published',
-                                    'bg-amber-100 text-amber-700' => $survey->status === 'ongoing',
-                                    'bg-green-100 text-green-700' => $survey->status === 'finished',
-                                    'bg-red-100 text-red-800' => $survey->status === 'closed',
-                                    'bg-gray-100 text-gray-800' => !in_array($survey->status, ['pending', 'published', 'ongoing', 'finished', 'closed']),
-                                ])>
-                                    {{ ucfirst($survey->status) }}
-                                </span>
+                    {{-- Survey Content - simplified structure --}}
+                    <div class="p-3 flex flex-col flex-grow">
+                        {{-- Main content area with fixed heights for each section --}}
+                        <div class="flex-grow">
+                            {{-- Title and Collaborator badge with fixed height --}}
+                            <div class="h-12 flex justify-between items-start mb-1">
+                                <h3 class="text-base font-semibold text-gray-800 hover:text-blue-600 transition duration-150 ease-in-out line-clamp-2 overflow-hidden flex-grow mr-2" title="{{ $survey->title }}">
+                                    <a href="{{ route('surveys.create', $survey->uuid) }}">{{ $survey->title }}</a>
+                                </h3>
+                                <span class="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full flex-shrink-0">Collaborator</span>
+                            </div>
+                            
+                            {{-- Owner info with fixed height --}}
+                            <div class="h-5 text-xs text-gray-500 mb-1 overflow-hidden whitespace-nowrap text-ellipsis">
+                                <span title="Owner: {{ $survey->user ? ($survey->user->first_name . ' ' . $survey->user->last_name) : 'Unknown' }}">Owner: {{ $survey->user ? ($survey->user->first_name . ' ' . $survey->user->last_name) : 'Unknown' }}</span>
+                            </div>
+                            
+                            {{-- Description with fixed height --}}
+                            <div class="h-10 mb-2">
+                                <p class="text-gray-600 text-sm line-clamp-2 overflow-hidden" title="{{ $survey->description }}">
+                                    {{ $survey->description ?? 'No description available.' }}
+                                </p>
                             </div>
 
-                            {{-- Respondent Count (Center) --}}
-                            <div class="flex items-center text-gray-600" title="Number of Responses / Target Respondents">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                                <span>{{ $survey->responses_count ?? 0 }}/{{ $survey->target_respondents > 0 ? $survey->target_respondents : '∞' }}</span>
-                            </div>
+                            {{-- Details Section - Status badges with fixed height --}}
+                            <div class="h-8 flex justify-between items-center text-xs">
+                                {{-- Survey Status (Left) --}}
+                                <div>
+                                    <span @class([
+                                        'inline-flex items-center h-6 px-2 py-0.5 font-semibold rounded-full',
+                                        'bg-gray-100 text-gray-700' => $survey->status === 'pending',
+                                        'bg-blue-100 text-blue-700' => $survey->status === 'published',
+                                        'bg-amber-100 text-amber-700' => $survey->status === 'ongoing',
+                                        'bg-green-100 text-green-700' => $survey->status === 'finished',
+                                        'bg-red-100 text-red-800' => $survey->status === 'closed',
+                                        'bg-gray-100 text-gray-800' => !in_array($survey->status, ['pending', 'published', 'ongoing', 'finished', 'closed']),
+                                    ])>
+                                        {{ ucfirst($survey->status) }}
+                                    </span>
+                                </div>
 
-                            {{-- Survey Type (Right) --}}
-                            <div>
-                                <span @class([
-                                    'inline-flex items-center h-6 px-2 py-0.5 font-semibold rounded-full',
-                                    'bg-blue-100 text-blue-700' => $survey->type === 'basic',
-                                    'bg-purple-100 text-purple-700' => $survey->type !== 'basic',
-                                ])>
-                                    {{ ucfirst($survey->type) }}
-                                </span>
+                                {{-- Respondent Count (Center) --}}
+                                <div class="flex items-center text-gray-600" title="Number of Responses / Target Respondents">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    <span>{{ $survey->responses_count ?? 0 }}/{{ $survey->target_respondents > 0 ? $survey->target_respondents : '∞' }}</span>
+                                </div>
+
+                                {{-- Survey Type (Right) --}}
+                                <div>
+                                    <span @class([
+                                        'inline-flex items-center h-6 px-2 py-0.5 font-semibold rounded-full',
+                                        'bg-blue-100 text-blue-700' => $survey->type === 'basic',
+                                        'bg-purple-100 text-purple-700' => $survey->type !== 'basic',
+                                    ])>
+                                        {{ ucfirst($survey->type) }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         
-                        {{-- Actions - Updated to match owned surveys layout --}}
-                        <div class="mt-3 flex justify-between items-center">
+                        {{-- Actions - Always at the bottom --}}
+                        <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
                             {{-- Open Button --}}
                             <a href="{{ route('surveys.create', $survey->uuid) }}"
                                class="px-2.5 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
@@ -274,3 +304,7 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@endpush
