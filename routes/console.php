@@ -16,3 +16,4 @@ Schedule::command('app:handle-inactive-users')->daily();
 Schedule::command('app:handle-announcement-dates')->everyThirtyMinutes();
 Schedule::command('app:handle-survey-status')->everyThirtyMinutes();
 Schedule::command('app:handle-expired-rewards')->hourly(); // Run the voucher expiration check hourly
+Schedule::command('app:handle-low-trust-score-users')->everyFourHours(); // Archive users with low trust scores daily

@@ -219,6 +219,12 @@
                 confirmButtonColor: '#3085d6',
             });
         });
+        
+        // Add listener for force refresh events
+        Livewire.on('forceVoucherIndexRefresh', () => {
+            // Force component refresh
+            Livewire.dispatch('refresh');
+        });
     });
 </script>
 @endpush

@@ -124,7 +124,18 @@
 
         <!-- Answer Button -->
         <div class="flex justify-center sm:justify-end flex-shrink-0">
-            @if($survey->is_not_started_locked ?? false)
+            @if($survey->is_trust_score_locked ?? false)
+                <!-- Locked due to low trust score -->
+                <button 
+                    class="flex items-center w-full sm:w-auto justify-center px-4 sm:px-6 py-3 sm:py-2 bg-gray-300 text-gray-600 font-semibold rounded-lg cursor-not-allowed text-sm sm:text-base"
+                    disabled
+                >
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                    Low Trust Score
+                </button>
+            @elseif($survey->is_not_started_locked ?? false)
                 <!-- Locked due to survey not started yet -->
                 <button 
                     class="flex items-center w-full sm:w-auto justify-center px-4 sm:px-6 py-3 sm:py-2 bg-gray-300 text-gray-600 font-semibold rounded-lg cursor-not-allowed text-sm sm:text-base"

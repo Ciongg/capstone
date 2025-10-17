@@ -1,8 +1,20 @@
 <div
+    x-data="{
+        refreshMainPage: function() {
+            if (window.location.pathname === '/vouchers') {
+                Livewire.dispatch('refresh');
+                // As a fallback, attempt a full page refresh after a delay if needed
+                setTimeout(function() {
+                    window.location.reload();
+                }, 2000);
+            }
+        }
+    }"
     @if($userVoucher && $userVoucher->status === 'active')
         wire:poll.1000ms="updateTimer"
     @else
         wire:poll.5000ms="checkVoucherStatus"
+        x-init="$wire.on('voucherStatusChanged', () => { refreshMainPage(); })"
     @endif
 >
     @if($userVoucher)
@@ -222,4 +234,23 @@
         <div class="p-4 text-center text-gray-500">Voucher not found.</div>
     @endif
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('livewire:initialized', () => {
+        // Listen for forced refresh events from checkVoucherStatus
+        Livewire.on('forceVoucherIndexRefresh', () => {
+            if (window.location.pathname === '/vouchers') {
+                // Try Livewire refresh first
+                Livewire.dispatch('refresh');
+                
+                // As a fallback, do a full page reload after a short delay
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1000);
+            }
+        });
+    });
+</script>
+@endpush
 

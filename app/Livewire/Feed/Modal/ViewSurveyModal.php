@@ -19,7 +19,7 @@ class ViewSurveyModal extends Component
         $this->survey = Survey::with(['responses'])->findOrFail($surveyId);
 
         // Skip if already locked
-        if (isset($this->survey->is_demographic_locked) && isset($this->survey->is_institution_locked) && isset($this->survey->is_expired_locked) && isset($this->survey->is_response_limit_locked) && isset($this->survey->is_not_started_locked)) {
+        if (isset($this->survey->is_demographic_locked) && isset($this->survey->is_institution_locked) && isset($this->survey->is_expired_locked) && isset($this->survey->is_response_limit_locked) && isset($this->survey->is_not_started_locked) && isset($this->survey->is_trust_score_locked)) {
             return;
         }
 
@@ -27,6 +27,13 @@ class ViewSurveyModal extends Component
         $userInstitutionId = $user?->institution_id;
         
         $now = TestTimeService::now();
+
+        // Trust Score Lock - Check if user's trust score is too low (<=40)
+        if ($user && $user->trust_score <= 40) {
+            $this->survey->is_trust_score_locked = true;
+        } else {
+            $this->survey->is_trust_score_locked = false;
+        }
 
         // Not Started Lock - Check if start date is in the future
         if ($this->survey->start_date && $this->survey->start_date > $now) {

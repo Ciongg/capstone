@@ -680,6 +680,9 @@ class AnswerSurvey extends Component
             if ($this->survey->status === 'published') {
                 $this->survey->status = 'ongoing';
                 $this->survey->save();
+                
+                // Create a survey snapshot if this is the first response
+                $this->createSurveySnapshot();
             }
 
             // Get started_at from component property and completed_at from current time
@@ -760,15 +763,33 @@ class AnswerSurvey extends Component
                 $this->saveAnswerForQuestion($response, $question, $answerValue);
             }
 
-            // Award points to user if authenticated and points are configured
+            // Track if points were awarded
+            $pointsAwarded = false;
+            
+            // Award points to user if authenticated, has sufficient trust score, and points are configured
             if ($user && $this->survey->points_allocated > 0) {
-                $user->points = ($user->points ?? 0) + $this->survey->points_allocated;
-                if ($user instanceof User) {
-                    try {
-                        $user->save();
-                    } catch (\Exception $e) {
-                        Log::error("Error saving user points for user ID: {$user->id}. Error: " . $e->getMessage());
+                // Only award points if trust score is above 70
+                if ($user->trust_score > 70) {
+                    $user->points = ($user->points ?? 0) + $this->survey->points_allocated;
+                    $pointsAwarded = true;
+                    if ($user instanceof User) {
+                        try {
+                            $user->save();
+                        } catch (\Exception $e) {
+                            Log::error("Error saving user points for user ID: {$user->id}. Error: " . $e->getMessage());
+                        }
                     }
+                }
+            }
+            
+            // Award +1 trust score to authenticated users
+            if ($user) {
+                try {
+                    $user->trust_score = ($user->trust_score ?? 0) + 1;
+                    $user->save();
+                    Log::info("Increased trust score by 1 for user ID: {$user->id}");
+                } catch (\Exception $e) {
+                    Log::error("Error updating trust score for user ID: {$user->id}. Error: " . $e->getMessage());
                 }
             }
 
@@ -829,7 +850,7 @@ class AnswerSurvey extends Component
 
             DB::commit();
 
-            // Set different success messages for guest vs authenticated users
+            // Set different success messages based on user state and trust score
             if (!Auth::check()) {
                 $this->dispatch('surveySubmitted', [
                     'title' => 'Survey Completed!',
@@ -838,6 +859,16 @@ class AnswerSurvey extends Component
                     'surveyName' => $this->survey->title,
                     'xp' => 0,
                     'isGuest' => true
+                ]);
+            } else if ($user->trust_score <= 70) {
+                $this->dispatch('surveySubmitted', [
+                    'title' => 'Survey Completed!',
+                    'message' => 'Thank you for completing the survey. No points were awarded due to your current trust score being 70 or below.',
+                    'points' => 0,
+                    'surveyName' => $this->survey->title,
+                    'xp' => 100,
+                    'isGuest' => false,
+                    'lowTrustScore' => true  // Add explicit flag
                 ]);
             } else {
                 $this->dispatch('surveySubmitted', [
@@ -859,6 +890,78 @@ class AnswerSurvey extends Component
                 'error' => $e->getTraceAsString()
             ]);
             throw $e;
+        }
+    }
+    
+    /**
+     * Create a snapshot of the survey's current state including demographic tags
+     */
+    protected function createSurveySnapshot()
+    {
+        // Check if a snapshot already exists
+        if ($this->survey->snapshot()->exists()) {
+            return;
+        }
+        
+        try {
+            // Load tags and topic if not already loaded
+            if (!$this->survey->relationLoaded('tags')) {
+                $this->survey->load('tags');
+            }
+            
+            // Load the topic relation if it exists
+            if (!$this->survey->relationLoaded('topic')) {
+                $this->survey->load('topic');
+            }
+            
+            // Create demographic tags JSON
+            $demographicTags = [];
+            foreach ($this->survey->tags as $tag) {
+                $demographicTags[] = [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'category_id' => $tag->tag_category_id,
+                    'category_name' => $tag->category ? $tag->category->name : null
+                ];
+            }
+            
+            // Get survey topic information
+            $topicData = null;
+            if ($this->survey->topic) {
+                $topicData = [
+                    'id' => $this->survey->topic->id,
+                    'name' => $this->survey->topic->name
+                ];
+            }
+            
+            // Create additional metadata
+            $metadata = [
+                'type' => $this->survey->type,
+                'is_institution_only' => $this->survey->is_institution_only,
+                'start_date' => $this->survey->start_date ? $this->survey->start_date->toDateTimeString() : null,
+                'end_date' => $this->survey->end_date ? $this->survey->end_date->toDateTimeString() : null,
+                'survey_topic' => $topicData,
+            ];
+            
+            // Create the snapshot
+            $this->survey->snapshot()->create([
+                'title' => $this->survey->title,
+                'description' => $this->survey->description,
+                'target_respondents' => $this->survey->target_respondents,
+                'points_allocated' => $this->survey->points_allocated,
+                'demographic_tags' => $demographicTags,
+                'first_response_at' => TestTimeService::now(),
+                'metadata' => $metadata
+            ]);
+            
+            Log::info('Created survey snapshot', ['survey_id' => $this->survey->id]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to create survey snapshot: ' . $e->getMessage(), [
+                'survey_id' => $this->survey->id,
+                'error' => $e->getTraceAsString()
+            ]);
+            // Don't throw the exception - continue with response creation
         }
     }
 

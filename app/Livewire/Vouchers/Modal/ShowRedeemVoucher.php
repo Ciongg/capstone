@@ -151,8 +151,12 @@ class ShowRedeemVoucher extends Component
             ->where('id', $this->userVoucherId)
             ->first();
             
+        // Always dispatch refresh event on every check to ensure parent stays updated
+        $this->dispatch('forceVoucherIndexRefresh');
+            
         // If status changed, update local data and view
         if ($latestVoucher && $latestVoucher->status !== $this->userVoucher->status) {
+            $previousStatus = $this->userVoucher->status;
             $this->userVoucher = $latestVoucher;
             
             // If now used or expired, update view
@@ -160,6 +164,14 @@ class ShowRedeemVoucher extends Component
                 $this->showQrCodeView = true;
                 $this->timeRemaining = '00:00';
                 $this->isExpired = true;
+                
+                // Dispatch multiple events to ensure parent component gets notified
+                $this->dispatch('redeemVoucher'); 
+                $this->dispatch('voucherStatusChanged', [
+                    'voucherId' => $this->userVoucherId, 
+                    'oldStatus' => $previousStatus,
+                    'newStatus' => $this->userVoucher->status
+                ]);
             }
             
             return true; // Status changed
@@ -168,6 +180,13 @@ class ShowRedeemVoucher extends Component
         // If still active, update timer
         if ($this->userVoucher && $this->userVoucher->status === UserVoucher::STATUS_ACTIVE) {
             $this->calculateTimeRemaining();
+            
+            // Check if timer just expired during this check
+            if ($this->isExpired && $this->userVoucher->status === UserVoucher::STATUS_ACTIVE) {
+                // Status should be updated to expired, dispatch events
+                $this->dispatch('redeemVoucher');
+                $this->dispatch('voucherStatusChanged', ['voucherId' => $this->userVoucherId]);
+            }
         }
         
         return false; // No change in status

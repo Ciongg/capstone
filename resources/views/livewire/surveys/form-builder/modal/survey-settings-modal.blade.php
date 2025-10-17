@@ -1,4 +1,12 @@
 <div x-data="{ tab: 'info', isDisabled: @js(in_array($survey->status, ['ongoing', 'finished'])) }" class="space-y-4 p-4">
+    
+    <!-- Snapshot notice - show when viewing historical data -->
+    @if($isOngoingWithSnapshot)
+    <div class="mb-4 bg-amber-50 border-l-4 border-amber-400 text-amber-700 p-4" role="alert">
+        <p class="font-semibold">Historical Data Notice</p>
+        <p class="text-sm">This survey has ongoing responses. You are viewing demographic data from when the first response was received. Changes to demographics will not affect already collected responses.</p>
+    </div>
+    @endif
 
     <!-- Tab Buttons -->
     <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mb-4 w-full">
@@ -336,11 +344,20 @@
             <div>
                 <label for="survey-topic-{{ $survey->id }}" class="block font-semibold mb-1">Survey Topic</label>
                 <select id="survey-topic-{{ $survey->id }}" wire:model.defer="survey_topic_id" class="w-full border rounded px-3 py-2" x-bind:disabled="isDisabled">
-                    <option value="">Select a Topic</option>
+                    @if($deletedTopicName)
+                        <option value="">{{ $deletedTopicName }} (deleted)</option>
+                    @else
+                        <option value="">Select a Topic</option>
+                    @endif
                     @foreach($topics as $topic)
                         <option value="{{ $topic->id }}">{{ $topic->name }}</option>
                     @endforeach
                 </select>
+                @if($deletedTopicName)
+                    <p class="mt-1 text-xs text-amber-600">
+                        <span class="font-medium">Note:</span> The original topic was deleted after this survey was created.
+                    </p>
+                @endif
                 @error('survey_topic_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
@@ -701,7 +718,7 @@
                 if (typeof event.isInstitutionOnly !== 'undefined') {
 
                     // Get the Alpine component for the modal
-                    const modalComponent = Alpine.$data(document.querySelector('[x-data*="tab"]'));
+                    const modalComponent = Alpine.$data(document.querySelector('[x-data*="tab"]));
                 
                 } 
                 else if (!event.isInstitutionOnly && Alpine.$data(document.querySelector('[x-data*="tab"]')).tab === 'institution_demographics') {

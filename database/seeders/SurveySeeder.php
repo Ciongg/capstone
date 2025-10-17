@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Faker\Factory as Faker;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
+use Carbon\Carbon;
 
 class SurveySeeder extends Seeder
 {
@@ -232,7 +233,7 @@ class SurveySeeder extends Seeder
         }
         
         // Create 10 random surveys
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 3; $i++) {
             $surveyStatus = 'published';
             // Change to 30% probability for advanced surveys, 70% for basic
             $surveyType = $faker->boolean(30) ? 'advanced' : 'basic';
@@ -373,9 +374,71 @@ class SurveySeeder extends Seeder
                     }
                 }
             }
+            
+            // Create survey snapshot for testing purposes
+            $this->createSurveySnapshot($survey, $surveyTopics);
         }
         
-        $this->command->info('Created x surveys with structured academic content!');
+        $this->command->info('Created 3 surveys with structured academic content and snapshots!');
+    }
+    
+    /**
+     * Create a survey snapshot for a given survey
+     * 
+     * @param Survey $survey The survey to create a snapshot for
+     * @param Collection $surveyTopics Collection of survey topics
+     */
+    protected function createSurveySnapshot($survey, $surveyTopics)
+    {
+        try {
+            // Load tags and survey topics
+            $survey->load('tags');
+            $survey->load('topic');
+            
+            // Create demographic tags JSON
+            $demographicTags = [];
+            foreach ($survey->tags as $tag) {
+                $demographicTags[] = [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'category_id' => $tag->tag_category_id,
+                    'category_name' => $tag->category ? $tag->category->name : null
+                ];
+            }
+            
+            // Get survey topic information
+            $topicData = null;
+            if ($survey->topic) {
+                $topicData = [
+                    'id' => $survey->topic->id,
+                    'name' => $survey->topic->name
+                ];
+            }
+            
+            // Create additional metadata
+            $metadata = [
+                'type' => $survey->type,
+                'is_institution_only' => $survey->is_institution_only ?? false,
+                'start_date' => $survey->start_date ? $survey->start_date->toDateTimeString() : null,
+                'end_date' => $survey->end_date ? $survey->end_date->toDateTimeString() : null,
+                'survey_topic' => $topicData,
+            ];
+            
+            // Create the snapshot
+            $survey->snapshot()->create([
+                'title' => $survey->title,
+                'description' => $survey->description,
+                'target_respondents' => $survey->target_respondents,
+                'points_allocated' => $survey->points_allocated,
+                'demographic_tags' => $demographicTags,
+                'first_response_at' => Carbon::now(),
+                'metadata' => $metadata
+            ]);
+            
+            $this->command->info('Created survey snapshot for survey ID: ' . $survey->id);
+            
+        } catch (\Exception $e) {
+            $this->command->error('Failed to create survey snapshot: ' . $e->getMessage());
+        }
     }
 }
-          

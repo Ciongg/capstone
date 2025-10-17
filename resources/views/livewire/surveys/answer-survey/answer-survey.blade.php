@@ -141,13 +141,17 @@
                                (data.points === 0 && data.xp === 0) ||
                                {{ Auth::check() ? 'false' : 'true' }};
             
-            console.log("Is guest user:", isGuestUser);
+            // Check for low trust score - explicitly flagged from backend
+            const isLowTrustScore = data.lowTrustScore === true;
             
-            // Different HTML based on whether user is a guest or not
+            console.log("Is guest user:", isGuestUser);
+            console.log("Is low trust score:", isLowTrustScore);
+            
+            // Different HTML based on user type (guest, low trust, or regular)
             let contentHtml;
             
+            // Guest user case
             if (isGuestUser) {
-                // Guest user message
                 contentHtml = `
                     <div class="p-2">
                         <div class="mb-4 text-center">
@@ -162,8 +166,30 @@
                         </div>
                     </div>
                 `;
-            } else {
-                // Authenticated user message with points and XP
+            }
+            // Low trust score case
+            else if (isLowTrustScore) {
+                const xpBox = `<div class="flex items-center justify-center bg-blue-100 text-blue-700 px-4 py-2 rounded-full shadow mx-auto w-fit font-bold text-lg">+${data.xp} XP</div>`;
+                
+                contentHtml = `
+                    <div class="p-2">
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="flex flex-row items-center justify-center mb-2">
+                                ${xpBox}
+                            </div>
+                            <div class="text-center text-base text-gray-600 mt-2">
+                                for completing "${data.surveyName}"
+                            </div>
+                            <div class="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 text-sm rounded">
+                                <p>Due to your trust score being below 70, you've earned XP but no points.</p>
+                                <p class="mt-1">Complete more surveys to increase your trust score!</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            // Regular authenticated user case
+            else {
                 const pointsBox = data.points > 0 ? `
                     <div class="flex items-center justify-center bg-gradient-to-r from-red-600 via-orange-400 to-yellow-300 px-4 py-2 rounded-full shadow-lg mx-auto w-fit">
                         <span class="font-bold text-white drop-shadow text-lg">${data.points}</span>
@@ -172,7 +198,7 @@
                         </svg>
                     </div>
                 ` : '';
-                const xpBox = `<div class="flex items-center justify-center bg-blue-100 text-blue-700 px-4 py-2 rounded-full shadow mx-auto w-fit font-bold text-lg">+100 XP</div>`;
+                
                 contentHtml = `
                     <div class="p-2">
                         <div class="flex flex-col items-center justify-center">

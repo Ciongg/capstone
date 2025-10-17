@@ -61,11 +61,31 @@ class SupportRequestViewModal extends Component
         }
     }
 
+    // Add a computed property to determine if the request is locked
+    public function getIsLockedProperty()
+    {
+        if (!$this->supportRequest) {
+            return false;
+        }
+        
+        return in_array($this->supportRequest->status, ['resolved', 'rejected']);
+    }
+
     public function updateRequest(TrustScoreService $trustScoreService)
     {
+        // Prevent updates if the request is already resolved or rejected
+        if ($this->getIsLockedProperty()) {
+            $this->dispatch('notify', [
+                'message' => "This support request is locked and cannot be modified because it has been {$this->supportRequest->status}.",
+                'type' => 'error',
+            ]);
+            return;
+        }
+        
         $this->validate();
         
         $statusChanged = $this->supportRequest->status !== $this->status;
+        $notesChanged = $this->supportRequest->admin_notes !== $this->adminNotes;
         $wasResolved = $this->status === 'resolved' && $this->supportRequest->status !== 'resolved';
         $wasRejected = $this->status === 'rejected' && $this->supportRequest->status !== 'rejected';
         $previousStatus = $this->supportRequest->status;
@@ -207,9 +227,9 @@ class SupportRequestViewModal extends Component
             }
         }
         
-        // Send inbox notification if status changed
-        if ($statusChanged && $this->supportRequest->user_id) {
-            $this->sendStatusUpdateNotification($previousStatus);
+        // Send inbox notification if status changed OR admin notes changed
+        if (($statusChanged || $notesChanged) && $this->supportRequest->user_id) {
+            $this->sendStatusUpdateNotification($previousStatus, $statusChanged, $notesChanged);
         }
         
         $this->dispatch('supportRequestUpdated', $this->supportRequest->id);
@@ -227,7 +247,7 @@ class SupportRequestViewModal extends Component
         $this->loadSupportRequest();
     }
     
-    private function sendStatusUpdateNotification($previousStatus)
+    private function sendStatusUpdateNotification($previousStatus, $statusChanged, $notesChanged)
     {
         $requestTypeText = ucfirst(str_replace('_', ' ', $this->supportRequest->request_type));
         $newStatusText = ucfirst(str_replace('_', ' ', $this->status));
@@ -236,10 +256,30 @@ class SupportRequestViewModal extends Component
             ? $this->adminNotes 
             : 'No admin comment';
         
+        // Create a subject line appropriate to what changed
+        $subject = "";
+        if ($statusChanged && $notesChanged) {
+            $subject = "Support Request Update - {$requestTypeText} #{$this->supportRequest->id} - Status: {$newStatusText}";
+        } elseif ($statusChanged) {
+            $subject = "Support Request Status Update - {$requestTypeText} #{$this->supportRequest->id} - Status: {$newStatusText}";
+        } else { // Only notes changed
+            $subject = "Support Request Update - {$requestTypeText} #{$this->supportRequest->id}";
+        }
+        
+        // Create a message body appropriate to what changed
+        $messageBody = "";
+        if ($statusChanged) {
+            $messageBody = "Your Support Request for {$requestTypeText} has been updated to status: {$newStatusText}\n\n";
+        } else {
+            $messageBody = "Your Support Request for {$requestTypeText} has been updated with new information.\n\n";
+        }
+        
+        $messageBody .= "Admin Notes:\n{$adminNotesText}";
+        
         InboxMessage::create([
             'recipient_id' => $this->supportRequest->user_id,
-            'subject' => "Support Request Status Update - {$requestTypeText} #{$this->supportRequest->id} - Status: {$newStatusText}" ,
-            'message' => "Your Support Request for {$requestTypeText} has been updated to: {$newStatusText}\n\nAdmin Notes:\n{$adminNotesText}",
+            'subject' => $subject,
+            'message' => $messageBody,
             'read_at' => null
         ]);
     }

@@ -1,4 +1,11 @@
 <div>
+    <!-- Success message -->
+    @if(session()->has('message'))
+        <div class="mt-2 text-xs text-green-700 bg-green-100 p-2 rounded">
+            {{ session('message') }}
+        </div>
+    @endif
+    
     <!-- User Stats Display -->
     <div class="bg-gray-100 p-3 rounded-md mb-3">
         <!-- Points Display -->
@@ -27,6 +34,11 @@
             @if($userLevel >= 30)
                 <span class="text-purple-600 font-bold">(MAX)</span>
             @endif
+        </div>
+        
+        <!-- Trust Score Display -->
+        <div class="flex items-center justify-between mt-2">
+            <span class="font-semibold text-indigo-600">Trust Score: {{ $userTrustScore }}/100</span>
         </div>
     </div>
     
@@ -253,10 +265,49 @@
         @endif
     </div>
     
-    <!-- Success message -->
-    @if(session()->has('message'))
-        <div class="mt-2 text-xs text-green-700 bg-green-100 p-2 rounded">
-            {{ session('message') }}
-        </div>
-    @endif
+    <!-- Trust Score Controls -->
+    <div class="mb-3">
+        <button 
+            wire:click="toggleTrustScoreControls"
+            class="w-full flex items-center justify-between p-2 bg-indigo-100 hover:bg-indigo-200 rounded-md text-xs font-semibold text-indigo-800"
+        >
+            <span>Trust Score Controls</span>
+            <svg class="w-4 h-4 transform transition-transform {{ $showTrustScoreControls ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+        </button>
+        @if($showTrustScoreControls)
+            <div class="mt-2 p-2 bg-indigo-50 rounded-md">
+                <div class="mb-2">
+                    <div class="text-xs text-indigo-700 mb-1">Decrease Trust Score:</div>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button wire:click="subtractTrustScore(1)" class="px-2 py-1 bg-red-400 text-white text-xs rounded hover:bg-red-500">
+                            -1
+                        </button>
+                        <button wire:click="subtractTrustScore(5)" class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">
+                            -5
+                        </button>
+                        <button wire:click="subtractTrustScore(10)" class="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">
+                            -10
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-indigo-700 mb-1">Set Trust Score:</div>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button wire:click="setTrustScore(100)" class="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                            100
+                        </button>
+                        <button wire:click="setTrustScore(70)" class="px-2 py-1 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600">
+                            70
+                        </button>
+                        <button wire:click="setTrustScore(40)" class="px-2 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600">
+                            40
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endif
+    </div>
+    
 </div>

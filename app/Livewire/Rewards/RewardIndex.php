@@ -65,6 +65,11 @@ class RewardIndex extends Component
         
         $user = Auth::user();
         
+        // Check if user's trust score is too low (70 or below)
+        if ($user->trust_score <= 70) {
+            return true;
+        }
+        
         // Check if user has enough points
         if ($user->points < $reward->cost) {
             return true;
@@ -103,6 +108,64 @@ class RewardIndex extends Component
         
         // All checks passed, button should be enabled
         return false;
+    }
+
+    /**
+     * Get the reason why a reward is disabled
+     * 
+     * @param Reward $reward
+     * @return string
+     */
+    public function getDisabledReason($reward): string
+    {
+        if (!Auth::check()) {
+            return "Please log in";
+        }
+        
+        $user = Auth::user();
+        
+        // Check if user's trust score is too low
+        if ($user->trust_score <= 70) {
+            return "Low Trust Score";
+        }
+        
+        // Check if user has enough points
+        if ($user->points < $reward->cost) {
+            return "Not Enough Points";
+        }
+        
+        // For voucher rewards, check actual available vouchers
+        if ($reward->type == 'voucher' || $reward->type == 'Voucher') {
+            $availableVouchers = \App\Models\Voucher::where('reward_id', $reward->id)
+                ->where('availability', 'available')
+                ->count();
+            if ($availableVouchers <= 0) {
+                return "Out of Stock";
+            }
+        }
+        // For system rewards, check the quantity field
+        else if ($reward->quantity != -1 && $reward->quantity <= 0) {
+            return "Out of Stock";
+        }
+        
+        // Check rank requirements
+        $rankPriority = [
+            'silver' => 1,
+            'gold' => 2,
+            'diamond' => 3
+        ];
+        
+        $userRank = strtolower($user->rank ?? 'silver');
+        $requiredRank = strtolower($reward->rank_requirement ?? 'silver');
+        
+        $userRankPriority = $rankPriority[$userRank] ?? 1;
+        $requiredRankPriority = $rankPriority[$requiredRank] ?? 1;
+        
+        if ($userRankPriority < $requiredRankPriority) {
+            return ucfirst($requiredRank) . " Rank Required";
+        }
+        
+        return "Redeem";
     }
 
     public function handleRedemptionError($message)

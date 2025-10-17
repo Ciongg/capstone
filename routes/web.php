@@ -129,9 +129,8 @@ Route::middleware(['auth', 'role:institution_admin'])->group(function () {
     Route::get('/institution/analytics', [InstitutionAdminController::class, 'analyticsIndex'])->name('institution.analytics');
     Route::get('/institution/users', [InstitutionAdminController::class, 'usersIndex'])->name('institution.users');
     Route::get('/institution/surveys', [InstitutionAdminController::class, 'surveysIndex'])->name('institution.surveys');
-    
-    // Institution admin announcement management
     Route::get('/institution/announcements', [InstitutionAdminController::class, 'announcementIndex'])->name('institution.announcements');
+    Route::get('/institution/tags', [InstitutionAdminController::class, 'tagsIndex'])->name('institution.tags');
 });
 
 // Super Admin Routes

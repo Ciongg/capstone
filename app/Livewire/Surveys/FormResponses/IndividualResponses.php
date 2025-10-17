@@ -30,10 +30,11 @@ class IndividualResponses extends Component
         // Load survey with all related data needed for displaying responses
         $this->survey = Survey::with([
             'responses.user',
-            'responses.snapshot', // Add the snapshot relationship
+            'responses.snapshot', 
             'responses.answers',
             'pages.questions.choices',
-            'tags'
+            'tags',
+            'snapshot' // Add survey snapshot to eager loading
         ])->findOrFail($surveyId);
         
         $this->processCurrentResponseDetails();
@@ -94,18 +95,35 @@ class IndividualResponses extends Component
             // Process demographic matching information from snapshot
             $this->matchedSurveyTagsInfo = [];
             $demographicTags = json_decode($snapshot->demographic_tags, true) ?? [];
-            $surveyTags = $this->survey->tags; // check this survey's tags
+            
+            // Use survey snapshot tags if available, otherwise fall back to current survey tags
+            $surveyTagsData = [];
+            if ($this->survey->snapshot && !empty($this->survey->snapshot->demographic_tags)) {
+                // Use preserved demographic targeting from survey snapshot
+                $surveyTagsData = $this->survey->snapshot->demographic_tags;
+            } else {
+                // Fall back to current survey tags if no snapshot available
+                $surveyTagsData = $this->survey->tags->map(function($tag) {
+                    return [
+                        'id' => $tag->id,
+                        'name' => $tag->name
+                    ];
+                })->toArray();
+            }
+            
             $matchedCount = 0;
             
-            // Find which tags match between snapshot and survey
-            foreach ($surveyTags as $surveyTag) {
+            // Find which tags match between respondent snapshot and survey snapshot
+            foreach ($surveyTagsData as $surveyTag) {
                 $matched = false;
+                $tagId = is_array($surveyTag) ? ($surveyTag['id'] ?? null) : $surveyTag->id;
+                $tagName = is_array($surveyTag) ? ($surveyTag['name'] ?? 'Unknown') : $surveyTag->name;
                 
                 // Check if this survey tag exists in the snapshot's demographic tags
                 foreach ($demographicTags as $demographicTag) {
-                    if (isset($demographicTag['id']) && $demographicTag['id'] === $surveyTag->id) {
+                    if (isset($demographicTag['id']) && $demographicTag['id'] === $tagId) {
                         $this->matchedSurveyTagsInfo[] = [
-                            'name' => $surveyTag->name, 
+                            'name' => $tagName, 
                             'matched' => true
                         ];
                         $matched = true;
@@ -117,16 +135,16 @@ class IndividualResponses extends Component
                 // If no match was found, add it as unmatched
                 if (!$matched) {
                     $this->matchedSurveyTagsInfo[] = [
-                        'name' => $surveyTag->name, 
+                        'name' => $tagName, 
                         'matched' => false
                     ];
                 }
             }
             
             // Set overall match status for display purposes
-            if ($surveyTags->isNotEmpty() && $matchedCount === 0) {
+            if (!empty($surveyTagsData) && $matchedCount === 0) {
                  $this->matchedSurveyTagsInfo['status'] = 'none_matched';
-            } elseif ($surveyTags->isEmpty()) {
+            } elseif (empty($surveyTagsData)) {
                  $this->matchedSurveyTagsInfo['status'] = 'no_target_demographics';
             } else {
                  $this->matchedSurveyTagsInfo['status'] = 'has_matches';
@@ -138,21 +156,37 @@ class IndividualResponses extends Component
             // Process demographic matching using current user data
             $this->matchedSurveyTagsInfo = [];
             $respondentTagIds = $this->respondentUser->tags->pluck('id')->toArray();
-            $surveyTags = $this->survey->tags;
+            
+            // Use survey snapshot tags if available, otherwise fall back to current survey tags
+            $surveyTagsData = [];
+            $isSnapshot = false;
+            
+            if ($this->survey->snapshot && !empty($this->survey->snapshot->demographic_tags)) {
+                // Use preserved demographic targeting from survey snapshot
+                $surveyTagsData = collect($this->survey->snapshot->demographic_tags);
+                $isSnapshot = true;
+            } else {
+                // Fall back to current survey tags
+                $surveyTagsData = $this->survey->tags;
+            }
+            
             $matchedCount = 0;
             
-            foreach ($surveyTags as $surveyTag) {
-                if (in_array($surveyTag->id, $respondentTagIds)) {
-                    $this->matchedSurveyTagsInfo[] = ['name' => $surveyTag->name, 'matched' => true];
+            foreach ($surveyTagsData as $surveyTag) {
+                $tagId = $isSnapshot ? ($surveyTag['id'] ?? null) : $surveyTag->id;
+                $tagName = $isSnapshot ? ($surveyTag['name'] ?? 'Unknown') : $surveyTag->name;
+                
+                if (in_array($tagId, $respondentTagIds)) {
+                    $this->matchedSurveyTagsInfo[] = ['name' => $tagName, 'matched' => true];
                     $matchedCount++;
                 } else {
-                    $this->matchedSurveyTagsInfo[] = ['name' => $surveyTag->name, 'matched' => false];
+                    $this->matchedSurveyTagsInfo[] = ['name' => $tagName, 'matched' => false];
                 }
             }
             
-            if ($surveyTags->isNotEmpty() && $matchedCount === 0) {
+            if ($surveyTagsData->isNotEmpty() && $matchedCount === 0) {
                  $this->matchedSurveyTagsInfo['status'] = 'none_matched';
-            } elseif ($surveyTags->isEmpty()) {
+            } elseif ($surveyTagsData->isEmpty()) {
                  $this->matchedSurveyTagsInfo['status'] = 'no_target_demographics';
             } else {
                  $this->matchedSurveyTagsInfo['status'] = 'has_matches';

@@ -5,8 +5,10 @@ namespace App\Livewire\SuperAdmin\Tags;
 use Livewire\Component;
 use App\Models\Tag;
 use App\Models\TagCategory;
+use App\Models\InstitutionTagCategory;
 use Livewire\WithPagination;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class TagsIndex extends Component
 {
@@ -26,6 +28,13 @@ class TagsIndex extends Component
     public $tagId = null;
     public $tagName = '';
     public $tagCategoryId = null;
+    
+    // User role properties
+    public $isInstitutionAdmin = false;
+    public $institutionId = null;
+    
+    // Add this new property to track if we're working with institution data
+    public $isForInstitution = false;
     
     // Change listeners to remove the delete events since we're now calling the methods directly
     protected function getListeners()
@@ -62,14 +71,27 @@ class TagsIndex extends Component
         }
     }
     
+    public function mount()
+    {
+        $user = Auth::user();
+        $this->isInstitutionAdmin = $user->isInstitutionAdmin();
+        $this->institutionId = $user->institution_id;
+    }
+    
     // Category methods
-    public function openCategoryModal($categoryId = null)
+    public function openCategoryModal($categoryId = null, $isInstitution = false)
     {
         $this->resetErrorBag();
         $this->categoryId = $categoryId;
+        $this->isForInstitution = $isInstitution;
         
         if ($categoryId) {
-            $category = TagCategory::find($categoryId);
+            if ($isInstitution) {
+                $category = InstitutionTagCategory::find($categoryId);
+            } else {
+                $category = TagCategory::find($categoryId);
+            }
+            
             if ($category) {
                 $this->categoryName = $category->name;
             }
@@ -107,37 +129,97 @@ class TagsIndex extends Component
         $this->dispatch('category-saved', $message);
     }
     
+    /**
+     * Save a category for an institution
+     */
+    public function saveInstitutionCategory()
+    {
+        $this->validate([
+            'categoryName' => ['required', 'string', 'max:50', 
+                Rule::unique('institution_tag_categories', 'name')
+                    ->where('institution_id', $this->institutionId)
+                    ->ignore($this->categoryId)],
+        ]);
+        
+        if ($this->categoryId) {
+            // Update existing category
+            $category = InstitutionTagCategory::find($this->categoryId);
+            $category->update([
+                'name' => $this->categoryName,
+                'institution_id' => $this->institutionId
+            ]);
+            $message = 'Category updated successfully!';
+        } else {
+            // Create new category
+            InstitutionTagCategory::create([
+                'name' => $this->categoryName,
+                'institution_id' => $this->institutionId
+            ]);
+            $message = 'Category created successfully!';
+        }
+        
+        // Modal will be closed via the event listener in JavaScript
+        $this->showCategoryModal = false;
+        $this->dispatch('institution-category-saved', $message);
+    }
+    
     // Remove the confirmation methods as they're no longer needed
     // We're handling the confirmation directly in the view
     
     public function deleteCategory($categoryId)
     {
-        $category = TagCategory::find($categoryId);
-        
-        if ($category) {
-            // Check if category has tags
-            if ($category->tags()->count() > 0) {
-                $this->dispatch('category-has-tags');
-                return;
-            }
+        if ($this->isInstitutionAdmin) {
+            $category = InstitutionTagCategory::find($categoryId);
             
-            $category->delete();
-            $this->dispatch('category-deleted');
+            if ($category) {
+                // Check if category has tags
+                if ($category->tags()->count() > 0) {
+                    $this->dispatch('category-has-tags');
+                    return;
+                }
+                
+                $category->delete();
+                $this->dispatch('category-deleted');
+            }
+        } else {
+            $category = TagCategory::find($categoryId);
+            
+            if ($category) {
+                // Check if category has tags
+                if ($category->tags()->count() > 0) {
+                    $this->dispatch('category-has-tags');
+                    return;
+                }
+                
+                $category->delete();
+                $this->dispatch('category-deleted');
+            }
         }
     }
     
     // Tag methods
-    public function openTagModal($categoryId, $tagId = null)
+    public function openTagModal($categoryId, $tagId = null, $isInstitution = false)
     {
         $this->resetErrorBag();
         $this->tagId = $tagId;
         $this->tagCategoryId = $categoryId;
+        $this->isForInstitution = $isInstitution;
         
         if ($tagId) {
-            $tag = Tag::find($tagId);
-            if ($tag) {
-                $this->tagName = $tag->name;
-                $this->tagCategoryId = $tag->tag_category_id;
+            if ($isInstitution) {
+                // Load institution tag
+                $tag = \App\Models\InstitutionTag::find($tagId);
+                if ($tag) {
+                    $this->tagName = $tag->name;
+                    $this->tagCategoryId = $tag->institution_tag_category_id;
+                }
+            } else {
+                // Load global tag
+                $tag = Tag::find($tagId);
+                if ($tag) {
+                    $this->tagName = $tag->name;
+                    $this->tagCategoryId = $tag->tag_category_id;
+                }
             }
         } else {
             $this->tagName = '';
@@ -149,7 +231,24 @@ class TagsIndex extends Component
     public function saveTag()
     {
         $this->validate([
-            'tagName' => ['required', 'string', 'max:50'],
+            'tagName' => [
+                'required', 
+                'string', 
+                'max:50',
+                function ($attribute, $value, $fail) {
+                    // Case-insensitive check for duplicate tag names within the same category
+                    $exists = Tag::where('tag_category_id', $this->tagCategoryId)
+                        ->whereRaw('LOWER(name) = ?', [strtolower($value)])
+                        ->when($this->tagId, function ($query) {
+                            return $query->where('id', '!=', $this->tagId);
+                        })
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('A tag with this name already exists in this category.');
+                    }
+                }
+            ],
             'tagCategoryId' => ['required', 'exists:tag_categories,id'],
         ]);
         
@@ -175,44 +274,155 @@ class TagsIndex extends Component
         $this->dispatch('tag-saved', $message);
     }
     
+    /**
+     * Save a tag for an institution
+     */
+    public function saveInstitutionTag()
+    {
+        $this->validate([
+            'tagName' => [
+                'required', 
+                'string', 
+                'max:50',
+                function ($attribute, $value, $fail) {
+                    // Case-insensitive check for duplicate tag names within the same institution category
+                    $exists = \App\Models\InstitutionTag::where('institution_tag_category_id', $this->tagCategoryId)
+                        ->whereRaw('LOWER(name) = ?', [strtolower($value)])
+                        ->when($this->tagId, function ($query) {
+                            return $query->where('id', '!=', $this->tagId);
+                        })
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('A tag with this name already exists in this category.');
+                    }
+                }
+            ],
+            'tagCategoryId' => ['required', 'exists:institution_tag_categories,id'],
+        ]);
+        
+        // Ensure the category belongs to this institution
+        $category = InstitutionTagCategory::where('id', $this->tagCategoryId)
+            ->where('institution_id', $this->institutionId)
+            ->first();
+        
+        if (!$category) {
+            $this->addError('tagCategoryId', 'The selected category is invalid.');
+            return;
+        }
+        
+        if ($this->tagId) {
+            // Update existing institution tag
+            $tag = \App\Models\InstitutionTag::find($this->tagId);
+            
+            if ($tag) {
+                $tag->update([
+                    'name' => $this->tagName,
+                    'institution_tag_category_id' => $this->tagCategoryId
+                ]);
+                $message = 'Tag updated successfully!';
+            } else {
+                $this->addError('tagId', 'The selected tag could not be found.');
+                return;
+            }
+        } else {
+            // Create new institution tag
+            \App\Models\InstitutionTag::create([
+                'name' => $this->tagName,
+                'institution_tag_category_id' => $this->tagCategoryId
+            ]);
+            $message = 'Tag created successfully!';
+        }
+        
+        // Modal will be closed via the event listener in JavaScript
+        $this->showTagModal = false;
+        $this->dispatch('institution-tag-saved', $message);
+    }
+    
+    // Keep the existing tag deletion method
     public function deleteTag($tagId)
     {
         $tag = Tag::find($tagId);
         
         if ($tag) {
-            // Check if tag is in use (depends on your application)
-            $inUseCount = $tag->surveys()->count() + $tag->users()->count();
+            // Detach tag from users and surveys before deletion
+            $tag->users()->detach();
+            $tag->surveys()->detach();
             
-            if ($inUseCount > 0) {
-                $this->dispatch('tag-in-use');
-                return;
-            }
-            
+            // Delete the tag
             $tag->delete();
+            
+            // Notify user of successful deletion
+            $this->dispatch('tag-deleted');
+        }
+    }
+    
+    // Add method to delete institution tags
+    public function deleteInstitutionTag($tagId)
+    {
+        $tag = \App\Models\InstitutionTag::find($tagId);
+        
+        if ($tag) {
+            // Detach tag from users and surveys before deletion
+            $tag->users()->detach();
+            $tag->surveys()->detach();
+            
+            // Delete the tag
+            $tag->delete();
+            
+            // Notify user of successful deletion
             $this->dispatch('tag-deleted');
         }
     }
     
     public function render()
     {
-        $query = TagCategory::query()->with('tags');
-        
-        if ($this->search) {
-            $query->where('name', 'like', '%' . $this->search . '%')
-                ->orWhereHas('tags', function ($q) {
-                    $q->where('name', 'like', '%' . $this->search . '%');
-                });
+        if ($this->isInstitutionAdmin) {
+            // For institution admins, show only their institution's tag categories
+            $query = InstitutionTagCategory::query()->with('tags')
+                ->where('institution_id', $this->institutionId);
+            
+            if ($this->search) {
+                $query->where('name', 'like', '%' . $this->search . '%')
+                    ->orWhereHas('tags', function ($q) {
+                        $q->where('name', 'like', '%' . $this->search . '%');
+                    });
+            }
+            
+            if ($this->selectedCategory !== 'all') {
+                $query->where('id', $this->selectedCategory);
+            }
+            
+            $categories = $query->orderBy('name')->paginate(10);
+            
+            return view('livewire.super-admin.tags.tags-index', [
+                'categories' => $categories,
+                'allCategories' => InstitutionTagCategory::where('institution_id', $this->institutionId)
+                    ->orderBy('name')->get(),
+                'isInstitutionAdmin' => true,
+            ]);
+        } else {
+            // Original functionality for super admins
+            $query = TagCategory::query()->with('tags');
+            
+            if ($this->search) {
+                $query->where('name', 'like', '%' . $this->search . '%')
+                    ->orWhereHas('tags', function ($q) {
+                        $q->where('name', 'like', '%' . $this->search . '%');
+                    });
+            }
+            
+            if ($this->selectedCategory !== 'all') {
+                $query->where('id', $this->selectedCategory);
+            }
+            
+            $categories = $query->orderBy('name')->paginate(10);
+            
+            return view('livewire.super-admin.tags.tags-index', [
+                'categories' => $categories,
+                'allCategories' => TagCategory::orderBy('name')->get(),
+                'isInstitutionAdmin' => false,
+            ]);
         }
-        
-        if ($this->selectedCategory !== 'all') {
-            $query->where('id', $this->selectedCategory);
-        }
-        
-        $categories = $query->orderBy('name')->paginate(10);
-        
-        return view('livewire.super-admin.tags.tags-index', [
-            'categories' => $categories,
-            'allCategories' => TagCategory::orderBy('name')->get(),
-        ]);
     }
 }

@@ -25,8 +25,6 @@
         @endif
     @endauth
 
-    
-
     {{-- Profile Information Container --}}
     <div class="bg-white rounded-xl shadow-lg overflow-hidden w-full mb-4 mt-8">
         {{-- Banner Image --}}
@@ -72,9 +70,42 @@
                                     <div class="text-sm">{{ $user->institution?->name }}</div>
                                 @endif
                                 <div class="text-sm capitalize">{{ $user?->type ?? 'User' }}</div>
-                                {{-- Trust Score Display --}}
-                                <div class="flex items-center justify-center md:justify-start text-sm mt-1">
-                                    <span class="font-semibold mr-1">Trust Score:</span> {{ $user->trust_score ?? 0 }}/100
+                                
+                                {{-- Trust Score Display with Status --}}
+                                <div class="flex flex-col items-center md:items-start mt-1">
+                                    <div class="flex items-center justify-center md:justify-start text-sm">
+                                        <span class="font-semibold mr-1">Trust Score:</span> {{ $user->trust_score ?? 0 }}/100
+                                        
+                                        {{-- Trust Score Status Indicator --}}
+                                        @php 
+                                            $trustScore = $user->trust_score ?? 0;
+                                        @endphp
+                                        
+                                        @if($trustScore > 70)
+                                            <span class="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">Excellent</span>
+                                        @elseif($trustScore > 40)
+                                            <span class="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">Probationary</span>
+                                        @elseif($trustScore > 20)
+                                            <span class="ml-2 px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-xs">Restricted</span>
+                                        @else
+                                            <span class="ml-2 px-2 py-0.5 bg-gray-100 text-gray-800 rounded-full text-xs">Archived</span>
+                                        @endif
+                                    </div>
+                                    
+                                    {{-- Trust Score Warning Messages --}}
+                                    @if($trustScore <= 70 && $trustScore > 40)
+                                        <div class="mt-1 text-xs text-yellow-700 bg-yellow-50 p-2 rounded w-full md:w-auto">
+                                            <span class="font-medium">Warning:</span> You can answer surveys but will not earn points or purchase rewards.
+                                        </div>
+                                    @elseif($trustScore <= 40 && $trustScore > 20)
+                                        <div class="mt-1 text-xs text-red-700 bg-red-50 p-2 rounded w-full md:w-auto">
+                                            <span class="font-medium">Severe Warning:</span> You cannot answer surveys. If your trust score reaches 20, your account will be archived.
+                                        </div>
+                                    @elseif($trustScore <= 20)
+                                        <div class="mt-1 text-xs text-gray-700 bg-gray-100 p-2 rounded w-full md:w-auto">
+                                            <span class="font-medium">Account Status:</span> Your account is pending archive due to low trust score.
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
 
@@ -166,16 +197,7 @@
                     Survey History
                 </button>
                 
-                {{-- Only show Institution Demographics tab for Institution Admins --}}
-                @if($user->type === 'institution_admin' && $user->institution_id)
-                <button
-                    class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
-                    :class="tab === 'institution_demographics' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
-                    @click="tab = 'institution_demographics'"
-                >
-                    Institution Demographics
-                </button>
-                @endif
+               
             </div>
         </div>
 
@@ -191,14 +213,7 @@
             <div x-show="tab === 'history'" class="w-full">
                 <livewire:profile.view-history :user="$user" />
             </div>
-            
 
-            {{-- Institution Demographics Tab Content - Only loaded for Institution Admins --}}
-            @if($user->type === 'institution_admin' && $user->institution_id)
-            <div x-show="tab === 'institution_demographics'" class="w-full">
-                <livewire:profile.institution.set-institution-demographic :user="$user" />
-            </div>
-            @endif
         </div>
     </div>
 
