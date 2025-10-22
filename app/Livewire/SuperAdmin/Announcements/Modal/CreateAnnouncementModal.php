@@ -38,7 +38,7 @@ class CreateAnnouncementModal extends Component
         $user = auth()->user();
 
         // Set institutionId for non-super-admins if institution_specific
-        if ($this->targetAudience === 'institution_specific' && !$user->hasRole('super_admin')) {
+        if ($this->targetAudience === 'institution_specific' && !$user->isSuperAdmin()) {
             $this->institutionId = $user->institution_id;
         }
 
@@ -47,14 +47,14 @@ class CreateAnnouncementModal extends Component
             'targetAudience' => $this->targetAudience,
             'institutionId' => $this->institutionId,
             'user_institution_id' => $user->institution_id,
-            'is_super_admin' => $user->hasRole('super_admin')
+            'is_super_admin' => $user->isSuperAdmin()
         ]);
 
         $this->validate();
 
         // Ensure user has permission for the selected institution
         if ($this->targetAudience === 'institution_specific') {
-            if (!$user->hasRole('super_admin') && $this->institutionId != $user->institution_id) {
+            if (!$user->isSuperAdmin() && $this->institutionId != $user->institution_id) {
                 session()->flash('error', 'You can only create announcements for your own institution.');
                 return;
             }
@@ -100,7 +100,7 @@ class CreateAnnouncementModal extends Component
     public function render()
     {
         $user = auth()->user();
-        $institutions = $user->hasRole('super_admin') 
+        $institutions = $user->isSuperAdmin() 
             ? Institution::all() 
             : Institution::where('id', $user->institution_id)->get();
             
