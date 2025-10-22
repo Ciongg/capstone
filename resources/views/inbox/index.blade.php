@@ -1,5 +1,3 @@
-@extends('components.layouts.app')
-
-@section('content')
+<x-layouts.app>
     <livewire:inbox.inbox-index />
-@endsection
+</x-layouts.app>

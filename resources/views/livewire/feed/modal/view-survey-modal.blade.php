@@ -4,10 +4,10 @@
     <div class="flex flex-col space-y-3 lg:space-y-4 w-full lg:w-1/2 h-auto lg:h-full">
         <!-- User Info -->
         <div class="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg shadow-sm">
-            {{-- Use the profile photo URL --}}
-            <img src="{{ $survey->user->profile_photo_url }}" alt="{{ $survey->user->name ?? 'Unknown User' }}" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover">
+            {{-- Use the profile photo URL with null-safe operator --}}
+            <img src="{{ $survey->user?->profile_photo_url }}" alt="{{ $survey->user?->name ?? 'Unknown User' }}" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover">
             <div>
-                <div class="font-semibold text-sm sm:text-base text-gray-800">{{ $survey->user->name ?? 'Unknown User' }}</div>
+                <div class="font-semibold text-sm sm:text-base text-gray-800">{{ $survey->user?->name ?? 'Unknown User' }}</div>
                 <div class="text-xs text-gray-500">
                     @if($survey->end_date)
                         @php
@@ -123,8 +123,19 @@
         </div>
 
         <!-- Answer Button -->
-        <div class="flex justify-center sm:justify-end flex-shrink-0">
-            @if($survey->is_trust_score_locked ?? false)
+        <div class="flex flex-col items-center sm:items-end flex-shrink-0">
+            @if($survey->is_creator_archived_locked ?? false)
+                <!-- Locked due to creator being archived -->
+                <button 
+                    class="flex items-center w-full sm:w-auto justify-center px-4 sm:px-6 py-3 sm:py-2 bg-gray-300 text-gray-600 font-semibold rounded-lg cursor-not-allowed text-sm sm:text-base"
+                    disabled
+                >
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                    Creator Archived
+                </button>
+            @elseif($survey->is_trust_score_locked ?? false)
                 <!-- Locked due to low trust score -->
                 <button 
                     class="flex items-center w-full sm:w-auto justify-center px-4 sm:px-6 py-3 sm:py-2 bg-gray-300 text-gray-600 font-semibold rounded-lg cursor-not-allowed text-sm sm:text-base"
@@ -146,6 +157,17 @@
                     </svg>
                     Survey Not Started Yet
                 </button>
+                
+                {{-- Add warning message about when the survey will open --}}
+                @if($survey->start_date)
+                    @php
+                        $startDate = \Carbon\Carbon::parse($survey->start_date);
+                        $formattedDate = $startDate->format('F j, Y \a\t g:i a');
+                    @endphp
+                    <div class="mt-2 text-sm text-blue-600 font-medium text-right">
+                        Opens on {{ $formattedDate }}
+                    </div>
+                @endif
             @elseif($survey->is_expired_locked ?? false)
                 <!-- Locked due to expiration -->
                 <button 

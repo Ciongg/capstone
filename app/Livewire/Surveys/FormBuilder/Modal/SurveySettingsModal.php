@@ -731,5 +731,11 @@ class SurveySettingsModal extends Component
             'isOngoingWithSnapshot' => $this->isOngoingWithSnapshot
         ]);
     }
+    
 }
+
+
+
+//HERES THE OLD WORKING VERSION WHICH YOU DELETED THE SWEETALERTS FOR VALIDATION ERRORS FROM SO COPY IT AGAIN AND PASTE IT BUT DONT DELETE ANYMORE NEW FEATURES TAHT I AHVE ARLAEDY ADDED
+
 

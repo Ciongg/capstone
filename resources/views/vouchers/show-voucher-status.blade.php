@@ -1,4 +1,3 @@
-@extends('components.layouts.app')
-@section('content')
+<x-layouts.app>
     <livewire:vouchers.voucher-verify :reference_no="$reference_no" />
-@endsection
+</x-layouts.app>

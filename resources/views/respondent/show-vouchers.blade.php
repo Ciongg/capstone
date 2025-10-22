@@ -1,7 +1,3 @@
-@extends('components.layouts.app')
-
-@section('content')
-    <div>
-        @livewire('vouchers.voucher-index')
-    </div>
-@endsection
+<x-layouts.app>
+        <livewire:vouchers.voucher-index />
+</x-layouts.app>

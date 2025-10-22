@@ -1,6 +1,4 @@
-@extends('components.layouts.app')
-
-@section('content')
+<x-layouts.app>
 <main class="container mx-auto py-12 px-4 sm:px-8">
     <div class="flex flex-col md:flex-row items-center mb-16">
         <!-- Left Section: Text, Button, Stars - Explicitly centered on mobile -->
@@ -88,4 +86,4 @@
     </section>
 </main>
 
-@endsection
+</x-layouts.app>

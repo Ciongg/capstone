@@ -33,19 +33,18 @@ class HandleLowTrustScoreUsers extends Command
             ->get();
             
         $count = $lowTrustUsers->count();
-        $this->info("Found {$count} users with trust score of 20 or below.");
         
         // Archive each low trust score user
         $lowTrustUsers->each(function ($user) {
-            Log::info("Archiving user due to low trust score", [
-                'user_id' => $user->id,
-                'trust_score' => $user->trust_score
-            ]);
+            // Count surveys before archiving for logging
+            $surveyCount = $user->surveys()->count();
             
+            
+            // The UserObserver will handle archiving related surveys
             $user->delete();
+            
         });
 
-        $this->info("Completed! Archived {$count} users with low trust scores.");
         
         return 0;
     }

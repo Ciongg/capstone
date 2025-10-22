@@ -1,6 +1,4 @@
-@extends('components.layouts.app')
-
-@section('content')
+<x-layouts.app>
 <main class="container mx-auto py-12 px-4">
     <!-- Hero Section -->
     <div class="text-center mb-16 bg-gray-100 rounded-lg py-8 px-6">
@@ -206,4 +204,4 @@
         </div>
     </section>
 </main>
-@endsection
+</x-layouts.app>

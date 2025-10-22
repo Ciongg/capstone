@@ -528,7 +528,7 @@
                             @if(Auth::user()->isInstitutionAdmin())
                                 <p class="text-sm text-yellow-700">
                                     No institutional demographics have been set up yet. 
-                                    <a href="{{ route('profile.index') }}" class="font-medium underline text-yellow-700 hover:text-yellow-600">
+                                    <a href="{{ route('institution.tags') }}" class="font-medium underline text-yellow-700 hover:text-yellow-600">
                                         Set up institution demographics
                                     </a>
                                 </p>
@@ -712,13 +712,13 @@
         @livewire('surveys.form-builder.modal.survey-boost-modal', ['survey' => $survey], key('survey-boost-modal-' . $survey->id))
     </x-modal>
     <!-- Institution-Only Checkbox handler - Update the script -->
-    <script>
+     <script>
         document.addEventListener('livewire:initialized', () => {
             @this.on('updated', (event) => {
                 if (typeof event.isInstitutionOnly !== 'undefined') {
 
                     // Get the Alpine component for the modal
-                    const modalComponent = Alpine.$data(document.querySelector('[x-data*="tab"]));
+                    const modalComponent = Alpine.$data(document.querySelector('[x-data*="tab"]'));
                 
                 } 
                 else if (!event.isInstitutionOnly && Alpine.$data(document.querySelector('[x-data*="tab"]')).tab === 'institution_demographics') {

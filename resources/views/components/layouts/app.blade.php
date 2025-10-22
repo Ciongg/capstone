@@ -439,7 +439,7 @@
             }
         });
     ">
-        @yield('content') {{-- Blade directive to output the content of the current section --}}
+        {{ $slot}} 
     </main>
     <!-- End of Main Content Area -->
 

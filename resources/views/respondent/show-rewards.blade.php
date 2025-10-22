@@ -1,4 +1,3 @@
-@extends('components.layouts.app')
-@section('content')
+<x-layouts.app>
     <livewire:rewards.reward-index />
-@endsection
+</x-layouts.app>

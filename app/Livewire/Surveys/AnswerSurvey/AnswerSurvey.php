@@ -1531,4 +1531,3 @@ class AnswerSurvey extends Component
         ]);
     }
 }
-

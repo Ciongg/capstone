@@ -206,7 +206,6 @@
             <div x-show="tab === 'about'" class="w-full">
                 <livewire:profile.view-about :user="$user" />
             </div>
-            {{-- Remove the condition so all users see My Surveys tab content --}}
             <div x-show="tab === 'surveys'" class="w-full">
                 <livewire:surveys.form-index :user="$user" />
             </div>

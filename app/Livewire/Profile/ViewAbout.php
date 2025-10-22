@@ -56,6 +56,10 @@ class ViewAbout extends Component
     public $daysUntilInstitutionDemographicsUpdateAvailable = 0;
     public $timeUntilInstitutionUpdateText = '';
     
+    // Add these properties to track original tags
+    public $originalSelectedTags = [];
+    public $originalSelectedInstitutionTags = [];
+    
     protected $listeners = [
         'refresh-about-view' => 'refreshAboutView',
     ];
@@ -99,6 +103,9 @@ class ViewAbout extends Component
             }
         }
         
+        // Store original tags
+        $this->originalSelectedTags = $this->selectedTags;
+        
         // If user belongs to an institution, load institution-specific tag categories
         if ($this->user->institution_id) {
             $this->institutionTagCategories = InstitutionTagCategory::where('institution_id', $this->user->institution_id)
@@ -120,6 +127,9 @@ class ViewAbout extends Component
                     $this->selectedInstitutionTags[$category->id] = reset($userTagsForCategory);
                 }
             }
+            
+            // Store original institution tags
+            $this->originalSelectedInstitutionTags = $this->selectedInstitutionTags;
         }
     }
 
@@ -362,6 +372,58 @@ class ViewAbout extends Component
     }
 
     /**
+     * Check if demographic tags have been changed
+     */
+    public function demographicTagsChanged()
+    {
+        // If original and current arrays have different lengths, changes were made
+        if (count($this->selectedTags) != count($this->originalSelectedTags)) {
+            return true;
+        }
+        
+        // Check for any differences between original and current selections
+        foreach ($this->selectedTags as $categoryId => $tagId) {
+            // Check if this category exists in original tags
+            if (!isset($this->originalSelectedTags[$categoryId])) {
+                return true;
+            }
+            
+            // Check if the tag for this category has changed
+            if ($this->originalSelectedTags[$categoryId] != $tagId) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if institution demographic tags have been changed
+     */
+    public function institutionDemographicTagsChanged()
+    {
+        // If original and current arrays have different lengths, changes were made
+        if (count($this->selectedInstitutionTags) != count($this->originalSelectedInstitutionTags)) {
+            return true;
+        }
+        
+        // Check for any differences between original and current selections
+        foreach ($this->selectedInstitutionTags as $categoryId => $tagId) {
+            // Check if this category exists in original tags
+            if (!isset($this->originalSelectedInstitutionTags[$categoryId])) {
+                return true;
+            }
+            
+            // Check if the tag for this category has changed
+            if ($this->originalSelectedInstitutionTags[$categoryId] != $tagId) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
      * Save regular demographic tags
      */
     public function saveDemographicTags()
@@ -370,6 +432,12 @@ class ViewAbout extends Component
         if (!$this->canUpdateDemographics) {
             session()->flash('error', 'You cannot update your demographic information at this time. Please try again in ' . 
                 $this->daysUntilDemographicsUpdateAvailable . ' days.');
+            return;
+        }
+        
+        // Check if any changes were made
+        if (!$this->demographicTagsChanged()) {
+            $this->dispatch('no-changes-detected', type: 'demographic');
             return;
         }
         
@@ -396,6 +464,9 @@ class ViewAbout extends Component
         $this->canUpdateDemographics = $this->user->canUpdateDemographicTags();
         $this->calculateTimeUntilUpdate();
         
+        // Update the originalSelectedTags to match the current selection
+        $this->originalSelectedTags = $this->selectedTags;
+        
         session()->flash('tags_saved', 'Your demographic information has been updated successfully! You can update it again in ' . 
             $this->demographicUpdateCooldownDays . ' days.');
     }
@@ -414,6 +485,12 @@ class ViewAbout extends Component
         // Check if user can update institution tags
         if (!$this->canUpdateInstitutionDemographics) {
             session()->flash('error', 'You cannot update your institution demographic information at this time.');
+            return;
+        }
+        
+        // Check if any changes were made
+        if (!$this->institutionDemographicTagsChanged()) {
+            $this->dispatch('no-changes-detected', type: 'institution');
             return;
         }
         
@@ -439,6 +516,9 @@ class ViewAbout extends Component
         // Update local properties
         $this->canUpdateInstitutionDemographics = $this->user->canUpdateInstitutionDemographicTags();
         $this->calculateTimeUntilInstitutionUpdate();
+        
+        // Update the originalSelectedInstitutionTags to match the current selection
+        $this->originalSelectedInstitutionTags = $this->selectedInstitutionTags;
         
         session()->flash('tags_saved', 'Your institution demographic information has been updated successfully! You can update it again in ' . 
             $this->demographicUpdateCooldownDays . ' days.');

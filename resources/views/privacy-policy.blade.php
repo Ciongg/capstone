@@ -1,6 +1,4 @@
-@extends('components.layouts.app')
-
-@section('content')
+<x-layouts.app>
 <main class="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
     <div class="bg-gray-100 rounded-xl p-8 mb-4 shadow-md">
         <h1 class="text-4xl font-semibold text-gray-800 mb-6 text-center">Privacy Policy</h1>
@@ -41,4 +39,4 @@
         </div>
     </div>
 </main>
-@endsection
+</x-layouts.app>

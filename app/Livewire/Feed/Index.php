@@ -12,8 +12,12 @@ use App\Models\InstitutionTag;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Services\TestTimeService;
+use Livewire\WithPagination;
+
 class Index extends Component
 {
+    use WithPagination;
+
     // Basic properties
     public $accountUpgrade;
     public $accountDowngrade;
@@ -525,6 +529,48 @@ class Index extends Component
         return ['filter-changed' => '$refresh'];
     }
 
+
+    /**
+     * Get the surveys to display in the feed
+     */
+    public function getFilteredSurveys()
+    {
+        $query = Survey::query()
+            ->where('status', 'published')
+            ->whereNotIn('status', ['pending', 'finished', 'archived'])
+            ->whereHas('user', function($query) {
+                $query->whereNull('deleted_at'); // Filter out surveys from archived users
+            });
+            
+        // Apply topic filter - Only when a specific topic is selected
+        if (!is_null($this->activeFilters['topic'])) {
+            $query->where('survey_topic_id', $this->activeFilters['topic']);
+        }
+        
+        // Apply tag filters based on whether we're filtering by institution tags or regular tags
+        if ($this->activeFilters['institutionOnly'] && !empty($this->activeFilters['institutionTags'])) {
+            // For institution-only surveys, use institution tags
+            foreach ($this->activeFilters['institutionTags'] as $tagId) {
+                $query->whereHas('institutionTags', function ($q) use ($tagId) {
+                    $q->where('institution_tags.id', $tagId);
+                });
+            }
+        } else if (!empty($this->activeFilters['tags'])) {
+            // For regular surveys, use regular tags
+            foreach ($this->activeFilters['tags'] as $tagId) {
+                $query->whereHas('tags', function ($q) use ($tagId) {
+                    $q->where('tags.id', $tagId);
+                });
+            }
+        }
+        
+        // Apply institution only filter
+        if ($this->activeFilters['institutionOnly']) {
+            $query->where('is_institution_only', true);
+        }
+
+        return $query;
+    }
 
     // Main render method with unified filtering
     public function render()
