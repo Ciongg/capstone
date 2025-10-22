@@ -35,6 +35,7 @@ class SurveySettingsModal extends Component
     public $isInstitutionOnly;
     public $isAnnounced;
     public $isGuestAllowed;
+    public $isInFeed = true; // New property for controlling feed visibility
 
     public $institutionTagCategories = [];
     public $selectedInstitutionTags = [];
@@ -134,6 +135,7 @@ class SurveySettingsModal extends Component
         // These properties always come from the current survey model regardless of snapshot
         $this->isAnnounced = (bool)$survey->is_announced;
         $this->isGuestAllowed = (bool)$survey->is_guest_allowed;
+        $this->isInFeed = (bool)$survey->is_in_feed; // Initialize from survey model
         
         $this->topics = SurveyTopic::all();
         
@@ -260,6 +262,11 @@ class SurveySettingsModal extends Component
     public function updatedType($value)
     {
         $this->points_allocated = $this->getPointsForType($value);
+        
+        // If changing to advanced, automatically disable guest allowed
+        if ($value === 'advanced') {
+            $this->isGuestAllowed = false;
+        }
     }
 
     // Add validation for start_date when it's updated
@@ -424,6 +431,11 @@ class SurveySettingsModal extends Component
                 
                 $endDate = $this->end_date ? Carbon::createFromFormat('Y-m-d\TH:i', $this->end_date, 'Asia/Manila') : null;
 
+                // Enforce guest responses disabled for advanced surveys
+                if ($this->type === 'advanced') {
+                    $this->isGuestAllowed = false;
+                }
+
                 // Save other fields
                 $this->survey->title = $this->title;
                 $this->survey->description = $this->description;
@@ -436,6 +448,7 @@ class SurveySettingsModal extends Component
                 $this->survey->is_institution_only = $this->isInstitutionOnly;
                 $this->survey->is_announced = $this->isAnnounced;
                 $this->survey->is_guest_allowed = $this->isGuestAllowed; // Save guest allowed setting
+                $this->survey->is_in_feed = $this->isInFeed; // Save in feed setting
                 $this->survey->survey_topic_id = $this->survey_topic_id;
                 $this->survey->save();
 
@@ -733,9 +746,5 @@ class SurveySettingsModal extends Component
     }
     
 }
-
-
-
-//HERES THE OLD WORKING VERSION WHICH YOU DELETED THE SWEETALERTS FOR VALIDATION ERRORS FROM SO COPY IT AGAIN AND PASTE IT BUT DONT DELETE ANYMORE NEW FEATURES TAHT I AHVE ARLAEDY ADDED
 
 

@@ -305,6 +305,9 @@ class Index extends Component
         // Exclude locked surveys
         $query->where('is_locked', false);
         
+        // Only include surveys that should be shown in feed
+        $query->where('is_in_feed', true);
+        
         // Apply search filter - ensure case-insensitive search with wildcards on both sides
         if (!empty($this->search)) {
             $query->where('title', 'like', '%' . $this->search . '%');

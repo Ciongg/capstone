@@ -1,4 +1,18 @@
-<div x-data="{ tab: 'info', isDisabled: @js(in_array($survey->status, ['ongoing', 'finished'])) }" class="space-y-4 p-4">
+<div x-data="{ 
+    tab: 'info', 
+    isDisabled: @js(in_array($survey->status, ['ongoing', 'finished'])),
+    currentType: @js($type),
+    toggleInstitutionOnly(checked) {
+        if(checked) {
+            $wire.isGuestAllowed = false;
+        }
+    },
+    toggleGuestAllowed(checked) {
+        if(checked) {
+            $wire.isInstitutionOnly = false;
+        }
+    }
+}" class="space-y-4 p-4">
     
     <!-- Snapshot notice - show when viewing historical data -->
     @if($isOngoingWithSnapshot)
@@ -82,16 +96,56 @@
 
     <!-- Survey Information Tab -->
     <div x-show="tab === 'info'" x-cloak>
-        <form wire:submit.prevent="saveSurveyInformation" class="space-y-4" x-data="{ fileName: '' }">
+        <form wire:submit.prevent="saveSurveyInformation" class="space-y-4" x-data="{ 
+            fileName: '', 
+            watchSurveyType() {
+                // Track survey type changes
+                const typeSelect = document.getElementById('survey-type-{{ $survey->id }}');
+                if (typeSelect) {
+                    typeSelect.addEventListener('change', (e) => {
+                        this.currentType = e.target.value;
+                        if (this.currentType === 'advanced') {
+                            // Uncheck guest responses if type changes to advanced
+                            const guestCheckbox = document.getElementById('guest-allowed-{{ $survey->id }}');
+                            if (guestCheckbox && guestCheckbox.checked) {
+                                guestCheckbox.checked = false;
+                                // Trigger model update
+                                guestCheckbox.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        }
+                    });
+                }
+            }
+        }" x-init="watchSurveyType()">
             
-            <!-- Institution-Only Checkbox -->
+        <!-- Don't Show in Feed Checkbox (Purple) -->
+        <div class="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg w-full">
+            <div class="flex items-center">
+                <input 
+                    type="checkbox" 
+                    id="hide-from-feed-{{ $survey->id }}" 
+                    wire:model.defer="isInFeed"
+                    class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                    x-bind:disabled="isDisabled"
+                >
+                <label for="hide-from-feed-{{ $survey->id }}" class="ml-2 text-sm font-medium text-purple-900">
+                    Show in feed
+                </label>
+            </div>
+            <p class="mt-1 text-xs text-purple-600">
+                If unchecked, this survey won't appear in the public feed. It will only be accessible via direct link.
+            </p>
+        </div>
+        <!-- Institution-Only Checkbox -->
             @if(!auth()->user()->isSuperAdmin())
-            <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg w-full">
+            <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg w-full"
+                 x-show="!$wire.isGuestAllowed">
                 <div class="flex items-center">
                     <input 
                         type="checkbox" 
                         id="institution-only-{{ $survey->id }}" 
                         wire:model.defer="isInstitutionOnly"
+                        x-on:change="toggleInstitutionOnly($event.target.checked)"
                         class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                         x-bind:disabled="isDisabled"
                     >
@@ -105,15 +159,17 @@
             </div>
             @endif
 
-            <!-- Allow Guest Responses Checkbox (Green) -->
-            <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg w-full">
+            <!-- Allow Guest Responses Checkbox (Green) - Only show for basic surveys and non-institution-only surveys -->
+            <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg w-full" 
+                x-show="currentType !== 'advanced' && !$wire.isInstitutionOnly">
                 <div class="flex items-center">
                     <input 
                         type="checkbox" 
                         id="guest-allowed-{{ $survey->id }}" 
                         wire:model.defer="isGuestAllowed"
+                        x-on:change="toggleGuestAllowed($event.target.checked)"
                         class="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-                        x-bind:disabled="isDisabled"
+                        x-bind:disabled="isDisabled || currentType === 'advanced'"
                     >
                     <label for="guest-allowed-{{ $survey->id }}" class="ml-2 text-sm font-medium text-green-900">
                         Allow guest responses
@@ -318,7 +374,9 @@
             <!-- Survey Type -->
             <div>
                 <label for="survey-type-{{ $survey->id }}" class="block font-semibold mb-1">Survey Type</label>
-                <select id="survey-type-{{ $survey->id }}" wire:model.defer="type" class="w-full border rounded px-3 py-2" x-bind:disabled="isDisabled">
+                <select id="survey-type-{{ $survey->id }}" wire:model.defer="type" class="w-full border rounded px-3 py-2" 
+                    x-bind:disabled="isDisabled" 
+                    @change="currentType = $event.target.value">
                     <option value="basic">Basic Survey</option>
                     <option value="advanced">Advanced Survey</option>
                 </select>
@@ -716,17 +774,33 @@
         document.addEventListener('livewire:initialized', () => {
             @this.on('updated', (event) => {
                 if (typeof event.isInstitutionOnly !== 'undefined') {
-
                     // Get the Alpine component for the modal
                     const modalComponent = Alpine.$data(document.querySelector('[x-data*="tab"]'));
-                
+                    
+                    // If institution-only is enabled, disable guest allowed
+                    if (event.isInstitutionOnly) {
+                        @this.isGuestAllowed = false;
+                    }
                 } 
                 else if (!event.isInstitutionOnly && Alpine.$data(document.querySelector('[x-data*="tab"]')).tab === 'institution_demographics') {
-                        Alpine.$data(document.querySelector('[x-data*="tab"]')).tab = 'info';
+                    Alpine.$data(document.querySelector('[x-data*="tab"]')).tab = 'info';
                 }
-                }
-            )});
+            });
 
+            @this.on('updated-guest-allowed', (event) => {
+                if (event.isGuestAllowed) {
+                    // If guest allowed is enabled, disable institution-only
+                    @this.isInstitutionOnly = false;
+                }
+            });
+
+            // Add listener for type changes
+            @this.on('typeChanged', (event) => {
+                if (event.type === 'advanced') {
+                    @this.isGuestAllowed = false;
+                }
+            });
+        });
 
         document.addEventListener('livewire:initialized', () => {
             Livewire.on('showErrorAlert', (data) => {

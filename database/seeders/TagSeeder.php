@@ -21,13 +21,13 @@ class TagSeeder extends Seeder
         $categories = TagCategory::pluck('id', 'name');
 
         $tags = [
-            // Age Group (Adjusted ranges slightly, removed 13-17)
-            ['category' => 'Age Group', 'name' => '18 – 24'],
-            ['category' => 'Age Group', 'name' => '25 – 34'],
-            ['category' => 'Age Group', 'name' => '35 – 44'],
-            ['category' => 'Age Group', 'name' => '45 – 54'],
-            ['category' => 'Age Group', 'name' => '55 – 64'],
-            ['category' => 'Age Group', 'name' => '65+'],
+            //age
+            ['category' => 'Age Group', 'name' => '18 - 24'],
+            ['category' => 'Age Group', 'name' => '25 - 34'],
+            ['category' => 'Age Group', 'name' => '35 - 44'],
+            ['category' => 'Age Group', 'name' => '45 - 54'],
+            ['category' => 'Age Group', 'name' => '55 - 59'],
+            ['category' => 'Age Group', 'name' => '60+'],
 
             // Gender (Simplified)
             ['category' => 'Gender', 'name' => 'Male'],
