@@ -1,4 +1,3 @@
-@extends('components.layouts.app')
-@section('content')
+<x-layouts.app>
     <livewire:surveys.form-builder.form-builder :survey="$survey"/>
-@endsection
+</x-layouts.app>

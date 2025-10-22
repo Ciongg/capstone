@@ -3,10 +3,10 @@
     {{-- Header --}}
     <div class="w-full px-3 sm:px-4 py-3 rounded-t-xl bg-gray-50 border-b border-gray-200 flex-shrink-0 mb-2 shadow-[inset_0_0px_4px_0_rgba(0,0,0,0.1)]">
         <div class="flex items-center mb-2">
-            <img src="{{ $survey->user->profile_photo_url }}" alt="{{ $survey->user->name ?? 'User' }}" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover mr-2 sm:mr-3">
+            <img src="{{ $survey->user?->profile_photo_url }}" alt="{{ $survey->user?->name ?? 'User' }}" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover mr-2 sm:mr-3">
             <div class="flex flex-col flex-grow min-w-0">
-                <span class="text-sm sm:text-base font-semibold text-gray-800 truncate">{{ $survey->user->name ?? 'User' }}</span>
-                <span class="text-xs text-gray-500 truncate">{{ $survey->user->institution?->name }}</span>
+                <span class="text-sm sm:text-base font-semibold text-gray-800 truncate">{{ $survey->user?->name ?? 'User' }}</span>
+                <span class="text-xs text-gray-500 truncate">{{ $survey->user?->institution?->name }}</span>
             </div>
             <div class="flex items-center bg-gradient-to-r from-red-600 via-orange-400 to-yellow-300 px-2 sm:px-3 py-1 rounded-full ml-1">
                 <span class="font-bold text-white drop-shadow text-sm">{{ $survey->points_allocated ?? 0 }}</span>
@@ -116,9 +116,33 @@
                 $minutesLeft = null;
                 $timeDisplay = null;
                 
-                if($survey->end_date) {
+                $now = \App\Services\TestTimeService::now();
+                
+                // Check if survey hasn't started yet
+                if($survey->start_date && $now->lt($survey->start_date)) {
+                    $startDate = \Carbon\Carbon::parse($survey->start_date);
+                    $daysUntilStart = round($now->diffInDays($startDate, false));
+                    
+                    // If it starts today (0 days), show minutes until start
+                    if($daysUntilStart == 0) {
+                        $minutesUntilStart = $now->diffInMinutes($startDate, false);
+                        
+                        if($minutesUntilStart > 60) {
+                            $hoursUntilStart = floor($minutesUntilStart / 60);
+                            $remainingMinutes = $minutesUntilStart % 60;
+                            $timeDisplay = 'Opens in ' . $hoursUntilStart . 'h ' . $remainingMinutes . 'm';
+                        } else {
+                            $roundedMinutes = round($minutesUntilStart);
+                            $timeDisplay = 'Opens in ' . $roundedMinutes . ' minutes';
+                        }
+                    } else {
+                        // Standard day display for future days
+                        $timeDisplay = 'Opens in ' . $daysUntilStart . ' ' . ($daysUntilStart == 1 ? 'day' : 'days');
+                    }
+                }
+                // If survey has started, show end date info if available
+                elseif($survey->end_date) {
                     $endDate = \Carbon\Carbon::parse($survey->end_date);
-                    $now = \App\Services\TestTimeService::now();
                     $daysLeft = round($now->diffInDays($endDate, false));
                     
                     // Check if end date is in the past
@@ -152,10 +176,11 @@
                 </svg>
                 @if($timeDisplay !== null)
                     <span class="text-xs {{ 
-                        (($daysLeft !== null && $daysLeft < 3 && $daysLeft >= 0) || 
+                        (strpos($timeDisplay, 'Opens') !== false) ? 'text-blue-600 font-semibold' : 
+                        ((($daysLeft !== null && $daysLeft < 3 && $daysLeft >= 0) || 
                          ($minutesLeft !== null && $minutesLeft < 60) || 
                          $timeDisplay === 'Ended') ? 
-                        'text-red-600 font-semibold' : 'text-gray-700' 
+                            'text-red-600 font-semibold' : 'text-gray-700')
                     }}">
                         {{ $timeDisplay }}
                     </span>

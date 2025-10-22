@@ -1,4 +1,3 @@
-@extends('components.layouts.app')
-@section('content')
+<x-layouts.app>
     <livewire:profile.view-profile :user="$user" />
-@endsection
+</x-layouts.app>

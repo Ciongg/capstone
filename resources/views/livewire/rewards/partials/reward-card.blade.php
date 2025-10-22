@@ -101,10 +101,11 @@
             $rankMet = $userRankPriority >= $requiredRankPriority;
             $isUnavailable = in_array($reward->status, ['unavailable', 'sold_out']);
             $notEnoughPoints = Auth::user() && Auth::user()->points < $reward->cost;
+            $lowTrustScore = Auth::user() && Auth::user()->trust_score <= 70;
             $availableCount = ($reward->type == 'voucher' || $reward->type == 'Voucher')
                 ? $reward->vouchers()->where('availability', 'available')->count()
                 : $reward->quantity;
-            $shouldDisable = !$rankMet || $isUnavailable || $notEnoughPoints || ($reward->type == 'voucher' && $availableCount <= 0);
+            $shouldDisable = !$rankMet || $isUnavailable || $notEnoughPoints || $lowTrustScore || ($reward->type == 'voucher' && $availableCount <= 0);
         @endphp
         <button 
             x-data="{ loading: false }"
@@ -133,7 +134,9 @@
             </div>
             <!-- Default Button Text -->
             <div x-show="!loading">
-                @if($isUnavailable || ($reward->type == 'voucher' && $availableCount <= 0))
+                @if($lowTrustScore)
+                    Low Trust Score
+                @elseif($isUnavailable || ($reward->type == 'voucher' && $availableCount <= 0))
                     Sold Out
                 @elseif(!$rankMet)
                     {{ ucfirst($requiredRank) }} rank only
@@ -146,4 +149,4 @@
         </button>
     </div>
 </div>
-      
+

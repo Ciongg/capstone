@@ -1,4 +1,4 @@
-<div class="bg-white shadow flex items-center justify-between px-3 sm:px-6 py-3 mb-4 min-w-[300px]">
+<div class="bg-white shadow flex items-center justify-between px-3 sm:px-6 py-3 mb-4 min-w-[300px] sticky top-0 z-40">
     {{-- Left Side: Title --}}
     <div class="flex items-center flex-1 min-w-0 mr-4">
         <input
@@ -27,6 +27,19 @@
             ])>
                 Status: {{ ucfirst($survey->status) }}
             </span>
+            {{-- Copy Link Button - Only show for published, ongoing, or finished surveys --}}
+            @if(in_array($survey->status, ['published', 'ongoing', 'finished']))
+                <button
+                    type="button"
+                    @click="copySurveyLink()"
+                    class="inline-flex items-center justify-center h-9 w-9 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    title="Copy Survey Link"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                    </svg>
+                </button>
+            @endif
             {{-- Publish/Unpublish Buttons - disabled when locked --}}
             @if($survey->status === 'published')
                 {{-- Show unpublish button only if survey is not yet ongoing (no responses yet) --}}
@@ -131,7 +144,7 @@
             </button>
 
             {{-- AI Generate Button - Add this new button --}}
-            <button
+            {{-- <button
                 x-data
                 x-on:click="$dispatch('open-modal', {name : 'survey-generator-modal-{{ $survey->id }}'})"
                 class="flex items-center justify-center px-3 py-2 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
@@ -142,7 +155,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                 </svg>
                 AI Generate
-            </button>
+            </button> --}}
         </div>
 
         {{-- Hamburger Menu Button (visible below large screens) --}}
@@ -175,7 +188,7 @@
             </div>
             
             {{-- Status indicator --}}
-            <div class="flex justify-center py-3">
+            <div class="flex justify-center items-center space-x-2 py-3">
                 <span @class([
                     'inline-flex items-center px-4 py-1.5 text-sm font-semibold rounded-full',
                     'bg-gray-100 text-gray-700' => $survey->status === 'pending',
@@ -187,6 +200,20 @@
                 ])>
                     Status: {{ ucfirst($survey->status) }}
                 </span>
+                {{-- Copy Link Button - Only show for published, ongoing, or finished surveys --}}
+                @if(in_array($survey->status, ['published', 'ongoing', 'finished']))
+                    <button
+                        type="button"
+                        @click="open = false; copySurveyLink()"
+                        class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        title="Copy Survey Link"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mr-2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                        </svg>
+                        Copy Link
+                    </button>
+                @endif
             </div>
 
             {{-- Menu buttons in rows --}}
@@ -273,7 +300,7 @@
                     </button>
 
                     {{-- AI Generate Button - Add this new button for mobile menu --}}
-                    <button
+                    {{-- <button
                         x-data
                         x-on:click="open = false; $dispatch('open-modal', {name : 'survey-generator-modal-{{ $survey->id }}'})"
                         class="flex flex-col items-center justify-center p-3 text-center bg-purple-100 rounded-lg hover:bg-purple-200"
@@ -283,7 +310,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                         </svg>
                         <span class="text-sm font-medium text-purple-700">AI Generate</span>
-                    </button>
+                    </button> --}}
                 </div>
             </div>
         </div>
@@ -292,6 +319,21 @@
 
 @push('scripts')
 <script>
+    function copySurveyLink() {
+        const url = '{{ route("surveys.answer", $survey->uuid) }}';
+        navigator.clipboard.writeText(url).then(() => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Link Copied!',
+                text: 'Survey link has been copied to clipboard.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+    }
+
     function confirmPublish() {
         Swal.fire({
             title: 'Publish Survey?',

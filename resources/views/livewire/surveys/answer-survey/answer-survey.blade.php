@@ -1,3 +1,10 @@
+@php
+// Get user trust score directly from authenticated user
+$userTrustScore = Auth::check() ? Auth::user()->trust_score : null;
+$hasLowTrustScore = Auth::check() && $userTrustScore <= 70;
+$isGuest = !Auth::check();
+@endphp
+
 <div class="bg-gray-100 min-h-screen py-8">
     <div class="max-w-7xl mx-auto relative">
      
@@ -81,6 +88,13 @@
 
 @push('scripts')
 <script>
+    // Make trust score info available to JavaScript
+    const userInfo = {
+        isGuest: {{ $isGuest ? 'true' : 'false' }},
+        trustScore: {{ $userTrustScore ?? 'null' }},
+        hasLowTrustScore: {{ $hasLowTrustScore ? 'true' : 'false' }}
+    };
+    
     document.addEventListener('DOMContentLoaded', function() {
         // Check if this is a guest accessing a survey
         var hasGuestAccess = {{ session()->has('guest_survey_access') ? 'true' : 'false' }};
@@ -133,21 +147,22 @@
             // Extract data from the event
             const data = eventData[0] || eventData;
             
-            // Log data for debugging
+            // Enhanced logging for debugging
             console.log("Survey submission data:", data);
             
-            // Check if user is a guest (multiple detection methods)
-            const isGuestUser = data.isGuest === true || 
-                               (data.points === 0 && data.xp === 0) ||
-                               {{ Auth::check() ? 'false' : 'true' }};
+            // Use the directly extracted user information
+            const isGuestUser = userInfo.isGuest;
+            const isLowTrustScore = userInfo.hasLowTrustScore;
             
-            console.log("Is guest user:", isGuestUser);
+            console.log("Is guest user (direct):", isGuestUser);
+            console.log("User trust score:", userInfo.trustScore);
+            console.log("Has low trust score (direct):", isLowTrustScore);
             
-            // Different HTML based on whether user is a guest or not
+            // Different HTML based on user type (guest, low trust, or regular)
             let contentHtml;
             
+            // Guest user case
             if (isGuestUser) {
-                // Guest user message
                 contentHtml = `
                     <div class="p-2">
                         <div class="mb-4 text-center">
@@ -162,8 +177,34 @@
                         </div>
                     </div>
                 `;
-            } else {
-                // Authenticated user message with points and XP
+            }
+            // Low trust score case - users with trust score <= 70
+            else if (isLowTrustScore) {
+                // Define xpBox first
+                const xpBox = `<div class="flex items-center justify-center bg-blue-100 text-blue-700 px-4 py-2 rounded-full shadow mx-auto w-fit font-bold text-lg">+${data.xp} XP</div>`;
+                
+                contentHtml = `
+                    <div class="p-2">
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="flex flex-row items-center justify-center mb-2">
+                                ${xpBox}
+                            </div>
+                            <div class="text-center text-base text-gray-600 mt-2">
+                                for completing "${data.surveyName}"
+                            </div>
+                            <div class="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 text-sm rounded">
+                                <p>Due to your trust score being below 70, you've earned XP but no points.</p>
+                                <p class="mt-1">Complete more surveys to increase your trust score!</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            // Regular authenticated user case - users with trust score > 70
+            else {
+                // Define xpBox before using it
+                const xpBox = `<div class="flex items-center justify-center bg-blue-100 text-blue-700 px-4 py-2 rounded-full shadow mx-auto w-fit font-bold text-lg">+${data.xp} XP</div>`;
+
                 const pointsBox = data.points > 0 ? `
                     <div class="flex items-center justify-center bg-gradient-to-r from-red-600 via-orange-400 to-yellow-300 px-4 py-2 rounded-full shadow-lg mx-auto w-fit">
                         <span class="font-bold text-white drop-shadow text-lg">${data.points}</span>
@@ -172,7 +213,7 @@
                         </svg>
                     </div>
                 ` : '';
-                const xpBox = `<div class="flex items-center justify-center bg-blue-100 text-blue-700 px-4 py-2 rounded-full shadow mx-auto w-fit font-bold text-lg">+100 XP</div>`;
+                
                 contentHtml = `
                     <div class="p-2">
                         <div class="flex flex-col items-center justify-center">
@@ -265,4 +306,3 @@
     });
 </script>
 @endpush
-

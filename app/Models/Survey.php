@@ -134,4 +134,12 @@ class Survey extends Model
     {
         return $this->collaborators()->where('user_id', $user->id)->exists();
     }
+
+    /**
+     * Get the survey snapshot.
+     */
+    public function snapshot()
+    {
+        return $this->hasOne(SurveySnapshot::class);
+    }
 }

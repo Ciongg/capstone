@@ -50,6 +50,14 @@ class SurveyController extends Controller
             ->exists();
     }
 
+    /**
+     * Check if user trust score is too low to answer surveys
+     */
+    protected function hasTooLowTrustScore($user)
+    {
+        return $user && $user->trust_score <= 40;
+    }
+
     public function create(Request $request, $surveyId = null)
     {
         $user = Auth::user();
@@ -97,6 +105,11 @@ class SurveyController extends Controller
         if (Auth::check()) {
             $user = Auth::user();
             
+            // Don't allow users with low trust scores
+            if ($this->hasTooLowTrustScore($user)) {
+                abort(403, 'Your trust score is too low to participate in surveys.');
+            }
+            
             // Don't allow the creator to answer their own survey
             if ($survey->user_id == $user->id) {
                 abort(403, 'You cannot answer your own survey.');
@@ -125,6 +138,11 @@ class SurveyController extends Controller
         // Form submission is handled by Livewire, but we should still do validation checks
         if (Auth::check()) {
             $user = Auth::user();
+            
+            // Check if user has too low trust score
+            if ($this->hasTooLowTrustScore($user)) {
+                abort(403, 'Your trust score is too low to participate in surveys.');
+            }
             
             // Check if user is eligible to submit
             if ($survey->user_id == $user->id || 

@@ -1,4 +1,26 @@
-<div x-data="{ tab: 'info', isDisabled: @js(in_array($survey->status, ['ongoing', 'finished'])) }" class="space-y-4 p-4">
+<div x-data="{ 
+    tab: 'info', 
+    isDisabled: @js(in_array($survey->status, ['ongoing', 'finished'])),
+    currentType: @js($type),
+    toggleInstitutionOnly(checked) {
+        if(checked) {
+            $wire.isGuestAllowed = false;
+        }
+    },
+    toggleGuestAllowed(checked) {
+        if(checked) {
+            $wire.isInstitutionOnly = false;
+        }
+    }
+}" class="space-y-4 p-4">
+    
+    <!-- Snapshot notice - show when viewing historical data -->
+    @if($isOngoingWithSnapshot)
+    <div class="mb-4 bg-amber-50 border-l-4 border-amber-400 text-amber-700 p-4" role="alert">
+        <p class="font-semibold">Historical Data Notice</p>
+        <p class="text-sm">This survey has ongoing responses. You are viewing demographic data from when the first response was received. Changes to demographics will not affect already collected responses.</p>
+    </div>
+    @endif
 
     <!-- Tab Buttons -->
     <div class="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mb-4 w-full">
@@ -74,16 +96,56 @@
 
     <!-- Survey Information Tab -->
     <div x-show="tab === 'info'" x-cloak>
-        <form wire:submit.prevent="saveSurveyInformation" class="space-y-4" x-data="{ fileName: '' }">
+        <form wire:submit.prevent="saveSurveyInformation" class="space-y-4" x-data="{ 
+            fileName: '', 
+            watchSurveyType() {
+                // Track survey type changes
+                const typeSelect = document.getElementById('survey-type-{{ $survey->id }}');
+                if (typeSelect) {
+                    typeSelect.addEventListener('change', (e) => {
+                        this.currentType = e.target.value;
+                        if (this.currentType === 'advanced') {
+                            // Uncheck guest responses if type changes to advanced
+                            const guestCheckbox = document.getElementById('guest-allowed-{{ $survey->id }}');
+                            if (guestCheckbox && guestCheckbox.checked) {
+                                guestCheckbox.checked = false;
+                                // Trigger model update
+                                guestCheckbox.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        }
+                    });
+                }
+            }
+        }" x-init="watchSurveyType()">
             
-            <!-- Institution-Only Checkbox -->
+        <!-- Don't Show in Feed Checkbox (Purple) -->
+        <div class="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg w-full">
+            <div class="flex items-center">
+                <input 
+                    type="checkbox" 
+                    id="hide-from-feed-{{ $survey->id }}" 
+                    wire:model.defer="isInFeed"
+                    class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                    x-bind:disabled="isDisabled"
+                >
+                <label for="hide-from-feed-{{ $survey->id }}" class="ml-2 text-sm font-medium text-purple-900">
+                    Show in feed
+                </label>
+            </div>
+            <p class="mt-1 text-xs text-purple-600">
+                If unchecked, this survey won't appear in the public feed. It will only be accessible via direct link.
+            </p>
+        </div>
+        <!-- Institution-Only Checkbox -->
             @if(!auth()->user()->isSuperAdmin())
-            <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg w-full">
+            <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg w-full"
+                 x-show="!$wire.isGuestAllowed">
                 <div class="flex items-center">
                     <input 
                         type="checkbox" 
                         id="institution-only-{{ $survey->id }}" 
                         wire:model.defer="isInstitutionOnly"
+                        x-on:change="toggleInstitutionOnly($event.target.checked)"
                         class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                         x-bind:disabled="isDisabled"
                     >
@@ -97,15 +159,17 @@
             </div>
             @endif
 
-            <!-- Allow Guest Responses Checkbox (Green) -->
-            <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg w-full">
+            <!-- Allow Guest Responses Checkbox (Green) - Only show for basic surveys and non-institution-only surveys -->
+            <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg w-full" 
+                x-show="currentType !== 'advanced' && !$wire.isInstitutionOnly">
                 <div class="flex items-center">
                     <input 
                         type="checkbox" 
                         id="guest-allowed-{{ $survey->id }}" 
                         wire:model.defer="isGuestAllowed"
+                        x-on:change="toggleGuestAllowed($event.target.checked)"
                         class="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-                        x-bind:disabled="isDisabled"
+                        x-bind:disabled="isDisabled || currentType === 'advanced'"
                     >
                     <label for="guest-allowed-{{ $survey->id }}" class="ml-2 text-sm font-medium text-green-900">
                         Allow guest responses
@@ -310,7 +374,9 @@
             <!-- Survey Type -->
             <div>
                 <label for="survey-type-{{ $survey->id }}" class="block font-semibold mb-1">Survey Type</label>
-                <select id="survey-type-{{ $survey->id }}" wire:model.defer="type" class="w-full border rounded px-3 py-2" x-bind:disabled="isDisabled">
+                <select id="survey-type-{{ $survey->id }}" wire:model.defer="type" class="w-full border rounded px-3 py-2" 
+                    x-bind:disabled="isDisabled" 
+                    @change="currentType = $event.target.value">
                     <option value="basic">Basic Survey</option>
                     <option value="advanced">Advanced Survey</option>
                 </select>
@@ -336,11 +402,20 @@
             <div>
                 <label for="survey-topic-{{ $survey->id }}" class="block font-semibold mb-1">Survey Topic</label>
                 <select id="survey-topic-{{ $survey->id }}" wire:model.defer="survey_topic_id" class="w-full border rounded px-3 py-2" x-bind:disabled="isDisabled">
-                    <option value="">Select a Topic</option>
+                    @if($deletedTopicName)
+                        <option value="">{{ $deletedTopicName }} (deleted)</option>
+                    @else
+                        <option value="">Select a Topic</option>
+                    @endif
                     @foreach($topics as $topic)
                         <option value="{{ $topic->id }}">{{ $topic->name }}</option>
                     @endforeach
                 </select>
+                @if($deletedTopicName)
+                    <p class="mt-1 text-xs text-amber-600">
+                        <span class="font-medium">Note:</span> The original topic was deleted after this survey was created.
+                    </p>
+                @endif
                 @error('survey_topic_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
 
@@ -511,7 +586,7 @@
                             @if(Auth::user()->isInstitutionAdmin())
                                 <p class="text-sm text-yellow-700">
                                     No institutional demographics have been set up yet. 
-                                    <a href="{{ route('profile.index') }}" class="font-medium underline text-yellow-700 hover:text-yellow-600">
+                                    <a href="{{ route('institution.tags') }}" class="font-medium underline text-yellow-700 hover:text-yellow-600">
                                         Set up institution demographics
                                     </a>
                                 </p>
@@ -695,21 +770,37 @@
         @livewire('surveys.form-builder.modal.survey-boost-modal', ['survey' => $survey], key('survey-boost-modal-' . $survey->id))
     </x-modal>
     <!-- Institution-Only Checkbox handler - Update the script -->
-    <script>
+     <script>
         document.addEventListener('livewire:initialized', () => {
             @this.on('updated', (event) => {
                 if (typeof event.isInstitutionOnly !== 'undefined') {
-
                     // Get the Alpine component for the modal
                     const modalComponent = Alpine.$data(document.querySelector('[x-data*="tab"]'));
-                
+                    
+                    // If institution-only is enabled, disable guest allowed
+                    if (event.isInstitutionOnly) {
+                        @this.isGuestAllowed = false;
+                    }
                 } 
                 else if (!event.isInstitutionOnly && Alpine.$data(document.querySelector('[x-data*="tab"]')).tab === 'institution_demographics') {
-                        Alpine.$data(document.querySelector('[x-data*="tab"]')).tab = 'info';
+                    Alpine.$data(document.querySelector('[x-data*="tab"]')).tab = 'info';
                 }
-                }
-            )});
+            });
 
+            @this.on('updated-guest-allowed', (event) => {
+                if (event.isGuestAllowed) {
+                    // If guest allowed is enabled, disable institution-only
+                    @this.isInstitutionOnly = false;
+                }
+            });
+
+            // Add listener for type changes
+            @this.on('typeChanged', (event) => {
+                if (event.type === 'advanced') {
+                    @this.isGuestAllowed = false;
+                }
+            });
+        });
 
         document.addEventListener('livewire:initialized', () => {
             Livewire.on('showErrorAlert', (data) => {

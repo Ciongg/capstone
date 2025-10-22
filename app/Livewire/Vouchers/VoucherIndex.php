@@ -12,7 +12,8 @@ class VoucherIndex extends Component
 
     protected $listeners = [
         'redeemVoucher' => '$refresh',
-      
+        'voucherStatusChanged' => '$refresh',
+        'refresh' => '$refresh',  // Add a generic refresh listener
     ];
 
     public function openRedeemModal($userVoucherId)

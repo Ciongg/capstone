@@ -14,6 +14,7 @@ class TestControls extends Component
     public $levelProgress = 0;
     public $rank = 'silver';
     public $userPoints = 0;
+    public $userTrustScore = 0; // Add this line
 
     // New properties for inbox testing
     public $inboxSubject = 'Test Message';
@@ -31,6 +32,7 @@ class TestControls extends Component
     public $showXpControls = false;
     public $showInboxControls = false;
     public $showDateTimeControls = false;
+    public $showTrustScoreControls = false; // Add this line
 
     public function mount()
     {
@@ -48,6 +50,7 @@ class TestControls extends Component
             $this->levelProgress = $user->getLevelProgressPercentage();
             $this->rank = $user->rank ?? 'silver';
             $this->userPoints = $user->points ?? 0;
+            $this->userTrustScore = $user->trust_score ?? 0; // Add this line
         }
     }
     
@@ -280,5 +283,31 @@ class TestControls extends Component
     public function toggleDateTimeControls()
     {
         $this->showDateTimeControls = !$this->showDateTimeControls;
+    }
+    
+    public function toggleTrustScoreControls()
+    {
+        $this->showTrustScoreControls = !$this->showTrustScoreControls;
+    }
+    
+    // Trust Score Controls
+    public function subtractTrustScore($amount)
+    {
+        $user = Auth::user();
+        $user->trust_score = max(0, $user->trust_score - $amount);
+        $user->save();
+        
+        $this->refreshUserStats();
+        session()->flash('message', "Trust score decreased by {$amount}!");
+    }
+    
+    public function setTrustScore($score)
+    {
+        $user = Auth::user();
+        $user->trust_score = min(100, max(0, $score));
+        $user->save();
+        
+        $this->refreshUserStats();
+        session()->flash('message', "Trust score set to {$score}!");
     }
 }

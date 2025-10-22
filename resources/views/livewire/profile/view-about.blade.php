@@ -88,7 +88,17 @@
                     }
                 });
             }
-        }">
+        }"
+        x-on:no-changes-detected.window="
+            if ($event.detail.type === 'demographic') {
+                Swal.fire({
+                    title: 'No Changes Detected',
+                    text: 'You have not made any changes to your demographic information.',
+                    icon: 'info',
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+        ">
             @foreach($tagCategories as $category)
                 <div>
                     <label class="block font-semibold mb-1">{{ $category->name }}</label>
@@ -160,7 +170,17 @@
                             }
                         });
                     }
-                }">
+                }"
+                x-on:no-changes-detected.window="
+                    if ($event.detail.type === 'institution') {
+                        Swal.fire({
+                            title: 'No Changes Detected',
+                            text: 'You have not made any changes to your institution demographic information.',
+                            icon: 'info',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                ">
                     @foreach($institutionTagCategories as $category)
                         <div class="mb-4">
                             <label class="block font-semibold mb-1">{{ $category->name }}</label>

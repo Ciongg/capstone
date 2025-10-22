@@ -1,6 +1,4 @@
-@extends('components.layouts.app')
-
-@section('content')
+<x-layouts.app>
 <main class="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
     <div class="bg-white rounded-xl p-8 shadow-md max-w-lg mx-auto" x-data="{ agreed: false }">
         <h1 class="text-3xl font-bold text-center mb-6">Sign in to Formigo</h1>
@@ -59,4 +57,4 @@
         </div>
     </div>
 </main>
-@endsection
+</x-layouts.app>

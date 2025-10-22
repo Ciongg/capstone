@@ -1,17 +1,18 @@
 <div>
     @php
         $respondentTagIds = collect($demographicTags)->pluck('id')->toArray();
-        $matchedTags = $survey->tags->filter(fn($tag) => in_array($tag->id, $respondentTagIds));
-        $unmatchedTags = $survey->tags->filter(fn($tag) => !in_array($tag->id, $respondentTagIds));
+        $surveyTagsCollection = collect($surveyTags);
+        $matchedTags = $surveyTagsCollection->filter(fn($tag) => in_array($tag['id'], $respondentTagIds));
+        $unmatchedTags = $surveyTagsCollection->filter(fn($tag) => !in_array($tag['id'], $respondentTagIds));
         $hasMatches = $matchedTags->isNotEmpty();
     @endphp
 
-    @if(empty($demographicTags) && !$survey->tags->isEmpty())
+    @if(empty($demographicTags) && !$surveyTagsCollection->isEmpty())
         {{-- Message if demographic data isn't available --}}
         <div class="text-gray-500 italic text-center py-4">
             No demographic data available for this respondent.
         </div>
-    @elseif($survey->tags->isEmpty())
+    @elseif($surveyTagsCollection->isEmpty())
         {{-- Message if no demographics are set at all --}}
         <div class="text-gray-500 italic text-center py-4">
             No demographics set for this survey.
@@ -28,7 +29,7 @@
             <div class="flex flex-wrap gap-3">
                 @foreach($matchedTags as $tag)
                     <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-200 text-green-800">
-                        {{ $tag->name }}
+                        {{ $tag['name'] }}
                     </span>
                 @endforeach
             </div>
@@ -41,7 +42,7 @@
                 <div class="flex flex-wrap gap-3">
                     @foreach($unmatchedTags as $tag)
                         <span class="px-3 py-1 rounded-full text-sm font-medium bg-gray-300 text-gray-700">
-                            {{ $tag->name }}
+                            {{ $tag['name'] }}
                         </span>
                     @endforeach
                 </div>

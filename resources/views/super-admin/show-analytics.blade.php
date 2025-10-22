@@ -1,4 +1,3 @@
-@extends('components.layouts.app')
-@section('content')
+<x-layouts.app>
     <livewire:super-admin.analytics.analytics-index />
-@endsection 
+</x-layouts.app>

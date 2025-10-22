@@ -1,5 +1,3 @@
-@extends('components.layouts.app')
-
-@section('content')
+<x-layouts.app>
     <livewire:surveys.form-responses.own-form-response :surveyId="$survey->id" :responseId="$response->id" />
-@endsection
+</x-layouts.app>

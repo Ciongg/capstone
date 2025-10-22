@@ -1,4 +1,3 @@
-@extends('components.layouts.app')
-@section('content')
+<x-layouts.app>
     <livewire:institution-admin.user-surveys.institution-user-surveys-index/>
-@endsection
+</x-layouts.app>

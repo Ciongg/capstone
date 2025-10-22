@@ -21,62 +21,128 @@ class SurveySettingsModal extends Component
     use WithFileUploads;
 
     public $survey;
+    public $snapshot; // Add this property to hold the snapshot
     public $target_respondents;
     public $start_date;
     public $end_date;
     public $points_allocated;
-    public $banner_image; // This will hold the temporary uploaded file object
+    public $banner_image;
     public $tagCategories;
-    public $selectedSurveyTags = []; // Make sure this is set
+    public $selectedSurveyTags = [];
     public $title;
     public $description;
-    public $type; // Add property for survey type
-    public $isInstitutionOnly; // Property for institution-only checkbox
-    public $isAnnounced; // <-- Add this property
-    public $isGuestAllowed; // <-- Add property for guest responses
+    public $type;
+    public $isInstitutionOnly;
+    public $isAnnounced;
+    public $isGuestAllowed;
+    public $isInFeed = true; // New property for controlling feed visibility
 
-    // Add these properties for institution demographics
     public $institutionTagCategories = [];
     public $selectedInstitutionTags = [];
 
     public $survey_topic_id;
     public $topics;
+    
+    public $isOngoingWithSnapshot = false; // Flag to indicate if we're using snapshot data
 
-    // Add the listener property
     protected $listeners = [
         'surveyTitleUpdated' => 'updateTitleFromEvent',
         'refresh-survey-data' => 'refreshSurveyData'
     ];
 
-    // Add new properties for collaborator management
     public $collaborators = [];
     public $newCollaboratorUuid;
+
+    public $deletedTopicName = null; // Add this property to store deleted topic name
 
     public function mount($survey)
     {
         $this->survey = $survey;
-        $this->title = $survey->title;
-        $this->description = $survey->description;
-        $this->type = $survey->type;
-        $this->target_respondents = $survey->target_respondents;
         
-        // Format dates properly for datetime-local inputs
-        $this->start_date = $survey->start_date ? 
-            Carbon::parse($survey->start_date)->format('Y-m-d\TH:i') : 
-            null;
-        $this->end_date = $survey->end_date ? 
-            Carbon::parse($survey->end_date)->format('Y-m-d\TH:i') : 
-            null;
+        // Check if survey is ongoing or finished and has a snapshot
+        $this->snapshot = null;
+        if (in_array($this->survey->status, ['ongoing', 'finished'])) {
+            $this->snapshot = $this->survey->snapshot()->first();
+            $this->isOngoingWithSnapshot = !is_null($this->snapshot);
+        }
+        
+        // Set basic properties from survey or snapshot
+        if ($this->isOngoingWithSnapshot) {
+            // Use snapshot data for display
+            $this->title = $this->snapshot->title;
+            $this->description = $this->snapshot->description;
+            $this->target_respondents = $this->snapshot->target_respondents;
+            $this->points_allocated = $this->snapshot->points_allocated;
             
-        // Ensure we're using the actual database value
-        $this->isInstitutionOnly = (bool)$survey->is_institution_only;
-        $this->isAnnounced = (bool)$survey->is_announced;
-        $this->isGuestAllowed = (bool)$survey->is_guest_allowed; // Initialize from model
-        $this->survey_topic_id = $survey->survey_topic_id;
-        $this->topics = SurveyTopic::all();
+            // Get type from metadata
+            $metadata = $this->snapshot->metadata;
+            $this->type = $metadata['type'] ?? $this->survey->type;
+            $this->isInstitutionOnly = $metadata['is_institution_only'] ?? $this->survey->is_institution_only;
+            
+            // Get dates from metadata if available
+            if (isset($metadata['start_date'])) {
+                $this->start_date = Carbon::parse($metadata['start_date'])->format('Y-m-d\TH:i');
+            } else {
+                $this->start_date = $this->survey->start_date ? 
+                    Carbon::parse($this->survey->start_date)->format('Y-m-d\TH:i') : null;
+            }
+            
+            if (isset($metadata['end_date'])) {
+                $this->end_date = $metadata['end_date'] ? 
+                    Carbon::parse($metadata['end_date'])->format('Y-m-d\TH:i') : null;
+            } else {
+                $this->end_date = $this->survey->end_date ? 
+                    Carbon::parse($this->survey->end_date)->format('Y-m-d\TH:i') : null;
+            }
+            
+            // Get topic from metadata if available, validate it exists in the database
+            if (isset($metadata['survey_topic']) && $metadata['survey_topic']) {
+                $topicId = $metadata['survey_topic']['id'] ?? null;
+                $topicName = $metadata['survey_topic']['name'] ?? null;
+                
+                // Check if the topic still exists
+                $topicExists = $topicId && SurveyTopic::where('id', $topicId)->exists();
+                
+                if ($topicExists) {
+                    $this->survey_topic_id = $topicId;
+                } else {
+                    // Store the deleted topic name for display
+                    $this->deletedTopicName = $topicName;
+                    $this->survey_topic_id = null;
+                }
+            } else {
+                $this->survey_topic_id = $this->survey->survey_topic_id;
+            }
+        } else {
+            // Use current survey data
+            $this->title = $survey->title;
+            $this->description = $survey->description;
+            $this->type = $survey->type;
+            $this->target_respondents = $survey->target_respondents;
+            
+            // Format dates properly for datetime-local inputs
+            $this->start_date = $survey->start_date ? 
+                Carbon::parse($survey->start_date)->format('Y-m-d\TH:i') : 
+                null;
+            $this->end_date = $survey->end_date ? 
+                Carbon::parse($survey->end_date)->format('Y-m-d\TH:i') : 
+                null;
+                
+            $this->isInstitutionOnly = (bool)$survey->is_institution_only;
+            $this->survey_topic_id = $survey->survey_topic_id;
+        }
 
+        // These properties always come from the current survey model regardless of snapshot
+        $this->isAnnounced = (bool)$survey->is_announced;
+        $this->isGuestAllowed = (bool)$survey->is_guest_allowed;
+        $this->isInFeed = (bool)$survey->is_in_feed; // Initialize from survey model
+        
+        $this->topics = SurveyTopic::all();
+        
         // Set points based on survey type AND boost count
-        $this->points_allocated = $this->getPointsForType($this->type);
+        if (!$this->isOngoingWithSnapshot) {
+            $this->points_allocated = $this->getPointsForType($this->type);
+        }
 
         $this->tagCategories = TagCategory::with('tags')->get();
 
@@ -84,10 +150,13 @@ class SurveySettingsModal extends Component
         $this->selectedSurveyTags = [];
         $this->selectedInstitutionTags = [];
 
-        // Load current survey tags
-        if ($this->survey) {
+        // Load current survey tags - use snapshot for ongoing surveys
+        if ($this->isOngoingWithSnapshot && $this->snapshot) {
+            // Load tags from snapshot's demographic_tags
+            $this->loadTagsFromSnapshot();
+        } else {
+            // Load tags directly from the survey
             foreach ($this->tagCategories as $category) {
-                // Get all tags for this category
                 $tags = $this->survey->tags()->where('tag_category_id', $category->id)->get();
                 if ($tags->count() > 0) {
                     $this->selectedSurveyTags[$category->id] = $tags->pluck('id')->toArray();
@@ -97,12 +166,72 @@ class SurveySettingsModal extends Component
             }
         }
 
-        // Load institution tag categories and tags if they exist
+        // Load institution tag categories and tags
         $this->loadInstitutionTagCategories();
-        $this->loadSelectedInstitutionTags();
+        
+        // Load institution tags - use snapshot if available
+        if ($this->isOngoingWithSnapshot && $this->snapshot && isset($this->snapshot->metadata['institution_tags'])) {
+            $this->loadInstitutionTagsFromSnapshot();
+        } else {
+            $this->loadSelectedInstitutionTags();
+        }
 
         // Load collaborators
         $this->loadCollaborators();
+    }
+
+    /**
+     * Load demographic tags from snapshot for ongoing surveys
+     */
+    private function loadTagsFromSnapshot()
+    {
+        if (!$this->snapshot || !isset($this->snapshot->demographic_tags)) {
+            return;
+        }
+
+        // Group snapshot tags by category
+        $tagsByCategory = [];
+        foreach ($this->snapshot->demographic_tags as $tag) {
+            $categoryId = $tag['category_id'] ?? null;
+            if ($categoryId) {
+                if (!isset($tagsByCategory[$categoryId])) {
+                    $tagsByCategory[$categoryId] = [];
+                }
+                $tagsByCategory[$categoryId][] = $tag['id'];
+            }
+        }
+
+        // Set selected tags by category
+        foreach ($this->tagCategories as $category) {
+            $this->selectedSurveyTags[$category->id] = $tagsByCategory[$category->id] ?? [];
+        }
+    }
+
+    /**
+     * Load institution tags from snapshot for ongoing surveys
+     */
+    private function loadInstitutionTagsFromSnapshot()
+    {
+        if (!$this->snapshot || !isset($this->snapshot->metadata['institution_tags'])) {
+            return;
+        }
+
+        // Group institution tags by category
+        $tagsByCategory = [];
+        foreach ($this->snapshot->metadata['institution_tags'] as $tag) {
+            $categoryId = $tag['category_id'] ?? null;
+            if ($categoryId) {
+                if (!isset($tagsByCategory[$categoryId])) {
+                    $tagsByCategory[$categoryId] = [];
+                }
+                $tagsByCategory[$categoryId][] = $tag['id'];
+            }
+        }
+
+        // Set selected institution tags by category
+        foreach ($this->institutionTagCategories as $category) {
+            $this->selectedInstitutionTags[$category->id] = $tagsByCategory[$category->id] ?? [];
+        }
     }
 
     // Method to handle the event
@@ -133,6 +262,11 @@ class SurveySettingsModal extends Component
     public function updatedType($value)
     {
         $this->points_allocated = $this->getPointsForType($value);
+        
+        // If changing to advanced, automatically disable guest allowed
+        if ($value === 'advanced') {
+            $this->isGuestAllowed = false;
+        }
     }
 
     // Add validation for start_date when it's updated
@@ -297,6 +431,11 @@ class SurveySettingsModal extends Component
                 
                 $endDate = $this->end_date ? Carbon::createFromFormat('Y-m-d\TH:i', $this->end_date, 'Asia/Manila') : null;
 
+                // Enforce guest responses disabled for advanced surveys
+                if ($this->type === 'advanced') {
+                    $this->isGuestAllowed = false;
+                }
+
                 // Save other fields
                 $this->survey->title = $this->title;
                 $this->survey->description = $this->description;
@@ -309,6 +448,7 @@ class SurveySettingsModal extends Component
                 $this->survey->is_institution_only = $this->isInstitutionOnly;
                 $this->survey->is_announced = $this->isAnnounced;
                 $this->survey->is_guest_allowed = $this->isGuestAllowed; // Save guest allowed setting
+                $this->survey->is_in_feed = $this->isInFeed; // Save in feed setting
                 $this->survey->survey_topic_id = $this->survey_topic_id;
                 $this->survey->save();
 
@@ -600,7 +740,11 @@ class SurveySettingsModal extends Component
 
     public function render()
     {
-        return view('livewire.surveys.form-builder.modal.survey-settings-modal');
+        return view('livewire.surveys.form-builder.modal.survey-settings-modal', [
+            'isOngoingWithSnapshot' => $this->isOngoingWithSnapshot
+        ]);
     }
+    
 }
+
 

@@ -42,6 +42,13 @@ class RewardRedeemModal extends Component
         }
 
         $user = Auth::user();
+        
+        // Check if user's trust score is too low (added safety check)
+        if ($user->trust_score <= 70) {
+            $this->purchaseError('Your trust score is too low to redeem rewards. Score must be above 70.');
+            return;
+        }
+
         $quantityToRedeem = ($this->reward->type === 'system') ? $this->redeemQuantity : 1;
         $totalCost = $this->reward->cost * $quantityToRedeem;
         $now = TestTimeService::now();
@@ -261,6 +268,12 @@ class RewardRedeemModal extends Component
         if (!$this->reward || !Auth::check()) return true;
         
         $user = Auth::user();
+        
+        // Check if user's trust score is too low
+        if ($user->trust_score <= 70) {
+            return true;
+        }
+        
         $calculatedCost = $this->getTotalCost();
         $availableQuantity = $this->getActualAvailableQuantity();
         
@@ -294,6 +307,12 @@ class RewardRedeemModal extends Component
         if (!$this->reward || !Auth::check()) return '';
         
         $user = Auth::user();
+        
+        // Check if user's trust score is too low
+        if ($user->trust_score <= 70) {
+            return "Your trust score is too low to redeem rewards.";
+        }
+        
         $calculatedCost = $this->getTotalCost();
         $availableQuantity = $this->getActualAvailableQuantity();
         
@@ -327,4 +346,3 @@ class RewardRedeemModal extends Component
         ]);
     }
 }
-      

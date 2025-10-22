@@ -77,7 +77,7 @@
                 </div>
 
                 <!-- Status Update Section -->
-                <div class="mt-6">
+                {{-- <div class="mt-6">
                     <div class="text-sm mb-2 text-gray-600">
                         Update redemption status:
                     </div>
@@ -116,7 +116,7 @@
                             Update Redemption
                         </button>
                     </form>
-                </div>
+                </div> --}}
             </div>
         </div>
     @else

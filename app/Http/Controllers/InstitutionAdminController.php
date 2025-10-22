@@ -28,4 +28,10 @@ class InstitutionAdminController extends Controller
         // Render the Livewire component for institution announcements
         return view('institution-admin.show-announcements');
     }
+
+       public function tagsIndex()
+    {
+        // Render the Livewire component for institution announcements
+        return view('institution-admin.show-tags');
+    }
 }

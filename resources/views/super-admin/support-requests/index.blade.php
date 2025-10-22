@@ -1,5 +1,3 @@
-@extends('components.layouts.app')
-
-@section('content')
+<x-layouts.app>
     @livewire('super-admin.support-requests.support-requests-index')
-@endsection
+</x-layouts.app>

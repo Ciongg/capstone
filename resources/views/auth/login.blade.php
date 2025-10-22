@@ -1,6 +1,4 @@
-@extends('components.layouts.app')
-
-@section('content')
+<x-layouts.app>
     <livewire:auth.login />
-@endsection
+</x-layouts.app>
 
