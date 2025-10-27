@@ -1,4 +1,4 @@
-<div class="bg-white shadow flex items-center justify-between px-3 sm:px-6 py-3 mb-4 min-w-[300px] sticky top-0 z-40">
+<div class="bg-white shadow flex items-center justify-between px-3 sm:px-6 py-3 mb-4 min-w-[300px] sticky top-0 z-50">
     {{-- Left Side: Title --}}
     <div class="flex items-center flex-1 min-w-0 mr-4">
         <input
@@ -12,7 +12,9 @@
     </div>
 
     {{-- Right Side: Buttons & Status --}}
-    <div x-data="{ open: false }" class="relative flex-shrink-0">
+    <div x-data="{ open: false }" 
+         x-init="$watch('open', value => window.dispatchEvent(new CustomEvent('mobile-menu-toggle', { detail: { open: value } })))"
+         class="relative flex-shrink-0">
         {{-- Buttons visible on large screens and up --}}
         <div class="hidden lg:flex items-center space-x-3">
             {{-- Display Status --}}
@@ -165,18 +167,31 @@
             </svg>
         </button>
 
+        {{-- Backdrop (visible below large screens when open) --}}
+        <div
+            x-show="open"
+            x-on:click="open = false"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            style="display: none;"
+        ></div>
+
         {{-- Bottom Modal Menu (visible below large screens when open) --}}
         <div
             x-show="open"
-            x-on:click.away="open = false"
             x-transition:enter="transition ease-out duration-300"
             x-transition:enter-start="opacity-0 transform translate-y-full"
             x-transition:enter-end="opacity-100 transform translate-y-0"
             x-transition:leave="transition ease-in duration-200"
             x-transition:leave-start="opacity-100 transform translate-y-0"
             x-transition:leave-end="opacity-0 transform translate-y-full"
-            class="fixed inset-x-0 bottom-0 z-[100] bg-white rounded-t-xl shadow-xl lg:hidden"
-            style="display: none; height: 50vh;" {{-- Prevents flash of content before Alpine initializes --}}
+            class="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-xl shadow-xl lg:hidden"
+            style="display: none; height: 50vh;"
         >
             {{-- Close button --}}
             <div class="flex justify-end p-4 border-b border-gray-200">
@@ -265,8 +280,8 @@
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mb-2 text-green-600">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M20.893 13.393l-1.135-1.135a2.252 2.252 0 01-.421-.585l-1.08-2.16a.414.414 0 00-.663-.107.827.827 0 01-.812.21l-1.273-.363a.89.89 0 00-.738 1.595l.587.39c.59.395.674 1.23.172 1.732l-.2.2c-.212.212-.33.498-.33.796v.41c0 .409-.11.809-.32 1.158l-1.315 2.191a2.11 2.11 0 01-1.81 1.025 1.055 1.055 0 01-1.055-1.055v-1.172c0-.92-.56-1.747-1.414-2.089l-.655-.261a2.25 2.25 0 01-1.383-2.46l.007-.042a2.25 2.25 0 01.29-.787l.09-.15a2.25 2.25 0 012.37-1.048l1.178.236a1.125 1.125 0 001.302-.795l.208-.73a1.125 1.125 0 00-.578-1.315l-.665-.332-.091.091a2.25 2.25 0 01-1.591.659h-.18c-.249 0-.487.1-.662.274a.931.931 0 01-1.458-1.137l1.411-2.353a2.25 2.25 0 00.286-.76m11.928 9.869A9 9 0 008.965 3.525m11.928 9.868A9 9 0 118.965 3.525" />
-                            </svg>
-                            <span class="text-sm font-medium text-green-700">Publish</span>
+                        </svg>
+                        <span class="text-sm font-medium text-green-700">Publish</span>
                         </button>
                     @endif
 
@@ -280,8 +295,8 @@
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mb-2 text-red-600">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                            </svg>
-                            <span class="text-sm font-medium text-red-700">Reset</span>
+                        </svg>
+                        <span class="text-sm font-medium text-red-700">Reset</span>
                         </button>
                     @endif
 

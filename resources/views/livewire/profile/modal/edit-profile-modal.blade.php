@@ -18,7 +18,17 @@
             }
         });
     }
-}">
+}"
+x-on:no-changes-detected.window="
+    if ($event.detail.type === 'profile') {
+        Swal.fire({
+            title: 'No Changes Detected',
+            text: 'You have not made any changes to your profile information.',
+            icon: 'info',
+            confirmButtonColor: '#3085d6'
+        });
+    }
+">
     <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-semibold">Edit Profile</h2>
         @if($canUpdateProfile)

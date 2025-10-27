@@ -1,9 +1,18 @@
 <div
     class="bg-gray-100 min-h-screen p-4 sm:p-6 md:p-8 lg:p-16"
-    x-data="{ selectedQuestionId: @entangle('selectedQuestionId').live, activePageId: @entangle('activePageId').live }"
+    x-data="{ 
+        selectedQuestionId: @entangle('selectedQuestionId').live, 
+        activePageId: @entangle('activePageId').live,
+        mobileMenuOpen: false
+    }"
     x-init="
+        // Listen for mobile menu state changes
+        window.addEventListener('mobile-menu-toggle', (e) => {
+            mobileMenuOpen = e.detail.open;
+        });
+
         $watch('selectedQuestionId', (value) => {
-            if (value !== null) {
+            if (value !== null && !mobileMenuOpen) {
                 $nextTick(() => {
                     const element = document.getElementById('question-' + value);
                     if (element) {
@@ -19,7 +28,7 @@
         });
 
       $watch('activePageId', (value, oldValue) => {
-       if (value !== null && selectedQuestionId === null && value !== oldValue) {
+       if (value !== null && selectedQuestionId === null && value !== oldValue && !mobileMenuOpen) {
             $nextTick(() => {
                 const pageElement = document.getElementById('page-container-' + value);
                 if (pageElement) {
@@ -141,9 +150,11 @@
     </div>
     <!-- Wrapper for survey content - disabled when survey is locked or ongoing/finished -->
     <div @class([
-        'relative', // Always relative
+        'relative transition-all duration-300', // Always relative
         'opacity-50 pointer-events-none select-none' => $survey->is_locked || $survey->status === 'ongoing' || $survey->status === 'finished', // Disabled when locked, ongoing, or finished
-    ])>
+    ])
+    :class="{ 'pointer-events-none': mobileMenuOpen }"
+    >
         @if($survey->is_locked)
             <!-- Overlay message for locked surveys -->
             <div class="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">

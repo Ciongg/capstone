@@ -34,9 +34,9 @@ class SimpleCsvExporter
             // Add BOM for Excel UTF-8 compatibility
             fputs($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
             
-            // Create CSV headers - removed User ID
-            $headers = ['Respondent No.', 'Submitted At', 'Trust Score', 
-                       'Completion Time (seconds)', 'Started At', 'Completed At'];
+            // Create CSV headers - removed Trust Score
+            $headers = ['Respondent No.', 'Submitted At', 
+                       'Completion Time', 'Started At', 'Completed At'];
             
             // Add question headers with numbering
             foreach ($questions as $question) {
@@ -78,13 +78,12 @@ class SimpleCsvExporter
                 
                 // Add snapshot data with null checks
                 if ($snapshot) {
-                    $row[] = $snapshot->trust_score ?? 'N/A';
-                    $row[] = $snapshot->completion_time_seconds ?? 'N/A';
+                    // Remove trust score and format completion time
+                    $row[] = $snapshot->completion_time_seconds ? $this->formatTimeFromSeconds($snapshot->completion_time_seconds) : 'N/A';
                     $row[] = $snapshot->started_at ? date('d/m/Y h:i A', strtotime($snapshot->started_at)) : 'N/A';
                     $row[] = $snapshot->completed_at ? date('d/m/Y h:i A', strtotime($snapshot->completed_at)) : 'N/A';
                 } else {
-                    // Add placeholder values if snapshot is null
-                    $row[] = 'N/A';
+                    // Add placeholder values if snapshot is null (removed trust score)
                     $row[] = 'N/A';
                     $row[] = 'N/A';
                     $row[] = 'N/A';
@@ -123,6 +122,38 @@ class SimpleCsvExporter
             Log::error($e->getTraceAsString());
             return "Error generating CSV: " . $e->getMessage();
         }
+    }
+
+    /**
+     * Format seconds into human-readable time (HH:MM:SS)
+     */
+    private function formatTimeFromSeconds($seconds)
+    {
+        if (!is_numeric($seconds)) {
+            return 'N/A';
+        }
+
+        $seconds = (int)$seconds;
+        
+        $hours = floor($seconds / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+        $secs = $seconds % 60;
+        
+        $timeString = '';
+        
+        if ($hours > 0) {
+            $timeString .= "$hours hour" . ($hours != 1 ? 's' : '') . ' ';
+        }
+        
+        if ($minutes > 0) {
+            $timeString .= "$minutes minute" . ($minutes != 1 ? 's' : '') . ' ';
+        }
+        
+        if ($secs > 0 || ($hours == 0 && $minutes == 0)) {
+            $timeString .= "$secs second" . ($secs != 1 ? 's' : '');
+        }
+        
+        return trim($timeString);
     }
 
     private function addLikertAnswersToRow(&$row, $answer, $question)
