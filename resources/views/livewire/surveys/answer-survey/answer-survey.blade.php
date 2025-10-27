@@ -13,7 +13,7 @@ $isGuest = !Auth::check();
 
         @include('livewire.surveys.answer-survey.partials.survey-header')
 
-        <form wire:submit.prevent="submit">
+        <form wire:submit.prevent="submit" data-answersurvey-form>
             <div x-data="{ navAction: 'submit' }">
                 @php $questionNumber = 1; @endphp
                 @foreach($survey->pages as $pageIndex => $page)
@@ -117,7 +117,8 @@ $isGuest = !Auth::check();
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#3085d6',
                 confirmButtonText: 'Continue as Guest',
-                cancelButtonText: 'Register/Login'
+                cancelButtonText: 'Register',
+                allowOutsideClick: false
             }).then(function(result) {
                 if (!result.isConfirmed) {
                     // Redirect to register page with return URL
@@ -164,19 +165,26 @@ $isGuest = !Auth::check();
             // Guest user case
             if (isGuestUser) {
                 contentHtml = `
-                    <div class="p-2">
-                        <div class="mb-4 text-center">
-                            <p class="text-lg mb-4">Thank you for completing "${data.surveyName}" as a guest.</p>
-                            <p class="text-md text-red-500 mb-6">Unfortunately, guest users don't earn any rewards.</p>
-                            <p class="text-md mb-4">Create an account to start earning rewards from future surveys!</p>
-                            <div class="mt-4">
-                                <a href="/register" class="px-5 py-2 bg-green-500 hover:bg-green-600 text-white rounded shadow-sm">
-                                    Create an Account
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                `;
+        <div class="p-4 sm:p-6">
+            <div class="text-center max-w-md mx-auto">
+                <p class="text-base sm:text-lg font-medium mb-3 sm:mb-4 break-words">
+                    Thank you for completing "<span class="font-semibold">${data.surveyName}</span>" as a guest.
+                </p>
+                <p class="text-sm sm:text-md text-red-500 mb-4 sm:mb-6">
+                    Unfortunately, guest users don't earn any rewards.
+                </p>
+                <p class="text-sm sm:text-md mb-4">
+                    Create an account to start earning rewards from future surveys!
+                </p>
+                <div class="mt-4">
+                    <a href="/register"
+                        class="inline-block w-full sm:w-auto px-5 py-2 bg-green-500 hover:bg-green-600 text-white rounded shadow-sm text-sm sm:text-base transition duration-200 ease-in-out">
+                        Create an Account
+                    </a>
+                </div>
+            </div>
+        </div>
+    `;
             }
             // Low trust score case - users with trust score <= 70
             else if (isLowTrustScore) {
@@ -260,8 +268,8 @@ $isGuest = !Auth::check();
             let buttonColor = '#3085d6';
             
             if (data.type === 'already_responded') {
-                buttonText = '<i class="fas fa-chart-bar mr-2"></i> View My Responses';
-                buttonColor = '#17a2b8';
+                buttonText = '<i class="fas fa-check-circle mr-2"></i> OK';
+                buttonColor = '#f59e0b'; // amber/orange color
             } else if (data.type === 'expired' || data.type === 'limit_reached') {
                 buttonText = '<i class="fas fa-search mr-2"></i> Find Other Surveys';
                 buttonColor = '#6c757d';
@@ -282,6 +290,9 @@ $isGuest = !Auth::check();
                         ${data.type === 'limit_reached' ? 
                             '<div class="text-sm text-orange-500"><i class="fas fa-users mr-1"></i> Maximum responses: {{ $survey->target_respondents ?? "N/A" }}</div>' : ''
                         }
+                        ${data.type === 'already_responded' ? 
+                            '<div class="text-sm text-amber-600 mt-3"><i class="fas fa-info-circle mr-1"></i> Each user can only submit one response per survey.</div>' : ''
+                        }
                     </div>
                 `,
                 icon: data.icon || 'error',
@@ -293,13 +304,8 @@ $isGuest = !Auth::check();
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    if (data.type === 'already_responded') {
-                        // Redirect to user's responses page if it exists
-                        window.location.href = "{{ route('feed.index') }}";
-                    } else {
-                        // Default redirect to feed
-                        window.location.href = "{{ route('feed.index') }}";
-                    }
+                    // Redirect to feed for all error types
+                    window.location.href = "{{ route('feed.index') }}";
                 }
             });
         });

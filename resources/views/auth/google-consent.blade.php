@@ -3,7 +3,8 @@
     <div class="bg-white rounded-xl p-8 shadow-md max-w-lg mx-auto" x-data="{ agreed: false }">
         <h1 class="text-3xl font-bold text-center mb-6">Sign in to Formigo</h1>
         <div class="flex flex-col items-center mb-8">
-            <img src="{{ $googleUser->avatar }}" alt="Profile" class="w-20 h-20 rounded-full mb-2 shadow">
+            <!-- Use default avatar based on name instead of Google's avatar -->
+            <img src="https://ui-avatars.com/api/?name={{ urlencode($googleUser->name) }}&color=7F9CF5&background=EBF4FF" alt="Profile" class="w-20 h-20 rounded-full mb-2 shadow">
             <div class="text-lg font-semibold">{{ $googleUser->name }}</div>
             <div class="text-gray-600">{{ $googleUser->email }}</div>
         </div>
@@ -35,7 +36,7 @@
             <input type="hidden" name="name" value="{{ $googleUser->name }}">
             <input type="hidden" name="given_name" value="{{ $googleUser->user['given_name'] ?? '' }}">
             <input type="hidden" name="family_name" value="{{ $googleUser->user['family_name'] ?? '' }}">
-            <input type="hidden" name="avatar" value="{{ $googleUser->avatar }}">
+            <!-- Removed avatar hidden field so we don't pass Google's avatar -->
             <div class="flex items-center mb-4 bg-gray-100 rounded-lg px-4 py-3 border border-gray-200">
                 <input type="checkbox" id="agree" x-model="agreed" class="mr-2 h-4 w-4 text-[#03b8ff] border-gray-300 rounded focus:ring-[#03b8ff]">
                 <label for="agree" class="text-gray-700 text-sm">

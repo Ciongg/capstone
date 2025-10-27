@@ -117,9 +117,9 @@
                 }
             }
         }" x-init="watchSurveyType()">
-            
+        
         <!-- Don't Show in Feed Checkbox (Purple) -->
-        <div class="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg w-full">
+        <div class="mb-4 p-3 bg-purple-50 border border-purple-100 rounded-lg w-full">
             <div class="flex items-center">
                 <input 
                     type="checkbox" 

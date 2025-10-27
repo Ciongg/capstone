@@ -7,6 +7,8 @@ use App\Models\Survey;
 use App\Models\Response;
 use Carbon\CarbonInterface;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class IndividualResponses extends Component
 {
@@ -18,7 +20,7 @@ class IndividualResponses extends Component
     public ?string $timeCompleted = null;
     public array $matchedSurveyTagsInfo = [];
     public array $pagesWithProcessedAnswers = [];
-    
+
     // Add properties for Go To Respondent feature
     public $gotoRespondent = '';
     public $gotoError = '';
@@ -374,6 +376,66 @@ class IndividualResponses extends Component
         $this->current = $number - 1;
         $this->gotoRespondent = '';
         $this->processCurrentResponseDetails();
+    }
+
+    /**
+     * Delete a guest response and its associated snapshot
+     */
+    public function deleteGuestResponse()
+    {
+        // Only allow deletion if current response is a guest response (no user_id)
+        if (!$this->currentRespondent || $this->currentRespondent->user_id !== null) {
+            $this->dispatch('deletionError', [
+                'title' => 'Cannot Delete',
+                'message' => 'Only guest responses can be deleted.',
+                'icon' => 'error'
+            ]);
+            return;
+        }
+
+        try {
+            DB::beginTransaction();
+            
+            $responseId = $this->currentRespondent->id;
+            
+            // Delete the response (cascade will handle snapshot and answers)
+            $this->currentRespondent->delete();
+            
+            DB::commit();
+            
+            Log::info('Guest response deleted successfully', ['response_id' => $responseId]);
+            
+            // Reload survey responses
+            $this->survey->load('responses.user', 'responses.snapshot', 'responses.answers');
+            
+            // Adjust current index if needed
+            if ($this->current >= $this->survey->responses->count()) {
+                $this->current = max(0, $this->survey->responses->count() - 1);
+            }
+            
+            // Refresh the view
+            $this->processCurrentResponseDetails();
+            
+            $this->dispatch('deletionSuccess', [
+                'title' => 'Deleted!',
+                'message' => 'Guest response has been successfully deleted.',
+                'icon' => 'success'
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Failed to delete guest response: ' . $e->getMessage(), [
+                'response_id' => $this->currentRespondent->id ?? 'unknown',
+                'error' => $e->getTraceAsString()
+            ]);
+            
+            $this->dispatch('deletionError', [
+                'title' => 'Deletion Failed',
+                'message' => 'An error occurred while deleting the response. Please try again.',
+                'icon' => 'error'
+            ]);
+        }
     }
 
     public function render()

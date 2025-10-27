@@ -131,7 +131,6 @@ it('allows creating institution-specific announcements', function () {
 it('allows image upload for announcements', function () {
     $this->actingAs($this->superAdmin);
     
-    // Use create() instead of image() to avoid GD dependency
     $file = UploadedFile::fake()->create('announcement.jpg', 100);
     
     Livewire::test(CreateAnnouncementModal::class)
@@ -161,7 +160,6 @@ it('validates date ranges', function () {
         ->call('save')
         ->assertHasErrors(['end_date']);
     
-    // Valid date range should work
     Livewire::test(CreateAnnouncementModal::class)
         ->set('title', 'Test Date Validation')
         ->set('targetAudience', 'public')

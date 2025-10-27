@@ -562,24 +562,20 @@ class AnswerSurvey extends Component
                 if ($this->currentPage < $this->survey->pages->count() - 1) {
                     $this->currentPage++;
                     $this->dispatch('pageChanged');
+                    $this->dispatch('scrollToTop');
                 } else {
                     // If we're on the last page, change to submit mode
                     $this->navAction = 'submit';
                     $this->submit();
                 }
             } catch (\Illuminate\Validation\ValidationException $e) {
-                // Dispatch event for SweetAlert notification
+                $this->dispatch('submissionEnded');
                 $this->dispatch('showValidationAlert');
-                
-                // Re-throw to show inline errors
                 throw $e;
             }
             return;
         }
 
-
-
-        
         // Handle final submission
         if ($this->navAction === 'submit') {
             try {
@@ -601,11 +597,30 @@ class AnswerSurvey extends Component
 
                 
 
-                // Validate survey availability (end date, response limits, etc.)
+                // Validate survey availability
                 $availabilityError = $this->validateSurveyAvailability();
                 if ($availabilityError) {
+                    $this->dispatch('submissionEnded');
                     $this->dispatch('surveySubmissionError', $availabilityError);
                     return;
+                }
+
+                // Check if user has already responded
+                if (Auth::check()) {
+                    $existingResponse = Response::where('survey_id', $this->survey->id)
+                        ->where('user_id', Auth::id())
+                        ->exists();
+                    
+                    if ($existingResponse) {
+                        $this->dispatch('submissionEnded');
+                        $this->dispatch('surveySubmissionError', [
+                            'type' => 'already_responded',
+                            'title' => 'Already Submitted',
+                            'message' => 'You have already submitted a response to this survey. Multiple submissions are not allowed.',
+                            'icon' => 'warning'
+                        ]);
+                        return;
+                    }
                 }
 
                 // Validate all questions in the survey
@@ -624,12 +639,11 @@ class AnswerSurvey extends Component
                 ]);
 
             } catch (\Illuminate\Validation\ValidationException $e) {
-                // Dispatch event for SweetAlert notification
+                $this->dispatch('submissionEnded');
                 $this->dispatch('showValidationAlert');
-                
-                // Re-throw validation exceptions to show form errors
                 throw $e;
             } catch (\Exception $e) {
+                $this->dispatch('submissionEnded');
                 // Log the error for debugging
                 Log::error('Survey submission error: ' . $e->getMessage(), [
                     'survey_id' => $this->survey->id,
@@ -785,7 +799,7 @@ class AnswerSurvey extends Component
             // Award +1 trust score to authenticated users
             if ($user) {
                 try {
-                    $user->trust_score = ($user->trust_score ?? 0) + 1;
+                    $user->trust_score = min(($user->trust_score ?? 0) + 1, 100);
                     $user->save();
                     Log::info("Increased trust score by 1 for user ID: {$user->id}");
                 } catch (\Exception $e) {

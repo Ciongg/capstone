@@ -19,7 +19,6 @@ class EditProfileModal extends Component
     public $photo;
     public $email;
      
-    // Add th    
     // Add these properties for cooldown
     public $canUpdateProfile = false;
     public $daysUntilProfileUpdateAvailable = 0;
@@ -27,6 +26,12 @@ class EditProfileModal extends Component
     public $minutesUntilProfileUpdateAvailable = 0;
     public $timeUntilUpdateText = '';
     public $profileUpdateCooldownDays = 120; // 120 days = 4 months cooldown
+    
+    // Add these properties to track original values
+    public $originalFirstName = '';
+    public $originalLastName = '';
+    public $originalPhoneNumber = '';
+    public $originalPhotoPath = '';
     
     protected $listeners = ['refreshEditProfileModal' => 'refreshData'];
 
@@ -53,6 +58,12 @@ class EditProfileModal extends Component
         $this->phone_number = $this->user->phone_number;
         $this->email = $this->user->email;
         $this->photo = null; // Reset photo upload
+        
+        // Store original values
+        $this->originalFirstName = $this->user->first_name;
+        $this->originalLastName = $this->user->last_name;
+        $this->originalPhoneNumber = $this->user->phone_number;
+        $this->originalPhotoPath = $this->user->profile_photo_path;
         
         // Check if the user can update profile
         $this->canUpdateProfile = $this->user->canUpdateProfile();
@@ -104,12 +115,51 @@ class EditProfileModal extends Component
         }
     }
 
+    /**
+     * Check if profile data has been changed
+     */
+    public function profileDataChanged()
+    {
+        // Check if a new photo was uploaded
+        if ($this->photo !== null) {
+            return true;
+        }
+        
+        // Check if current photo was deleted
+        if ($this->originalPhotoPath && !$this->user->profile_photo_path) {
+            return true;
+        }
+        
+        // Check if first name changed
+        if (trim($this->first_name) !== trim($this->originalFirstName)) {
+            return true;
+        }
+        
+        // Check if last name changed
+        if (trim($this->last_name) !== trim($this->originalLastName)) {
+            return true;
+        }
+        
+        // Check if phone number changed
+        if (trim($this->phone_number ?? '') !== trim($this->originalPhoneNumber ?? '')) {
+            return true;
+        }
+        
+        return false;
+    }
+
     public function save()
     {
         // Check if user can update profile
         if (!$this->canUpdateProfile) {
             session()->flash('error', 'You cannot update your profile at this time. Please try again in ' . 
                 $this->timeUntilUpdateText . '.');
+            return;
+        }
+        
+        // Check if any changes were made
+        if (!$this->profileDataChanged()) {
+            $this->dispatch('no-changes-detected', type: 'profile');
             return;
         }
         

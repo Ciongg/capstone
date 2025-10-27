@@ -10,6 +10,8 @@ use App\Models\RewardRedemption;
 use App\Models\Response;
 use Carbon\Carbon;
 use Livewire\Component;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 class AnalyticsIndex extends Component
 {
@@ -111,11 +113,21 @@ class AnalyticsIndex extends Component
 
     private function getTopResearchers()
     {
-        return User::where('type', 'researcher')
+        $users = User::where('type', 'researcher')
             ->withCount('surveys')
             ->orderBy('surveys_count', 'desc')
             ->limit(5)
-            ->get();
+            ->get(['id','first_name','last_name','email']);
+
+        return $users->map(function ($u) {
+            return [
+                'id' => $u->id,
+                'first_name' => $u->first_name,
+                'last_name' => $u->last_name,
+                'email' => $u->email,
+                'surveys_count' => isset($u->surveys_count) ? (int)$u->surveys_count : (int)$u->surveys()->count(),
+            ];
+        })->values();
     }
 
     private function calculateResponseRate()
@@ -130,6 +142,104 @@ class AnalyticsIndex extends Component
     private function getTotalResponses()
     {
         return Response::count();
+    }
+
+    public function exportToCsv()
+    {
+        try {
+            $filename = 'system_analytics_' . date('Y-m-d_His') . '.csv';
+            
+            // Generate CSV without modifying component state
+            $csvContent = $this->generateAnalyticsCsvForExport();
+            
+            if (empty($csvContent)) {
+                $this->dispatch('export-error', message: 'Error generating CSV: Empty content');
+                return;
+            }
+
+            // Dispatch browser event to download without page refresh
+            $this->dispatch('download-csv', content: base64_encode($csvContent), filename: $filename);
+            
+        } catch (Exception $e) {
+            Log::error('Analytics Export error: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            $this->dispatch('export-error', message: 'Error exporting to CSV: ' . $e->getMessage());
+        }
+    }
+
+    private function generateAnalyticsCsvForExport()
+    {
+        // Fetch fresh data for export without modifying component properties
+        $topResearchers = User::where('type', 'researcher')
+            ->get()
+            ->map(function($user) {
+                $surveyCount = Survey::where('user_id', $user->id)->count();
+                $user->surveys_count = $surveyCount;
+                return $user;
+            })
+            ->sortByDesc('surveys_count')
+            ->take(5)
+            ->values();
+        
+        $output = fopen('php://temp', 'r+');
+        
+        // Removed BOM write to avoid double-encoding on client
+        
+        // System Overview Section
+        fputcsv($output, ['System Analytics Report']);
+        fputcsv($output, ['Generated:', date('d/m/Y h:i A')]);
+        fputcsv($output, []);
+        
+        // Key Metrics
+        fputcsv($output, ['Key Metrics']);
+        fputcsv($output, ['Metric', 'Value']);
+        fputcsv($output, ['Total Surveys', $this->surveyCount]);
+        fputcsv($output, ['Total Users', $this->userCount]);
+        fputcsv($output, ['Total Responses', $this->totalResponses]);
+        fputcsv($output, ['Surveys per Researcher', $this->userCount > 0 ? number_format($this->surveyCount / max(1, $this->userCount), 1) : 0]);
+        fputcsv($output, ['Response Rate (%)', $this->responseRate]);
+        fputcsv($output, []);
+        
+        // Most Used Survey Topics
+        fputcsv($output, ['Most Used Survey Topics']);
+        fputcsv($output, ['Topic Name', 'Survey Count', 'Percentage']);
+        foreach ($this->preferredTopics as $topic) {
+            $percentage = $this->surveyCount > 0 ? round(($topic['count'] / $this->surveyCount) * 100, 1) : 0;
+            fputcsv($output, [$topic['name'], $topic['count'], $percentage . '%']);
+        }
+        fputcsv($output, []);
+        
+        // Top Researchers - use the fresh data
+        fputcsv($output, ['Top Researchers']);
+        fputcsv($output, ['Researcher Name', 'Email', 'Survey Count']);
+        foreach ($topResearchers as $researcher) {
+            fputcsv($output, [
+                $researcher->first_name . ' ' . $researcher->last_name,
+                $researcher->email,
+                $researcher->surveys_count
+            ]);
+        }
+        fputcsv($output, []);
+        
+        // Reward Redemptions
+        fputcsv($output, ['Reward Redemptions by Type']);
+        fputcsv($output, ['Reward Type', 'Redemption Count']);
+        fputcsv($output, ['System', $this->rewardStats['system']]);
+        fputcsv($output, ['Voucher', $this->rewardStats['voucher']]);
+        fputcsv($output, []);
+        
+        // Monthly Survey Trends
+        fputcsv($output, ['Survey Creation Trends - ' . $this->selectedYear]);
+        fputcsv($output, ['Month', 'Survey Count']);
+        foreach ($this->monthlySurveys as $monthData) {
+            fputcsv($output, [$monthData['month'], $monthData['count']]);
+        }
+        
+        rewind($output);
+        $csv = stream_get_contents($output);
+        fclose($output);
+        
+        return $csv;
     }
 
     public function render()

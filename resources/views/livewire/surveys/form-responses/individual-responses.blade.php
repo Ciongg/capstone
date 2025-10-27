@@ -1,4 +1,4 @@
-{{-- filepath: c:\Users\sharp\OneDrive\Desktop\Formigo\formigo\resources\views\livewire\surveys\form-responses\individual-responses.blade.php --}}
+{{-- filepath: d:\Projects\capstone\resources\views\livewire\surveys\form-responses\individual-responses.blade.php --}}
 {{-- Main container with gray background --}}
 <div class="bg-gray-100 min-h-screen py-4 sm:py-8">
     <div class="max-w-7xl mx-auto space-y-6 sm:space-y-10 px-2 sm:px-4">
@@ -6,7 +6,7 @@
         @if($currentRespondent)
             {{-- Top card with respondent navigation and summary information --}}
             <div class="bg-white shadow-xl rounded-lg sm:rounded-2xl p-4 sm:p-10 mb-6 sm:mb-8">
-                {{-- Back and Report button container --}}
+                {{-- Back and Report/Delete button container --}}
                 <div class="flex justify-between items-center mb-6">
                     {{-- Back and Go To Respondent container --}}
                     <div class="flex items-center space-x-2">
@@ -14,7 +14,7 @@
                         <a href="{{ route('surveys.responses', $survey->uuid) }}"
                            class="px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg shadow hover:bg-gray-200 flex items-center text-sm sm:text-base"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.oPrg/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
                             Back
@@ -43,21 +43,34 @@
                         </form>
                     </div>
                     
-                    {{-- Report button to flag problematic responses - Only show for non-guest responses --}}
+                    {{-- Report button for authenticated users OR Delete button for guest responses --}}
                     @if($currentRespondent->user_id)
-                    <button
-                        x-data
-                        x-on:click="$dispatch('open-modal', {name : 'view-report-response-modal'})"
-                        class="p-1 sm:p-2 text-red-500 hover:text-red-700"
-                        type="button"
-                        aria-label="Report Response"
-                    >
-                        <svg class="w-8 h-8 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
-                            </path>
-                        </svg>
-                    </button>
+                        {{-- Report button to flag problematic responses - Only show for non-guest responses --}}
+                        <button
+                            x-data
+                            x-on:click="$dispatch('open-modal', {name : 'view-report-response-modal'})"
+                            class="p-1 sm:p-2 text-red-500 hover:text-red-700"
+                            type="button"
+                            aria-label="Report Response"
+                        >
+                            <svg class="w-8 h-8 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                                </path>
+                            </svg>
+                        </button>
+                    @else
+                        {{-- Delete button for guest responses --}}
+                        <button
+                            type="button"
+                            onclick="confirmDeleteGuestResponse()"
+                            class="p-1 sm:p-2 text-red-500 hover:text-red-700"
+                            aria-label="Delete Guest Response"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 sm:w-12 sm:h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
                     @endif
                 </div>
                 
@@ -349,6 +362,8 @@
                     </div>
                 </div>
             @endforeach
+
+            {{-- Remove the separate Delete Guest Response Section at the bottom --}}
         @else
             {{-- Display when no response is available --}}
             <div class="text-gray-500 text-lg sm:text-xl text-center py-10">
@@ -361,3 +376,45 @@
         @endif
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function confirmDeleteGuestResponse() {
+        Swal.fire({
+            title: 'Delete Guest Response?',
+            text: "This action cannot be undone. The response and all associated data will be permanently deleted.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                @this.call('deleteGuestResponse');
+            }
+        });
+    }
+
+    // Listen for deletion success event
+    window.addEventListener('deletionSuccess', event => {
+        Swal.fire({
+            title: event.detail[0].title,
+            text: event.detail[0].message,
+            icon: event.detail[0].icon,
+            confirmButtonColor: '#3b82f6',
+        });
+    });
+
+    // Listen for deletion error event
+    window.addEventListener('deletionError', event => {
+        Swal.fire({
+            title: event.detail[0].title,
+            text: event.detail[0].message,
+            icon: event.detail[0].icon,
+            confirmButtonColor: '#3b82f6',
+        });
+    });
+</script>
+@endpush

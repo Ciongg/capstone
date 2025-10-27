@@ -49,4 +49,3 @@ class Response extends Model
         return $this->hasOne(ResponseSnapshot::class);
     }
 }
-    
