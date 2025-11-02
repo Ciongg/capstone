@@ -1,4 +1,4 @@
-<div>
+<div x-data="{ fullscreenImageSrc: null }">
     <!-- Status explanation notice -->
     <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
         <p><strong>Note:</strong> This page shows all registered merchants. Use this page to manage merchant records.</p>
@@ -27,6 +27,7 @@
             <thead>
                 <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                     <th class="py-3 px-6 text-left">ID</th>
+                    <th class="py-3 px-6 text-left">Logo</th>
                     <th class="py-3 px-6 text-left">Name</th>
                     <th class="py-3 px-6 text-left">Merchant Code</th>
                     <th class="py-3 px-6 text-left">Created At</th>
@@ -37,6 +38,16 @@
                 @forelse($merchants as $merchant)
                     <tr class="border-b border-gray-200 hover:bg-gray-50">
                         <td class="py-3 px-6">{{ $merchant->id }}</td>
+                        <td class="py-3 px-6">
+                            @if($merchant->logo_path)
+                                @php $logoUrl = asset('storage/' . $merchant->logo_path); @endphp
+                                <button @click="fullscreenImageSrc = '{{ $logoUrl }}'" class="focus:outline-none">
+                                    <img src="{{ $logoUrl }}" alt="Logo of {{ $merchant->name }}" class="w-10 h-10 object-cover rounded border cursor-pointer" />
+                                </button>
+                            @else
+                                <div class="w-10 h-10 bg-gray-100 border rounded flex items-center justify-center text-[10px] text-gray-400">N/A</div>
+                            @endif
+                        </td>
                         <td class="py-3 px-6">{{ $merchant->name }}</td>
                         <td class="py-3 px-6">{{ $merchant->merchant_code }}</td>
                         <td class="py-3 px-6">{{ $merchant->created_at->format('M d, Y') }}</td>
@@ -49,14 +60,13 @@
                                 })"
                                 class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center"
                             >
-                              
                                 Update
                             </button>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="py-3 px-6 text-center">No merchants found</td>
+                        <td colspan="6" class="py-3 px-6 text-center">No merchants found</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -100,4 +110,15 @@
             </div>
         </div>
     </x-modal>
-</div> 
+
+    <!-- Fullscreen overlay copied pattern from survey-card -->
+    <div
+        x-show="fullscreenImageSrc"
+        x-cloak
+        class="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"
+        @click="fullscreenImageSrc = null"
+        @keydown.escape.window="fullscreenImageSrc = null"
+    >
+        <img :src="fullscreenImageSrc" alt="Merchant Logo" class="max-w-full max-h-full rounded-lg shadow-2xl" />
+    </div>
+</div>

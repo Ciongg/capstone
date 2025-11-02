@@ -8,12 +8,17 @@ use App\Models\Institution;
 use App\Models\User;
 use Illuminate\Support\Str;
 use App\Services\TestTimeService;
+use Illuminate\Support\Facades\Cache;
 
 class Login extends Component
 {
     public string $email = '';
     public string $password = '';
     public bool $remember = false;
+
+    // Cooldown configuration
+    private const MAX_FAILED_ATTEMPTS = 3;
+    private const COOLDOWN_MINUTES = 30;
 
     protected function rules(): array
     {
@@ -94,6 +99,53 @@ class Login extends Component
         return false; // No change
     }
 
+    private function attemptsKey(): string
+    {
+        return 'login:attempts:' . sha1(Str::lower(trim($this->email)));
+    }
+
+    private function lockoutKey(): string
+    {
+        return 'login:lockout:' . sha1(Str::lower(trim($this->email)));
+    }
+
+    private function getLockoutRemainingSeconds(): int
+    {
+        $untilTs = (int) Cache::get($this->lockoutKey(), 0);
+        $nowTs = TestTimeService::now()->timestamp;
+        return max(0, $untilTs - $nowTs);
+    }
+
+    private function isLockedOut(): bool
+    {
+        return $this->getLockoutRemainingSeconds() > 0;
+    }
+
+    private function startLockout(): void
+    {
+        $untilTs = TestTimeService::now()->addMinutes(self::COOLDOWN_MINUTES)->timestamp;
+        Cache::put($this->lockoutKey(), $untilTs, TestTimeService::now()->addMinutes(self::COOLDOWN_MINUTES));
+        Cache::forget($this->attemptsKey());
+    }
+
+    private function incrementFailedAttempt(): bool
+    {
+        $key = $this->attemptsKey();
+        $count = (int) Cache::get($key, 0) + 1;
+        Cache::put($key, $count, TestTimeService::now()->addMinutes(self::COOLDOWN_MINUTES));
+        if ($count >= self::MAX_FAILED_ATTEMPTS) {
+            $this->startLockout();
+            return true;
+        }
+        return false;
+    }
+
+    private function clearLoginAttempts(): void
+    {
+        Cache::forget($this->attemptsKey());
+        Cache::forget($this->lockoutKey());
+    }
+
     public function attemptLogin()
     {
         try {
@@ -120,10 +172,18 @@ class Login extends Component
             ->where('email', $this->email)
             ->whereNotNull('deleted_at')
             ->first();
-            
         if ($archivedUser) {
             $this->dispatch('archived-account', [
                 'message' => 'This account has been archived. Please contact the Formigo support team for assistance.'
+            ]);
+            return;
+        }
+
+        // Block if currently locked out
+        if ($this->isLockedOut()) {
+            $minutes = max(1, (int) ceil($this->getLockoutRemainingSeconds() / 60));
+            $this->dispatch('login-cooldown', [
+                'message' => "Too many failed login attempts. Please try again in {$minutes} minute(s)."
             ]);
             return;
         }
@@ -139,12 +199,24 @@ class Login extends Component
             if (!$this->remember) {
                 config(['session.lifetime' => config('session.lifetime', 120)]);
             }
-            
+
+            // Increment failed attempts; start cooldown at 3
+            if ($this->incrementFailedAttempt()) {
+                $minutes = max(1, (int) ceil($this->getLockoutRemainingSeconds() / 60));
+                $this->dispatch('login-cooldown', [
+                    'message' => "Too many failed login attempts. Please try again in {$minutes} minute(s)."
+                ]);
+                return;
+            }
+
             $this->dispatch('login-error', [
                 'message' => 'Invalid email or password. Please check your credentials and try again.'
             ]);
             return;
         }
+
+        // Successful login: clear attempts/cooldown
+        $this->clearLoginAttempts();
 
         // Get the authenticated user
         $user = Auth::user();

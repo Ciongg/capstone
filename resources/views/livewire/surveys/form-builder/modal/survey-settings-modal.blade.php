@@ -825,7 +825,6 @@
 
             // Updated event handler for validation errors to ensure the message is correctly displayed
             Livewire.on('validation-error', (event) => {
-                console.log('Raw validation error event:', event); // Debug log
                 
                 let errorMessage = 'Please check your input and try again.';
                 
@@ -844,7 +843,6 @@
                     }
                 }
                 
-                console.log('Final error message:', errorMessage); // Debug log
                 
                 Swal.fire({
                     icon: 'error',

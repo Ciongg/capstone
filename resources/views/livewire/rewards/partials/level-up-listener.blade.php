@@ -71,18 +71,14 @@
     document.addEventListener('livewire:initialized', () => {
         // Level-up event handler
         Livewire.on('level-up', (event) => {
-            console.log('Level-up event received:', event);
             const level = event[0].level;
             const rank = event[0].new_rank || event[0].rank;
             const oldRank = event[0].old_rank || null;
 
-            console.log('Level:', level, 'Rank:', rank, 'Old Rank:', oldRank);
 
             if (typeof level !== 'undefined' && typeof rank !== 'undefined') {
-                console.log('Calling showLevelUpAnimation...');
                 window.showLevelUpAnimation(level, rank, oldRank);
             } else {
-                console.log('Invalid level-up data');
             }
         });
 
@@ -118,7 +114,6 @@
 
     // Main level-up animation function
     window.showLevelUpAnimation = window.showLevelUpAnimation || function(level, rank, oldRank) {
-        console.log('showLevelUpAnimation called with:', { level, rank, oldRank });
         
         const formattedRank = rank.charAt(0).toUpperCase() + rank.slice(1);
         const formattedOldRank = oldRank ? oldRank.charAt(0).toUpperCase() + oldRank.slice(1) : null;
@@ -199,8 +194,6 @@
             </div>
         `;
         
-        // Create a custom modal instead of using SweetAlert to avoid conflicts
-        console.log('Creating custom level-up modal...');
         
         // Create modal container
         const modalContainer = document.createElement('div');
@@ -425,7 +418,6 @@
         `;
         document.head.appendChild(style);
         
-        console.log('Custom level-up modal created successfully!');
     };
 
     // Global function to close modal smoothly

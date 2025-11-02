@@ -207,5 +207,24 @@
             showConfirmButton: true,
         });
     });
+    
+    // Handle login cooldown (too many attempts)
+    window.addEventListener('login-cooldown', function (event) {
+        // Extract data from event - Livewire wraps it in an array
+        const data = event.detail[0] || event.detail;
+        const minutes = data.minutes || data.minutes_remaining;
+        
+        // Build message with minutes if available
+        const message = minutes 
+            ? `Too many failed login attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`
+            : (data.message || 'Please wait before trying again.');
+        
+        Swal.fire({
+            icon: 'warning',
+            title: 'Too Many Attempts',
+            text: message,
+            showConfirmButton: true,
+        });
+    });
 </script>
 @endpush

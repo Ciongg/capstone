@@ -50,13 +50,25 @@
                             @endif
                             <!-- Search and Filters -->
                             <div class="mb-6">
-                                <!-- Search Box -->
-                                <div class="mb-4">
+                                <!-- Search Row + Contact Button (aligned like Add Merchant) -->
+                                <div class="mb-4 flex flex-col md:flex-row items-center justify-between gap-2">
                                     <input type="text" 
                                            wire:model.live.debounce.300ms="searchTerm" 
                                            placeholder="Search users by UUID or email..." 
-                                           class="w-full px-4 py-2 border rounded-lg">
+                                           class="flex-1 w-full md:w-auto px-4 py-2 border rounded-lg md:mr-2 mb-2 md:mb-0">
+                                    <button
+                                        x-data
+                                        x-on:click="$dispatch('open-modal', { name: 'user-contact-modal' })"
+                                        class="px-6 py-2 bg-[#03b8ff] hover:bg-[#0299d5] text-white font-bold rounded-lg shadow-md transition-all duration-200 flex items-center"
+                                    >
+                                        <!-- Replaced icon with provided SVG -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-2">
+                                          <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                                        </svg>
+                                        Contact User
+                                    </button>
                                 </div>
+
                                 <div class="flex flex-wrap gap-4">
                                     <!-- Status Filter Buttons -->
                                     <div class="flex space-x-2">
@@ -143,18 +155,20 @@
                                                 </td>
                                                 <td class="py-3 px-6">{{ $user->created_at->format('M d, Y') }}</td>
                                                 <td class="py-3 px-6">
-                                                    <button 
-                                                        x-data
-                                                        @click="
-                                                            $wire.set('selectedUserId', null).then(() => {
-                                                                $wire.set('selectedUserId', {{ $user->id }});
-                                                                $nextTick(() => $dispatch('open-modal', { name: 'user-view-modal' }));
-                                                            })
-                                                        "
-                                                        class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
-                                                    >
-                                                        <i class="fas fa-eye"></i> View
-                                                    </button>
+                                                    <div class="flex items-center gap-2">
+                                                        <button 
+                                                            x-data
+                                                            @click="
+                                                                $wire.set('selectedUserId', null).then(() => {
+                                                                    $wire.set('selectedUserId', {{ $user->id }});
+                                                                    $nextTick(() => $dispatch('open-modal', { name: 'user-view-modal' }));
+                                                                })
+                                                            "
+                                                            class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                                                        >
+                                                            <i class="fas fa-eye"></i> View
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         @empty
@@ -197,6 +211,25 @@
                             @else
                                 <p class="text-gray-500">No user selected.</p>
                             @endif
+                        </div>
+                    </div>
+                </x-modal>
+
+                <!-- Modal for contacting user -->
+                <x-modal name="user-contact-modal" title="Contact User" focusable>
+                    <div class="p-6 relative min-h-[300px] flex flex-col">
+                        <div wire:loading class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+                            <div class="flex flex-col items-center justify-center h-full">
+                                <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                                <p class="text-sm text-gray-600">Loading...</p>
+                            </div>
+                        </div>
+                        <div wire:loading.remove class="flex-1">
+                            @livewire(
+                                'super-admin.user-list.modal.user-contact-modal', 
+                                ['userId' => $selectedUserId ?? null], 
+                                key('user-contact-modal-global-' . ($selectedUserId ?? 'none'))
+                            )
                         </div>
                     </div>
                 </x-modal>

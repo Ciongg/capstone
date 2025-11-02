@@ -42,6 +42,14 @@ Route::get('/rewards-info', function () {
     return view('rewards-info');
 })->name('rewards-info');
 
+// Sponsors/Partners page - redirect to feed if authenticated
+Route::get('/partners', function () {
+    if (auth()->check()) {
+        return redirect()->route('feed.index');
+    }
+    return view('partners');
+})->name('partners');
+
 // Authentication Routes
 Route::get('/login', [SessionController::class, 'create'])
     ->name('login')

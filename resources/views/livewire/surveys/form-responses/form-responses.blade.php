@@ -514,7 +514,6 @@
     <script>
         // Remove all the Livewire event listeners since we're using direct download now
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Form responses page loaded');
         });
     </script>
     @endpush

@@ -312,18 +312,11 @@ class ManageVoucherModal extends Component
     
     public function deleteReward()
     {
-        // Log to browser console for debugging
-        $this->js("console.log('deleteReward method called for reward ID: {$this->rewardId}')");
-        
+
         try {
             $reward = Reward::findOrFail($this->rewardId);
             
-            // Debug log
-            $this->js("console.log('Found reward:', " . json_encode([
-                'id' => $reward->id, 
-                'name' => $reward->name,
-                'type' => $reward->type
-            ]) . ")");
+    
             
             // Use a transaction to batch DB operations
             \DB::transaction(function() use ($reward) {
@@ -332,8 +325,6 @@ class ManageVoucherModal extends Component
                     ->where('availability', 'available')
                     ->count();
                     
-                // Debug log
-                $this->js("console.log('Found {$voucherCount} vouchers to delete')");
                 
                 // Delete vouchers and reward
                 Voucher::where('reward_id', $reward->id)
@@ -342,8 +333,6 @@ class ManageVoucherModal extends Component
                     
                 $reward->delete();
                 
-                // Debug log
-                $this->js("console.log('Deleted reward and vouchers successfully')");
             });
             
             // Dispatch a notification event
@@ -355,7 +344,6 @@ class ManageVoucherModal extends Component
                 'refresh' => true
             ]);
             
-            $this->js("console.log('Dispatched success notification')");
         } catch (\Exception $e) {
             // Log error to console
             $this->js("console.error('Error deleting reward:', " . json_encode($e->getMessage()) . ")");

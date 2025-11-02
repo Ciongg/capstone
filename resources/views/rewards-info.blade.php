@@ -43,8 +43,7 @@
         </div>
     </div>
 
-
-        <!-- Call to Action -->
+    <!-- Call to Action -->
     <section class="text-center py-12 bg-gradient-to-r from-blue-500 to-[#03b8ff] rounded-lg text-white">
         <h2 class="text-3xl font-bold mb-4">Start Earning Rewards Today!</h2>
         <p class="text-xl mb-8 max-w-3xl mx-auto">Join Formigo now to create surveys, earn points, and unlock valuable rewards that enhance your research experience.</p>
@@ -57,8 +56,6 @@
             </a>
         </div>
     </section>
-
-    
 
     <!-- Experience Points Section -->
     <section class="mb-16">
@@ -120,6 +117,42 @@
         </div>
     </div>
 
+    
+    <!-- Featured Sponsors (content-integrated section under hero) -->
+    <section class="mb-10">
+        <div class="max-w-6xl mx-auto">
+            <div class="bg-white rounded-xl shadow p-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4 text-center">FEATURED SPONSORS / PARTNERS</h3>
+                @php
+                    $merchants = \App\Models\Merchant::select('id','name','logo_path')->orderBy('name')->get();
+                @endphp
+                @if($merchants->isEmpty())
+                    <p class="text-gray-400 text-center text-sm">No sponsors yet.</p>
+                @else
+                    <ul class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                        @foreach($merchants as $m)
+                            <li class="flex items-center justify-center h-16 sm:h-20">
+                                @if($m->logo_path)
+                                    <img
+                                        src="{{ asset('storage/' . $m->logo_path) }}"
+                                        alt="{{ $m->name }} logo"
+                                        class="max-h-16 sm:max-h-20 w-auto object-contain"
+                                    />
+                                @else
+                                    <span class="text-gray-700 text-sm sm:text-base font-medium text-center truncate">
+                                        {{ $m->name }}
+                                    </span>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </div>
+    </section>
 
+
+    <!-- Remove standalone banner at the bottom -->
+    {{-- <x-featured-sponsors title="" class="mt-8" /> --}}
 </main>
 </x-layouts.app>

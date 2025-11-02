@@ -10,7 +10,7 @@
     <h1 class="text-3xl font-bold mb-4 text-justify">{{ $survey->title }}</h1>
 
     <!-- Survey Description -->
-    <p class="text-gray-600 text-base leading-relaxed tracking-wide text-justify mb-8">
+    <p class="text-gray-600 text-base leading-relaxed tracking-wide text-justify mb-8 whitespace-pre-line">
         {{ $survey->description }}
     </p>
 

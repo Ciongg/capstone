@@ -39,6 +39,39 @@
         </div>
     </section>
 
+    <!-- Featured Sponsors (content-integrated section) -->
+    <section class="mb-12">
+        <div class="max-w-6xl mx-auto">
+            <div class="bg-white rounded-xl shadow p-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4 text-center">FEATURED SPONSORS / PARTNERS</h3>
+                @php
+                    $merchants = \App\Models\Merchant::select('id','name','logo_path')->orderBy('name')->get();
+                @endphp
+                @if($merchants->isEmpty())
+                    <p class="text-gray-400 text-center text-sm">No sponsors yet.</p>
+                @else
+                    <ul class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                        @foreach($merchants as $m)
+                            <li class="flex items-center justify-center h-16 sm:h-20">
+                                @if($m->logo_path)
+                                    <img
+                                        src="{{ asset('storage/' . $m->logo_path) }}"
+                                        alt="{{ $m->name }} logo"
+                                        class="max-h-16 sm:max-h-20 w-auto object-contain"
+                                    />
+                                @else
+                                    <span class="text-gray-700 text-sm sm:text-base font-medium text-center truncate">
+                                        {{ $m->name }}
+                                    </span>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </div>
+    </section>
+
     <!-- Call to Action -->
     <section class="text-center py-12 bg-gray-100 rounded-lg mb-16">
         <h2 class="text-3xl font-bold text-gray-800 mb-4">Ready to transform research?</h2>
@@ -203,5 +236,6 @@
             </div>
         </div>
     </section>
+
 </main>
 </x-layouts.app>

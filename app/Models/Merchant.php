@@ -13,10 +13,15 @@ class Merchant extends Model
     protected $fillable = [
         'name',
         'merchant_code',
+        'logo_path',
+        'description',
+        'email',
+        'contact_number',
+        'partner_type',
     ];
 
     public function rewards(): HasMany
     {
         return $this->hasMany(Reward::class);
     }
-} 
+}

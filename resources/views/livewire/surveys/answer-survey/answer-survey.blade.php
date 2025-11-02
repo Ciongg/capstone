@@ -86,6 +86,37 @@ $isGuest = !Auth::check();
     </div>
 </div>
 
+<!-- Hidden Featured Sponsors template for Swal content (small, single render) -->
+<template id="featured-sponsors-template">
+    <div class="mt-4 swal-sponsors">
+        <div class="bg-white/80 rounded-lg p-3 shadow-sm">
+            <h4 class="text-center text-xs font-semibold text-gray-600 mb-2 tracking-wider">SPONSORED BY</h4>
+            @php
+                $__swalMerchants = \App\Models\Merchant::select('id','name','logo_path')->orderBy('name')->get();
+            @endphp
+            @if($__swalMerchants->isNotEmpty())
+                <ul class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    @foreach($__swalMerchants as $m)
+                        <li class="flex items-center justify-center h-10">
+                            @if($m->logo_path)
+                                <img
+                                    src="{{ asset('storage/' . $m->logo_path) }}"
+                                    alt="{{ $m->name }} logo"
+                                    class="max-h-8 w-auto object-contain"
+                                />
+                            @else
+                                <span class="text-gray-700 text-[11px] font-medium text-center truncate">{{ $m->name }}</span>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            @else
+                <p class="text-gray-400 text-center text-xs">No sponsors yet.</p>
+            @endif
+        </div>
+    </div>
+</template>
+
 @push('scripts')
 <script>
     // Make trust score info available to JavaScript
@@ -148,16 +179,9 @@ $isGuest = !Auth::check();
             // Extract data from the event
             const data = eventData[0] || eventData;
             
-            // Enhanced logging for debugging
-            console.log("Survey submission data:", data);
-            
             // Use the directly extracted user information
             const isGuestUser = userInfo.isGuest;
             const isLowTrustScore = userInfo.hasLowTrustScore;
-            
-            console.log("Is guest user (direct):", isGuestUser);
-            console.log("User trust score:", userInfo.trustScore);
-            console.log("Has low trust score (direct):", isLowTrustScore);
             
             // Different HTML based on user type (guest, low trust, or regular)
             let contentHtml;
@@ -165,7 +189,7 @@ $isGuest = !Auth::check();
             // Guest user case
             if (isGuestUser) {
                 contentHtml = `
-        <div class="p-4 sm:p-6">
+        <div class="">
             <div class="text-center max-w-md mx-auto">
                 <p class="text-base sm:text-lg font-medium mb-3 sm:mb-4 break-words">
                     Thank you for completing "<span class="font-semibold">${data.surveyName}</span>" as a guest.
@@ -251,6 +275,24 @@ $isGuest = !Auth::check();
                 allowOutsideClick: false,
                 customClass: {
                     confirmButton: 'px-5 py-3 text-lg bg-blue-500 hover:bg-blue-600 text-white rounded',
+                },
+                didOpen: () => {
+                    // Ensure sponsors are appensded AFTER the confirm button (bottom of modal)
+                    const popup = Swal.getPopup();
+                    const actions = Swal.getActions();
+                    if (!popup || !actions) return;
+
+                    // Guard: prevent double-append if event fires twice
+                    if (popup.querySelector('.swal-sponsors')) return;
+
+                    const tpl = document.getElementById('featured-sponsors-template');
+                    if (tpl && tpl.content) {
+                        const frag = tpl.content.cloneNode(true);
+                        actions.parentNode.insertBefore(frag, actions.nextSibling);
+                        if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+                            window.Alpine.initTree(popup);
+                        }
+                    }
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -258,6 +300,8 @@ $isGuest = !Auth::check();
                 }
             });
         });
+
+        
 
         // Handle survey submission errors
         Livewire.on('surveySubmissionError', (eventData) => {

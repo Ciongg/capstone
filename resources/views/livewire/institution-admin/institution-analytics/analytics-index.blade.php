@@ -194,9 +194,6 @@
             const monthNames = @json(collect($monthlySurveys)->pluck('name'));
             const monthlyCounts = @json(collect($monthlySurveys)->pluck('count'));
             
-            // Debug - log the data to console
-            console.log("Month names:", monthNames);
-            console.log("Monthly counts:", monthlyCounts);
             
             trendsChart = new Chart(trendsCtx, {
                 type: 'bar',
