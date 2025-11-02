@@ -124,7 +124,7 @@
                     @include('livewire.rewards.partials.reward-card', ['reward' => $reward])
                 @empty
                     <div class="col-span-full text-center py-8">
-                        <p class="text-gray-500">No voucher rewards available at this time. Voucher rewards such as discounts and promos will be shown here in the near future.</p>
+                         <p class="text-gray-500">No voucher rewards available at this time. Voucher rewards such as discounts and promos will be shown here in the near future.</p>
                     </div>
                 @endforelse
             </div>

@@ -47,13 +47,17 @@
             </div>
         </div>
     </div>
+    
+
+    <x-featured-sponsors class="mt-8" />
 
     <!-- Getting Started Section - Already centered in mobile -->
-    <section class="mt-16 py-8 sm:py-12 px-4">
-        <div class="bg-gray-100 py-8 sm:py-12 rounded-lg mb-8 sm:mb-10 text-center">
+    <section class="py-4 sm:py-8 px-4">
+        <div class="bg-gray-100 py-4 sm:py-8 rounded-lg mb-8 sm:mb-10 text-center">
             <h2 class="text-4xl sm:text-5xl text-center text-gray-800">Getting Started is Easy</h2>
         </div>
         
+            <!-- Featured Sponsors Banner -->
         <!-- Card grid - Already using text-center -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-gray-700">
             <div class="text-center">
@@ -84,6 +88,10 @@
             </div>
         </div>
     </section>
+
+    
+
+
 </main>
 
 </x-layouts.app>

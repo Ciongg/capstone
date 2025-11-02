@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+    <link rel="icon" href="{{ asset('images/icons/formigo.png') }}" type="image/png">
+    
         <!-- Meta tags for character set and viewport -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
@@ -133,6 +136,7 @@
                                 <a href="/" class="{{ $navLinkClass(request()->is('/')) }} hover:text-[#03b8ff] hover:underline">Home</a>
                                 <a href="/about" class="{{ $navLinkClass(request()->is('about')) }} hover:text-[#03b8ff] hover:underline">About</a>
                                 <a href="/rewards-info" class="{{ $navLinkClass(request()->is('rewards-info')) }} hover:text-[#03b8ff] hover:underline">Rewards</a>
+                                <a href="/partners" class="{{ $navLinkClass(request()->is('partners')) }} hover:text-[#03b8ff] hover:underline">Partners</a>
                             @else
                                 {{-- Desktop Navigation Links: Authenticated Users (Common) --}}
                                 <a href="/feed" class="{{ $navLinkClass(request()->routeIs('feed.index')) }} hover:text-[#03b8ff] hover:underline">Feed</a>
@@ -232,8 +236,18 @@
                     <!-- Desktop Navigation: Right Aligned Links (User Profile, Auth Buttons) -->
                     <div class="flex items-center space-x-5 text-base">
                         @auth
-                           
-                            
+                            {{-- Announcements quick button --}}
+                            <button
+                                @click="$dispatch('open-modal', { name: 'announcement-carousel-modal' })"
+                                class="text-gray-700 hover:text-[#03b8ff] focus:outline-none relative -top-0.5"
+                                title="Announcements"
+                                aria-label="Open announcements"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 0 1-1.44-4.282m3.102.069a18.03 18.03 0 0 1-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 0 1 8.835 2.535M10.34 6.66a23.847 23.847 0 0 0 8.835-2.535m0 0A23.74 23.74 0 0 0 18.795 3m.38 1.125a23.91 23.91 0 0 1 1.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 0 0 1.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 0 1 0 3.46" />
+                                </svg>
+                            </button>
+
                             {{-- Inbox Dropdown Component --}}
                             <livewire:inbox.inbox-dropdown />
 
@@ -282,6 +296,7 @@
                     <a href="/" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('/')) }} hover:text-[#03b8ff]">Home</a>
                     <a href="/about" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('about')) }} hover:text-[#03b8ff]">About</a>
                     <a href="/rewards-info" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('rewards-info')) }} hover:text-[#03b8ff]">Rewards</a>
+                    <a href="/partners" @click="mobileMenuOpen = false" class="{{ $navLinkClass(request()->is('partners')) }} hover:text-[#03b8ff]">Partners</a>
                     <hr class="border-gray-300 my-2"> {{-- Separator --}}
                     {{-- Mobile Menu Authentication Buttons: Guest Users --}}
                     <a href="{{ route('register') }}" @click="mobileMenuOpen = false" class="bg-[#03b8ff] hover:bg-[#02a0e0] text-white font-bold px-6 py-2 rounded-lg text-center">Register</a>

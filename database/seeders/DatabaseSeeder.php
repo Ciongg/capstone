@@ -78,8 +78,8 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'first_name' => 'Institution',
             'last_name' => 'Admin',
-            'email' => 'instadmin@adamson.edu.ph',
-            'password' => Hash::make('password123'),
+            'email' => env('INST_ADMIN_ADU_EMAIL'),
+            'password' => Hash::make(env('INST_ADMIN__ADU_PASSWORD')),
             'type' => 'institution_admin',
             'institution_id' => $adamsonUniversity ? $adamsonUniversity->id : null,
             'is_active' => true, // Add is_active flag
@@ -91,8 +91,8 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'first_name' => 'Institution',
             'last_name' => 'Admin',
-            'email' => 'instadmin_nu@nu.edu.ph',
-            'password' => Hash::make('password123'),
+            'email' => env('INST_ADMIN_NU_EMAIL'),
+            'password' => Hash::make(env('INST_ADMIN__NU_PASSWORD')),
             'type' => 'institution_admin',
             'institution_id' => $nationalUniversity ? $nationalUniversity->id : null,
             'is_active' => true, // Add is_active flag
@@ -102,24 +102,10 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'first_name' => 'John',
-            'last_name' => 'Doe',
-            'phone_number' => '09516322710',
-            'email' => 'johndoe@nu.edu.ph',
-            'password' => Hash::make('password123'),
-            'type' => 'researcher',
-            'institution_id' => $nationalUniversity ? $nationalUniversity->id : null,
-            'is_active' => true,
-            'last_active_at' => now(), 
-            'is_accepted_terms' => true,
-            'is_accepted_privacy_policy' => true,
-        ]);
-
-        User::factory()->create([
             'first_name' => 'Super',
             'last_name' => 'Admin',
-            'email' => 'superadmin@example.com',
-            'password' => Hash::make('password123'),
+            'email' => env('SUPER_ADMIN_EMAIL'),
+            'password' => Hash::make(env('SUPER_ADMIN_PASSWORD')),
             'type' => 'super_admin',
             'institution_id' => null,
             'is_active' => true, // Add is_active flag
@@ -128,62 +114,7 @@ class DatabaseSeeder extends Seeder
             'is_accepted_privacy_policy' => true,
         ]);
 
-        User::factory()->create([
-            'first_name' => 'Respondent',
-            'last_name' => 'User',
-            'email' => 'respondent@example.com',
-            'password' => Hash::make('password123'),
-            'type' => 'respondent',
-            'institution_id' => null,
-            'is_active' => true, // Add is_active flag
-            'last_active_at' => now(), 
-            'is_accepted_terms' => true,
-            'is_accepted_privacy_policy' => true,
-        ]);
 
-        
-        User::factory()->create([
-            'first_name' => 'active',
-            'last_name' => 'user',
-            'email' => 'active@example.com',
-            'password' => Hash::make('password123'),
-            'type' => 'respondent',
-            'institution_id' => null,
-            'is_active' => true, 
-            'last_active_at' => now(), 
-            'is_accepted_terms' => true,
-            'is_accepted_privacy_policy' => true,
-        ]);
-
-        User::factory()->create([
-            'first_name' => 'inactive',
-            'last_name' => 'user',
-            'email' => 'inactive@example.com',
-            'password' => Hash::make('password123'),
-            'type' => 'respondent',
-            'institution_id' => null,
-            'is_active' => false, 
-            'last_active_at' => now()->subDays(30), // Set a past date instead of null
-            'is_accepted_terms' => true,
-            'is_accepted_privacy_policy' => true,
-        ]);
-
-         
-        $archivedUser = User::factory()->create([
-            'first_name' => 'archived',
-            'last_name' => 'user',
-            'email' => 'archived@example.com',
-            'password' => Hash::make('password123'),
-            'type' => 'respondent',
-            'institution_id' => null,
-            'is_active' => false, 
-            'last_active_at' => now()->subDays(60), // Set a past date instead of null
-            'is_accepted_terms' => true,
-            'is_accepted_privacy_policy' => true,
-        ]);
-
-        //soft-delete (archive) the user
-        $archivedUser->delete();
 
 
 
@@ -191,10 +122,10 @@ class DatabaseSeeder extends Seeder
         $this->call([
             TagCategorySeeder::class,
             TagSeeder::class,
-            SurveyTopicSeeder::class, // Run this first
-            SurveySeeder::class,      // Then run SurveySeeder
-            // Seed merchants before rewards and vouchers
-            // If MerchantSeeder exists, add it here. Otherwise, create merchants directly below.
+            SurveyTopicSeeder::class, 
+
+            // SurveySeeder::class, 
+
         ]);
 
         // Create merchants if they don't exist (for voucher/reward association)
@@ -215,10 +146,9 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call([
-            RewardSeeder::class,      // Add the RewardSeeder to be run
-            VoucherSeeder::class,     // Add VoucherSeeder
-            TestResponseSeeder::class, // Add our new TestResponseSeeder
-              // Add test reports
+            RewardSeeder::class,      
+            VoucherSeeder::class,     
+            // TestResponseSeeder::class, 
         ]);
     }
 }

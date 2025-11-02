@@ -23,11 +23,6 @@ class InstitutionSeeder extends Seeder
         ]);
 
          Institution::create([
-            'name' => 'Unibersidad ng Pilipinas',
-            'domain' => 'up.edu.ph'
-        ]);
-
-         Institution::create([
             'name' => 'National University',
             'domain' => 'nu.edu.ph'
         ]);

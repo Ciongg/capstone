@@ -337,7 +337,6 @@
                             confirmButtonText: 'Confirm'
                         }).then((result) => {
                             if (result.isConfirmed) {
-                                console.log('User confirmed deletion, calling deleteReward directly');
                                 $wire.deleteReward();
                             }
                         })"
