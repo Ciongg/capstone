@@ -151,21 +151,31 @@ class Login extends Component
             // Find user by email to get user_id and role
             $user = User::where('email', $this->email)->first();
             
+            // Only create security log if the email belongs to an actual user account
+            if (!$user) {
+                \Illuminate\Support\Facades\Log::info('Lockout triggered for non-existent email', [
+                    'email' => $this->email,
+                    'ip' => $currentIp,
+                    'note' => 'No security log created - email not in system'
+                ]);
+                return;
+            }
+            
             SecurityLogs::create([
                 'uuid' => Str::uuid(),
                 'created_at' => TestTimeService::now(),
-                'email' => $this->email, // Add email field
+                'email' => $this->email,
                 'event_type' => 'rate_limit_triggered',
                 'outcome' => 'failure',
-                'user_id' => $user?->id,
-                'actor_role' => $user?->type ?? 'guest',
+                'user_id' => $user->id,
+                'actor_role' => $user->type,
                 'ip' => $currentIp,
                 'user_agent' => request()->userAgent(),
                 'route' => request()->path(),
                 'http_method' => request()->method(),
-                'http_status' => 429, // Too Many Requests
+                'http_status' => 429,
                 'resource_type' => 'User',
-                'resource_id' => $user?->id,
+                'resource_id' => $user->id,
                 'message' => "Account locked out after " . self::MAX_FAILED_ATTEMPTS . " failed login attempts for email: {$this->email}",
                 'meta' => [
                     'max_attempts' => self::MAX_FAILED_ATTEMPTS,
@@ -179,7 +189,7 @@ class Login extends Component
             \Illuminate\Support\Facades\Log::info('Security log created for lockout', [
                 'email' => $this->email,
                 'ip' => $currentIp,
-                'user_id' => $user?->id ?? 'unknown'
+                'user_id' => $user->id
             ]);
             
         } catch (\Exception $e) {
@@ -345,6 +355,10 @@ class Login extends Component
             
             if (!$user) {
                 // User doesn't exist, no need to send email
+                \Illuminate\Support\Facades\Log::info('Lockout email not sent - user does not exist', [
+                    'email' => $this->email,
+                    'ip' => request()->ip()
+                ]);
                 return;
             }
             
@@ -425,30 +439,6 @@ class Login extends Component
         }
     }
 
-    /**
-     * Invalidate all other sessions for the user
-     */
-    private function invalidateOtherSessions(User $user): void
-    {
-        try {
-            // Delete all existing sessions for this user except the current one
-            \DB::table('sessions')
-                ->where('user_id', $user->id)
-                ->where('id', '!=', session()->getId())
-                ->delete();
-                
-            \Illuminate\Support\Facades\Log::info('Other sessions invalidated for user', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-            ]);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to invalidate other sessions', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
-
     public function attemptLogin()
     {
         try {
@@ -523,9 +513,6 @@ class Login extends Component
 
         // Get the authenticated user
         $user = Auth::user();
-        
-        // Invalidate all other sessions for this user (enforce single session)
-        $this->invalidateOtherSessions($user);
         
         // Log admin login to security logs (only for admins)
         $this->logAdminLogin($user);

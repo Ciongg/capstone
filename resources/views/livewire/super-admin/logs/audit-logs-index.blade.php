@@ -6,6 +6,7 @@
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">User Type</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Event</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actor</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Resource</th>
@@ -16,14 +17,24 @@
             <tbody class="bg-white divide-y divide-gray-200">
                 @forelse($this->auditLogs as $log)
                     <tr>
-                        <td class="px-6 py-4 text-sm text-gray-700">{{ $log->created_at }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{{ $log->created_at->format('M d, Y H:i') }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">{{ $log->email ?? '—' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if($log->performed_role)
+                                <span class="inline-block px-2 py-1 rounded text-xs whitespace-nowrap
+                                    {{ $log->performed_role === 'super_admin' ? 'bg-pink-200 text-pink-800' : 
+                                    ($log->performed_role === 'institution_admin' ? 'bg-indigo-200 text-indigo-800' : 
+                                    ($log->performed_role === 'researcher' ? 'bg-yellow-200 text-yellow-800' : 
+                                    ($log->performed_role === 'respondent' ? 'bg-purple-200 text-purple-800' : 'bg-gray-200 text-gray-800'))) }}">
+                                    {{ ucfirst(str_replace('_', ' ', $log->performed_role)) }}
+                                </span>
+                            @else
+                                <span class="text-gray-400">—</span>
+                            @endif
+                        </td>
                         <td class="px-6 py-4 text-sm text-gray-700">{{ $log->event_type }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">
                             {{ $log->performed_by ? ('ID: ' . $log->performed_by) : '—' }}
-                            @if($log->performed_role)
-                                <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{{ $log->performed_role }}</span>
-                            @endif
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-700">
                             @if($log->resource_type || $log->resource_id)
@@ -49,12 +60,17 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                        <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                             No audit logs available.
                         </td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
+    </div>
+    
+    <!-- Pagination -->
+    <div class="px-6 py-4 border-t border-gray-200">
+        {{ $this->auditLogs->links() }}
     </div>
 </div>
