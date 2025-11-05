@@ -54,6 +54,7 @@ class User extends Authenticatable
         'profile_updated_at', // Add this new field
         'is_accepted_terms', 
         'is_accepted_privacy_policy', 
+        'ip_address', // Add this line
     ];
 
     /**

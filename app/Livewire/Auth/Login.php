@@ -9,6 +9,8 @@ use App\Models\User;
 use Illuminate\Support\Str;
 use App\Services\TestTimeService;
 use Illuminate\Support\Facades\Cache;
+use App\Services\BrevoService;
+use App\Models\SecurityLogs;
 
 class Login extends Component
 {
@@ -18,7 +20,7 @@ class Login extends Component
 
     // Cooldown configuration
     private const MAX_FAILED_ATTEMPTS = 3;
-    private const COOLDOWN_MINUTES = 30;
+    private const COOLDOWN_MINUTES = 1;
 
     protected function rules(): array
     {
@@ -99,14 +101,17 @@ class Login extends Component
         return false; // No change
     }
 
+    // Change keys to be IP-based instead of email-based
     private function attemptsKey(): string
     {
-        return 'login:attempts:' . sha1(Str::lower(trim($this->email)));
+        $ip = request()->ip();
+        return 'login:attempts:' . sha1($ip);
     }
 
     private function lockoutKey(): string
     {
-        return 'login:lockout:' . sha1(Str::lower(trim($this->email)));
+        $ip = request()->ip();
+        return 'login:lockout:' . sha1($ip);
     }
 
     private function getLockoutRemainingSeconds(): int
@@ -126,6 +131,64 @@ class Login extends Component
         $untilTs = TestTimeService::now()->addMinutes(self::COOLDOWN_MINUTES)->timestamp;
         Cache::put($this->lockoutKey(), $untilTs, TestTimeService::now()->addMinutes(self::COOLDOWN_MINUTES));
         Cache::forget($this->attemptsKey());
+        
+        // Log the lockout event to security logs
+        $this->logLockoutEvent();
+        
+        // Send lockout warning email to the user (if user exists)
+        $this->sendLockoutWarningEmail();
+    }
+
+    /**
+     * Log lockout event to security logs
+     */
+    private function logLockoutEvent(): void
+    {
+        try {
+            $currentIp = request()->ip();
+            $geoData = $this->getGeoLocation($currentIp);
+            
+            // Find user by email to get user_id and role
+            $user = User::where('email', $this->email)->first();
+            
+            SecurityLogs::create([
+                'uuid' => Str::uuid(),
+                'created_at' => TestTimeService::now(),
+                'email' => $this->email, // Add email field
+                'event_type' => 'rate_limit_triggered',
+                'outcome' => 'failure',
+                'user_id' => $user?->id,
+                'actor_role' => $user?->type ?? 'guest',
+                'ip' => $currentIp,
+                'user_agent' => request()->userAgent(),
+                'route' => request()->path(),
+                'http_method' => request()->method(),
+                'http_status' => 429, // Too Many Requests
+                'resource_type' => 'User',
+                'resource_id' => $user?->id,
+                'message' => "Account locked out after " . self::MAX_FAILED_ATTEMPTS . " failed login attempts for email: {$this->email}",
+                'meta' => [
+                    'max_attempts' => self::MAX_FAILED_ATTEMPTS,
+                    'cooldown_minutes' => self::COOLDOWN_MINUTES,
+                    'email' => $this->email,
+                    'lockout_until' => TestTimeService::now()->addMinutes(self::COOLDOWN_MINUTES)->toDateTimeString(),
+                ],
+                'geo' => $geoData,
+            ]);
+            
+            \Illuminate\Support\Facades\Log::info('Security log created for lockout', [
+                'email' => $this->email,
+                'ip' => $currentIp,
+                'user_id' => $user?->id ?? 'unknown'
+            ]);
+            
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create security log for lockout', [
+                'email' => $this->email,
+                'ip' => request()->ip(),
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     private function incrementFailedAttempt(): bool
@@ -144,6 +207,246 @@ class Login extends Component
     {
         Cache::forget($this->attemptsKey());
         Cache::forget($this->lockoutKey());
+    }
+
+    /**
+     * Hash an IP address for secure storage
+     */
+    private function hashIpAddress(string $ipAddress): string
+    {
+        return hash('sha256', $ipAddress);
+    }
+
+    /**
+     * Get geolocation data from IP address
+     */
+    private function getGeoLocation(string $ipAddress): array
+    {
+        try {
+            // Using ip-api.com free API (no key required, 45 req/min limit)
+            $response = \Illuminate\Support\Facades\Http::timeout(5)
+                ->get("http://ip-api.com/json/{$ipAddress}");
+            
+            if ($response->successful() && $response->json('status') === 'success') {
+                $data = $response->json();
+                return [
+                    'country' => $data['country'] ?? '',
+                    'region' => $data['regionName'] ?? '',
+                    'city' => $data['city'] ?? '',
+                    'lat' => $data['lat'] ?? null,
+                    'lon' => $data['lon'] ?? null,
+                ];
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('GeoLocation API Error', [
+                'message' => $e->getMessage(),
+                'ip' => $ipAddress
+            ]);
+        }
+        
+        return [];
+    }
+
+    /**
+     * Check and handle IP address changes
+     */
+    private function checkIpAddress(User $user): void
+    {
+        $currentIp = request()->ip();
+        $hashedCurrentIp = $this->hashIpAddress($currentIp);
+        $previousHashedIp = $user->ip_address;
+        
+        // If IP has changed and user had a previous IP recorded
+        if ($previousHashedIp && $previousHashedIp !== $hashedCurrentIp) {
+            // Get geolocation data (use unhashed IP for API call)
+            $geoData = $this->getGeoLocation($currentIp);
+            
+            // Log the IP change to security logs
+            $this->logIpChange($user, $currentIp, $geoData);
+            
+            // Send warning email (with unhashed IP for user visibility)
+            try {
+                $brevoService = app(BrevoService::class);
+                $brevoService->sendNewIpWarning($user->email, $currentIp, $geoData);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to send new IP warning email', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'ip_hash' => $hashedCurrentIp,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        // Update user's IP address with hashed value
+        $user->ip_address = $hashedCurrentIp;
+        $user->save();
+    }
+
+    /**
+     * Log IP address change to security logs
+     */
+    private function logIpChange(User $user, string $newIp, array $geoData): void
+    {
+        try {
+            SecurityLogs::create([
+                'uuid' => Str::uuid(),
+                'created_at' => TestTimeService::now(),
+                'email' => $user->email, // Add email field
+                'event_type' => 'login_success',
+                'outcome' => 'success',
+                'user_id' => $user->id,
+                'actor_role' => $user->type,
+                'ip' => $newIp,
+                'user_agent' => request()->userAgent(),
+                'route' => request()->path(),
+                'http_method' => request()->method(),
+                'http_status' => 200,
+                'resource_type' => 'User',
+                'resource_id' => $user->id,
+                'message' => "New IP address detected for user: {$user->email}",
+                'meta' => [
+                    'email' => $user->email,
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'previous_ip_hash' => $user->ip_address,
+                    'new_ip' => $newIp,
+                    'ip_change_detected' => true,
+                    'warning_email_sent' => true,
+                ],
+                'geo' => $geoData,
+            ]);
+            
+            \Illuminate\Support\Facades\Log::info('Security log created for IP change', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'old_ip_hash' => $user->ip_address,
+                'new_ip' => $newIp,
+            ]);
+            
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create security log for IP change', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'new_ip' => $newIp,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send lockout warning email to the user whose account is being targeted
+     */
+    private function sendLockoutWarningEmail(): void
+    {
+        try {
+            // Find user by email (the account being targeted)
+            $user = User::where('email', $this->email)->first();
+            
+            if (!$user) {
+                // User doesn't exist, no need to send email
+                return;
+            }
+            
+            // Get current IP and geo data
+            $currentIp = request()->ip();
+            $geoData = $this->getGeoLocation($currentIp);
+            
+            // Send lockout warning email
+            $brevoService = app(BrevoService::class);
+            $brevoService->sendLockoutWarning(
+                $user->email,
+                $currentIp,
+                $geoData,
+                self::COOLDOWN_MINUTES
+            );
+            
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to send lockout warning email', [
+                'email' => $this->email,
+                'ip' => request()->ip(),
+                'error' => $e->getMessage()
+            ]);
+            // Don't throw exception - lockout should still work even if email fails
+        }
+    }
+
+    /**
+     * Log successful login for admin users to security logs
+     */
+    private function logAdminLogin(User $user): void
+    {
+        // Only log for institution admins and super admins
+        if (!in_array($user->type, ['institution_admin', 'super_admin'])) {
+            return;
+        }
+
+        try {
+            $currentIp = request()->ip();
+            $geoData = $this->getGeoLocation($currentIp);
+            
+            SecurityLogs::create([
+                'uuid' => Str::uuid(),
+                'created_at' => TestTimeService::now(),
+                'email' => $user->email, // Add email field
+                'event_type' => 'login_success',
+                'outcome' => 'success',
+                'user_id' => $user->id,
+                'actor_role' => $user->type,
+                'ip' => $currentIp,
+                'user_agent' => request()->userAgent(),
+                'route' => request()->path(),
+                'http_method' => request()->method(),
+                'http_status' => 200,
+                'resource_type' => 'User',
+                'resource_id' => $user->id,
+                'message' => ucfirst(str_replace('_', ' ', $user->type)) . " logged in: {$user->email}",
+                'meta' => [
+                    'email' => $user->email,
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'remember_me' => $this->remember,
+                ],
+                'geo' => $geoData,
+            ]);
+            
+            \Illuminate\Support\Facades\Log::info('Security log created for admin login', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'type' => $user->type,
+            ]);
+            
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create security log for admin login', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Invalidate all other sessions for the user
+     */
+    private function invalidateOtherSessions(User $user): void
+    {
+        try {
+            // Delete all existing sessions for this user except the current one
+            \DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->where('id', '!=', session()->getId())
+                ->delete();
+                
+            \Illuminate\Support\Facades\Log::info('Other sessions invalidated for user', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to invalidate other sessions', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     public function attemptLogin()
@@ -179,7 +482,7 @@ class Login extends Component
             return;
         }
 
-        // Block if currently locked out
+        // Block if currently locked out (now IP-based)
         if ($this->isLockedOut()) {
             $minutes = max(1, (int) ceil($this->getLockoutRemainingSeconds() / 60));
             $this->dispatch('login-cooldown', [
@@ -200,7 +503,7 @@ class Login extends Component
                 config(['session.lifetime' => config('session.lifetime', 120)]);
             }
 
-            // Increment failed attempts; start cooldown at 3
+            // Increment failed attempts; start cooldown at 3 (now IP-based)
             if ($this->incrementFailedAttempt()) {
                 $minutes = max(1, (int) ceil($this->getLockoutRemainingSeconds() / 60));
                 $this->dispatch('login-cooldown', [
@@ -215,11 +518,20 @@ class Login extends Component
             return;
         }
 
-        // Successful login: clear attempts/cooldown
+        // Successful login: clear attempts/cooldown (now IP-based)
         $this->clearLoginAttempts();
 
         // Get the authenticated user
         $user = Auth::user();
+        
+        // Invalidate all other sessions for this user (enforce single session)
+        $this->invalidateOtherSessions($user);
+        
+        // Log admin login to security logs (only for admins)
+        $this->logAdminLogin($user);
+        
+        // Check and handle IP address changes (send warning if needed)
+        $this->checkIpAddress($user);
         
         // Update last_active_at timestamp on successful login
         $user->forceFill(['last_active_at' => TestTimeService::now()])->save();

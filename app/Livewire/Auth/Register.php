@@ -182,6 +182,14 @@ class Register extends Component
         ]);
     }
 
+    /**
+     * Hash an IP address for secure storage
+     */
+    private function hashIpAddress(string $ipAddress): string
+    {
+        return hash('sha256', $ipAddress);
+    }
+
     public function verifyOtp()
     {
         
@@ -226,6 +234,10 @@ class Register extends Component
         }
 
         try {
+            // Get current IP address and hash it
+            $currentIp = request()->ip();
+            $hashedIp = $this->hashIpAddress($currentIp);
+
             $user = User::create([
                 'first_name' => $this->first_name,
                 'last_name' => $this->last_name,
@@ -234,11 +246,12 @@ class Register extends Component
                 'password' => Hash::make($this->password),
                 'type' => $userType,
                 'institution_id' => $institutionId,
-                'is_active' => true, // Set new users to active by default
+                'is_active' => true, 
                 'email_verified_at' => now(),
                 'is_accepted_terms' => true,
                 'is_accepted_privacy_policy' => true,
-                'last_active_at' => TestTimeService::now(), // Set last_active_at on registration
+                'last_active_at' => TestTimeService::now(),
+                'ip_address' => $hashedIp, // Store hashed IP address
             ]);
 
             // Delete the email verification record

@@ -138,4 +138,9 @@ class SuperAdminController extends Controller
     {
         return view('super-admin.show-reports');
     }
+
+     public function logsIndex()
+    {
+        return view('super-admin.show-logs');
+    }
 }

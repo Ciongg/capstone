@@ -149,6 +149,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
     Route::get('/surveys', [SuperAdminController::class, 'surveysIndex'])->name('surveys.index');
     Route::get('/requests', [SuperAdminController::class, 'supportRequestsIndex'])->name('support-requests.index');
     Route::get('/tags', [SuperAdminController::class, 'tagsIndex'])->name('tags.index');
+    Route::get('/logs', [SuperAdminController::class, 'logsIndex'])->name('logs.index');
     
     // Super admin announcement management
     Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');

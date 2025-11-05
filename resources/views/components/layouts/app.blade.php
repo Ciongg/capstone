@@ -226,6 +226,7 @@
                                             <a href="/admin/users" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/users*')) }} hover:bg-gray-100">Manage Users</a>
                                             <a href="/admin/requests" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/requests')) }} hover:bg-gray-100">Manage Support Requests</a>
                                             <a href="/admin/tags" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/tags')) }} hover:bg-gray-100">Manage Tags & Topics</a>
+                                            <a href="/admin/logs" class="block px-4 py-2 text-sm {{ $navLinkClass(request()->is('admin/logs')) }} hover:bg-gray-100">Manage Logs</a>
                                         </div>
                                     </div>
                                 @endif
@@ -394,6 +395,7 @@
                             <a href="/admin/users" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/users*')) }} hover:text-[#03b8ff]">Manage Users</a>
                             <a href="/admin/requests" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/requests')) }} hover:text-[#03b8ff]">Manage Support Requests</a>
                             <a href="/admin/tags" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/tags')) }} hover:text-[#03b8ff]">Manage Tags & Topics</a>
+                            <a href="/admin/logs" @click="mobileMenuOpen = false" class="block pl-2 py-2 {{ $navLinkClass(request()->is('admin/logs')) }} hover:text-[#03b8ff]">Manage Logs</a>
                         </div>
                     @endif
                 @endauth
