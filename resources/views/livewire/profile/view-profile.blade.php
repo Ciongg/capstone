@@ -131,6 +131,10 @@
                                 </svg>
                                 <span class="font-semibold">Edit Profile</span>
                             </button>
+
+                            {{-- 2FA Button --}}
+                            <livewire:profile.two-factor-authentication :key="'2fa-'.auth()->id()" />
+
                             {{-- Help Request Button --}}
                             <button
                                 x-data

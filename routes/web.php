@@ -56,7 +56,23 @@ Route::get('/login', [SessionController::class, 'create'])
     ->middleware('guest')
     ->defaults('redirectTo', '/feed'); // Redirect to feed if already logged in
 
-Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
+Route::post('/logout', function () {
+    $userId = auth()->id();
+    
+    // Clear 2FA verification
+    if ($userId) {
+        session()->forget('2fa:verified:' . $userId);
+    }
+    
+    session()->forget('2fa:user:id');
+    session()->forget('2fa:remember');
+    
+    Auth::logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    
+    return redirect('/');
+})->name('logout');
 
 Route::get('/register', [RegisteredUserController::class, 'create'])
     ->name('register')
@@ -178,6 +194,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/surveys/{survey:uuid}/responses/individual', [SurveyController::class, 'showIndividualResponses'])->name('surveys.responses.individual')->missing(function () {
         abort(404, 'The requested page could not be found.');
     });
+});
+
+// 2FA Challenge Route - accessible without auth middleware (but checks session)
+Route::get('/two-factor-challenge', \App\Livewire\Auth\TwoFactorChallenge::class)
+    ->name('two-factor.challenge')
+    ->middleware('web');
+
+// Protected routes with 2FA check
+Route::middleware(['auth', '2fa'])->group(function () {
+    // Add any routes that should be protected by 2FA here
 });
 
 // ============================================================================

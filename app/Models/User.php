@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\Traits\HasRoles;
 use App\Models\Traits\HasUuid;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
@@ -363,5 +364,26 @@ public function getXpRequiredForNextLevel(): int
         $cooldownDays = 120;
         $nextUpdateDate = $this->institution_demographic_tags_updated_at->addDays($cooldownDays);
         return max(0, TestTimeService::now()->diffInDays($nextUpdateDate, false));
+    }
+
+    public function twoFactorSetting(): HasOne
+    {
+        return $this->hasOne(UserTwoFactorSetting::class);
+    }
+
+    /**
+     * Check if 2FA is enabled for this user
+     */
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->twoFactorSetting && $this->twoFactorSetting->enabled && $this->twoFactorSetting->confirmed_at;
+    }
+
+    /**
+     * Get or create 2FA settings
+     */
+    public function getOrCreateTwoFactorSetting(): UserTwoFactorSetting
+    {
+        return $this->twoFactorSetting ?? $this->twoFactorSetting()->create();
     }
 }

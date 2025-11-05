@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Services\TestTimeService;
 use App\Models\SecurityLogs;
+use Illuminate\Support\Facades\Session;
 
 class GoogleOAuthService
 {
@@ -226,10 +227,24 @@ class GoogleOAuthService
                     'user_id' => $user->id,
                     'ip_hash' => $hashedIp
                 ]);
-                return $user;
+
+                // Check if 2FA is enabled
+                if ($user->hasTwoFactorEnabled()) {
+                    // Store user ID in session for 2FA verification
+                    Session::put('2fa:user:id', $user->id);
+                    Session::put('2fa:remember', false); // OAuth doesn't use remember
+                    
+                    // Return user but don't log in yet (controller will redirect to 2FA)
+                    return ['user' => $user, 'needs_2fa' => true];
+                }
+
+                // No 2FA, mark as verified
+                Session::put('2fa:verified:' . $user->id, true);
+                
+                return ['user' => $user, 'needs_2fa' => false];
             }
             
-            // Create new user with hashed IP (no email needed for new users)
+            // Create new user with hashed IP (no 2FA for new users initially)
             DB::beginTransaction();
             $user = User::create([
                 'first_name' => $googleUser->user['given_name'] ?? $googleUser->getName(),
@@ -250,7 +265,11 @@ class GoogleOAuthService
                 'user_id' => $user->id,
                 'ip_hash' => $hashedIp
             ]);
-            return $user;
+
+            // Mark 2FA as verified (new user has no 2FA)
+            Session::put('2fa:verified:' . $user->id, true);
+            
+            return ['user' => $user, 'needs_2fa' => false];
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Google signup exception', [
