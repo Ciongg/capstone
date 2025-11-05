@@ -11,13 +11,18 @@ class LogsIndex extends Component
 {
     use WithPagination;
 
-    public $activeTab = 'audit';
+    public $activeTab = 'security'; // Changed default to security
     public $selectedAuditLogId = null;
     public $selectedSecurityLogId = null;
     
-    // Search filters
+    // Search filters for Security Logs
     public $searchEmail = '';
     public $searchIp = '';
+    
+    // Search filters for Audit Logs
+    public $searchAuditEmail = '';
+    public $searchAuditResource = '';
+    public $searchAuditEvent = '';
     
     // IP masking toggle
     public $maskIp = true;
@@ -43,17 +48,51 @@ class LogsIndex extends Component
         $this->resetPage();
     }
 
+    public function updatedSearchAuditEmail()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedSearchAuditResource()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedSearchAuditEvent()
+    {
+        $this->resetPage();
+    }
+
     // DB-backed data sources with search
     public function getAuditLogsProperty()
     {
         $query = AuditLogs::orderByDesc('created_at');
         
-        if (!empty($this->searchEmail)) {
-            $query->where('email', 'like', '%' . $this->searchEmail . '%');
+        // Search by email OR ID
+        if (!empty($this->searchAuditEmail)) {
+            $query->where(function($q) {
+                $q->where('email', 'like', '%' . $this->searchAuditEmail . '%')
+                  ->orWhere('id', $this->searchAuditEmail);
+            });
         }
         
-        if (!empty($this->searchIp)) {
-            $query->where('ip', 'like', '%' . $this->searchIp . '%');
+        if (!empty($this->searchAuditResource)) {
+            // Check if search contains a number (potential resource ID)
+            if (preg_match('/#(\d+)/', $this->searchAuditResource, $matches)) {
+                // Search by exact resource ID if # is found
+                $resourceId = $matches[1];
+                $query->where('resource_id', $resourceId);
+            } elseif (is_numeric($this->searchAuditResource)) {
+                // If just a number, search by resource ID
+                $query->where('resource_id', $this->searchAuditResource);
+            } else {
+                // Otherwise search by resource type name
+                $query->where('resource_type', 'like', '%' . $this->searchAuditResource . '%');
+            }
+        }
+        
+        if (!empty($this->searchAuditEvent)) {
+            $query->where('event_type', 'like', '%' . $this->searchAuditEvent . '%');
         }
         
         return $query->paginate(20);
@@ -63,8 +102,12 @@ class LogsIndex extends Component
     {
         $query = SecurityLogs::orderByDesc('created_at');
         
+        // Search by email OR ID
         if (!empty($this->searchEmail)) {
-            $query->where('email', 'like', '%' . $this->searchEmail . '%');
+            $query->where(function($q) {
+                $q->where('email', 'like', '%' . $this->searchEmail . '%')
+                  ->orWhere('id', $this->searchEmail);
+            });
         }
         
         if (!empty($this->searchIp)) {

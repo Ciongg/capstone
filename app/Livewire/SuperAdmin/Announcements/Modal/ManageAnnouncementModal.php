@@ -7,6 +7,7 @@ use App\Models\Announcement;
 use App\Models\Institution;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
+use App\Services\AuditLogService;
 
 class ManageAnnouncementModal extends Component
 {
@@ -65,7 +66,7 @@ class ManageAnnouncementModal extends Component
         $user = auth()->user();
 
         // Set institutionId for non-super-admins if institution_specific
-        if ($this->targetAudience === 'institution_specific' && !$user->hasRole('super_admin')) {
+        if ($this->targetAudience === 'institution_specific' && $user->type !== 'super_admin') {
             $this->institutionId = $user->institution_id;
         }
 
@@ -74,7 +75,7 @@ class ManageAnnouncementModal extends Component
             'targetAudience' => $this->targetAudience,
             'institutionId' => $this->institutionId,
             'user_institution_id' => $user->institution_id,
-            'is_super_admin' => $user->hasRole('super_admin')
+            'is_super_admin' => $user->type === 'super_admin'
         ]);
 
         $this->validate();
@@ -85,6 +86,19 @@ class ManageAnnouncementModal extends Component
             session()->flash('error', 'Announcement not found.');
             return;
         }
+
+        // Capture before state for audit log
+        $beforeData = [
+            'title' => $announcement->title,
+            'description' => $announcement->description,
+            'target_audience' => $announcement->target_audience,
+            'institution_id' => $announcement->institution_id,
+            'active' => $announcement->active,
+            'image_path' => $announcement->image_path, // Track actual image path
+            'url' => $announcement->url,
+            'start_date' => $announcement->start_date,
+            'end_date' => $announcement->end_date,
+        ];
 
         $imagePath = $this->currentImage;
 
@@ -112,13 +126,32 @@ class ManageAnnouncementModal extends Component
             'active' => $this->active,
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
-            'url' => $this->url, // <-- Save url
+            'url' => $this->url,
         ];
 
-        // Add debugging for update data
-        \Log::info('Update Data', $updateData);
-
         $announcement->update($updateData);
+
+        // Capture after state for audit log
+        $afterData = [
+            'title' => $this->title,
+            'description' => $this->description,
+            'target_audience' => $this->targetAudience,
+            'institution_id' => $this->institutionId,
+            'active' => $this->active,
+            'image_path' => $imagePath, // Track actual image path
+            'url' => $this->url,
+            'start_date' => $this->start_date,
+            'end_date' => $this->end_date,
+        ];
+
+        // Audit log the announcement update
+        AuditLogService::logUpdate(
+            resourceType: 'Announcement',
+            resourceId: $announcement->id,
+            before: $beforeData,
+            after: $afterData,
+            message: "Updated announcement: '{$this->title}'"
+        );
 
         // Reset the image marked for deletion flag
         $this->imageMarkedForDeletion = false;
@@ -132,10 +165,27 @@ class ManageAnnouncementModal extends Component
         $announcement = Announcement::find($this->announcementId);
         
         if ($announcement) {
+            // Capture data before deletion for audit log
+            $announcementData = [
+                'title' => $announcement->title,
+                'target_audience' => $announcement->target_audience,
+                'institution_id' => $announcement->institution_id,
+                'active' => $announcement->active,
+            ];
+
             // Delete image from storage if it exists
             if ($announcement->image_path) {
                 Storage::disk('public')->delete($announcement->image_path);
             }
+
+            // Audit log the announcement deletion
+            AuditLogService::logDelete(
+                resourceType: 'Announcement',
+                resourceId: $announcement->id,
+                data: $announcementData,
+                message: "Deleted announcement: '{$announcement->title}'"
+            );
+
             $announcement->delete();
             $this->dispatch('announcement-deleted');
             $this->dispatch('close-modal', ['name' => 'manage-announcement-modal']);
@@ -161,7 +211,7 @@ class ManageAnnouncementModal extends Component
     public function render()
     {
         $user = auth()->user();
-        $institutions = $user->hasRole('super_admin') 
+        $institutions = $user->type === 'super_admin'
             ? Institution::all() 
             : Institution::where('id', $user->institution_id)->get();
             

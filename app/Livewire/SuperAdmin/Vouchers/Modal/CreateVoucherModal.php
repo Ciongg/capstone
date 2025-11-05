@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Models\Merchant;
+use App\Services\AuditLogService;
 
 class CreateVoucherModal extends Component
 {
@@ -73,6 +74,7 @@ class CreateVoucherModal extends Component
         $expiryDate = $this->expiry_date ? Carbon::parse($this->expiry_date) : null;
 
         // Generate and save the specified quantity of vouchers
+        $voucherReferences = [];
         for ($i = 0; $i < $this->quantity; $i++) {
             $referenceNo = $this->generateUniqueReferenceNumber();
             // Ensure uniqueness
@@ -89,7 +91,29 @@ class CreateVoucherModal extends Component
                 'image_path' => $imagePath,
                 'merchant_id' => $this->merchant_id,
             ]);
+            $voucherReferences[] = $referenceNo;
         }
+
+        // Get merchant name
+        $merchant = Merchant::find($this->merchant_id);
+        $merchantName = $merchant ? $merchant->name : 'Unknown';
+
+        // Audit log the voucher creation
+        AuditLogService::logCreate(
+            resourceType: 'Voucher',
+            resourceId: $reward->id,
+            data: [
+                'reward_name' => $this->name,
+                'merchant_id' => $this->merchant_id,
+                'merchant_name' => $merchantName,
+                'cost' => $this->cost,
+                'rank_requirement' => $this->rank_requirement,
+                'quantity_created' => $this->quantity,
+                'expiry_date' => $expiryDate ? $expiryDate->format('Y-m-d') : null,
+                'image_path' => $imagePath, // Track actual image path
+            ],
+            message: "Created {$this->quantity} voucher(s) for '{$this->name}' from merchant '{$merchantName}' (Reward ID: {$reward->id})"
+        );
 
         // Show success message
         $this->showSuccess = true;
@@ -99,7 +123,6 @@ class CreateVoucherModal extends Component
             'expiry_date', 'image', 'quantity', 'merchant_id'
         ]);
         $this->dispatch('voucherCreated');
-       
     }
 
     /**

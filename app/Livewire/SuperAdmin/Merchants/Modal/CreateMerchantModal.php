@@ -5,6 +5,7 @@ namespace App\Livewire\SuperAdmin\Merchants\Modal;
 use Livewire\Component;
 use App\Models\Merchant;
 use Livewire\WithFileUploads;
+use App\Services\AuditLogService;
 
 class CreateMerchantModal extends Component
 {
@@ -39,7 +40,7 @@ class CreateMerchantModal extends Component
 
         $imagePath = $this->image ? $this->image->store('merchants', 'public') : null;
 
-        Merchant::create([
+        $merchant = Merchant::create([
             'name' => $this->name,
             'merchant_code' => $this->merchant_code,
             'logo_path' => $imagePath,
@@ -49,6 +50,21 @@ class CreateMerchantModal extends Component
             'contact_number' => $this->contact_number,
             'partner_type' => $this->partner_type, // new
         ]);
+
+        // Audit log the merchant creation
+        AuditLogService::logCreate(
+            resourceType: 'Merchant',
+            resourceId: $merchant->id,
+            data: [
+                'name' => $merchant->name,
+                'merchant_code' => $merchant->merchant_code,
+                'partner_type' => $merchant->partner_type,
+                'email' => $merchant->email,
+                'contact_number' => $merchant->contact_number,
+                'logo_path' => $merchant->logo_path, // Track actual logo path
+            ],
+            message: "Created {$merchant->partner_type}: '{$merchant->name}' with code '{$merchant->merchant_code}'"
+        );
 
         $this->dispatch('merchantCreated');
         $this->closeModal();

@@ -5,6 +5,7 @@ namespace App\Livewire\SuperAdmin\UserList\Modal;
 use Livewire\Component;
 use App\Models\User;
 use App\Models\InboxMessage;
+use App\Services\AuditLogService;
 
 class UserContactModal extends Component
 {
@@ -76,6 +77,20 @@ class UserContactModal extends Component
             'message' => $this->messageBody,
             'read_at' => null,
         ]);
+
+        // Audit log the message sent
+        AuditLogService::log(
+            eventType: 'user_contacted',
+            message: "Sent message to user: {$recipient->email}",
+            resourceType: 'User',
+            resourceId: $recipient->id,
+            meta: [
+                'recipient_name' => $recipient->name,
+                'recipient_email' => $recipient->email,
+                'subject' => $this->subject,
+                'message_length' => strlen($this->messageBody),
+            ]
+        );
 
         // Reset form fields and show success message
         $this->resetForm();

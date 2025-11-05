@@ -9,6 +9,7 @@ use App\Models\InstitutionTagCategory;
 use Livewire\WithPagination;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use App\Services\AuditLogService;
 
 class TagsIndex extends Component
 {
@@ -112,19 +113,38 @@ class TagsIndex extends Component
         if ($this->categoryId) {
             // Update existing category
             $category = TagCategory::find($this->categoryId);
+            $oldName = $category->name;
             $category->update([
                 'name' => $this->categoryName
             ]);
+            
+            // Audit log the category update
+            AuditLogService::logUpdate(
+                resourceType: 'TagCategory',
+                resourceId: $category->id,
+                before: ['name' => $oldName],
+                after: ['name' => $this->categoryName],
+                message: "Updated tag category from '{$oldName}' to '{$this->categoryName}'"
+            );
+            
             $message = 'Category updated successfully!';
         } else {
             // Create new category
-            TagCategory::create([
+            $category = TagCategory::create([
                 'name' => $this->categoryName
             ]);
+            
+            // Audit log the category creation
+            AuditLogService::logCreate(
+                resourceType: 'TagCategory',
+                resourceId: $category->id,
+                data: ['name' => $category->name],
+                message: "Created new tag category: '{$category->name}'"
+            );
+            
             $message = 'Category created successfully!';
         }
         
-        // Modal will be closed via the event listener in JavaScript
         $this->showCategoryModal = false;
         $this->dispatch('category-saved', $message);
     }
@@ -144,21 +164,40 @@ class TagsIndex extends Component
         if ($this->categoryId) {
             // Update existing category
             $category = InstitutionTagCategory::find($this->categoryId);
+            $oldName = $category->name;
             $category->update([
                 'name' => $this->categoryName,
                 'institution_id' => $this->institutionId
             ]);
+            
+            // Audit log the institution category update
+            AuditLogService::logUpdate(
+                resourceType: 'InstitutionTagCategory',
+                resourceId: $category->id,
+                before: ['name' => $oldName, 'institution_id' => $this->institutionId],
+                after: ['name' => $this->categoryName, 'institution_id' => $this->institutionId],
+                message: "Updated institution tag category from '{$oldName}' to '{$this->categoryName}'"
+            );
+            
             $message = 'Category updated successfully!';
         } else {
             // Create new category
-            InstitutionTagCategory::create([
+            $category = InstitutionTagCategory::create([
                 'name' => $this->categoryName,
                 'institution_id' => $this->institutionId
             ]);
+            
+            // Audit log the institution category creation
+            AuditLogService::logCreate(
+                resourceType: 'InstitutionTagCategory',
+                resourceId: $category->id,
+                data: ['name' => $category->name, 'institution_id' => $this->institutionId],
+                message: "Created new institution tag category: '{$category->name}'"
+            );
+            
             $message = 'Category created successfully!';
         }
         
-        // Modal will be closed via the event listener in JavaScript
         $this->showCategoryModal = false;
         $this->dispatch('institution-category-saved', $message);
     }
@@ -172,11 +211,18 @@ class TagsIndex extends Component
             $category = InstitutionTagCategory::find($categoryId);
             
             if ($category) {
-                // Check if category has tags
                 if ($category->tags()->count() > 0) {
                     $this->dispatch('category-has-tags');
                     return;
                 }
+                
+                // Audit log the institution category deletion
+                AuditLogService::logDelete(
+                    resourceType: 'InstitutionTagCategory',
+                    resourceId: $category->id,
+                    data: ['name' => $category->name, 'institution_id' => $category->institution_id],
+                    message: "Deleted institution tag category: '{$category->name}'"
+                );
                 
                 $category->delete();
                 $this->dispatch('category-deleted');
@@ -185,11 +231,18 @@ class TagsIndex extends Component
             $category = TagCategory::find($categoryId);
             
             if ($category) {
-                // Check if category has tags
                 if ($category->tags()->count() > 0) {
                     $this->dispatch('category-has-tags');
                     return;
                 }
+                
+                // Audit log the category deletion
+                AuditLogService::logDelete(
+                    resourceType: 'TagCategory',
+                    resourceId: $category->id,
+                    data: ['name' => $category->name],
+                    message: "Deleted tag category: '{$category->name}'"
+                );
                 
                 $category->delete();
                 $this->dispatch('category-deleted');
@@ -236,7 +289,6 @@ class TagsIndex extends Component
                 'string', 
                 'max:50',
                 function ($attribute, $value, $fail) {
-                    // Case-insensitive check for duplicate tag names within the same category
                     $exists = Tag::where('tag_category_id', $this->tagCategoryId)
                         ->whereRaw('LOWER(name) = ?', [strtolower($value)])
                         ->when($this->tagId, function ($query) {
@@ -255,21 +307,40 @@ class TagsIndex extends Component
         if ($this->tagId) {
             // Update existing tag
             $tag = Tag::find($this->tagId);
+            $oldData = ['name' => $tag->name, 'tag_category_id' => $tag->tag_category_id];
             $tag->update([
                 'name' => $this->tagName,
                 'tag_category_id' => $this->tagCategoryId
             ]);
+            
+            // Audit log the tag update
+            AuditLogService::logUpdate(
+                resourceType: 'Tag',
+                resourceId: $tag->id,
+                before: $oldData,
+                after: ['name' => $this->tagName, 'tag_category_id' => $this->tagCategoryId],
+                message: "Updated tag: '{$this->tagName}'"
+            );
+            
             $message = 'Tag updated successfully!';
         } else {
             // Create new tag
-            Tag::create([
+            $tag = Tag::create([
                 'name' => $this->tagName,
                 'tag_category_id' => $this->tagCategoryId
             ]);
+            
+            // Audit log the tag creation
+            AuditLogService::logCreate(
+                resourceType: 'Tag',
+                resourceId: $tag->id,
+                data: ['name' => $tag->name, 'tag_category_id' => $tag->tag_category_id],
+                message: "Created new tag: '{$tag->name}'"
+            );
+            
             $message = 'Tag created successfully!';
         }
         
-        // Modal will be closed via the event listener in JavaScript
         $this->showTagModal = false;
         $this->dispatch('tag-saved', $message);
     }
@@ -285,7 +356,6 @@ class TagsIndex extends Component
                 'string', 
                 'max:50',
                 function ($attribute, $value, $fail) {
-                    // Case-insensitive check for duplicate tag names within the same institution category
                     $exists = \App\Models\InstitutionTag::where('institution_tag_category_id', $this->tagCategoryId)
                         ->whereRaw('LOWER(name) = ?', [strtolower($value)])
                         ->when($this->tagId, function ($query) {
@@ -301,7 +371,6 @@ class TagsIndex extends Component
             'tagCategoryId' => ['required', 'exists:institution_tag_categories,id'],
         ]);
         
-        // Ensure the category belongs to this institution
         $category = InstitutionTagCategory::where('id', $this->tagCategoryId)
             ->where('institution_id', $this->institutionId)
             ->first();
@@ -316,10 +385,21 @@ class TagsIndex extends Component
             $tag = \App\Models\InstitutionTag::find($this->tagId);
             
             if ($tag) {
+                $oldData = ['name' => $tag->name, 'institution_tag_category_id' => $tag->institution_tag_category_id];
                 $tag->update([
                     'name' => $this->tagName,
                     'institution_tag_category_id' => $this->tagCategoryId
                 ]);
+                
+                // Audit log the institution tag update
+                AuditLogService::logUpdate(
+                    resourceType: 'InstitutionTag',
+                    resourceId: $tag->id,
+                    before: $oldData,
+                    after: ['name' => $this->tagName, 'institution_tag_category_id' => $this->tagCategoryId],
+                    message: "Updated institution tag: '{$this->tagName}'"
+                );
+                
                 $message = 'Tag updated successfully!';
             } else {
                 $this->addError('tagId', 'The selected tag could not be found.');
@@ -327,14 +407,22 @@ class TagsIndex extends Component
             }
         } else {
             // Create new institution tag
-            \App\Models\InstitutionTag::create([
+            $tag = \App\Models\InstitutionTag::create([
                 'name' => $this->tagName,
                 'institution_tag_category_id' => $this->tagCategoryId
             ]);
+            
+            // Audit log the institution tag creation
+            AuditLogService::logCreate(
+                resourceType: 'InstitutionTag',
+                resourceId: $tag->id,
+                data: ['name' => $tag->name, 'institution_tag_category_id' => $tag->institution_tag_category_id],
+                message: "Created new institution tag: '{$tag->name}'"
+            );
+            
             $message = 'Tag created successfully!';
         }
         
-        // Modal will be closed via the event listener in JavaScript
         $this->showTagModal = false;
         $this->dispatch('institution-tag-saved', $message);
     }
@@ -345,14 +433,27 @@ class TagsIndex extends Component
         $tag = Tag::find($tagId);
         
         if ($tag) {
+            $usersCount = $tag->users()->count();
+            $surveysCount = $tag->surveys()->count();
+            
             // Detach tag from users and surveys before deletion
             $tag->users()->detach();
             $tag->surveys()->detach();
             
-            // Delete the tag
-            $tag->delete();
+            // Audit log the tag deletion
+            AuditLogService::logDelete(
+                resourceType: 'Tag',
+                resourceId: $tag->id,
+                data: [
+                    'name' => $tag->name,
+                    'tag_category_id' => $tag->tag_category_id,
+                    'users_count' => $usersCount,
+                    'surveys_count' => $surveysCount
+                ],
+                message: "Deleted tag: '{$tag->name}' (was used by {$usersCount} user(s) and {$surveysCount} survey(s))"
+            );
             
-            // Notify user of successful deletion
+            $tag->delete();
             $this->dispatch('tag-deleted');
         }
     }
@@ -363,14 +464,27 @@ class TagsIndex extends Component
         $tag = \App\Models\InstitutionTag::find($tagId);
         
         if ($tag) {
+            $usersCount = $tag->users()->count();
+            $surveysCount = $tag->surveys()->count();
+            
             // Detach tag from users and surveys before deletion
             $tag->users()->detach();
             $tag->surveys()->detach();
             
-            // Delete the tag
-            $tag->delete();
+            // Audit log the institution tag deletion
+            AuditLogService::logDelete(
+                resourceType: 'InstitutionTag',
+                resourceId: $tag->id,
+                data: [
+                    'name' => $tag->name,
+                    'institution_tag_category_id' => $tag->institution_tag_category_id,
+                    'users_count' => $usersCount,
+                    'surveys_count' => $surveysCount
+                ],
+                message: "Deleted institution tag: '{$tag->name}' (was used by {$usersCount} user(s) and {$surveysCount} survey(s))"
+            );
             
-            // Notify user of successful deletion
+            $tag->delete();
             $this->dispatch('tag-deleted');
         }
     }

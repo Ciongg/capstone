@@ -4,6 +4,7 @@ namespace App\Livewire\SuperAdmin\Institutions\Modal;
 
 use Livewire\Component;
 use App\Models\Institution;
+use App\Services\AuditLogService;
 
 class CreateInstitutionModal extends Component
 {
@@ -43,6 +44,18 @@ class CreateInstitutionModal extends Component
         if (!empty($userIds)) {
             \DB::table('sessions')->whereIn('user_id', $userIds)->delete();
         }
+
+        // Audit log the institution creation - Fixed to not pass array as string
+        AuditLogService::logCreate(
+            resourceType: 'Institution',
+            resourceId: $institution->id,
+            data: [
+                'name' => $institution->name,
+                'domain' => $institution->domain,
+                'users_assigned' => count($userIds),
+            ],
+            message: "Created institution: '{$institution->name}' with domain '{$institution->domain}' and assigned " . count($userIds) . " user(s)"
+        );
 
         $this->dispatch('institution-created');
         $this->dispatch('refresh-institution-index');

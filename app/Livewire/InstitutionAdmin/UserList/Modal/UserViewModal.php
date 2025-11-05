@@ -8,6 +8,7 @@ use App\Models\Survey;
 use App\Models\RewardRedemption;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use App\Services\AuditLogService;
 
 class UserViewModal extends Component
 {
@@ -51,11 +52,24 @@ class UserViewModal extends Component
             session()->flash('modal_message', 'You cannot change your own account status.');
             return;
         }
+
+        // Store old status for audit log
+        $oldStatus = $this->user->is_active;
         
         $this->user->is_active = !$this->user->is_active;
         $this->user->save();
         
         $status = $this->user->is_active ? 'activated' : 'deactivated';
+
+        // Audit log the status change
+        AuditLogService::logUpdate(
+            resourceType: 'User',
+            resourceId: $this->user->id,
+            before: ['is_active' => $oldStatus],
+            after: ['is_active' => $this->user->is_active],
+            message: ucfirst($status) . " user account: {$this->user->email}"
+        );
+
         session()->flash('modal_message', "User has been {$status} successfully.");
         
         // Force a full refresh to ensure the UI updates
@@ -73,9 +87,26 @@ class UserViewModal extends Component
             session()->flash('modal_message', 'You cannot archive your own account.');
             return;
         }
+
+        // Capture user data before archiving
+        $userData = [
+            'email' => $this->user->email,
+            'name' => $this->user->name,
+            'type' => $this->user->type,
+            'institution_id' => $this->user->institution_id,
+            'points' => $this->user->points,
+            'trust_score' => $this->user->trust_score,
+        ];
         
         $this->user->delete(); // Soft delete
         $this->user->refresh(); // Refresh the model to get the updated deleted_at timestamp
+
+        // Audit log the archiving
+        AuditLogService::logArchive(
+            resourceType: 'User',
+            resourceId: $this->user->id,
+            message: "Archived user: {$userData['email']} ({$userData['type']})"
+        );
         
         session()->flash('modal_message', 'User has been archived successfully.');
         $this->dispatch('userStatusUpdated');
@@ -89,6 +120,13 @@ class UserViewModal extends Component
         
         $this->user->restore();
         $this->user->refresh(); // Refresh the model to make sure deleted_at is null
+
+        // Audit log the restoration
+        AuditLogService::logRestore(
+            resourceType: 'User',
+            resourceId: $this->user->id,
+            message: "Restored user: {$this->user->email} ({$this->user->type})"
+        );
         
         session()->flash('modal_message', 'User has been restored successfully.');
         $this->dispatch('userStatusUpdated');

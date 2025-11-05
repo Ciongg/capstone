@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\Announcement;
 use App\Models\Institution;
 use Livewire\WithFileUploads;
+use App\Services\AuditLogService;
 
 class CreateAnnouncementModal extends Component
 {
@@ -73,7 +74,7 @@ class CreateAnnouncementModal extends Component
             'active' => $this->active,
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
-            'url' => $this->url, // Add URL to the create data
+            'url' => $this->url,
         ];
 
         // Add debugging for create data
@@ -83,6 +84,25 @@ class CreateAnnouncementModal extends Component
 
         // Log the created announcement
         \Log::info('Created Announcement', $announcement->toArray());
+
+        // Audit log the announcement creation
+        AuditLogService::logCreate(
+            resourceType: 'Announcement',
+            resourceId: $announcement->id,
+            data: [
+                'title' => $announcement->title,
+                'target_audience' => $announcement->target_audience,
+                'institution_id' => $announcement->institution_id,
+                'active' => $announcement->active,
+                'image_path' => $announcement->image_path, // Track actual image path
+                'url' => $announcement->url,
+                'start_date' => $announcement->start_date,
+                'end_date' => $announcement->end_date,
+            ],
+            message: "Created announcement: '{$announcement->title}' for " . 
+                     ($announcement->target_audience === 'public' ? 'public audience' : 
+                      'institution ID: ' . $announcement->institution_id)
+        );
 
         session()->flash('message', 'Announcement created successfully.');
         $this->dispatch('announcementCreated');
