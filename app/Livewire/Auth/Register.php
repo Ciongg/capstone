@@ -156,7 +156,7 @@ class Register extends Component
             ['email' => $this->email],
             [
                 'otp_code' => $otpCode,
-                'expires_at' => Carbon::now()->addSeconds(60), // 10 minutes from now
+                'expires_at' => Carbon::now()->addMinutes(10), // 10 minutes from now
             ]
         );
 
@@ -317,7 +317,7 @@ class Register extends Component
     private function startResendCooldown()
     {
         $this->resendCooldown = true;
-        $this->resendCooldownSeconds = 60; // 60 seconds cooldown
+        $this->resendCooldownSeconds = 300; // 60 seconds cooldown
 
         // Start the countdown timer
         $this->dispatch('start-resend-cooldown');

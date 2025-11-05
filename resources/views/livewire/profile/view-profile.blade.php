@@ -26,18 +26,18 @@
     @endauth
 
     {{-- Profile Information Container --}}
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden w-full mb-4 mt-8">
+    <div class="bg-white rounded-xl shadow-lg w-full mb-4 mt-8" style="overflow: visible;">
         {{-- Banner Image --}}
-        <div class="h-48 bg-[#03b8ff] relative w-full">
+        <div class="h-48 bg-[#03b8ff] relative w-full rounded-t-xl">
             {{-- Add a banner change option if needed --}}
         </div>
 
         {{-- Profile Info Section --}}
-        <div class="px-4 sm:px-6 pt-0 pb-6"> {{-- Reduced horizontal padding on mobile --}}
-            <div class="flex flex-col md:flex-row">
+        <div class="px-4 sm:px-6 pt-0 pb-6" style="overflow: visible;">
+            <div class="flex flex-col md:flex-row" style="overflow: visible;">
                 {{-- Profile Picture (overlapping the banner) --}}
                 <div class="relative -mt-20 mb-4 md:mb-0 flex justify-center md:justify-start">
-                    <div class="relative w-36 h-36"> {{-- Fixed dimensions to match the image --}}
+                    <div class="relative w-36 h-36">
                         {{-- Display current profile photo --}}
                         <img src="{{ $user->profile_photo_url }}" alt="{{ $user->name }}" 
                              class="w-full h-full rounded-full object-cover border-4 border-white shadow-md">
@@ -54,9 +54,8 @@
                 </div>
 
                 {{-- User Info (to the right of profile picture) --}}
-                <div class="md:ml-6 mt-4 md:mt-0 md:pt-5 flex-1">
-                    {{-- Wrapper for name/details and buttons - vertical on mobile, horizontal on large screens --}}
-                    <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start">
+                <div class="md:ml-6 mt-4 md:mt-0 md:pt-5 flex-1" style="overflow: visible;">
+                    <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start" style="overflow: visible;">
                         {{-- Left column with name and details - always stacked --}}
                         <div class="text-center md:text-left">
                             {{-- User name display --}}
@@ -112,58 +111,92 @@
                             
                         </div>
 
-                        {{-- Action buttons - right side on large screens, stacked below on small screens --}}
-                        <div class="flex flex-col md:flex-row gap-3 items-center md:items-start">
-                            {{-- Edit Profile Button --}}
-                            <button
-                                x-data
-                                x-on:click="$dispatch('open-modal', {name: 'edit-profile-modal'})"
-                                class="flex items-center justify-center space-x-2 py-2 px-4 text-white bg-gray-400 hover:bg-gray-500 rounded-lg shadow-md transition-colors w-full md:w-40"
-                            >
-                                <svg class="w-5 h-5 mr-2" fill="white" viewBox="0 -0.5 21 21" xmlns="http://www.w3.org/2000/svg">
-                                    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                                        <g id="Dribbble-Light-Preview" transform="translate(-419.000000, -359.000000)" fill="white">
-                                            <g id="icons" transform="translate(56.000000, 160.000000)">
-                                                <path d="M384,209.210475 L384,219 L363,219 L363,199.42095 L373.5,199.42095 L373.5,201.378855 L365.1,201.378855 L365.1,217.042095 L381.9,217.042095 L381.9,209.210475 L384,209.210475 Z M370.35,209.51395 L378.7731,201.64513 L380.4048,203.643172 L371.88195,212.147332 L370.35,212.147332 L370.35,209.51395 Z M368.25,214.105237 L372.7818,214.105237 L383.18415,203.64513 L378.8298,199 L368.25,208.687714 L368.25,214.105237 Z" id="edit_cover-[#1481]"/>
-                                            </g>
-                                        </g>
-                                    </g>
-                                </svg>
-                                <span class="font-semibold">Edit Profile</span>
-                            </button>
-
-                            {{-- 2FA Button --}}
-                            <livewire:profile.two-factor-authentication :key="'2fa-'.auth()->id()" />
-
+                        {{-- Action buttons - Help Request and Settings --}}
+                        <div class="flex items-center gap-3 mt-4 lg:mt-0 justify-center lg:justify-start">
                             {{-- Help Request Button --}}
                             <button
-                                x-data
                                 x-on:click="$dispatch('open-modal', {name: 'create-support-request-modal'})"
-                                class="flex items-center justify-center space-x-2 py-2 px-4 text-white bg-[#03b8ff] hover:bg-[#0299d5] rounded-lg shadow-md transition-colors w-full md:w-40"
+                                class="flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-[#03b8ff] hover:bg-[#0299d5] rounded-lg shadow-md transition-colors"
+                                aria-label="Help Request"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 0 1-1.44-4.282m3.102.069a18.03 18.03 0 0 1-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 0 1 8.835 2.535M10.34 6.66a23.847 23.847 0 0 0 8.835-2.535m0 0A23.74 23.74 0 0 0 18.795 3m.38 1.125a23.91 23.91 0 0 1 1.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 0 0 1.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 0 1 0 3.46" />
                                 </svg>
                                 <span class="font-semibold">Help Request</span>
                             </button>
-                            
-                            {{-- Logout Button --}}
-                            <form method="POST" action="{{ route('logout') }}" class="w-full md:w-auto">
-                                @csrf
-                                <button type="submit" class="flex items-center justify-center space-x-2 py-2 px-4 text-white bg-red-500 hover:bg-red-600 rounded-lg shadow-md transition-colors w-full md:w-40">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                                    </svg>
-                                    <span class="font-semibold">Logout</span>
-                                </button>
-                            </form>
 
-                            
+                            {{-- Settings Dropdown --}}
+                            <div
+                                class="relative"
+                                x-data="{ open: false }"
+                                @keydown.escape.window="open=false"
+                                @open-modal.window="open=false"
+                                style="z-index: 20;"
+                            >
+                                <button
+                                    x-ref="settingsButton"
+                                    @click="open = !open"
+                                    class="flex items-center justify-center p-3 text-white bg-gray-700 hover:bg-gray-800 rounded-full shadow-md transition-colors"
+                                    aria-label="Settings"
+                                    aria-haspopup="true"
+                                    :aria-expanded="open.toString()"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.065 2.572c.94 1.543-.827 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37A1.724 1.724 0 003.32 13.675c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                </button>
+
+                                <div
+                                    x-ref="settingsMenu"
+                                    x-show="open"
+                                    x-transition
+                                    @click.outside="open = false"
+                                    class="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-3"
+                                    style="z-index: 30;"
+                                    x-cloak
+                                >
+                                    <div class="flex flex-col gap-2">
+                                        {{-- Edit Profile --}}
+                                        <button
+                                            x-on:click="$dispatch('open-modal', {name: 'edit-profile-modal'}); open=false"
+                                            class="flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-gray-400 hover:bg-gray-500 rounded-lg shadow-md transition-colors w-full"
+                                        >
+                                            <svg class="w-5 h-5" fill="white" viewBox="0 -0.5 21 21" xmlns="http://www.w3.org/2000/svg">
+                                                <g fill="white"><path d="M384,209.210475 L384,219 L363,219 L363,199.42095 L373.5,199.42095 L373.5,201.378855 L365.1,201.378855 L365.1,217.042095 L381.9,217.042095 L381.9,209.210475 L384,209.210475 Z M370.35,209.51395 L378.7731,201.64513 L380.4048,203.643172 L371.88195,212.147332 L370.35,212.147332 L370.35,209.51395 Z M368.25,214.105237 L372.7818,214.105237 L383.18415,203.64513 L378.8298,199 L368.25,208.687714 L368.25,214.105237 Z"/></g>
+                                            </svg>
+                                            <span class="font-semibold">Edit Profile</span>
+                                        </button>
+
+                                        {{-- Two-Factor Authentication --}}
+                                        <button
+                                            x-on:click="$dispatch('open-modal', {name: 'two-factor-modal'}); open=false"
+                                            class="flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-blue-500 hover:bg-blue-600 rounded-lg shadow-md transition-colors w-full"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                                            </svg>
+                                            <span class="font-semibold">Two-Factor Auth</span>
+                                        </button>
+
+                                        {{-- Logout --}}
+                                        <form method="POST" action="{{ route('logout') }}" class="w-full" x-on:submit="open=false">
+                                            @csrf
+                                            <button type="submit" class="flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-red-500 hover:bg-red-600 rounded-lg shadow-md transition-colors w-full">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                                                </svg>
+                                                <span class="font-semibold">Logout</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                        {{-- End Action buttons --}}
                     </div>
                 </div>
             </div>
-            
         </div>
         {{-- Success message for profile update --}}
     @if (session()->has('profile_saved'))
@@ -174,7 +207,7 @@
     </div>
 
     {{-- Dynamic Content Container with Tabs --}}
-    <div class="bg-white rounded-xl shadow-lg mt-4 w-full">
+    <div class="bg-white rounded-xl shadow-lg mt-4 w-full" style="position: relative; z-index: 1;">
         {{-- Navigation Tabs - Modified for expanding design --}}
         <div class="border-b border-gray-200">
             <div class="flex -mb-px w-full">
@@ -227,6 +260,11 @@
     {{-- Edit Profile Modal --}}
     <x-modal name="edit-profile-modal" title="Edit Profile">
         @livewire('profile.modal.edit-profile-modal', ['user' => $user], key('edit-profile-modal-' . $user->id))
+    </x-modal>
+
+    {{-- Two-Factor Authentication Modal - same pattern as edit-profile --}}
+    <x-modal name="two-factor-modal" title="Two-Factor Authentication">
+        @livewire('profile.two-factor-authentication', key('2fa-' . auth()->id()))
     </x-modal>
 </div>
 

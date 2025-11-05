@@ -102,7 +102,7 @@ class ForgotPassword extends Component
             ['email' => $this->email],
             [
                 'otp_code' => $otpCode,
-                'expires_at' => Carbon::now()->addSeconds(60), // Change to addMinutes(10) for production
+                'expires_at' => Carbon::now()->addMinutes(10) // Change to addMinutes(10) for production
             ]
         );
 
@@ -245,7 +245,7 @@ class ForgotPassword extends Component
             ['email' => $this->email],
             [
                 'otp_code' => $otpCode,
-                'expires_at' => Carbon::now()->addSeconds(60), // Change to addMinutes(10) for production
+                'expires_at' => Carbon::now()->addMinutes(10), // Change to addMinutes(10) for production
             ]
         );
 
@@ -268,7 +268,7 @@ class ForgotPassword extends Component
     private function startResendCooldown()
     {
         $this->resendCooldown = true;
-        $this->resendCooldownSeconds = 60; // 60 seconds cooldown
+        $this->resendCooldownSeconds = 300; // 60 seconds cooldown
 
         // Start the countdown timer
         $this->dispatch('start-resend-cooldown');

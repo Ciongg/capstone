@@ -6,6 +6,7 @@ use Livewire\Component;
 use PragmaRX\Google2FA\Google2FA;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Crypt;
 
 class TwoFactorAuthentication extends Component
 {
@@ -39,21 +40,26 @@ class TwoFactorAuthentication extends Component
     public function enableTwoFactor()
     {
         $google2fa = new Google2FA();
-        $this->secret = $google2fa->generateSecretKey();
-        
-        $qrCodeUrl = $google2fa->getQRCodeUrl(
-            config('app.name'),
-            $this->user->email,
-            $this->secret
+        // Use longer Base32 secret for compatibility
+        $this->secret = $google2fa->generateSecretKey(32);
+
+        // Build standards-compliant otpauth URI:
+        // otpauth://totp/Issuer:email?secret=SECRET&issuer=Issuer&algorithm=SHA1&digits=6&period=30
+        $issuer = config('app.name', 'Formigo');
+        $label = $issuer . ':' . $this->user->email;
+        $this->qrCodeUrl = sprintf(
+            'otpauth://totp/%s?secret=%s&issuer=%s&algorithm=SHA1&digits=6&period=30',
+            rawurlencode($label),
+            $this->secret,
+            rawurlencode($issuer)
         );
-        
-        $this->qrCodeUrl = $qrCodeUrl;
+
         $this->showQrCode = true;
-        
+
         // Generate recovery codes
         $this->recoveryCodes = $this->generateRecoveryCodes();
-        
-        // Save to database but not enabled yet
+
+        // Save to database but not enabled yet (Model may encrypt via accessor)
         $setting = $this->user->getOrCreateTwoFactorSetting();
         $setting->update([
             'secret' => $this->secret,
@@ -67,17 +73,35 @@ class TwoFactorAuthentication extends Component
 
     public function confirmSetup()
     {
-        $this->validate([
-            'verificationCode' => 'required|digits:6'
-        ]);
+        // Manual validation -> SweetAlert
+        $code = trim($this->verificationCode ?? '');
+        if ($code === '') {
+            $this->dispatch('show-error', message: 'Please enter the 6-digit code.');
+            return;
+        }
+        if (!preg_match('/^\d{6}$/', $code)) {
+            $this->dispatch('show-error', message: 'Enter a valid 6-digit code.');
+            return;
+        }
 
         $google2fa = new Google2FA();
         $setting = $this->user->twoFactorSetting;
 
-        $valid = $google2fa->verifyKey($setting->secret, $this->verificationCode);
+        // Prefer decrypted secret if model stored it encrypted; fallback to plain
+        $secret = $setting->secret;
+        if (!preg_match('/^[A-Z2-7]+=*$/', (string) $secret)) {
+            try {
+                $secret = Crypt::decryptString($setting->getRawOriginal('secret'));
+            } catch (\Throwable $e) {
+                $secret = $setting->secret; // best effort
+            }
+        }
+
+        // Allow more time drift during setup
+        $valid = $google2fa->verifyKey($secret, $code, 4);
 
         if (!$valid) {
-            $this->addError('verificationCode', 'Invalid verification code. Please try again.');
+            $this->dispatch('show-error', message: 'Invalid verification code. Please try again.');
             return;
         }
 
@@ -93,18 +117,19 @@ class TwoFactorAuthentication extends Component
         $this->verificationCode = '';
 
         session()->flash('message', '2FA has been enabled successfully!');
-        $this->dispatch('close-modal', name: 'setup-2fa-modal');
-        $this->dispatch('show-success', message: '2FA enabled successfully! Please save your recovery codes.');
+        $this->dispatch('show-success', message: '2FA enabled! Please save your recovery codes below to recover access if you lose your authenticator.');
     }
 
     public function disableTwoFactor()
     {
-        $this->validate([
-            'password' => 'required'
-        ]);
+        // Manual validation -> SweetAlert
+        if (trim($this->password ?? '') === '') {
+            $this->dispatch('show-error', message: 'Password is required.');
+            return;
+        }
 
         if (!Hash::check($this->password, $this->user->password)) {
-            $this->addError('password', 'Invalid password.');
+            $this->dispatch('show-error', message: 'Invalid password.');
             return;
         }
 
