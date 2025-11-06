@@ -84,7 +84,7 @@
                                     wire:model="trustScore"
                                     min="0"
                                     max="100"
-                                    class="block w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    class="block w-24 px-3 py-2 bg-white rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                 >
                                 <span class="text-gray-500">/100</span>
                                 
@@ -94,6 +94,37 @@
                             </div>
                             <p class="text-xs text-gray-500 mt-1">Trust score lower than 60 will disable user's ability to participate in certain surveys.</p>
                         </div>
+                        
+                        <!-- User Type Dropdown - Add after Trust Score -->
+                        @if($user->type !== 'super_admin' && $user->id !== auth()->id())
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                            <label for="userType" class="block text-sm font-medium text-gray-700 mb-1">
+                                User Type
+                            </label>
+                            <select
+                                id="userType"
+                                wire:model="userType"
+                                class="block w-full px-3 py-2 bg-white rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                @if($user->trashed()) disabled @endif
+                            >
+                                <option value="respondent">Respondent</option>
+                                @if(auth()->user()->type === 'super_admin')
+                                    <option value="researcher">Researcher</option>
+                                    <option value="institution_admin">Institution Admin</option>
+                                @endif
+                            </select>
+                            @error('userType') 
+                                <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> 
+                            @enderror
+                            <p class="text-xs text-gray-500 mt-1">
+                                @if(auth()->user()->type === 'super_admin')
+                                    Select the appropriate user role. Super Admin role cannot be assigned.
+                                @else
+                                    Only Respondent type can be assigned by Institution Admins.
+                                @endif
+                            </p>
+                        </div>
+                        @endif
                         
                         <div>
                             <span class="font-bold">Email Verified:</span> 
@@ -125,8 +156,40 @@
 
                     <!-- Action Buttons -->
                     <div class="mt-6 space-y-3">
-                        <!-- Save Trust Score Button - Only shown for active users -->
-                        @if($user->is_active)
+                        <!-- Save Changes Button - Combines Trust Score and User Type -->
+                        @if($user->is_active && $user->type !== 'super_admin' && $user->id !== auth()->id())
+                        <button 
+                            type="button"
+                            x-data
+                            x-on:click="Swal.fire({
+                                title: 'Are you sure?',
+                                text: 'Do you want to save the changes made?',
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonColor: '#3085d6',
+                                cancelButtonColor: '#aaa',
+                                confirmButtonText: 'Yes, save it!'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $wire.saveTrustScore();
+                                    $wire.saveUserType();
+                                }
+                            })"
+                            wire:loading.attr="disabled"
+                            class="w-full py-2 rounded bg-blue-500 hover:bg-blue-600 text-white"
+                        >
+                            <span wire:loading.inline wire:target="saveTrustScore,saveUserType" class="inline-block">
+                                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Processing...
+                            </span>
+                            <span wire:loading.remove wire:target="saveTrustScore,saveUserType">
+                                Save Changes
+                            </span>
+                        </button>
+                        @elseif($user->is_active && ($user->type === 'super_admin' || $user->id === auth()->id()))
                         <button 
                             type="button"
                             x-data
