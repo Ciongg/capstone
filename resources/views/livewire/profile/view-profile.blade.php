@@ -154,25 +154,39 @@
                                     x-show="open"
                                     x-transition
                                     @click.outside="open = false"
-                                    class="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-3"
+                                    class="absolute right-0 md:right-0 left-1/2 md:left-auto -translate-x-1/2 md:translate-x-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-3"
                                     style="z-index: 30;"
                                     x-cloak
                                 >
                                     <div class="flex flex-col gap-2">
-                                        {{-- Edit Profile --}}
+                                        {{-- Manage Account --}}
                                         <button
                                             x-on:click="$dispatch('open-modal', {name: 'edit-profile-modal'}); open=false"
                                             class="cursor-pointer flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-gray-400 hover:bg-gray-500 rounded-lg shadow-md transition-colors w-full"
                                         >
-                                            <svg class="w-5 h-5" fill="white" viewBox="0 -0.5 21 21" xmlns="http://www.w3.org/2000/svg">
-                                                <g fill="white"><path d="M384,209.210475 L384,219 L363,219 L363,199.42095 L373.5,199.42095 L373.5,201.378855 L365.1,201.378855 L365.1,217.042095 L381.9,217.042095 L381.9,209.210475 L384,209.210475 Z M370.35,209.51395 L378.7731,201.64513 L380.4048,203.643172 L371.88195,212.147332 L370.35,212.147332 L370.35,209.51395 Z M368.25,214.105237 L372.7818,214.105237 L383.18415,203.64513 L378.8298,199 L368.25,208.687714 L368.25,214.105237 Z"/></g>
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                                             </svg>
-                                            <span class="font-semibold">Edit Profile</span>
+                                            <span class="font-semibold">Manage Account</span>
+                                        </button>
+
+                                        {{-- Change Password --}}
+                                        <button
+                                            x-on:click="$dispatch('open-modal', {name: 'change-password-modal'}); open=false"
+                                            class="cursor-pointer flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-purple-500 hover:bg-purple-600 rounded-lg shadow-md transition-colors w-full"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                            </svg>
+                                            <span class="font-semibold">Change Password</span>
                                         </button>
 
                                         {{-- Two-Factor Authentication --}}
                                         <button
-                                            x-on:click="$dispatch('open-modal', {name: 'two-factor-modal'}); open=false"
+                                            x-on:click="
+                                                $dispatch('open-2fa-settings');
+                                                open=false
+                                            "
                                             class="cursor-pointer flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-blue-500 hover:bg-blue-600 rounded-lg shadow-md transition-colors w-full"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -255,14 +269,20 @@
         <livewire:support-requests.create-support-request-modal />
     </x-modal>
     {{-- Edit Profile Modal --}}
-    <x-modal name="edit-profile-modal" title="Edit Profile">
+    <x-modal name="edit-profile-modal" title="Manage Account">
         @livewire('profile.modal.edit-profile-modal', ['user' => $user], key('edit-profile-modal-' . $user->id))
     </x-modal>
 
-    {{-- Two-Factor Authentication Modal - same pattern as edit-profile --}}
-    <x-modal name="two-factor-modal" title="Two-Factor Authentication">
-        @livewire('profile.two-factor-authentication', key('2fa-' . auth()->id()))
+    {{-- Change Password Modal --}}
+    <x-modal name="change-password-modal" title="Change Password">
+        @livewire('auth.change-password-modal')
     </x-modal>
+
+    {{-- Forgot Password Modal --}}
+    @livewire('auth.forgot-password')
+
+    {{-- Two-Factor Authentication Modals --}}
+    @livewire('profile.two-factor-authentication', key('2fa-' . auth()->id()))
 </div>
 
 @push('scripts')

@@ -105,6 +105,96 @@ class BrevoService
     }
 
     /**
+     * Send a password change email using Brevo API
+     *
+     * @param string $toEmail
+     * @param string $otpCode
+     * @return bool
+     */
+    public function sendPasswordChangeEmail(string $toEmail, string $otpCode): bool
+    {
+        try {
+            $response = Http::withHeaders([
+                'api-key' => $this->apiKey,
+                'accept' => 'application/json',
+                'content-type' => 'application/json',
+            ])->post('https://api.brevo.com/v3/smtp/email', [
+                'sender' => [
+                    'name' => config('services.brevo.sender_name', 'Formigo'),
+                    'email' => config('services.brevo.sender_email'),
+                ],
+                'to' => [
+                    ['email' => $toEmail],
+                ],
+                'subject' => 'Change Your Password - Verification Code',
+                'htmlContent' => $this->getPasswordChangeEmailTemplate($otpCode),
+            ]);
+
+            if (!$response->successful()) {
+                Log::error('Brevo API Error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'email' => $toEmail
+                ]);
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Brevo Service Error', [
+                'message' => $e->getMessage(),
+                'email' => $toEmail
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Send a two-factor recovery email using Brevo API
+     *
+     * @param string $toEmail
+     * @param string $otpCode
+     * @return bool
+     */
+    public function sendTwoFactorRecoveryEmail(string $toEmail, string $otpCode): bool
+    {
+        try {
+            $response = Http::withHeaders([
+                'api-key' => $this->apiKey,
+                'accept' => 'application/json',
+                'content-type' => 'application/json',
+            ])->post('https://api.brevo.com/v3/smtp/email', [
+                'sender' => [
+                    'name' => config('services.brevo.sender_name', 'Formigo'),
+                    'email' => config('services.brevo.sender_email'),
+                ],
+                'to' => [
+                    ['email' => $toEmail],
+                ],
+                'subject' => 'Two-Factor Recovery Code',
+                'htmlContent' => $this->getTwoFactorRecoveryEmailTemplate($otpCode),
+            ]);
+
+            if (!$response->successful()) {
+                Log::error('Brevo API Error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'email' => $toEmail
+                ]);
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Brevo Service Error', [
+                'message' => $e->getMessage(),
+                'email' => $toEmail
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Send a generic email using Brevo API
      *
      * @param string $toEmail
@@ -292,6 +382,50 @@ class BrevoService
                 
                 <p style='color: #666; font-size: 14px;'>This code will expire in 10 minutes.</p>
                 <p style='color: #666; font-size: 14px;'>If you didn't request a password reset, please ignore this email.</p>
+            </div>
+        </div>
+        ";
+    }
+
+    /**
+     * Get the HTML template for password change email
+     */
+    private function getPasswordChangeEmailTemplate(string $otpCode): string
+    {
+        return "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+            <div style='background-color: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;'>
+                <h2 style='color: #333; margin-bottom: 20px;'>Change Your Password</h2>
+                <p style='color: #666; margin-bottom: 30px;'>You've requested to change your password. Use the verification code below to continue:</p>
+                
+                <div style='background-color: #f3e8ff; padding: 20px; border-radius: 8px; margin: 20px 0;'>
+                    <h1 style='color: #9333ea; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 0;'>$otpCode</h1>
+                </div>
+                
+                <p style='color: #666; font-size: 14px;'>This code will expire in 10 minutes.</p>
+                <p style='color: #666; font-size: 14px;'>If you didn't request this password change, please ignore this email or contact support if you're concerned about your account security.</p>
+            </div>
+        </div>
+        ";
+    }
+
+    /**
+     * Get the HTML template for two-factor recovery email
+     */
+    private function getTwoFactorRecoveryEmailTemplate(string $otpCode): string
+    {
+        return "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+            <div style='background-color: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;'>
+                <h2 style='color: #333; margin-bottom: 20px;'>Two-Factor Recovery</h2>
+                <p style='color: #666; margin-bottom: 30px;'>Use the recovery code below to temporarily disable two-factor authentication and regain access to your Formigo account.</p>
+
+                <div style='background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0;'>
+                    <h1 style='color: #1976d2; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 0;'>$otpCode</h1>
+                </div>
+
+                <p style='color: #666; font-size: 14px;'>This code will expire in 10 minutes.</p>
+                <p style='color: #666; font-size: 14px;'>If you did not request this recovery, please secure your account immediately.</p>
             </div>
         </div>
         ";

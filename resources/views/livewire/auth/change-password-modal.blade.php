@@ -1,0 +1,326 @@
+<div>
+    <div class="flex flex-col justify-center items-center min-h-[400px]">
+        <div class="w-full max-w-md">
+            <div class="text-center">
+                @if($showSuccess)
+                    <div x-data x-init="Swal.fire({
+                            icon: 'success',
+                            title: 'Password Changed Successfully!',
+                            text: 'Your password has been updated successfully.',
+                            showConfirmButton: true,
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#3B82F6',
+                            allowOutsideClick: false
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $dispatch('close-modal', {name: 'change-password-modal'})
+                            }
+                        })">
+                    </div>
+                @endif
+
+                <!-- Step 1: Current Password & Send OTP -->
+                @if($currentStep === 'verify')
+                    <div class="mb-6">
+                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Verify Your Identity</h3>
+                        <p class="text-gray-600 mb-4">
+                            Enter your current password and we'll send a verification code to your email.
+                        </p>
+                    </div>
+
+                    <form wire:submit.prevent="sendVerificationCode">
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Current Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </div>
+                                <input
+                                    type="password"
+                                    wire:model="current_password"
+                                    class="w-full pl-10 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-colors p-3 @error('current_password') border-red-500 @enderror"
+                                    placeholder="Enter your current password"
+                                    required
+                                >
+                            </div>
+                            @error('current_password') 
+                                <span class="text-red-600 text-sm">{{ $message }}</span> 
+                            @enderror
+                        </div>
+
+                        <div class="flex flex-col space-y-3">
+                            <button 
+                                type="submit" 
+                                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                                wire:loading.attr="disabled"
+                            >
+                                <span wire:loading.remove wire:target="sendVerificationCode">Send Verification Code</span>
+                                <span wire:loading wire:target="sendVerificationCode">Sending...</span>
+                            </button>
+                            
+                            <button 
+                                type="button"
+                                @click="
+                                    $dispatch('close-modal', {name: 'change-password-modal'});
+                                    setTimeout(() => {
+                                        $dispatch('open-modal', {name: 'forgot-password'});
+                                    }, 100);
+                                "
+                                class="text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors"
+                            >
+                                Forgot your current password?
+                            </button>
+                        </div>
+                    </form>
+                @endif
+
+                <!-- Step 2: OTP Verification -->
+                @if($currentStep === 'otp')
+                    <div class="mb-6">
+                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Check Your Email</h3>
+                        <p class="text-gray-600 mb-4">
+                            We've sent a 6-digit verification code to<br>
+                            <span class="font-medium text-gray-900">{{ auth()->user()->email }}</span>
+                        </p>
+                    </div>
+
+                    <form wire:submit.prevent="verifyOtp">
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Enter Verification Code</label>
+                            <input
+                                type="text"
+                                wire:model="otp_code"
+                                maxlength="6"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                autocomplete="one-time-code"
+                                class="w-full text-center text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-colors p-3 @error('otp_code') border-red-500 @enderror"
+                                placeholder="Enter 6-digit code"
+                                aria-label="Enter verification code"
+                                required
+                            >
+                            @error('otp_code') 
+                                <span class="text-red-600 text-sm">{{ $message }}</span> 
+                            @enderror
+                        </div>
+
+                        <div class="flex flex-col space-y-3">
+                            <button 
+                                type="submit" 
+                                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                                wire:loading.attr="disabled"
+                            >
+                                <span wire:loading.remove wire:target="verifyOtp">Verify Code</span>
+                                <span wire:loading wire:target="verifyOtp">Verifying...</span>
+                            </button>
+                            
+                            <button 
+                                type="button" 
+                                wire:click="resendOtp"
+                                class="text-sm font-medium transition-colors"
+                                :class="{ 'text-purple-600 hover:text-purple-700': !$wire.resendCooldown, 'text-gray-400 cursor-not-allowed': $wire.resendCooldown }"
+                                :disabled="$wire.resendCooldown"
+                                wire:loading.attr="disabled"
+                                x-data
+                                x-init="
+                                    $wire.on('start-resend-cooldown', () => {
+                                        const interval = setInterval(() => {
+                                            $wire.decrementCooldown();
+                                            if (!$wire.resendCooldown) {
+                                                clearInterval(interval);
+                                            }
+                                        }, 1000);
+                                    });
+                                "
+                            >
+                                <span wire:loading.remove wire:target="resendOtp">
+                                    <span x-show="!$wire.resendCooldown">Resend Code</span>
+                                    <span x-show="$wire.resendCooldown" x-text="`Resend in ${$wire.resendCooldownSeconds}s`"></span>
+                                </span>
+                                <span wire:loading wire:target="resendOtp">Sending...</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="mt-4 text-xs text-gray-500">
+                        <p>Didn't receive the email? Check your spam folder.</p>
+                    </div>
+                @endif
+
+                <!-- Step 3: New Password -->
+                @if($currentStep === 'password')
+                    <div class="mb-6">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Create New Password</h3>
+                        <p class="text-gray-600 mb-4">
+                            Your password must contain at least 8 characters.
+                        </p>
+                    </div>
+
+                    <form wire:submit.prevent="changePassword">
+                        <!-- New Password -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">New Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </div>
+                                <input
+                                    type="password"
+                                    wire:model="new_password"
+                                    class="w-full pl-10 border border-gray-300 text-gray-700 rounded-lg p-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300 @error('new_password') border-red-400 @enderror"
+                                    placeholder="Enter new password"
+                                    maxlength="128"
+                                    required
+                                >
+                            </div>
+                            @error('new_password') <span class="text-red-600 text-xs mt-1">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Confirm New Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </div>
+                                <input
+                                    type="password"
+                                    wire:model="new_password_confirmation"
+                                    class="w-full pl-10 border border-gray-300 text-gray-700 rounded-lg p-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                                    placeholder="Confirm new password"
+                                    maxlength="128"
+                                    required
+                                >
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col space-y-3">
+                            <button 
+                                type="submit" 
+                                class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                                wire:loading.attr="disabled"
+                            >
+                                <span wire:loading.remove wire:target="changePassword">Change Password</span>
+                                <span wire:loading wire:target="changePassword">Changing...</span>
+                            </button>
+                        </div>
+                    </form>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Password validation errors
+            window.addEventListener('password-length-error', function (event) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Password Too Short',
+                    text: event.detail.message || 'Password must be at least 8 characters.',
+                    timer: 4000,
+                    showConfirmButton: true,
+                });
+            });
+            
+            window.addEventListener('password-mismatch', function (event) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Password Mismatch',
+                    text: event.detail.message || 'The passwords do not match. Please make sure both password fields are identical.',
+                    timer: 3000,
+                    showConfirmButton: true,
+                });
+            });
+            
+            window.addEventListener('validation-error', function (event) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: event.detail.message || 'Please check your input and try again.',
+                    timer: 4000,
+                    showConfirmButton: true,
+                });
+            });
+            
+            window.addEventListener('password-changed-success', function (event) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Password Changed Successfully!',
+                    text: event.detail.message || 'Your password has been updated successfully.',
+                    showConfirmButton: true,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3B82F6',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Livewire.dispatch('close-modal', {name: 'change-password-modal'});
+                    }
+                });
+            });
+            
+            window.addEventListener('current-password-error', function (event) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Incorrect Password',
+                    text: event.detail.message || 'The current password you entered is incorrect.',
+                    timer: 3000,
+                    showConfirmButton: true,
+                });
+            });
+            
+            window.addEventListener('otp-error', function (event) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'OTP Error',
+                    text: event.detail.message || 'Invalid or expired verification code. Please try again.',
+                    timer: 3000,
+                    showConfirmButton: true,
+                });
+            });
+            
+            window.addEventListener('email-error', function (event) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Email Error',
+                    text: event.detail.message || 'Failed to send verification email. Please try again.',
+                    timer: 3000,
+                    showConfirmButton: true,
+                });
+            });
+            
+            window.addEventListener('otp-sent', function (event) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Verification Code Sent',
+                    text: event.detail.message || 'A verification code has been sent to your email.',
+                    timer: 2000,
+                    showConfirmButton: false,
+                });
+            });
+        });
+    </script>
+    @endpush
+</div>

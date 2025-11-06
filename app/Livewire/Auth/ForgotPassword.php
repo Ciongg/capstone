@@ -94,6 +94,21 @@ class ForgotPassword extends Component
             return;
         }
 
+        // Check if there's an existing valid OTP for this email
+        $existingVerification = EmailVerification::where('email', $this->email)
+            ->where('expires_at', '>', Carbon::now())
+            ->first();
+
+        if ($existingVerification) {
+            // Valid OTP exists, just move to OTP step without sending a new code
+            $this->currentStep = 'otp';
+            $this->dispatch('existing-otp-found', [
+                'message' => 'A verification code was already sent to your email. Please check your inbox or spam folder, or use the resend button if needed.'
+            ]);
+            return;
+        }
+
+        // No valid OTP exists, generate a new one
         // Generate 6-digit OTP
         $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         

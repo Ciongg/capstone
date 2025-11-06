@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use App\Services\AuditLogService;
+use Illuminate\Validation\Rule;
 
 class UserViewModal extends Component
 {
@@ -19,7 +20,8 @@ class UserViewModal extends Component
     public $activitiesLoaded = false;
     public $isInstitutionAdmin = false;
     public $institutionId = null;
-    public $trustScore = 100; // New property for editing trust score
+    public $trustScore = 100;
+    public $userType = 'respondent'; // New property for user type
     
     protected $rules = [
         'trustScore' => ['required', 'numeric', 'min:0', 'max:100'],
@@ -56,7 +58,8 @@ class UserViewModal extends Component
             }
             
             $this->user = $user;
-            $this->trustScore = $user->trust_score; // Initialize trust score from user
+            $this->trustScore = $user->trust_score;
+            $this->userType = $user->type; // Initialize user type
         }
     }
     
@@ -73,6 +76,11 @@ class UserViewModal extends Component
         // Store old value for audit log
         $oldScore = $this->user->trust_score;
         
+        // Prevent no-op updates
+        if ($oldScore == $this->trustScore) {
+            return; // Silently skip if no change
+        }
+        
         // Update the user's trust score
         $this->user->trust_score = $this->trustScore;
         $this->user->save();
@@ -85,6 +93,102 @@ class UserViewModal extends Component
             after: ['trust_score' => $this->trustScore],
             message: "Updated trust score for user {$this->user->email} from {$oldScore} to {$this->trustScore}"
         );
+    }
+    
+    // New method to save user type
+    public function saveUserType()
+    {
+        if (!$this->user) {
+            return;
+        }
+        
+        $currentUser = Auth::user();
+        
+        // Security checks to prevent privilege escalation
+        // 1. Cannot change own account type
+        if ($this->user->id === $currentUser->id) {
+            session()->flash('modal_message', 'You cannot change your own account type.');
+            return;
+        }
+        
+        // 2. Cannot change super_admin accounts at all
+        if ($this->user->type === 'super_admin') {
+            session()->flash('modal_message', 'Super Admin accounts cannot be modified.');
+            return;
+        }
+        
+        // 3. Cannot set anyone to super_admin
+        if ($this->userType === 'super_admin') {
+            session()->flash('modal_message', 'Cannot assign Super Admin role through this interface.');
+            return;
+        }
+        
+        // 4. Institution admins have restricted permissions
+        if ($this->isInstitutionAdmin) {
+            // Cannot modify institution_admin or researcher accounts
+            if (in_array($this->user->type, ['institution_admin', 'researcher'])) {
+                session()->flash('modal_message', 'You do not have permission to modify this user type.');
+                return;
+            }
+            
+            // Cannot promote users to institution_admin or researcher
+            if (in_array($this->userType, ['institution_admin', 'researcher'])) {
+                session()->flash('modal_message', 'You do not have permission to assign this user type.');
+                return;
+            }
+        }
+        
+        // 5. Only super_admin can create/modify institution_admin and researcher accounts
+        if ($currentUser->type !== 'super_admin' && in_array($this->userType, ['institution_admin', 'researcher'])) {
+            session()->flash('modal_message', 'Only Super Admins can assign Institution Admin or Researcher roles.');
+            return;
+        }
+        
+        // Validate the input
+        $this->validate([
+            'userType' => [
+                'required',
+                Rule::in(['respondent', 'researcher', 'institution_admin'])
+            ]
+        ]);
+        
+        // Store old value for audit log
+        $oldType = $this->user->type;
+        
+        // Prevent no-op updates
+        if ($oldType === $this->userType) {
+            return; // Silently skip if no change
+        }
+        
+        // Update the user's type
+        $this->user->type = $this->userType;
+        $this->user->save();
+
+        // Audit log the type change
+        AuditLogService::logUpdate(
+            resourceType: 'User',
+            resourceId: $this->user->id,
+            before: ['type' => $oldType],
+            after: ['type' => $this->userType],
+            message: "Changed user type for {$this->user->email} from {$oldType} to {$this->userType}"
+        );
+        
+        $this->dispatch('userStatusUpdated');
+    }
+    
+    // New method to handle saving both trust score and user type
+    public function saveChanges()
+    {
+        if (!$this->user) {
+            return;
+        }
+        
+        // Save both trust score and user type
+        $this->saveTrustScore();
+        $this->saveUserType();
+        
+        // Dispatch success event
+        $this->dispatch('changesSavedSuccessfully');
     }
     
     public function toggleActiveStatus()
