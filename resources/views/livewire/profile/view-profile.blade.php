@@ -37,19 +37,21 @@
             <div class="flex flex-col md:flex-row" style="overflow: visible;">
                 {{-- Profile Picture (overlapping the banner) --}}
                 <div class="relative -mt-20 mb-4 md:mb-0 flex justify-center md:justify-start">
-                    <div class="relative w-36 h-36">
-                        {{-- Display current profile photo --}}
-                        <img src="{{ $user->profile_photo_url }}" alt="{{ $user->name }}" 
-                             class="w-full h-full rounded-full object-cover border-4 border-white shadow-md">
-
-                        {{-- Loading indicator --}}
+                    <button
+                        type="button"
+                        class="cursor-pointer relative w-36 h-36 group focus:outline-none"
+                        x-on:click="$dispatch('open-modal', {name: 'edit-profile-modal'})"
+                        aria-label="Edit profile photo"
+                    >
+                        <img src="{{ $user->profile_photo_url }}" alt="{{ $user->name }}"
+                             class="w-full h-full rounded-full object-cover border-4 border-white shadow-md transition-colors duration-200 group-hover:border-blue-500">
                         <div wire:loading wire:target="photo" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
                             <svg class="animate-spin h-10 w-10 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                         </div>
-                    </div>
+                    </button>
                     @error('photo') <span class="text-red-500 text-sm block text-center mt-1">{{ $message }}</span> @enderror
                 </div>
 
@@ -112,11 +114,11 @@
                         </div>
 
                         {{-- Action buttons - Help Request and Settings --}}
-                        <div class="flex items-center gap-3 mt-4 lg:mt-0 justify-center lg:justify-start">
+                        <div class="flex flex-col md:flex-row items-center gap-3 mt-4 md:mt-0 justify-center md:justify-start">
                             {{-- Help Request Button --}}
                             <button
                                 x-on:click="$dispatch('open-modal', {name: 'create-support-request-modal'})"
-                                class="flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-[#03b8ff] hover:bg-[#0299d5] rounded-lg shadow-md transition-colors"
+                                class="cursor-pointer flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-[#03b8ff] hover:bg-[#0299d5] rounded-lg shadow-md transition-colors"
                                 aria-label="Help Request"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -136,7 +138,7 @@
                                 <button
                                     x-ref="settingsButton"
                                     @click="open = !open"
-                                    class="flex items-center justify-center p-3 text-white bg-gray-700 hover:bg-gray-800 rounded-full shadow-md transition-colors"
+                                    class="cursor-pointer flex items-center justify-center p-3 text-white bg-gray-700 hover:bg-gray-800 rounded-full shadow-md transition-colors"
                                     aria-label="Settings"
                                     aria-haspopup="true"
                                     :aria-expanded="open.toString()"
@@ -160,7 +162,7 @@
                                         {{-- Edit Profile --}}
                                         <button
                                             x-on:click="$dispatch('open-modal', {name: 'edit-profile-modal'}); open=false"
-                                            class="flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-gray-400 hover:bg-gray-500 rounded-lg shadow-md transition-colors w-full"
+                                            class="cursor-pointer flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-gray-400 hover:bg-gray-500 rounded-lg shadow-md transition-colors w-full"
                                         >
                                             <svg class="w-5 h-5" fill="white" viewBox="0 -0.5 21 21" xmlns="http://www.w3.org/2000/svg">
                                                 <g fill="white"><path d="M384,209.210475 L384,219 L363,219 L363,199.42095 L373.5,199.42095 L373.5,201.378855 L365.1,201.378855 L365.1,217.042095 L381.9,217.042095 L381.9,209.210475 L384,209.210475 Z M370.35,209.51395 L378.7731,201.64513 L380.4048,203.643172 L371.88195,212.147332 L370.35,212.147332 L370.35,209.51395 Z M368.25,214.105237 L372.7818,214.105237 L383.18415,203.64513 L378.8298,199 L368.25,208.687714 L368.25,214.105237 Z"/></g>
@@ -171,7 +173,7 @@
                                         {{-- Two-Factor Authentication --}}
                                         <button
                                             x-on:click="$dispatch('open-modal', {name: 'two-factor-modal'}); open=false"
-                                            class="flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-blue-500 hover:bg-blue-600 rounded-lg shadow-md transition-colors w-full"
+                                            class="cursor-pointer flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-blue-500 hover:bg-blue-600 rounded-lg shadow-md transition-colors w-full"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
@@ -182,7 +184,7 @@
                                         {{-- Logout --}}
                                         <form method="POST" action="{{ route('logout') }}" class="w-full" x-on:submit="open=false">
                                             @csrf
-                                            <button type="submit" class="flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-red-500 hover:bg-red-600 rounded-lg shadow-md transition-colors w-full">
+                                            <button type="submit" class="cursor-pointer flex items-center justify-center space-x-2 py-2.5 px-4 text-white bg-red-500 hover:bg-red-600 rounded-lg shadow-md transition-colors w-full">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
                                                 </svg>
@@ -199,11 +201,6 @@
             </div>
         </div>
         {{-- Success message for profile update --}}
-    @if (session()->has('profile_saved'))
-        <div class="bg-green-50 border-l-4 border-green-400 p-3 ml-4 mr-4 text-sm text-green-800 rounded mb-4">
-            {{ session('profile_saved') }}
-        </div>
-    @endif
     </div>
 
     {{-- Dynamic Content Container with Tabs --}}
@@ -212,7 +209,7 @@
         <div class="border-b border-gray-200">
             <div class="flex -mb-px w-full">
                 <button
-                    class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
+                    class="cursor-pointer py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
                     :class="tab === 'about' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
                     @click="tab = 'about'"
                 >
@@ -220,14 +217,14 @@
                 </button>
                 {{-- Remove the condition so all users see My Surveys tab --}}
                 <button
-                    class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
+                    class="cursor-pointer py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
                     :class="tab === 'surveys' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
                     @click="tab = 'surveys'"
                 >
                     My Surveys
                 </button>
                 <button
-                    class="py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
+                    class="cursor-pointer py-4 flex-1 text-center border-b-2 font-medium text-sm focus:outline-none transition"
                     :class="tab === 'history' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-blue-500 hover:border-gray-300'"
                     @click="tab = 'history'"
                 >
@@ -267,4 +264,17 @@
         @livewire('profile.two-factor-authentication', key('2fa-' . auth()->id()))
     </x-modal>
 </div>
+
+@push('scripts')
+<script>
+    window.addEventListener('profile-updated', function (event) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Profile Updated',
+            text: event.detail?.message || 'Your profile has been updated successfully.',
+            confirmButtonColor: '#03b8ff',
+        });
+    });
+</script>
+@endpush
 

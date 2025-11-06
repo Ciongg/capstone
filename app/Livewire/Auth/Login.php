@@ -21,7 +21,7 @@ class Login extends Component
 
     // Cooldown configuration
     private const MAX_FAILED_ATTEMPTS = 3;
-    private const COOLDOWN_MINUTES = 1;
+    private const COOLDOWN_MINUTES = 30;
 
     protected function rules(): array
     {

@@ -266,17 +266,6 @@
         });
     });
     
-    // Handle password strength requirements
-    window.addEventListener('password-strength-error', function (event) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Password Requirements Not Met',
-            text: event.detail.message || 'Password must contain at least one uppercase letter and one special character.',
-            timer: 4000,
-            showConfirmButton: true,
-        });
-    });
-    
     // Handle registration errors
     window.addEventListener('registration-error', function (event) {
         Swal.fire({
@@ -384,7 +373,7 @@
         Swal.fire({
             icon: 'warning',
             title: 'Password Too Short',
-            text: event.detail.message || 'Password must be at least 8 characters and include a special character and one uppercase letter.',
+            text: event.detail.message || 'Password must be at least 8 characters.',
             timer: 4000,
             showConfirmButton: true,
         });

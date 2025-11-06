@@ -91,7 +91,9 @@ class User extends Authenticatable
             'demographic_tags_updated_at' => 'datetime', 
             'institution_demographic_tags_updated_at' => 'datetime', 
             'profile_updated_at' => 'datetime', 
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'demographic_tag_cooldowns' => 'array',
+            'institution_demographic_tag_cooldowns' => 'array',
         ];
     }
 

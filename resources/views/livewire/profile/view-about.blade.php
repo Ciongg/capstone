@@ -62,11 +62,9 @@
     <div class="bg-white rounded-xl shadow p-6">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-xl font-bold">Demographic Tags</h2>
-            @if($canUpdateDemographics)
-                <span class="text-green-500 text-sm font-medium">Available for update</span>
-            @else
-                <span class="text-red-500 text-sm font-medium italic">{{ $timeUntilUpdateText }}</span>
-            @endif
+            <span class="text-sm font-medium text-gray-600">
+                {{ $timeUntilUpdateText }}
+            </span>
         </div>
         
         <form wire:submit.prevent="saveDemographicTags" class="space-y-4" x-data="{
@@ -100,29 +98,36 @@
             }
         ">
             @foreach($tagCategories as $category)
+                @php $lock = $demographicLockInfo[$category->id] ?? null; @endphp
                 <div>
                     <label class="block font-semibold mb-1">{{ $category->name }}</label>
-                    <select wire:model.defer="selectedTags.{{ $category->id }}" 
-                            class="w-full border rounded px-3 py-2 @if(!$canUpdateDemographics) bg-gray-100 @endif" 
-                            {{ !$canUpdateDemographics ? 'disabled' : '' }}>
+                    <select
+                        wire:model.defer="selectedTags.{{ $category->id }}"
+                        class="w-full border rounded px-3 py-2 {{ ($lock['locked'] ?? false) ? 'bg-gray-100 cursor-not-allowed' : '' }}"
+                        {{ ($lock['locked'] ?? false) ? 'disabled' : '' }}
+                    >
                         <option value="">Select {{ $category->name }}</option>
                         @foreach($category->tags as $tag)
                             <option value="{{ $tag->id }}">{{ $tag->name }}</option>
                         @endforeach
                     </select>
+                    @if($lock['locked'] ?? false)
+                        <p class="text-xs text-red-500 mt-1">
+                            Locked until {{ $lock['locked_until']->format('M d, Y') }}.
+                        </p>
+                    @endif
                 </div>
             @endforeach
 
             <div class="mb-4">
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800 rounded">
-                    <strong>Note:</strong> Once added or updated, you will not be able to change your demographic tags again for 4 months. This is to ensure data integrity.
+                    <strong>Note:</strong> Updating a field locks only that field for 4 months. Unchanged fields stay editable.
                 </div>
             </div>
             
             <button 
                 type="button"
-                class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center @if(!$canUpdateDemographics) opacity-50 cursor-not-allowed @endif"
-                style="width: 180px;" 
+                class="cursor-pointer mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center whitespace-nowrap min-w-[200px] @if(!$canUpdateDemographics) opacity-50 cursor-not-allowed @endif"
                 x-on:click="confirmDemographicSave()"
                 wire:loading.attr="disabled"
                 {{ !$canUpdateDemographics ? 'disabled' : '' }}
@@ -144,11 +149,9 @@
             <div class="mt-6 pt-6 border-t border-gray-200">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-bold">{{ $user->institution->name ?? 'Institution' }} Demographics</h3>
-                    @if($canUpdateInstitutionDemographics)
-                        <span class="text-green-500 text-sm font-medium">Available for update</span>
-                    @else
-                        <span class="text-red-500 text-sm font-medium italic">{{ $timeUntilInstitutionUpdateText }}</span>
-                    @endif
+                    <span class="text-sm font-medium text-gray-600">
+                        {{ $timeUntilInstitutionUpdateText }}
+                    </span>
                 </div>
                 
                 <form wire:submit.prevent="saveInstitutionDemographicTags" class="space-y-4" x-data="{
@@ -182,29 +185,36 @@
                     }
                 ">
                     @foreach($institutionTagCategories as $category)
+                        @php $lock = $institutionLockInfo[$category->id] ?? null; @endphp
                         <div class="mb-4">
                             <label class="block font-semibold mb-1">{{ $category->name }}</label>
-                            <select wire:model.defer="selectedInstitutionTags.{{ $category->id }}" 
-                                    class="w-full border rounded px-3 py-2 @if(!$canUpdateInstitutionDemographics) bg-gray-100 @endif"
-                                    {{ !$canUpdateInstitutionDemographics ? 'disabled' : '' }}>
+                            <select
+                                wire:model.defer="selectedInstitutionTags.{{ $category->id }}"
+                                class="w-full border rounded px-3 py-2 {{ ($lock['locked'] ?? false) ? 'bg-gray-100 cursor-not-allowed' : '' }}"
+                                {{ ($lock['locked'] ?? false) ? 'disabled' : '' }}
+                            >
                                 <option value="">Select {{ $category->name }}</option>
                                 @foreach($category->tags as $tag)
                                     <option value="{{ $tag->id }}">{{ $tag->name }}</option>
                                 @endforeach
                             </select>
+                            @if($lock['locked'] ?? false)
+                                <p class="text-xs text-red-500 mt-1">
+                                    Locked until {{ $lock['locked_until']->format('M d, Y') }}.
+                                </p>
+                            @endif
                         </div>
                     @endforeach
                 
                     <div class="mb-4">
                         <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800 rounded">
-                            <strong>Note:</strong> Once added or updated, you will not be able to change your institution demographic tags again for 4 months. This is to ensure data integrity.
+                            <strong>Note:</strong> Updating a field locks only that field for 4 months. Unchanged fields stay editable.
                         </div>
                     </div>
                     
                     <button 
                         type="button"
-                        class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center @if(!$canUpdateInstitutionDemographics) opacity-50 cursor-not-allowed @endif"
-                        style="width: 240px;" 
+                        class="cursor-pointer mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center whitespace-nowrap min-w-[200px] @if(!$canUpdateInstitutionDemographics) opacity-50 cursor-not-allowed @endif"
                         x-on:click="confirmInstitutionDemographicSave()"
                         wire:loading.attr="disabled"
                         {{ !$canUpdateInstitutionDemographics ? 'disabled' : '' }}
