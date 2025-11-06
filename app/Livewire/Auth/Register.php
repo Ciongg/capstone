@@ -38,7 +38,7 @@ class Register extends Component
             'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'phone_number' => 'required|string|max:11|min:11|unique:users,phone_number',
-            'password' => 'required|string|min:8|confirmed|regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%@]).*$/',
+            'password' => 'required|string|min:8|confirmed',
             'terms' => 'required|accepted',
         ];
     }
@@ -80,10 +80,9 @@ class Register extends Component
         } catch (\Illuminate\Validation\ValidationException $e) {
             $errors = $e->validator->errors();
             
-            // Check for password length errors
             if ($errors->has('password') && str_contains($errors->first('password'), 'at least 8')) {
                 $this->dispatch('password-length-error', [
-                    'message' => 'Password must be at least 8 characters and include a special character and one uppercase letter.'
+                    'message' => 'Password must be at least 8 characters.'
                 ]);
                 return;
             }
@@ -92,14 +91,6 @@ class Register extends Component
             if ($errors->has('phone_number') && (str_contains($errors->first('phone_number'), 'at least') || str_contains($errors->first('phone_number'), 'at most') || str_contains($errors->first('phone_number'), 'characters'))) {
                 $this->dispatch('phone-length-error', [
                     'message' => 'Phone number must be exactly 11 digits.'
-                ]);
-                return;
-            }
-            
-            // Check for password strength errors
-            if ($errors->has('password') && str_contains($errors->first('password'), 'format is invalid')) {
-                $this->dispatch('password-strength-error', [
-                    'message' => 'Password must contain at least one uppercase letter and one special character.'
                 ]);
                 return;
             }
@@ -133,6 +124,9 @@ class Register extends Component
             return;
         }
 
+        $this->first_name = $this->formatName($this->first_name);
+        $this->last_name = $this->formatName($this->last_name);
+
         // Check if there's an existing valid OTP for this email
         $existingVerification = EmailVerification::where('email', $this->email)
             ->where('expires_at', '>', Carbon::now())
@@ -156,7 +150,7 @@ class Register extends Component
             ['email' => $this->email],
             [
                 'otp_code' => $otpCode,
-                'expires_at' => Carbon::now()->addSeconds(60), // 10 minutes from now
+                'expires_at' => Carbon::now()->addMinutes(10), // 10 minutes from now
             ]
         );
 
@@ -180,6 +174,14 @@ class Register extends Component
         $this->dispatch('otp-sent', [
             'message' => 'Verification code sent to your email!'
         ]);
+    }
+
+    /**
+     * Hash an IP address for secure storage
+     */
+    private function hashIpAddress(string $ipAddress): string
+    {
+        return hash('sha256', $ipAddress);
     }
 
     public function verifyOtp()
@@ -226,19 +228,27 @@ class Register extends Component
         }
 
         try {
+            $firstName = $this->formatName($this->first_name);
+            $lastName = $this->formatName($this->last_name);
+
+            // Get current IP address and hash it
+            $currentIp = request()->ip();
+            $hashedIp = $this->hashIpAddress($currentIp);
+
             $user = User::create([
-                'first_name' => $this->first_name,
-                'last_name' => $this->last_name,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
                 'email' => $this->pendingEmail,
                 'phone_number' => $this->phone_number,
                 'password' => Hash::make($this->password),
                 'type' => $userType,
                 'institution_id' => $institutionId,
-                'is_active' => true, // Set new users to active by default
+                'is_active' => true, 
                 'email_verified_at' => now(),
                 'is_accepted_terms' => true,
                 'is_accepted_privacy_policy' => true,
-                'last_active_at' => TestTimeService::now(), // Set last_active_at on registration
+                'last_active_at' => TestTimeService::now(),
+                'ip_address' => $hashedIp, // Store hashed IP address
             ]);
 
             // Delete the email verification record
@@ -304,7 +314,7 @@ class Register extends Component
     private function startResendCooldown()
     {
         $this->resendCooldown = true;
-        $this->resendCooldownSeconds = 60; // 60 seconds cooldown
+        $this->resendCooldownSeconds = 300; // 60 seconds cooldown
 
         // Start the countdown timer
         $this->dispatch('start-resend-cooldown');
@@ -330,6 +340,12 @@ class Register extends Component
         $this->password = '';
         $this->password_confirmation = '';
         $this->terms = false;
+    }
+
+    private function formatName(string $name): string
+    {
+        $normalized = preg_replace('/\s+/', ' ', trim($name));
+        return (string) Str::of($normalized)->lower()->title();
     }
 
     public function render()

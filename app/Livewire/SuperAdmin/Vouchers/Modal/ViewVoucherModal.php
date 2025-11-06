@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\Voucher;
 use App\Models\UserVoucher;
 use Illuminate\Support\Facades\Auth;
+use App\Services\AuditLogService;
 
 class ViewVoucherModal extends Component
 {
@@ -57,8 +58,17 @@ class ViewVoucherModal extends Component
             return;
         }
         
-        // Store the old status for comparison
+        // Store the old status for comparison and audit logging
         $oldStatus = $this->voucher->availability;
+        
+        // Only proceed if status actually changed
+        if ($oldStatus === $this->selectedStatus) {
+            $this->dispatch('notify', [
+                'message' => 'No changes were made.',
+                'type' => 'info'
+            ]);
+            return;
+        }
         
         // Update the voucher status
         $this->voucher->availability = $this->selectedStatus;
@@ -83,7 +93,6 @@ class ViewVoucherModal extends Component
                     }
                     
                     // If status is expired, we might want to record when it expired
-                    // (optional, depends on your requirements)
                     if ($newUserVoucherStatus === UserVoucher::STATUS_EXPIRED) {
                         $userVoucher->expires_at = now();
                     }
@@ -93,6 +102,24 @@ class ViewVoucherModal extends Component
                 }
             }
         }
+
+        // Build audit log message with voucher reference number (fixed to use reference_no)
+        $auditMessage = "Changed voucher (Ref: {$this->voucher->reference_no}) status from '{$oldStatus}' to '{$this->selectedStatus}'";
+        if ($this->voucher->reward) {
+            $auditMessage .= " for reward '{$this->voucher->reward->name}'";
+        }
+        if ($updatedUserVouchers > 0) {
+            $auditMessage .= " (also updated {$updatedUserVouchers} user voucher(s))";
+        }
+
+        // Audit log the voucher status change
+        AuditLogService::logUpdate(
+            resourceType: 'Voucher',
+            resourceId: $this->voucher->id,
+            before: ['availability' => $oldStatus],
+            after: ['availability' => $this->selectedStatus],
+            message: $auditMessage
+        );
         
         // Create appropriate notification message
         $message = "Voucher status updated to " . ucfirst($this->selectedStatus);

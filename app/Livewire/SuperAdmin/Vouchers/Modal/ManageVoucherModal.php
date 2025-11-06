@@ -10,6 +10,7 @@ use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use App\Services\AuditLogService;
 
 class ManageVoucherModal extends Component
 {
@@ -89,6 +90,19 @@ class ManageVoucherModal extends Component
         // Use a transaction to batch all DB operations together
         \DB::transaction(function() {
             $reward = Reward::findOrFail($this->rewardId);
+            
+            // Capture before state for audit log
+            $beforeData = [
+                'name' => $reward->name,
+                'description' => $reward->description,
+                'status' => $reward->status,
+                'cost' => $reward->cost,
+                'quantity' => $reward->quantity,
+                'rank_requirement' => $reward->rank_requirement,
+                'merchant_id' => $reward->merchant_id,
+                'image_path' => $reward->image_path, // Track actual image path
+            ];
+            
             $data = [
                 'name' => $this->name,
                 'description' => $this->description,
@@ -131,6 +145,31 @@ class ManageVoucherModal extends Component
                         'image_path' => $reward->image_path,
                     ]);
             }
+
+            // Capture after state for audit log
+            $afterData = [
+                'name' => $this->name,
+                'description' => $this->description,
+                'status' => $this->status,
+                'cost' => $this->cost,
+                'quantity' => $this->quantity,
+                'rank_requirement' => $this->rank_requirement,
+                'merchant_id' => $this->merchant_id,
+                'image_path' => $data['image_path'] ?? $reward->image_path, // Track actual image path
+            ];
+
+            // Get merchant name
+            $merchant = Merchant::find($this->merchant_id);
+            $merchantName = $merchant ? $merchant->name : 'Unknown';
+
+            // Audit log the reward update
+            AuditLogService::logUpdate(
+                resourceType: 'Reward',
+                resourceId: $reward->id,
+                before: $beforeData,
+                after: $afterData,
+                message: "Updated voucher reward '{$this->name}' from merchant '{$merchantName}'"
+            );
         });
         
         // Reset image marked for deletion flag
@@ -190,6 +229,7 @@ class ManageVoucherModal extends Component
         $createdCount = 0;
         $maxAttempts = $this->restockQuantity * 3;
         $attempts = 0;
+        $voucherReferences = [];
         
         while ($createdCount < $this->restockQuantity && $attempts < $maxAttempts) {
             $attempts++;
@@ -209,24 +249,45 @@ class ManageVoucherModal extends Component
             $voucher->promo = $reward->name;
             $voucher->cost = $reward->cost;
             $voucher->availability = 'available';
-            $voucher->expiry_date = $expiryDate; // Use the determined expiry date
+            $voucher->expiry_date = $expiryDate;
             $voucher->image_path = $reward->image_path;
             $voucher->merchant_id = $reward->merchant_id;
             $voucher->save();
             
+            $voucherReferences[] = $referenceNo;
             $createdCount++;
         }
         
         // Do all updates in a single transaction to avoid multiple renders
-        \DB::transaction(function() use ($reward, $createdCount) {
+        \DB::transaction(function() use ($reward, $createdCount, $expiryDate) {
             // Update available vouchers count in the reward and sync the reward quantity
             $this->refreshVoucherCounts();
             $this->updateRewardQuantity($reward);
             
             // Update local state manually to avoid another render
             $this->restockQuantity = 1;
-            $this->voucherExpiryDate = null; // Reset expiry date field
+            $this->voucherExpiryDate = null;
         });
+
+        // Get merchant name
+        $merchant = Merchant::find($reward->merchant_id);
+        $merchantName = $merchant ? $merchant->name : 'Unknown';
+
+        // Audit log the restock action
+        AuditLogService::log(
+            eventType: 'restock',
+            message: "Restocked {$createdCount} voucher(s) for reward '{$reward->name}' from merchant '{$merchantName}'",
+            resourceType: 'Voucher',
+            resourceId: $reward->id,
+            meta: [
+                'reward_id' => $reward->id,
+                'reward_name' => $reward->name,
+                'merchant_name' => $merchantName,
+                'quantity_restocked' => $createdCount,
+                'expiry_date' => $expiryDate ? $expiryDate->format('Y-m-d') : null,
+                'new_total_available' => $this->availableVouchers,
+            ]
+        );
         
         // Dispatch a notification event
         $this->dispatch('show-notification', [
@@ -288,17 +349,40 @@ class ManageVoucherModal extends Component
 
         \DB::transaction(function() {
             $reward = Reward::findOrFail($this->rewardId);
+            $oldStatus = $reward->status;
+            
             $reward->update(['status' => $this->status]);
+            
+            // Track how many vouchers were affected
+            $affectedVouchers = 0;
             
             // If this is a voucher reward, update availability of vouchers accordingly
             if ($reward->type == 'voucher' || $reward->type == 'Voucher') {
                 // If marked unavailable, update all available vouchers to be unavailable
                 if ($this->status == 'unavailable' || $this->status == 'sold_out') {
+                    $affectedVouchers = Voucher::where('reward_id', $reward->id)
+                        ->where('availability', 'available')
+                        ->count();
+                    
                     Voucher::where('reward_id', $reward->id)
                         ->where('availability', 'available')
                         ->update(['availability' => 'unavailable']);
                 }
             }
+
+            // Get merchant name
+            $merchant = Merchant::find($reward->merchant_id);
+            $merchantName = $merchant ? $merchant->name : 'Unknown';
+
+            // Audit log the status change
+            AuditLogService::logUpdate(
+                resourceType: 'Reward',
+                resourceId: $reward->id,
+                before: ['status' => $oldStatus],
+                after: ['status' => $this->status],
+                message: "Changed status for reward '{$reward->name}' from '{$oldStatus}' to '{$this->status}'" .
+                         ($affectedVouchers > 0 ? " (affected {$affectedVouchers} voucher(s))" : "")
+            );
         });
 
         // Set success message and close modal
@@ -312,19 +396,33 @@ class ManageVoucherModal extends Component
     
     public function deleteReward()
     {
-
         try {
             $reward = Reward::findOrFail($this->rewardId);
             
-    
+            // Count vouchers before deletion
+            $voucherCount = Voucher::where('reward_id', $reward->id)
+                ->where('availability', 'available')
+                ->count();
+            
+            // Get merchant name
+            $merchant = Merchant::find($reward->merchant_id);
+            $merchantName = $merchant ? $merchant->name : 'Unknown';
             
             // Use a transaction to batch DB operations
-            \DB::transaction(function() use ($reward) {
-                // Delete all available vouchers for this reward
-                $voucherCount = Voucher::where('reward_id', $reward->id)
-                    ->where('availability', 'available')
-                    ->count();
-                    
+            \DB::transaction(function() use ($reward, $voucherCount, $merchantName) {
+                // Audit log the deletion before deleting
+                AuditLogService::logDelete(
+                    resourceType: 'Reward',
+                    resourceId: $reward->id,
+                    data: [
+                        'name' => $reward->name,
+                        'merchant_name' => $merchantName,
+                        'cost' => $reward->cost,
+                        'rank_requirement' => $reward->rank_requirement,
+                        'vouchers_deleted' => $voucherCount,
+                    ],
+                    message: "Deleted voucher reward '{$reward->name}' from merchant '{$merchantName}' along with {$voucherCount} available voucher(s)"
+                );
                 
                 // Delete vouchers and reward
                 Voucher::where('reward_id', $reward->id)
@@ -332,7 +430,6 @@ class ManageVoucherModal extends Component
                     ->delete();
                     
                 $reward->delete();
-                
             });
             
             // Dispatch a notification event

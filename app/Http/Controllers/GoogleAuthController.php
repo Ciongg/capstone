@@ -7,6 +7,7 @@ use App\Services\GoogleOAuthService;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Institution;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Session;
 
 class GoogleAuthController extends Controller
 {
@@ -26,54 +27,51 @@ class GoogleAuthController extends Controller
     // Handle Google callback for signup
     public function callback(Request $request)
     {
-        $googleUser = $this->googleService->getGoogleUser($request);
-        if (!$googleUser) {
-            return redirect()->route('register')->with('error', 'Google authentication failed.');
+        $result = $this->googleService->handleGoogleCallback($request);
+        
+        if (!$result) {
+            return redirect()->route('login')
+                ->with('error', 'Google authentication failed. Please try again.');
         }
 
-        // Get remember value from query parameter (default: false)
-        $remember = $request->query('remember', false);
+        $user = $result['user'];
+        $needs2FA = $result['needs_2fa'] ?? false;
 
-        // Check if user already exists by email
-        $user = $this->googleService->findUserByEmail($googleUser->getEmail());
-        if ($user) {
-            // Set session lifetime for remember me
-            if ($remember) {
-                config(['session.lifetime' => config('session.remember_me_lifetime', 43200)]); // 30 days
-            } else {
-                config(['session.lifetime' => config('session.lifetime', 120)]); // default
-            }
+        // Check user's institution status before completing login
+        $statusChange = $this->checkInstitutionStatus($user);
+        if ($statusChange) {
+            Session::put('institution_status_change', $statusChange);
+        }
 
-            Auth::login($user, $remember);
+        // If 2FA is required, redirect to 2FA challenge
+        if ($needs2FA) {
+            return redirect()->route('two-factor.challenge');
+        }
+
+        // No 2FA required, log in directly
+        Auth::login($user);
+        session()->regenerate();
+
+        // Show institution status change messages
+        if (Session::has('institution_status_change')) {
+            $change = Session::get('institution_status_change');
             
-            session()->regenerate();
-
-            // Restore session lifetime to default after login
-            config(['session.lifetime' => config('session.lifetime', 120)]);
-
-            // After successful login, check user's institution status
-            $statusChange = $this->checkInstitutionStatus($user);
-            
-            // Flash appropriate message based on the status change
-            if ($statusChange === 'upgraded') {
+            if ($change === 'upgraded') {
                 session()->flash('account-upgrade', 'Your account has been upgraded to Researcher status! Your institution is now recognized in our system.');
-            } elseif ($statusChange === 'downgraded') {
+            } elseif ($change === 'downgraded') {
                 session()->flash('account-downgrade', 'Your account has been changed to Respondent status. This could be because your institution is no longer in our system or your email domain changed.');
-            } elseif ($statusChange === 'institution-restored') {
+            } elseif ($change === 'institution-restored') {
                 session()->flash('account-upgrade', 'Your institution has been restored in our system. All features are now available.');
-            } elseif ($statusChange === 'institution-changed') {
+            } elseif ($change === 'institution-changed') {
                 session()->flash('account-upgrade', 'Your institution has been updated in our system based on your email domain.');
-            } elseif ($statusChange === 'institution-lost') {
+            } elseif ($change === 'institution-lost') {
                 session()->flash('account-downgrade', 'Your institution is no longer recognized in our system. Some features will be limited.');
             }
             
-            return redirect()->route('feed.index')->with('success', 'Login successful!');
+            Session::forget('institution_status_change');
         }
-
-        // Show consent page before creating account
-        return view('auth.google-consent', [
-            'googleUser' => $googleUser,
-        ]);
+        
+        return redirect()->intended(route('feed.index'));
     }
 
     // Handle consent form submission to create account
@@ -86,12 +84,19 @@ class GoogleAuthController extends Controller
             'family_name' => 'nullable|string',
             'avatar' => 'nullable|url',
         ]);
+        
         // Actually create the user
         $user = $this->googleService->createUserFromGoogle($googleUserData);
         if ($user) {
+            // New users don't have 2FA yet, mark as verified
+            Session::put('2fa:verified:' . $user->id, true);
+            
             Auth::login($user);
+            session()->regenerate();
+            
             return redirect()->route('feed.index')->with('success', 'Registration successful!');
         }
+        
         return redirect()->route('register')->with('error', 'Account creation failed.');
     }
 

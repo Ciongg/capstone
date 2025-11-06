@@ -7,6 +7,7 @@ use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
 use App\Services\TestTimeService;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class EditProfileModal extends Component
 {
@@ -170,6 +171,9 @@ class EditProfileModal extends Component
             'photo' => 'nullable|image|max:2048',
         ]);
 
+        $this->first_name = $this->formatName($this->first_name);
+        $this->last_name = $this->formatName($this->last_name);
+
         $this->user->first_name = $this->first_name;
         $this->user->last_name = $this->last_name;
         $this->user->phone_number = $this->phone_number;
@@ -188,15 +192,10 @@ class EditProfileModal extends Component
         $this->user->profile_updated_at = TestTimeService::now();
         $this->user->save();
         
-        // Refresh the user data to reflect the updated profile_updated_at
         $this->user = $this->user->fresh();
         
-        // Recalculate cooldown status
         $this->canUpdateProfile = $this->user->canUpdateProfile();
         $this->calculateTimeUntilUpdate();
-        
-        // Show success message in the parent component
-        session()->flash('profile_updated', 'Your profile has been updated successfully! You can update it again in 4 months.');
         
         $this->dispatch('close-modal', name: 'edit-profile-modal');
         $this->dispatch('profileSaved');
@@ -223,6 +222,12 @@ class EditProfileModal extends Component
         }
     }
     
+    protected function formatName(string $value): string
+    {
+        $normalized = preg_replace('/\s+/', ' ', trim($value));
+        return (string) Str::of($normalized)->lower()->title();
+    }
+
     public function render()
     {
         return view('livewire.profile.modal.edit-profile-modal');

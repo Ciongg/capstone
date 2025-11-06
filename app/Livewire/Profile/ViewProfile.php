@@ -71,8 +71,8 @@ class ViewProfile extends Component
 
     public function onProfileSaved()
     {
-        session()->flash('profile_saved', 'Your profile has been updated successfully.');
-        // Optionally reload user data here
+        $this->refreshProfileView();
+        $this->dispatch('profile-updated', message: 'Your profile has been updated successfully.');
     }
 
     public function render()

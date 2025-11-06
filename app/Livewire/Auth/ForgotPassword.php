@@ -38,7 +38,7 @@ class ForgotPassword extends Component
     protected function passwordRules(): array
     {
         return [
-            'new_password' => 'required|string|min:8|confirmed|regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%@]).*$/',
+            'new_password' => 'required|string|min:8|confirmed',
         ];
     }
 
@@ -102,7 +102,7 @@ class ForgotPassword extends Component
             ['email' => $this->email],
             [
                 'otp_code' => $otpCode,
-                'expires_at' => Carbon::now()->addSeconds(60), // Change to addMinutes(10) for production
+                'expires_at' => Carbon::now()->addMinutes(10) // Change to addMinutes(10) for production
             ]
         );
 
@@ -166,18 +166,9 @@ class ForgotPassword extends Component
         } catch (\Illuminate\Validation\ValidationException $e) {
             $errors = $e->validator->errors();
             
-            // Check for password length errors
             if ($errors->has('new_password') && str_contains($errors->first('new_password'), 'at least 8')) {
                 $this->dispatch('password-length-error', [
-                    'message' => 'Password must be at least 8 characters and include a special character and one uppercase letter.'
-                ]);
-                return;
-            }
-            
-            // Check for password strength errors
-            if ($errors->has('new_password') && str_contains($errors->first('new_password'), 'format is invalid')) {
-                $this->dispatch('password-strength-error', [
-                    'message' => 'Password must contain at least one uppercase letter and one special character.'
+                    'message' => 'Password must be at least 8 characters.'
                 ]);
                 return;
             }
@@ -245,7 +236,7 @@ class ForgotPassword extends Component
             ['email' => $this->email],
             [
                 'otp_code' => $otpCode,
-                'expires_at' => Carbon::now()->addSeconds(60), // Change to addMinutes(10) for production
+                'expires_at' => Carbon::now()->addMinutes(10), // Change to addMinutes(10) for production
             ]
         );
 
@@ -268,7 +259,7 @@ class ForgotPassword extends Component
     private function startResendCooldown()
     {
         $this->resendCooldown = true;
-        $this->resendCooldownSeconds = 60; // 60 seconds cooldown
+        $this->resendCooldownSeconds = 300; // 60 seconds cooldown
 
         // Start the countdown timer
         $this->dispatch('start-resend-cooldown');

@@ -53,14 +53,30 @@ Route::get('/partners', function () {
 // Authentication Routes
 Route::get('/login', [SessionController::class, 'create'])
     ->name('login')
-    ->middleware('guest')
+    ->middleware(['guest', 'throttle:10,1'])
     ->defaults('redirectTo', '/feed'); // Redirect to feed if already logged in
 
-Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
+Route::post('/logout', function () {
+    $userId = auth()->id();
+    
+    // Clear 2FA verification
+    if ($userId) {
+        session()->forget('2fa:verified:' . $userId);
+    }
+    
+    session()->forget('2fa:user:id');
+    session()->forget('2fa:remember');
+    
+    Auth::logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    
+    return redirect('/');
+})->name('logout')->middleware('throttle:30,1');
 
 Route::get('/register', [RegisteredUserController::class, 'create'])
     ->name('register')
-    ->middleware('guest')
+    ->middleware(['guest', 'throttle:10,1'])
     ->defaults('redirectTo', '/feed'); // Redirect to feed if already logged in
 
 // Public voucher verification route
@@ -70,19 +86,25 @@ Route::get('/voucher/verify/{reference_no}', [VoucherController::class, 'verify'
 // Survey answering routes - register the middleware directly for these routes
 Route::get('/surveys/answer/{survey:uuid}', [SurveyController::class, 'answer'])
     ->name('surveys.answer')
-    ->middleware(\App\Http\Middleware\SurveyAccessMiddleware::class)  // Register middleware directly
+    ->middleware([\App\Http\Middleware\SurveyAccessMiddleware::class, 'throttle:30,1'])  // Register middleware directly
     ->missing(function () {
         abort(404, 'The requested page could not be found.');
     });
     
 Route::post('/surveys/answer/{survey:uuid}', [SurveyController::class, 'submit'])
     ->name('surveys.submit')
-    ->middleware(\App\Http\Middleware\SurveyAccessMiddleware::class);  // Register middleware directly
+    ->middleware([\App\Http\Middleware\SurveyAccessMiddleware::class, 'throttle:10,1']);  // Register middleware directly
 
 // Google OAuth Signup
-Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
-Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
-Route::post('/auth/google/consent', [GoogleAuthController::class, 'consent'])->name('google.consent');
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])
+    ->name('google.redirect')
+    ->middleware('throttle:30,1');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])
+    ->name('google.callback')
+    ->middleware('throttle:30,1');
+Route::post('/auth/google/consent', [GoogleAuthController::class, 'consent'])
+    ->name('google.consent')
+    ->middleware('throttle:30,1');
 
 // Privacy Policy and Terms of Use pages
 Route::get('/policies/privacy-policy', function () {
@@ -133,7 +155,7 @@ Route::middleware('auth')->group(function () {
 // ============================================================================
 
 // Institution Admin Routes
-Route::middleware(['auth', 'role:institution_admin'])->group(function () {
+Route::middleware(['auth', 'role:institution_admin', 'throttle:120,1'])->group(function () {
     Route::get('/institution/analytics', [InstitutionAdminController::class, 'analyticsIndex'])->name('institution.analytics');
     Route::get('/institution/users', [InstitutionAdminController::class, 'usersIndex'])->name('institution.users');
     Route::get('/institution/surveys', [InstitutionAdminController::class, 'surveysIndex'])->name('institution.surveys');
@@ -142,13 +164,14 @@ Route::middleware(['auth', 'role:institution_admin'])->group(function () {
 });
 
 // Super Admin Routes
-Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:super_admin', 'throttle:120,1'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/analytics', [SuperAdminController::class, 'analyticsIndex'])->name('analytics.index');
     Route::get('/reward-redemptions', [SuperAdminController::class, 'rewardIndex'])->name('reward-redemptions.index');
     Route::get('/users', [SuperAdminController::class, 'userIndex'])->name('users.index');
     Route::get('/surveys', [SuperAdminController::class, 'surveysIndex'])->name('surveys.index');
     Route::get('/requests', [SuperAdminController::class, 'supportRequestsIndex'])->name('support-requests.index');
     Route::get('/tags', [SuperAdminController::class, 'tagsIndex'])->name('tags.index');
+    Route::get('/logs', [SuperAdminController::class, 'logsIndex'])->name('logs.index');
     
     // Super admin announcement management
     Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
@@ -161,7 +184,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')
 });
 
 // Researcher and Institution Admin Routes (can also be accessed by super_admin)
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'throttle:180,1'])->group(function () {
     // Survey creation and management routes
     Route::get('/surveys/create', [SurveyController::class, 'create'])->name('surveys.create.redirect');
     Route::get('/surveys/create/{survey:uuid}', [SurveyController::class, 'create'])->name('surveys.create')->missing(function () {
@@ -177,6 +200,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/surveys/{survey:uuid}/responses/individual', [SurveyController::class, 'showIndividualResponses'])->name('surveys.responses.individual')->missing(function () {
         abort(404, 'The requested page could not be found.');
     });
+});
+
+// 2FA Challenge Route - accessible without auth middleware (but checks session)
+Route::get('/two-factor-challenge', \App\Livewire\Auth\TwoFactorChallenge::class)
+    ->name('two-factor.challenge')
+    ->middleware(['web', 'throttle:20,1']);
+
+// Protected routes with 2FA check
+Route::middleware(['auth', '2fa', 'throttle:180,1'])->group(function () {
+    // Add any routes that should be protected by 2FA here
 });
 
 // ============================================================================

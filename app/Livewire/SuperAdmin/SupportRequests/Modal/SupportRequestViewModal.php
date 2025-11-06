@@ -8,10 +8,12 @@ use App\Models\Survey;
 use App\Models\Report;
 use App\Models\User;
 use App\Models\InboxMessage;
-use App\Models\Response; // Import Response model
+use App\Models\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Services\TrustScoreService; 
+use App\Services\TrustScoreService;
+use App\Services\AuditLogService;
+
 class SupportRequestViewModal extends Component
 {
     public $requestId;
@@ -90,6 +92,14 @@ class SupportRequestViewModal extends Component
         $wasRejected = $this->status === 'rejected' && $this->supportRequest->status !== 'rejected';
         $previousStatus = $this->supportRequest->status;
         
+        // Capture before state for audit log
+        $beforeData = [
+            'status' => $this->supportRequest->status,
+            'admin_notes' => $this->supportRequest->admin_notes,
+            'admin_id' => $this->supportRequest->admin_id,
+            'resolved_at' => $this->supportRequest->resolved_at,
+        ];
+        
         $this->supportRequest->admin_notes = $this->adminNotes;
         $this->supportRequest->status = $this->status;
         $this->supportRequest->admin_id = auth()->id();
@@ -100,19 +110,37 @@ class SupportRequestViewModal extends Component
         
         $this->supportRequest->save();
         
+        // Capture after state for audit log
+        $afterData = [
+            'status' => $this->status,
+            'admin_notes' => $this->adminNotes,
+            'admin_id' => auth()->id(),
+            'resolved_at' => $this->supportRequest->resolved_at,
+        ];
+        
+        // Track additional context for audit log
+        $auditContext = [
+            'request_type' => $this->supportRequest->request_type,
+            'requester_id' => $this->supportRequest->user_id,
+            'related_model' => $this->supportRequest->related_model,
+            'related_id' => $this->supportRequest->related_id,
+        ];
+        
         // Update associated report status if this is a report appeal
         if ($this->supportRequest->request_type === 'report_appeal' && $this->supportRequest->related_id) {
             $report = Report::where('uuid', $this->supportRequest->related_id)->first();
             
-            
             if ($report) {
                 try {
-                    DB::transaction(function() use ($report, $wasResolved, $wasRejected) {
-                       
+                    DB::transaction(function() use ($report, $wasResolved, $wasRejected, &$auditContext) {
                         if ($wasResolved) {
                             // Support request resolved = report dismissed and trust score deduction reversed
                             $report->markAsDismissed();
                           
+                            // Track report outcome for audit
+                            $auditContext['report_outcome'] = 'dismissed';
+                            $auditContext['report_id'] = $report->id;
+                            
                             // Also update the associated response to mark it as not reported anymore
                             if ($report->response_id) {
                                 $response = Response::find($report->response_id);
@@ -126,17 +154,21 @@ class SupportRequestViewModal extends Component
                             if (!$report->deduction_reversed && $report->respondent_id) {
                                 $respondent = User::find($report->respondent_id);
                                 if ($respondent) {
+                                    $restoredPoints = 0;
+                                    $restoredTrustScore = 0;
+                                    
                                     // Only restore trust score if there was a deduction
                                     if ($report->trust_score_deduction) {
-                                        $deductionAmount = abs($report->trust_score_deduction); // Convert to positive for addition
+                                        $deductionAmount = abs($report->trust_score_deduction);
                                         $respondent->trust_score += $deductionAmount;
+                                        $restoredTrustScore = $deductionAmount;
                                     }
                                     
                                     // Restore points if they were deducted
                                     if ($report->points_deducted > 0 && !$report->points_restored) {
                                         $respondent->points += $report->points_deducted;
                                         $report->points_restored = true;
-                                      
+                                        $restoredPoints = $report->points_deducted;
                                         
                                         // Add to notification message
                                         $pointsMessage = "\n\nThe {$report->points_deducted} points that were deducted from your account have been restored.";
@@ -152,32 +184,39 @@ class SupportRequestViewModal extends Component
                                     }
                                     
                                     $respondent->save();
+                                    
+                                    // Track restoration for audit
+                                    $auditContext['respondent_id'] = $respondent->id;
+                                    $auditContext['points_restored'] = $restoredPoints;
+                                    $auditContext['trust_score_restored'] = $restoredTrustScore;
                                 }
                             }
                             
-                            // Handle the reporter (user who made the false report) - ALWAYS process this
+                            // Handle the reporter (user who made the false report)
                             if ($report->reporter_id) {
                                 $reporter = User::find($report->reporter_id);
                                 if ($reporter) {
-
-                                    // Calculate penalty based on reporter's false report history
                                     $calcFalseReport = $this->trustScoreService->calculateFalseReportPenalty($report->reporter_id);
-                                    $penaltyAmount = $calcFalseReport['penalty_amount']; // Get the actual penalty amount
-                                    // Apply penalty if applicable (could be 0)
+                                    $penaltyAmount = $calcFalseReport['penalty_amount'];
+                                    
                                     if ($penaltyAmount < 0) {
                                         $reporter->trust_score = max(0, $reporter->trust_score + $penaltyAmount);
                                     }
                                     $reporter->save();
                                     
-                                    // Always record the penalty amount in the report (even if 0)
                                     $report->reporter_trust_score_deduction = $penaltyAmount;
+                                    
+                                    // Track penalty for audit
+                                    $auditContext['reporter_id'] = $reporter->id;
+                                    $auditContext['reporter_penalty'] = $penaltyAmount;
+                                    $auditContext['reporter_false_reports_count'] = Report::where('reporter_id', $reporter->id)
+                                        ->where('status', 'dismissed')
+                                        ->count();
 
-                                    // Get count of dismissed reports for this reporter
                                     $dismissedReportsCount = Report::where('reporter_id', $reporter->id)
                                         ->where('status', 'dismissed')
                                         ->count();
                                     
-                                    // ALWAYS notify the false reporter with detailed message
                                     InboxMessage::create([
                                         'recipient_id' => $reporter->id,
                                         'subject' => 'Report Reviewed and Dismissed',
@@ -193,20 +232,24 @@ class SupportRequestViewModal extends Component
                                 }
                             }
                             
-                            // ALWAYS mark the report as processed
                             $report->deduction_reversed = true;
                             $report->save();
                         } elseif ($wasRejected) {
                             // Support request rejected = report confirmed
                             $report->markAsConfirmed();
                             
-                            // No change to trust scores as the original deduction stands
-                            // No restoration of points either - mark them as permanently deducted
+                            // Track report outcome for audit
+                            $auditContext['report_outcome'] = 'confirmed';
+                            $auditContext['report_id'] = $report->id;
+                            
                             if ($report->points_deducted > 0 && !$report->points_restored) {
                                 $report->points_restored = true; 
                                 $report->save();
                                 
-                                // Notify the user that points deduction is permanent
+                                // Track permanent deduction for audit
+                                $auditContext['respondent_id'] = $report->respondent_id;
+                                $auditContext['points_permanently_deducted'] = $report->points_deducted;
+                                
                                 if ($report->respondent_id) {
                                     InboxMessage::create([
                                         'recipient_id' => $report->respondent_id,
@@ -225,6 +268,34 @@ class SupportRequestViewModal extends Component
                     ]);
                 }
             }
+        }
+        
+        // Audit log the support request update
+        $auditMessage = "Updated support request #{$this->supportRequest->id} ({$this->supportRequest->request_type})";
+        if ($statusChanged) {
+            $auditMessage .= " - Status changed from '{$previousStatus}' to '{$this->status}'";
+        }
+        if ($notesChanged) {
+            $auditMessage .= $statusChanged ? " and admin notes updated" : " - Admin notes updated";
+        }
+        
+        AuditLogService::logUpdate(
+            resourceType: 'SupportRequest',
+            resourceId: $this->supportRequest->id,
+            before: $beforeData,
+            after: $afterData,
+            message: $auditMessage . (isset($auditContext['report_outcome']) ? " - Report " . $auditContext['report_outcome'] : "")
+        );
+        
+        // If report appeal was processed, log additional audit entry for the report action
+        if (isset($auditContext['report_outcome']) && isset($auditContext['report_id'])) {
+            AuditLogService::log(
+                eventType: $auditContext['report_outcome'] === 'dismissed' ? 'report_dismissed' : 'report_confirmed',
+                message: "Report #{$auditContext['report_id']} {$auditContext['report_outcome']} via support request appeal",
+                resourceType: 'Report',
+                resourceId: $auditContext['report_id'],
+                meta: $auditContext
+            );
         }
         
         // Send inbox notification if status changed OR admin notes changed

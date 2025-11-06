@@ -6,7 +6,7 @@
         <button
             type="button"
             :class="activeTab === 'owned' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
-            class="px-4 py-2 rounded font-semibold focus:outline-none w-full sm:w-auto"
+            class="cursor-pointer px-4 py-2 rounded font-semibold focus:outline-none w-full sm:w-auto"
             @click="activeTab = 'owned'"
         >
             Owned
@@ -14,7 +14,7 @@
         <button
             type="button"
             :class="activeTab === 'shared' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
-            class="px-4 py-2 rounded font-semibold focus:outline-none w-full sm:w-auto"
+            class="cursor-pointer px-4 py-2 rounded font-semibold focus:outline-none w-full sm:w-auto"
             @click="activeTab = 'shared'"
         >
             Shared with Me

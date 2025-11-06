@@ -155,7 +155,7 @@
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900 mb-2">Create New Password</h3>
                             <p class="text-gray-600 mb-4">
-                                Your password must contain at least 8 characters with 1 uppercase letter and 1 special character.
+                                Your password must contain at least 8 characters.
                             </p>
                         </div>
 
@@ -227,17 +227,7 @@
                 Swal.fire({
                     icon: 'warning',
                     title: 'Password Too Short',
-                    text: event.detail.message || 'Password must be at least 8 characters and include a special character and one uppercase letter.',
-                    timer: 4000,
-                    showConfirmButton: true,
-                });
-            });
-            
-            window.addEventListener('password-strength-error', function (event) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Password Requirements Not Met',
-                    text: event.detail.message || 'Password must contain at least one uppercase letter and one special character.',
+                    text: event.detail.message || 'Password must be at least 8 characters.',
                     timer: 4000,
                     showConfirmButton: true,
                 });

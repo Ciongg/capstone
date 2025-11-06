@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\Merchant;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
+use App\Services\AuditLogService;
 
 class ManageMerchantModal extends Component
 {
@@ -72,6 +73,17 @@ class ManageMerchantModal extends Component
 
         $merchant = Merchant::findOrFail($this->merchantId);
 
+        // Capture before state for audit log
+        $beforeData = [
+            'name' => $merchant->name,
+            'merchant_code' => $merchant->merchant_code,
+            'partner_type' => $merchant->partner_type,
+            'email' => $merchant->email,
+            'contact_number' => $merchant->contact_number,
+            'description' => $merchant->description,
+            'logo_path' => $merchant->logo_path, // Track actual logo path
+        ];
+
         // Start with current logo path
         $imagePath = $this->currentImage;
 
@@ -92,12 +104,31 @@ class ManageMerchantModal extends Component
             'name' => $this->name,
             'merchant_code' => $this->merchant_code,
             'logo_path' => $imagePath,
-            // new fields
             'description' => $this->description,
             'email' => $this->email,
             'contact_number' => $this->contact_number,
-            'partner_type' => $this->partner_type, // new
+            'partner_type' => $this->partner_type,
         ]);
+
+        // Capture after state for audit log
+        $afterData = [
+            'name' => $this->name,
+            'merchant_code' => $this->merchant_code,
+            'partner_type' => $this->partner_type,
+            'email' => $this->email,
+            'contact_number' => $this->contact_number,
+            'description' => $this->description,
+            'logo_path' => $imagePath, // Track actual logo path
+        ];
+
+        // Audit log the merchant update
+        AuditLogService::logUpdate(
+            resourceType: 'Merchant',
+            resourceId: $merchant->id,
+            before: $beforeData,
+            after: $afterData,
+            message: "Updated {$this->partner_type}: '{$this->name}'"
+        );
 
         // Reset deletion flag
         $this->imageMarkedForDeletion = false;
@@ -112,6 +143,22 @@ class ManageMerchantModal extends Component
     {
         $merchant = Merchant::findOrFail($this->merchantId);
 
+        // Count associated resources before deletion
+        $voucherCount = \App\Models\Voucher::where('merchant_id', $merchant->id)
+            ->where('availability', 'available')
+            ->count();
+        $rewardCount = \App\Models\Reward::where('merchant_id', $merchant->id)->count();
+
+        // Capture data before deletion for audit log
+        $merchantData = [
+            'name' => $merchant->name,
+            'merchant_code' => $merchant->merchant_code,
+            'partner_type' => $merchant->partner_type,
+            'email' => $merchant->email,
+            'voucher_count' => $voucherCount,
+            'reward_count' => $rewardCount,
+        ];
+
         // Delete logo from storage if exists
         if ($merchant->logo_path) {
             Storage::disk('public')->delete($merchant->logo_path);
@@ -123,6 +170,14 @@ class ManageMerchantModal extends Component
             ->delete();
         // Delete all rewards for this merchant
         \App\Models\Reward::where('merchant_id', $merchant->id)->delete();
+
+        // Audit log the merchant deletion
+        AuditLogService::logDelete(
+            resourceType: 'Merchant',
+            resourceId: $merchant->id,
+            data: $merchantData,
+            message: "Deleted {$merchant->partner_type}: '{$merchant->name}' along with {$voucherCount} voucher(s) and {$rewardCount} reward(s)"
+        );
 
         $merchant->delete();
         $this->dispatch('merchantDeleted');

@@ -4,6 +4,7 @@ namespace App\Livewire\SuperAdmin\Reports\Modal;
 
 use Livewire\Component;
 use App\Models\Report;
+use App\Services\AuditLogService;
 
 class ViewReportModal extends Component
 {
@@ -16,6 +17,22 @@ class ViewReportModal extends Component
     {
         $this->reportId = $reportId;
         $this->loadReport();
+
+        // Audit log when a report is viewed (for sensitive content tracking)
+        if ($this->report) {
+            AuditLogService::log(
+                eventType: 'view',
+                message: "Viewed report #{$this->report->uuid} for survey '{$this->report->survey->title}'",
+                resourceType: 'Report',
+                resourceId: $this->report->id,
+                meta: [
+                    'report_reason' => $this->report->reason,
+                    'report_status' => $this->report->status,
+                    'respondent_id' => $this->report->respondent_id,
+                    'reporter_id' => $this->report->reporter_id,
+                ]
+            );
+        }
     }
 
     public function loadReport()

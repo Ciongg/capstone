@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\SurveyTopic;
 use Livewire\WithPagination;
 use Illuminate\Validation\Rule;
+use App\Services\AuditLogService;
 
 class TopicIndex extends Component
 {
@@ -58,15 +59,35 @@ class TopicIndex extends Component
         if ($this->topicId) {
             // Update existing topic
             $topic = SurveyTopic::find($this->topicId);
+            $oldName = $topic->name;
             $topic->update([
                 'name' => $this->topicName
             ]);
+            
+            // Audit log the topic update
+            AuditLogService::logUpdate(
+                resourceType: 'SurveyTopic',
+                resourceId: $topic->id,
+                before: ['name' => $oldName],
+                after: ['name' => $this->topicName],
+                message: "Updated survey topic from '{$oldName}' to '{$this->topicName}'"
+            );
+            
             $message = 'Topic updated successfully!';
         } else {
             // Create new topic
-            SurveyTopic::create([
+            $topic = SurveyTopic::create([
                 'name' => $this->topicName
             ]);
+            
+            // Audit log the topic creation
+            AuditLogService::logCreate(
+                resourceType: 'SurveyTopic',
+                resourceId: $topic->id,
+                data: ['name' => $topic->name],
+                message: "Created new survey topic: '{$topic->name}'"
+            );
+            
             $message = 'Topic created successfully!';
         }
         
@@ -79,13 +100,24 @@ class TopicIndex extends Component
         $topic = SurveyTopic::find($topicId);
         
         if ($topic) {
-            // Remove the check that prevents deletion when topic is in use
-            // Instead, simply delete the topic and let the database cascade the deletion
             try {
+                // Get count of surveys using this topic before deletion
+                $surveysCount = \App\Models\Survey::where('survey_topic_id', $topic->id)->count();
+                
+                // Audit log the topic deletion
+                AuditLogService::logDelete(
+                    resourceType: 'SurveyTopic',
+                    resourceId: $topic->id,
+                    data: [
+                        'name' => $topic->name,
+                        'surveys_count' => $surveysCount
+                    ],
+                    message: "Deleted survey topic: '{$topic->name}' (was used by {$surveysCount} survey(s))"
+                );
+                
                 // Delete the topic
                 $topic->delete();
                 
-                // Notify user of successful deletion
                 $this->dispatch('topic-deleted');
             } catch (\Exception $e) {
                 \Log::error('Error deleting topic: ' . $e->getMessage());

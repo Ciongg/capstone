@@ -18,18 +18,20 @@ use App\Services\TestTimeService;
 class ViewAbout extends Component
 {
     public User $user;
-    public $selectedTags = [];
-    public $selectedInstitutionTags = [];
-    public $tagCategories;
+    public array $selectedTags = [];
+    public array $originalSelectedTags = [];
+    public array $demographicLocks = [];
+    public array $demographicLockInfo = [];
+    public bool $canUpdateDemographics = true;
+    public string $timeUntilUpdateText = '';
+    public $tagCategories = [];
+    public array $selectedInstitutionTags = [];
+    public array $originalSelectedInstitutionTags = [];
+    public array $institutionLocks = [];
+    public array $institutionLockInfo = [];
+    public bool $canUpdateInstitutionDemographics = true;
+    public string $timeUntilInstitutionUpdateText = '';
     public $institutionTagCategories = [];
-    
-    // Add these properties
-    public $canUpdateDemographics = false;
-    public $daysUntilDemographicsUpdateAvailable = 0;
-    public $hoursUntilDemographicsUpdateAvailable = 0;
-    public $minutesUntilDemographicsUpdateAvailable = 0;
-    public $timeUntilUpdateText = '';
-    public $demographicUpdateCooldownDays = 120; // Update to 4 months (120 days)
     
     // Trust score deduction info
     public $falseReportPenalty = 0;
@@ -51,15 +53,8 @@ class ViewAbout extends Component
     public $resendCooldown = false;
     public $resendCooldownSeconds = 0;
     
-    // Add these properties for institution demographics
-    public $canUpdateInstitutionDemographics = false;
-    public $daysUntilInstitutionDemographicsUpdateAvailable = 0;
-    public $timeUntilInstitutionUpdateText = '';
-    
-    // Add these properties to track original tags
-    public $originalSelectedTags = [];
-    public $originalSelectedInstitutionTags = [];
-    
+    public $demographicUpdateCooldownDays = 120; // Update to 4 months (120 days)
+
     protected $listeners = [
         'refresh-about-view' => 'refreshAboutView',
     ];
@@ -71,242 +66,104 @@ class ViewAbout extends Component
         $this->trustScoreService = $trustScoreService;
     }
 
-    public function mount()
+    public function mount(User $user)
     {
-        $this->user = Auth::user();
-        $this->pendingEmail = $this->user->email;
-        
-        // Check if the user can update demographics
-        $this->canUpdateDemographics = $this->user->canUpdateDemographicTags();
-        $this->calculateTimeUntilUpdate();
-        
-        // Check if the user can update institution demographics
-        $this->canUpdateInstitutionDemographics = $this->user->canUpdateInstitutionDemographicTags();
-        $this->calculateTimeUntilInstitutionUpdate();
-        
-        // Calculate potential trust score deductions using service
+        $this->user = $user;
+        $this->demographicLocks = $user->demographic_tag_cooldowns ?? [];
+        $this->institutionLocks = $user->institution_demographic_tag_cooldowns ?? [];
+        $this->loadSelectedTags();
+        $this->refreshLockStates();
         $this->calculateTrustScoreDeductions();
-        
-        // Load regular tag categories and tags
+    }
+
+    protected function loadSelectedTags(): void
+    {
         $this->tagCategories = TagCategory::with('tags')->get();
-        
-        // Load user's selected tags
+        $this->selectedTags = [];
+        $this->originalSelectedTags = [];
+
         $userTags = $this->user->tags()->pluck('tags.id')->toArray();
-        
-        // Organize selected tags by category
+
         foreach ($this->tagCategories as $category) {
-            $categoryTags = $category->tags->pluck('id')->toArray();
-            $userTagsForCategory = array_intersect($userTags, $categoryTags);
-            
-            if (!empty($userTagsForCategory)) {
-                $this->selectedTags[$category->id] = reset($userTagsForCategory);
+            $categoryTagIds = $category->tags->pluck('id')->toArray();
+            $picked = array_values(array_intersect($userTags, $categoryTagIds));
+
+            if (!empty($picked)) {
+                $this->selectedTags[$category->id] = $picked[0];
             }
         }
-        
-        // Store original tags
+
         $this->originalSelectedTags = $this->selectedTags;
-        
-        // If user belongs to an institution, load institution-specific tag categories
+
+        $this->institutionTagCategories = collect();
+        $this->selectedInstitutionTags = [];
+        $this->originalSelectedInstitutionTags = [];
+
         if ($this->user->institution_id) {
             $this->institutionTagCategories = InstitutionTagCategory::where('institution_id', $this->user->institution_id)
                 ->with('tags')
                 ->get();
-            
-            // Load user's selected institution tags
+
             $userInstitutionTags = $this->user->institutionTags()->pluck('institution_tags.id')->toArray();
-            
-            // Organize selected institution tags by category
+
             foreach ($this->institutionTagCategories as $category) {
-                // Get all tags belonging to this category
-                $categoryTags = $category->tags->pluck('id')->toArray();
-                
-                // Find which of the user's tags belong to this category
-                $userTagsForCategory = array_intersect($userInstitutionTags, $categoryTags);
-                
-                if (!empty($userTagsForCategory)) {
-                    $this->selectedInstitutionTags[$category->id] = reset($userTagsForCategory);
+                $categoryTagIds = $category->tags->pluck('id')->toArray();
+                $picked = array_values(array_intersect($userInstitutionTags, $categoryTagIds));
+
+                if (!empty($picked)) {
+                    $this->selectedInstitutionTags[$category->id] = $picked[0];
                 }
             }
-            
-            // Store original institution tags
+
             $this->originalSelectedInstitutionTags = $this->selectedInstitutionTags;
         }
     }
 
-    /**
-     * Calculate time until demographic update is available in a more human-readable format
-     */
-    protected function calculateTimeUntilUpdate()
+    protected function refreshLockStates(): void
     {
-        if ($this->canUpdateDemographics) {
-            $this->timeUntilUpdateText = 'Available now';
-            return;
-        }
+        $this->demographicLockInfo = $this->formatLockCollection($this->demographicLocks);
+        $this->institutionLockInfo = $this->formatLockCollection($this->institutionLocks);
 
-        $cooldownDays = 120;
-        $nextUpdateDate = $this->user->demographic_tags_updated_at->addDays($cooldownDays);
+        $this->canUpdateDemographics = $this->hasEditableField($this->tagCategories, $this->demographicLockInfo);
+        $this->timeUntilUpdateText = $this->summarizeCooldown($this->user->demographic_tags_updated_at);
+
+        $this->canUpdateInstitutionDemographics = $this->hasEditableField($this->institutionTagCategories, $this->institutionLockInfo);
+        $this->timeUntilInstitutionUpdateText = $this->summarizeCooldown($this->user->institution_demographic_tags_updated_at);
+    }
+
+    protected function formatLockCollection(array $locks): array
+    {
         $now = TestTimeService::now();
-        
-        // Check if we're very close to the target time (less than 30 seconds away)
-        if ($now->diffInSeconds($nextUpdateDate, false) < 30) {
-            $this->canUpdateDemographics = true;
-            $this->timeUntilUpdateText = 'Available now';
-            return;
-        }
-        
-        // Calculate time differences and round to integers
-        $this->daysUntilDemographicsUpdateAvailable = (int) floor($now->diffInDays($nextUpdateDate, false));
-        $this->hoursUntilDemographicsUpdateAvailable = (int) floor($now->diffInHours($nextUpdateDate, false) % 24);
-        $this->minutesUntilDemographicsUpdateAvailable = (int) floor($now->diffInMinutes($nextUpdateDate, false) % 60);
-        
-        // Create human-readable text with proper rounding
-        if ($this->daysUntilDemographicsUpdateAvailable > 0) {
-            $this->timeUntilUpdateText = "Available in {$this->daysUntilDemographicsUpdateAvailable} " . 
-                ($this->daysUntilDemographicsUpdateAvailable == 1 ? 'day' : 'days');
-        } elseif ($now->diffInHours($nextUpdateDate, false) > 0) {
-            $hours = (int) floor($now->diffInHours($nextUpdateDate, false));
-            $this->timeUntilUpdateText = "Available in {$hours} " . ($hours == 1 ? 'hour' : 'hours');
-        } else {
-            // If we're less than 1 minute away, just show "Available now"
-            if ($now->diffInMinutes($nextUpdateDate, false) < 1) {
-                $this->canUpdateDemographics = true;
-                $this->timeUntilUpdateText = 'Available now';
-            } else {
-                $minutes = max(1, (int) ceil($now->diffInMinutes($nextUpdateDate, false)));
-                $this->timeUntilUpdateText = "Available in {$minutes} " . ($minutes == 1 ? 'minute' : 'minutes');
-            }
-        }
-    }
-    
-    /**
-     * Calculate time until institution demographic update is available
-     */
-    protected function calculateTimeUntilInstitutionUpdate()
-    {
-        if ($this->canUpdateInstitutionDemographics) {
-            $this->timeUntilInstitutionUpdateText = 'Available now';
-            return;
-        }
 
-        $cooldownDays = 120;
-        $nextUpdateDate = $this->user->institution_demographic_tags_updated_at->addDays($cooldownDays);
-        $now = TestTimeService::now();
-        
-        // Check if we're very close to the target time (less than 30 seconds away)
-        if ($now->diffInSeconds($nextUpdateDate, false) < 30) {
-            $this->canUpdateInstitutionDemographics = true;
-            $this->timeUntilInstitutionUpdateText = 'Available now';
-            return;
-        }
-        
-        // Calculate time differences and create text similar to regular demographics
-        if ($now->diffInDays($nextUpdateDate, false) > 0) {
-            $days = (int) floor($now->diffInDays($nextUpdateDate, false));
-            $this->timeUntilInstitutionUpdateText = "Available in {$days} " . 
-                ($days == 1 ? 'day' : 'days');
-        } elseif ($now->diffInHours($nextUpdateDate, false) > 0) {
-            $hours = (int) floor($now->diffInHours($nextUpdateDate, false));
-            $this->timeUntilInstitutionUpdateText = "Available in {$hours} " . ($hours == 1 ? 'hour' : 'hours');
-        } else {
-            // If we're less than 1 minute away, just show "Available now"
-            if ($now->diffInMinutes($nextUpdateDate, false) < 1) {
-                $this->canUpdateInstitutionDemographics = true;
-                $this->timeUntilInstitutionUpdateText = 'Available now';
-            } else {
-                $minutes = max(1, (int) ceil($now->diffInMinutes($nextUpdateDate, false)));
-                $this->timeUntilInstitutionUpdateText = "Available in {$minutes} " . ($minutes == 1 ? 'minute' : 'minutes');
-            }
-        }
-    }
-    
-    protected function otpRules(): array
-    {
-        return [
-            'otp_code' => 'required|string|size:6',
-        ];
+        return collect($locks)
+            ->filter()
+            ->map(function ($storedAt) use ($now) {
+                $lockedAt = Carbon::parse($storedAt);
+                $unlockAt = $lockedAt->copy()->addMonths(4);
+
+                return [
+                    'locked' => $unlockAt->greaterThan($now),
+                    'locked_until' => $unlockAt->clone()->setTimezone($now->timezone),
+                ];
+            })
+            ->toArray();
     }
 
-    public function sendOtp()
+    protected function hasEditableField($categories, array $info): bool
     {
-        $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        EmailVerification::updateOrCreate(
-            ['email' => $this->pendingEmail],
-            [
-                'otp_code' => $otpCode,
-                'expires_at' => TestTimeService::now()->addMinutes(10),
-            ]
-        );
-        $brevoService = new BrevoService();
-        $emailSent = $brevoService->sendOtpEmail($this->pendingEmail, $otpCode);
-        if (!$emailSent) {
-            session()->flash('error', 'Failed to send verification email. Please try again.');
-            return;
-        }
-        $this->dispatch('open-modal', name: 'otp-verification');
-        session()->flash('success', 'Verification code sent to your email!');
+        return collect($categories)->contains(function ($category) use ($info) {
+            $details = $info[$category->id] ?? null;
+            return !($details['locked'] ?? false);
+        });
     }
 
-    public function verifyOtp()
+    protected function summarizeCooldown(?Carbon $timestamp): string
     {
-        $this->validate($this->otpRules());
-        $emailVerification = EmailVerification::where('email', $this->pendingEmail)
-            ->where('otp_code', $this->otp_code)
-            ->first();
-        if (!$emailVerification || $emailVerification->isExpired()) {
-            $this->addError('otp_code', 'Invalid or expired verification code. Please try again.');
-            return;
+        if (!$timestamp) {
+            return 'Last edited on —';
         }
-        // Mark user as verified
-        $this->user->email_verified_at = TestTimeService::now();
-        $this->user->save();
-        $emailVerification->delete();
-        $this->showSuccess = true;
-        $this->dispatch('otp-verified-success');
-        $this->dispatch('refresh-profile-view');
-    }
 
-    public function resendOtp()
-    {
-        if ($this->resendCooldown) {
-            return;
-        }
-        if (empty($this->pendingEmail)) {
-            session()->flash('error', 'No pending email verification found.');
-            return;
-        }
-        $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        EmailVerification::updateOrCreate(
-            ['email' => $this->pendingEmail],
-            [
-                'otp_code' => $otpCode,
-                'expires_at' => TestTimeService::now()->addMinutes(10),
-            ]
-        );
-        $brevoService = new BrevoService();
-        $emailSent = $brevoService->sendOtpEmail($this->pendingEmail, $otpCode);
-        if ($emailSent) {
-            session()->flash('success', 'New verification code sent to your email!');
-            $this->startResendCooldown();
-        } else {
-            session()->flash('error', 'Failed to send verification email. Please try again.');
-        }
-    }
-
-    public function startResendCooldown()
-    {
-        $this->resendCooldown = true;
-        $this->resendCooldownSeconds = 60;
-        $this->dispatch('start-resend-cooldown');
-    }
-
-    public function decrementCooldown()
-    {
-        if ($this->resendCooldown && $this->resendCooldownSeconds > 0) {
-            $this->resendCooldownSeconds--;
-            if ($this->resendCooldownSeconds <= 0) {
-                $this->resendCooldown = false;
-            }
-        }
+        return 'Last edited on ' . $timestamp->format('M d, Y');
     }
 
     /**
@@ -334,41 +191,12 @@ class ViewAbout extends Component
     public function refreshAboutView()
     {
         $this->user = $this->user->fresh();
-        
-        // Update demographic update status
-        $this->canUpdateDemographics = $this->user->canUpdateDemographicTags();
-        $this->calculateTimeUntilUpdate();
-        
-        // Update institution demographic update status
-        $this->canUpdateInstitutionDemographics = $this->user->canUpdateInstitutionDemographicTags();
-        $this->calculateTimeUntilInstitutionUpdate();
-        
-        // Reload tag and institution data as in mount
-        $this->tagCategories = TagCategory::with('tags')->get();
-        $userTags = $this->user->tags()->pluck('tags.id')->toArray();
-        $this->selectedTags = [];
-        foreach ($this->tagCategories as $category) {
-            $categoryTags = $category->tags->pluck('id')->toArray();
-            $userTagsForCategory = array_intersect($userTags, $categoryTags);
-            if (!empty($userTagsForCategory)) {
-                $this->selectedTags[$category->id] = reset($userTagsForCategory);
-            }
-        }
-        $this->institutionTagCategories = [];
-        if ($this->user->institution_id) {
-            $this->institutionTagCategories = InstitutionTagCategory::where('institution_id', $this->user->institution_id)
-                ->with('tags')
-                ->get();
-            $userInstitutionTags = $this->user->institutionTags()->pluck('institution_tags.id')->toArray();
-            $this->selectedInstitutionTags = [];
-            foreach ($this->institutionTagCategories as $category) {
-                $categoryTags = $category->tags->pluck('id')->toArray();
-                $userTagsForCategory = array_intersect($userInstitutionTags, $categoryTags);
-                if (!empty($userTagsForCategory)) {
-                    $this->selectedInstitutionTags[$category->id] = reset($userTagsForCategory);
-                }
-            }
-        }
+        $this->demographicLocks = $this->user->demographic_tag_cooldowns ?? [];
+        $this->institutionLocks = $this->user->institution_demographic_tag_cooldowns ?? [];
+
+        $this->loadSelectedTags();
+        $this->refreshLockStates();
+        $this->calculateTrustScoreDeductions();
     }
 
     /**
@@ -428,47 +256,42 @@ class ViewAbout extends Component
      */
     public function saveDemographicTags()
     {
-        // Check if user can update tags
-        if (!$this->canUpdateDemographics) {
-            session()->flash('error', 'You cannot update your demographic information at this time. Please try again in ' . 
-                $this->daysUntilDemographicsUpdateAvailable . ' days.');
+        $locked = collect($this->selectedTags)->filter(function ($tagId, $categoryId) {
+            $details = $this->demographicLockInfo[$categoryId] ?? null;
+            $locked = $details['locked'] ?? false;
+            $original = $this->originalSelectedTags[$categoryId] ?? null;
+            return $locked && $tagId !== $original;
+        });
+
+        if ($locked->isNotEmpty()) {
+            session()->flash('error', 'The following fields are still locked: ' . $locked->keys()->implode(', ') . '.');
             return;
         }
-        
-        // Check if any changes were made
-        if (!$this->demographicTagsChanged()) {
+
+        $changed = collect($this->selectedTags)->filter(function ($tagId, $categoryId) {
+            return ($this->originalSelectedTags[$categoryId] ?? null) !== $tagId;
+        });
+
+        if ($changed->isEmpty()) {
             $this->dispatch('no-changes-detected', type: 'demographic');
             return;
         }
-        
-        // Process regular tags
-        $tagsToSync = [];
-        foreach ($this->selectedTags as $categoryId => $tagId) {
-            if (!empty($tagId)) {
-                // Get tag name for denormalization
-                $tag = Tag::find($tagId);
-                if ($tag) {
-                    $tagsToSync[$tagId] = ['tag_name' => $tag->name];
-                }
-            }
-        }
-        
-        // Sync regular tags
-        $this->user->tags()->sync($tagsToSync);
-        
-        // Update the demographic_tags_updated_at timestamp
-        $this->user->demographic_tags_updated_at = TestTimeService::now();
+
+        $this->updateDemographicAssignments($this->selectedTags);
+        $changed->keys()->each(function ($categoryId) {
+            $this->demographicLocks[$categoryId] = TestTimeService::now()->toISOString();
+        });
+
+        $now = TestTimeService::now();
+        $this->user->demographic_tag_cooldowns = $this->demographicLocks;
+        $this->user->demographic_tags_updated_at = $now;
         $this->user->save();
-        
-        // Update local properties
-        $this->canUpdateDemographics = $this->user->canUpdateDemographicTags();
-        $this->calculateTimeUntilUpdate();
-        
-        // Update the originalSelectedTags to match the current selection
+
+        $this->user = $this->user->fresh();
         $this->originalSelectedTags = $this->selectedTags;
-        
-        session()->flash('tags_saved', 'Your demographic information has been updated successfully! You can update it again in ' . 
-            $this->demographicUpdateCooldownDays . ' days.');
+        $this->refreshLockStates();
+
+        session()->flash('tags_saved', 'Demographic fields updated. Only the modified fields are locked for 4 months.');
     }
 
     /**
@@ -476,52 +299,88 @@ class ViewAbout extends Component
      */
     public function saveInstitutionDemographicTags()
     {
-        // Check if user belongs to an institution
-        if (!$this->user->institution_id) {
-            session()->flash('error', 'You do not belong to any institution.');
+        $locked = collect($this->selectedInstitutionTags)->filter(function ($tagId, $categoryId) {
+            $details = $this->institutionLockInfo[$categoryId] ?? null;
+            $locked = $details['locked'] ?? false;
+            $original = $this->originalSelectedInstitutionTags[$categoryId] ?? null;
+            return $locked && $tagId !== $original;
+        });
+
+        if ($locked->isNotEmpty()) {
+            session()->flash('error', 'Institution fields still locked: ' . $locked->keys()->implode(', ') . '.');
             return;
         }
-        
-        // Check if user can update institution tags
-        if (!$this->canUpdateInstitutionDemographics) {
-            session()->flash('error', 'You cannot update your institution demographic information at this time.');
-            return;
-        }
-        
-        // Check if any changes were made
-        if (!$this->institutionDemographicTagsChanged()) {
+
+        $changed = collect($this->selectedInstitutionTags)->filter(function ($tagId, $categoryId) {
+            return ($this->originalSelectedInstitutionTags[$categoryId] ?? null) !== $tagId;
+        });
+
+        if ($changed->isEmpty()) {
             $this->dispatch('no-changes-detected', type: 'institution');
             return;
         }
-        
-        // Process institution tags
-        $institutionTagsToSync = [];
-        foreach ($this->selectedInstitutionTags as $categoryId => $tagId) {
-            if (!empty($tagId)) {
-                // Get tag name for denormalization
-                $tag = InstitutionTag::find($tagId);
+
+        $this->updateInstitutionDemographicAssignments($this->selectedInstitutionTags);
+        $changed->keys()->each(function ($categoryId) {
+            $this->institutionLocks[$categoryId] = TestTimeService::now()->toISOString();
+        });
+
+        $now = TestTimeService::now();
+        $this->user->institution_demographic_tag_cooldowns = $this->institutionLocks;
+        $this->user->institution_demographic_tags_updated_at = $now;
+        $this->user->save();
+
+        $this->user = $this->user->fresh();
+        $this->originalSelectedInstitutionTags = $this->selectedInstitutionTags;
+        $this->refreshLockStates();
+
+        session()->flash('tags_saved', 'Institution demographics updated. Modified fields are locked individually for 4 months.');
+    }
+
+    protected function updateDemographicAssignments(array $selections): void
+    {
+        foreach ($this->tagCategories as $category) {
+            $categoryTagIds = $category->tags->pluck('id')->toArray();
+
+            if (empty($categoryTagIds)) {
+                continue;
+            }
+
+            $this->user->tags()->detach($categoryTagIds);
+
+            $chosen = $selections[$category->id] ?? null;
+            if ($chosen) {
+                $tag = Tag::find($chosen);
                 if ($tag) {
-                    $institutionTagsToSync[$tagId] = ['tag_name' => $tag->name];
+                    $this->user->tags()->attach($tag->id, ['tag_name' => $tag->name]);
                 }
             }
         }
-        
-        // Sync institution tags
-        $this->user->institutionTags()->sync($institutionTagsToSync);
-        
-        // Update the institution_demographic_tags_updated_at timestamp
-        $this->user->institution_demographic_tags_updated_at = TestTimeService::now();
-        $this->user->save();
-        
-        // Update local properties
-        $this->canUpdateInstitutionDemographics = $this->user->canUpdateInstitutionDemographicTags();
-        $this->calculateTimeUntilInstitutionUpdate();
-        
-        // Update the originalSelectedInstitutionTags to match the current selection
-        $this->originalSelectedInstitutionTags = $this->selectedInstitutionTags;
-        
-        session()->flash('tags_saved', 'Your institution demographic information has been updated successfully! You can update it again in ' . 
-            $this->demographicUpdateCooldownDays . ' days.');
+    }
+
+    protected function updateInstitutionDemographicAssignments(array $selections): void
+    {
+        if ($this->institutionTagCategories->isEmpty()) {
+            return;
+        }
+
+        foreach ($this->institutionTagCategories as $category) {
+            $categoryTagIds = $category->tags->pluck('id')->toArray();
+
+            if (empty($categoryTagIds)) {
+                continue;
+            }
+
+            $this->user->institutionTags()->detach($categoryTagIds);
+
+            $chosen = $selections[$category->id] ?? null;
+            if ($chosen) {
+                $tag = InstitutionTag::find($chosen);
+                if ($tag) {
+                    $this->user->institutionTags()->attach($tag->id, ['tag_name' => $tag->name]);
+                }
+            }
+        }
     }
 
     public function render()
@@ -538,10 +397,13 @@ class ViewAbout extends Component
             'falseReportPercentage' => $this->falseReportPercentage,
             'reportedResponsePercentage' => $this->reportedResponsePercentage,
             'canUpdateDemographics' => $this->canUpdateDemographics,
-            'daysUntilDemographicsUpdateAvailable' => $this->daysUntilDemographicsUpdateAvailable,
             'timeUntilUpdateText' => $this->timeUntilUpdateText,
             'canUpdateInstitutionDemographics' => $this->canUpdateInstitutionDemographics,
             'timeUntilInstitutionUpdateText' => $this->timeUntilInstitutionUpdateText,
+            'tagCategories' => $this->tagCategories,
+            'institutionTagCategories' => $this->institutionTagCategories,
+            'demographicLockInfo' => $this->demographicLockInfo,
+            'institutionLockInfo' => $this->institutionLockInfo,
         ]);
     }
 }

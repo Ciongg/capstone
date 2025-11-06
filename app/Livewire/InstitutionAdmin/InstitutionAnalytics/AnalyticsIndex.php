@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Exception;
+use App\Services\AuditLogService;
 
 class AnalyticsIndex extends Component
 {
@@ -273,6 +274,22 @@ class AnalyticsIndex extends Component
                 $this->dispatch('export-error', message: 'Error generating CSV: Empty content');
                 return;
             }
+
+            // Log the export action
+            AuditLogService::logExport(
+                resourceType: 'InstitutionAnalytics',
+                message: 'Exported institution analytics to CSV',
+                meta: [
+                    'filename' => $filename,
+                    'institution_id' => $this->institution->id,
+                    'institution_name' => $this->institution->name,
+                    'selected_year' => $this->selectedYear,
+                    'survey_count' => $this->surveyCount,
+                    'user_count' => $this->userCount,
+                    'total_responses' => $this->totalResponses,
+                    'export_timestamp' => now()->toDateTimeString()
+                ]
+            );
 
             // Dispatch browser event to download without page refresh
             $this->dispatch('download-csv', content: base64_encode($csvContent), filename: $filename);
