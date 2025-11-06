@@ -302,6 +302,17 @@
                 });
             });
             
+            // Existing OTP found
+            window.addEventListener('existing-otp-found', function (event) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Code Already Sent',
+                    text: event.detail.message || 'A verification code was already sent to your email.',
+                    timer: 3000,
+                    showConfirmButton: true,
+                });
+            });
+            
             // Email not found in system
             window.addEventListener('email-not-found', function (event) {
                 Swal.fire({
