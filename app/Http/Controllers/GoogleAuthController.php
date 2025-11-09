@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Services\GoogleOAuthService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Models\Institution;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Session;
@@ -27,77 +28,107 @@ class GoogleAuthController extends Controller
     // Handle Google callback for signup
     public function callback(Request $request)
     {
-        $result = $this->googleService->handleGoogleCallback($request);
-        
-        if (!$result) {
-            return redirect()->route('login')
-                ->with('error', 'Google authentication failed. Please try again.');
-        }
-
-        $user = $result['user'];
-        $needs2FA = $result['needs_2fa'] ?? false;
-
-        // Check user's institution status before completing login
-        $statusChange = $this->checkInstitutionStatus($user);
-        if ($statusChange) {
-            Session::put('institution_status_change', $statusChange);
-        }
-
-        // If 2FA is required, redirect to 2FA challenge
-        if ($needs2FA) {
-            return redirect()->route('two-factor.challenge');
-        }
-
-        // No 2FA required, log in directly
-        Auth::login($user);
-        session()->regenerate();
-
-        // Show institution status change messages
-        if (Session::has('institution_status_change')) {
-            $change = Session::get('institution_status_change');
+        try {
+            $googleUser = $this->googleService->getGoogleUser($request);
             
-            if ($change === 'upgraded') {
-                session()->flash('account-upgrade', 'Your account has been upgraded to Researcher status! Your institution is now recognized in our system.');
-            } elseif ($change === 'downgraded') {
-                session()->flash('account-downgrade', 'Your account has been changed to Respondent status. This could be because your institution is no longer in our system or your email domain changed.');
-            } elseif ($change === 'institution-restored') {
-                session()->flash('account-upgrade', 'Your institution has been restored in our system. All features are now available.');
-            } elseif ($change === 'institution-changed') {
-                session()->flash('account-upgrade', 'Your institution has been updated in our system based on your email domain.');
-            } elseif ($change === 'institution-lost') {
-                session()->flash('account-downgrade', 'Your institution is no longer recognized in our system. Some features will be limited.');
+            if (!$googleUser) {
+                return redirect()->route('login')->with('error', 'Failed to authenticate with Google.');
             }
+
+            // Check if user exists
+            $existingUser = $this->googleService->findUserByEmail($googleUser->getEmail());
             
-            Session::forget('institution_status_change');
+            if (!$existingUser) {
+                // New user - redirect to consent page
+                return view('auth.google-consent', [
+                    'googleUser' => $googleUser,
+                    'isNewUser' => true
+                ]);
+            }
+
+            // Existing user - proceed with login
+            $result = $this->googleService->handleGoogleCallback($request);
+            
+            if (!$result || !isset($result['user'])) {
+                return redirect()->route('login')->with('error', 'Failed to authenticate with Google.');
+            }
+
+            // Check if 2FA is required
+            if ($result['needs_2fa']) {
+                return redirect()->route('two-factor.challenge');
+            }
+
+            // No 2FA needed, log in directly
+            Auth::login($result['user']);
+            
+            return redirect()->intended(route('feed.index'));
+            
+        } catch (\Exception $e) {
+            Log::error('Google OAuth callback error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->route('login')->with('error', 'An error occurred during Google authentication.');
         }
-        
-        return redirect()->intended(route('feed.index'));
     }
 
     // Handle consent form submission to create account
     public function consent(Request $request)
     {
-        $googleUserData = $request->validate([
-            'email' => 'required|email',
-            'name' => 'required|string',
-            'given_name' => 'nullable|string',
-            'family_name' => 'nullable|string',
-            'avatar' => 'nullable|url',
-        ]);
-        
-        // Actually create the user
-        $user = $this->googleService->createUserFromGoogle($googleUserData);
-        if ($user) {
-            // New users don't have 2FA yet, mark as verified
-            Session::put('2fa:verified:' . $user->id, true);
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'name' => 'required|string',
+                'given_name' => 'nullable|string',
+                'family_name' => 'nullable|string',
+            ]);
+
+            // Check if user already exists
+            $existingUser = $this->googleService->findUserByEmail($request->email);
             
+            if ($existingUser) {
+                // User exists, just log them in
+                $result = $this->googleService->handleGoogleCallback($request);
+                
+                if (!$result || !isset($result['user'])) {
+                    return redirect()->route('login')->with('error', 'Failed to authenticate with Google.');
+                }
+
+                // Check if 2FA is required
+                if ($result['needs_2fa']) {
+                    return redirect()->route('two-factor.challenge');
+                }
+
+                Auth::login($result['user']);
+                return redirect()->intended(route('feed.index'));
+            }
+
+            // Create new user
+            $userData = [
+                'email' => $request->email,
+                'name' => $request->name,
+                'given_name' => $request->given_name,
+                'family_name' => $request->family_name,
+            ];
+
+            $user = $this->googleService->createUserFromGoogle($userData);
+            
+            if (!$user) {
+                return redirect()->route('login')->with('error', 'Failed to create account.');
+            }
+
+            // Log in the new user (new users don't have 2FA)
             Auth::login($user);
-            session()->regenerate();
             
-            return redirect()->route('feed.index')->with('success', 'Registration successful!');
+            return redirect()->route('feed.index')->with('success', 'Account created successfully!');
+            
+        } catch (\Exception $e) {
+            Log::error('Google consent error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->route('login')->with('error', 'An error occurred during account creation.');
         }
-        
-        return redirect()->route('register')->with('error', 'Account creation failed.');
     }
 
     // Add this method to check institution status

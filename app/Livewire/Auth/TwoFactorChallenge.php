@@ -6,6 +6,7 @@ use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use PragmaRX\Google2FA\Google2FA;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Hash;
 use App\Services\TestTimeService;
 
 class TwoFactorChallenge extends Component
@@ -97,9 +98,11 @@ class TwoFactorChallenge extends Component
     {
         $recoveryCodes = $user->twoFactorSetting->recovery_codes ?? [];
         
-        foreach ($recoveryCodes as $index => $storedCode) {
-            if (hash_equals($storedCode, $this->recoveryCode)) {
-                // Remove used recovery code
+        // Iterate through stored hashed recovery codes
+        foreach ($recoveryCodes as $index => $hashedCode) {
+            // Use Hash::check to compare the plain text input with the hashed stored code
+            if (Hash::check($this->recoveryCode, $hashedCode)) {
+                // Remove the used recovery code
                 unset($recoveryCodes[$index]);
                 $user->twoFactorSetting->update([
                     'recovery_codes' => array_values($recoveryCodes)

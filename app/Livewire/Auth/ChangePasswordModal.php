@@ -150,6 +150,14 @@ class ChangePasswordModal extends Component
             return;
         }
 
+        // Check if new password is the same as old password
+        if (Hash::check($this->new_password, auth()->user()->password)) {
+            $this->dispatch('password-same-as-old', [
+                'message' => 'Your new password cannot be the same as your current password. Please choose a different password.'
+            ]);
+            return;
+        }
+
         // Update the user's password
         auth()->user()->update([
             'password' => Hash::make($this->new_password),
