@@ -244,32 +244,14 @@ class GoogleOAuthService
                 return ['user' => $user, 'needs_2fa' => false];
             }
             
-            // Create new user with hashed IP (no 2FA for new users initially)
-            DB::beginTransaction();
-            $user = User::create([
-                'first_name' => $googleUser->user['given_name'] ?? $googleUser->getName(),
-                'last_name' => $googleUser->user['family_name'] ?? '',
-                'email' => $googleUser->getEmail(),
-                'password' => bcrypt(str()->random(32)),
-                'email_verified_at' => now(),
-                'is_active' => true,
-                'type' => 'respondent',
-                'is_accepted_terms' => true,
-                'is_accepted_privacy_policy' => true,
-                'last_active_at' => TestTimeService::now(),
-                'ip_address' => $hashedIp,
+            // User doesn't exist - should not reach here if consent flow is working
+            // This is a fallback in case the flow is bypassed
+            Log::warning('Attempted to create user without consent', [
+                'email' => $googleUser->getEmail()
             ]);
             
-            DB::commit();
-            Log::info('Google user created', [
-                'user_id' => $user->id,
-                'ip_hash' => $hashedIp
-            ]);
-
-            // Mark 2FA as verified (new user has no 2FA)
-            Session::put('2fa:verified:' . $user->id, true);
+            return null;
             
-            return ['user' => $user, 'needs_2fa' => false];
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Google signup exception', [

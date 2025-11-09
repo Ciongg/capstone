@@ -255,6 +255,18 @@
                 });
             });
             
+            // New: Same password as old error
+            window.addEventListener('password-same-as-old', function (event) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Password Not Changed',
+                    text: event.detail.message || 'Your new password cannot be the same as your current password. Please choose a different password.',
+                    timer: 4000,
+                    showConfirmButton: true,
+                    confirmButtonColor: '#f59e0b',
+                });
+            });
+            
             window.addEventListener('validation-error', function (event) {
                 Swal.fire({
                     icon: 'error',
