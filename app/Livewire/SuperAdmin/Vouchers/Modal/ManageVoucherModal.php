@@ -37,7 +37,7 @@ class ManageVoucherModal extends Component
     
     protected $rules = [
         'name' => 'required|string|max:255',
-        'merchant_id' => 'required|exists:merchants,id',
+        'merchant_id' => 'nullable|exists:merchants,id',
         'description' => 'required|string',
         'status' => 'required|string|in:available,unavailable,sold_out',
         'cost' => 'required|integer|min:0',
@@ -85,7 +85,12 @@ class ManageVoucherModal extends Component
 
     public function updateReward()
     {
-        $this->validate();
+        $rules = $this->rules;
+        $rules['merchant_id'] = ($this->type === 'voucher' || $this->type === 'Voucher')
+            ? 'required|exists:merchants,id'
+            : 'nullable|exists:merchants,id';
+
+        $this->validate($rules);
         
         // Use a transaction to batch all DB operations together
         \DB::transaction(function() {

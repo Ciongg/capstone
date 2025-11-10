@@ -98,10 +98,20 @@ class TwoFactorChallenge extends Component
     {
         $recoveryCodes = $user->twoFactorSetting->recovery_codes ?? [];
         
-        // Iterate through stored hashed recovery codes
-        foreach ($recoveryCodes as $index => $hashedCode) {
-            // Use Hash::check to compare the plain text input with the hashed stored code
-            if (Hash::check($this->recoveryCode, $hashedCode)) {
+        // Iterate through stored recovery codes
+        foreach ($recoveryCodes as $index => $storedCode) {
+            $isValid = false;
+            
+            // Check if it's a hashed code (starts with $2y$ for bcrypt)
+            if (str_starts_with($storedCode, '$2y$')) {
+                // Use Hash::check for hashed codes
+                $isValid = Hash::check($this->recoveryCode, $storedCode);
+            } else {
+                // Direct comparison for unhashed codes (legacy support)
+                $isValid = hash_equals($storedCode, $this->recoveryCode);
+            }
+            
+            if ($isValid) {
                 // Remove the used recovery code
                 unset($recoveryCodes[$index]);
                 $user->twoFactorSetting->update([

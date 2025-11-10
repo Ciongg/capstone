@@ -75,7 +75,9 @@ beforeEach(function () {
         'status' => 'pending',
         'type' => 'basic',
         'points_allocated' => 10,
-        'is_institution_only' => false
+        'is_institution_only' => false,
+        'is_guest_allowed' => true,
+        'is_in_feed' => true,
     ]);
     
     // Create a page for the survey
@@ -113,7 +115,9 @@ it('loads survey settings modal with correct initial data', function () {
         ->assertSet('type', 'basic')
         ->assertSet('points_allocated', 10)
         ->assertSet('isInstitutionOnly', false)
-        ->assertSet('isAnnounced', false);
+        ->assertSet('isAnnounced', false)
+        ->assertSet('isGuestAllowed', true)
+        ->assertSet('isInFeed', true);
 });
 
 it('updates basic survey settings', function () {
@@ -147,6 +151,7 @@ it('updates survey type and recalculates points', function () {
     $this->survey->refresh();
     expect($this->survey->type)->toBe('advanced');
     expect($this->survey->points_allocated)->toBe(20);
+    expect((bool)$this->survey->is_guest_allowed)->toBeFalse();
 });
 
 it('validates required fields in survey settings', function () {
@@ -241,6 +246,24 @@ it('toggles announcement setting', function () {
     // Fix by checking the raw value rather than using toBeTrue()
     // since the column might not be cast properly
     expect($this->survey->is_announced)->toEqual(1);
+});
+
+it('toggles guest allowed setting', function () {
+    Livewire::test(SurveySettingsModal::class, ['survey' => $this->survey])
+        ->set('isGuestAllowed', false)
+        ->call('saveSurveyInformation');
+    
+    $this->survey->refresh();
+    expect((bool)$this->survey->is_guest_allowed)->toBeFalse();
+});
+
+it('toggles feed visibility setting', function () {
+    Livewire::test(SurveySettingsModal::class, ['survey' => $this->survey])
+        ->set('isInFeed', false)
+        ->call('saveSurveyInformation');
+    
+    $this->survey->refresh();
+    expect((bool)$this->survey->is_in_feed)->toBeFalse();
 });
 
 // Form Demographics Functionality Tests

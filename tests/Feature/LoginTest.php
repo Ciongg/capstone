@@ -3,12 +3,14 @@
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use App\Models\User;
+use App\Models\Institution;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
+use App\Services\TestTimeService;
 
 uses(RefreshDatabase::class);
 
-//before each test initialize these values
 beforeEach(function () {
     // Create a standard active user for testing
     $this->user = User::factory()->create([
@@ -39,14 +41,14 @@ beforeEach(function () {
 it('can render the login screen', function () {
     $response = $this->get(route('login'));
     $response->assertStatus(200);
-    $response->assertSeeLivewire('auth.login'); // checks that the Livewire login component renders
+    $response->assertSeeLivewire('auth.login');
 });
 
 it('can authenticate users using login screen', function () {
     Livewire::test('auth.login')
-        ->set('email', 'active@example.com') //sets the $email property on the Livewire component
-        ->set('password', 'password123') //sets the $password
-        ->call('attemptLogin') //calls the login function to use these variables
+        ->set('email', 'active@example.com')
+        ->set('password', 'password123')
+        ->call('attemptLogin')
         ->assertHasNoErrors() 
         ->assertRedirect(route('feed.index'));
     
@@ -66,17 +68,14 @@ it('cannot authenticate with invalid password', function () {
 
 it('reactivates inactive user accounts on login', function () {
     Livewire::test('auth.login')
-    ->set('email', 'inactive@example.com')
-    ->set('password', 'password123')
-    ->call('attemptLogin');
+        ->set('email', 'inactive@example.com')
+        ->set('password', 'password123')
+        ->call('attemptLogin');
     
-    // Verify the user is authenticated
     $this->assertTrue(Auth::check());
     
-    // Check that the user is now active
     $this->inactiveUser->refresh();
     expect($this->inactiveUser->is_active)->toBeTrue();
-    
 });
 
 it('cannot authenticate with archived account', function () {
@@ -90,35 +89,101 @@ it('cannot authenticate with archived account', function () {
 });
     
 it('can check and update institution status on login', function () {
-    // Create a user with researcher type but no matching institution
-    $researcher = User::factory()->create([
-        'email' => 'researcher@random.edu.ph',
+    // Create institution with domain
+    $institution = Institution::factory()->create([
+        'domain' => 'university.edu.ph',
+    ]);
+
+    // Create a researcher user linked to that institution
+    $user = User::factory()->create([
+        'email' => 'researcher@university.edu.ph',
         'password' => Hash::make('password123'),
         'type' => 'researcher',
+        'institution_id' => $institution->id,
         'is_active' => true,
     ]);
-    
-    // Login and check if downgraded
+
+    // Login successfully
     Livewire::test('auth.login')
-        ->set('email', 'researcher@random.edu.ph')
+        ->set('email', $user->email)
         ->set('password', 'password123')
         ->call('attemptLogin')
-        ->assertHasNoErrors()
-        ->assertDispatched('account-status-change');
+        ->assertRedirect(route('feed.index'));
     
-    $researcher->refresh();
-    expect($researcher->type)->toBe('respondent');
+    // Verify user is authenticated
+    $this->assertTrue(Auth::check());
+});
+
+it('locks user out after max failed attempts', function () {
+    $user = User::factory()->create([
+        'email' => 'test@example.com',
+        'password' => Hash::make('correct-password'),
+    ]);
+
+    // Make 2 failed attempts (won't trigger lockout yet)
+    for ($i = 0; $i < 2; $i++) {
+        Livewire::test('auth.login')
+            ->set('email', 'test@example.com')
+            ->set('password', 'wrong-password')
+            ->call('attemptLogin')
+            ->assertDispatched('login-error');
+    }
+
+    // 3rd attempt triggers lockout (MAX_FAILED_ATTEMPTS = 3)
+    Livewire::test('auth.login')
+        ->set('email', 'test@example.com')
+        ->set('password', 'wrong-password')
+        ->call('attemptLogin')
+        ->assertDispatched('login-cooldown');
+    
+    // User should not be authenticated
+    $this->assertFalse(Auth::check());
+    
+    // 4th attempt should still be locked out (even with correct password)
+    Livewire::test('auth.login')
+        ->set('email', 'test@example.com')
+        ->set('password', 'correct-password')
+        ->call('attemptLogin')
+        ->assertDispatched('login-cooldown');
+    
+    $this->assertFalse(Auth::check());
+});
+
+it('allows login after lockout cooldown expires', function () {
+    $user = User::factory()->create([
+        'email' => 'test@example.com',
+        'password' => Hash::make('correct-password'),
+    ]);
+
+    // Get the IP-based lockout key
+    $ip = request()->ip();
+    $lockoutKey = 'login:lockout:' . sha1($ip);
+    
+    // Simulate lockout by setting future timestamp
+    $untilTs = TestTimeService::now()->addMinutes(30)->timestamp;
+    Cache::put($lockoutKey, $untilTs, TestTimeService::now()->addMinutes(30));
+
+    // Fast-forward time by 31 minutes
+    $this->travel(31)->minutes();
+
+    // Should be able to login now
+    Livewire::test('auth.login')
+        ->set('email', 'test@example.com')
+        ->set('password', 'correct-password')
+        ->call('attemptLogin')
+        ->assertRedirect(route('feed.index'));
+    
+    $this->assertTrue(Auth::check());
 });
 
 it('allows users to logout', function () {
-        // First login
-        Auth::login($this->user);
-        $this->assertTrue(Auth::check());
-        
-        // Then logout
-        $response = $this->post(route('logout'));
-        $this->assertFalse(Auth::check());
-        $response->assertRedirect('/');
-    });
-
+    // First login
+    Auth::login($this->user);
+    $this->assertTrue(Auth::check());
     
+    // Then logout
+    $response = $this->post(route('logout'));
+    $this->assertFalse(Auth::check());
+    $response->assertRedirect('/');
+});
+

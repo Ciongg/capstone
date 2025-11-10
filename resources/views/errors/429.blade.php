@@ -14,7 +14,7 @@
             </div>
             <h1 class="text-6xl font-bold text-orange-500 mb-4">429</h1>
             <h2 class="text-2xl font-semibold text-gray-800 mb-4">Too Many Requests</h2>
-            <p class="text-gray-600 mb-8">
+            <p class="text-gray-600 mb-8"> 
                 @if(isset($exception) && $exception->getMessage())
                     {{ $exception->getMessage() }}
                 @else

@@ -21,4 +21,12 @@ class AuditLogs extends Model
         'resource_id' => 'integer',
         'performed_by' => 'integer',
     ];
+
+    /**
+     * Get the user that performed the audit action.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'performed_by');
+    }
 }
