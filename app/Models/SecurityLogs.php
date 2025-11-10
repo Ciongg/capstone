@@ -20,4 +20,27 @@ class SecurityLogs extends Model
         'resource_id' => 'integer',
         'user_id' => 'integer',
     ];
+
+    protected $fillable = [
+        'user_id',
+        'email',
+        'event_type',
+        'outcome',
+        'ip',
+        'route',
+        'http_method',
+        'http_status',
+        'message',
+        'meta',
+        'geo',
+        'user_agent',
+    ];
+
+    /**
+     * Get the user that owns the security log.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

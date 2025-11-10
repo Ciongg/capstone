@@ -118,7 +118,7 @@
                             $reward->status === 'available' ? 'bg-green-200 text-green-800' : 
                             ($reward->status === 'unavailable' ? 'bg-gray-200 text-gray-800' : 'bg-red-200 text-red-800')
                         }}">
-                            {{ ucfirst($reward->status) }}
+                            {{ str_replace('_', ' ', ucwords($reward->status, '_')) }}
                         </span>
                         <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
                             {{ $reward->type }}

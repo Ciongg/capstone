@@ -33,9 +33,20 @@ class Report extends Model
         'points_restored'
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'deduction_reversed' => 'boolean',
+        'points_restored' => 'boolean',
+    ];
+
     // Status constants
     // centralized reference for status values instead of hardcoding strings throughout the codebase
     
+    const STATUS_PENDING = 'pending';
     const STATUS_UNAPPEALED = 'unappealed';
     const STATUS_UNDER_APPEAL = 'under_appeal';
     const STATUS_DISMISSED = 'dismissed';

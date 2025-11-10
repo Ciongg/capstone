@@ -34,7 +34,7 @@ class SurveySettingsModal extends Component
     public $type;
     public $isInstitutionOnly;
     public $isAnnounced;
-    public $isGuestAllowed;
+    public $isGuestAllowed = true;
     public $isInFeed = true; // New property for controlling feed visibility
 
     public $institutionTagCategories = [];
@@ -134,8 +134,8 @@ class SurveySettingsModal extends Component
 
         // These properties always come from the current survey model regardless of snapshot
         $this->isAnnounced = (bool)$survey->is_announced;
-        $this->isGuestAllowed = (bool)$survey->is_guest_allowed;
-        $this->isInFeed = (bool)$survey->is_in_feed; // Initialize from survey model
+        $this->isGuestAllowed = $survey->is_guest_allowed !== null ? (bool)$survey->is_guest_allowed : true;
+        $this->isInFeed = $survey->is_in_feed !== null ? (bool)$survey->is_in_feed : true; // Initialize from survey model
         
         $this->topics = SurveyTopic::all();
         

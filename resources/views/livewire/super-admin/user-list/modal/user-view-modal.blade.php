@@ -134,7 +134,7 @@
                             <span class="font-bold">Joined:</span> {{ $user->created_at->format('M d, Y h:i A') }}
                         </div>
                         <div>
-                            <span class="font-bold">Last Active At:</span> {{ $user->last_active_at->format('M d, Y h:i A') }}
+                            <span class="font-bold">Last Active At:</span> {{ $user->last_active_at ? $user->last_active_at->format('M d, Y h:i A') : 'Never' }}
                         </div>
                         
                         @if($user->trashed())
