@@ -10,16 +10,17 @@
                 wire:click="exportToCsv"
                 wire:loading.attr="disabled"
                 wire:target="exportToCsv"
-                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded inline-flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed min-w-[220px]"
+                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded inline-flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed min-w-[100px] sm:min-w-[220px]"
             >
-                <span wire:loading.remove wire:target="exportToCsv" class="inline-flex items-center">
+                <span wire:loading.remove wire:target="exportToCsv" class="inline-flex items-center justify-center w-full">
                     <svg class="fill-current w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                         <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/>
                     </svg>
-                    <span>Export Analytics to CSV</span>
+                    <span class="hidden sm:inline">Export Analytics to CSV</span>
+                    <span class="sm:hidden">Export</span>
                 </span>
-                <span wire:loading wire:target="exportToCsv" class="inline-flex items-center justify-center">
-                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <span wire:loading wire:target="exportToCsv" class="inline-flex items-center justify-center w-full">
+                    <svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>

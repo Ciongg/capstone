@@ -1,4 +1,4 @@
-<div class="bg-white shadow flex items-center justify-between px-3 sm:px-6 py-3 mb-4 min-w-[300px] sticky top-0 z-50">
+<div class="bg-white shadow flex items-center justify-between px-3 sm:px-6 py-3 mb-4 min-w-[300px] sticky top-0 z-30">
     {{-- Left Side: Title --}}
     <div class="flex items-center flex-1 min-w-0 mr-4">
         <input
